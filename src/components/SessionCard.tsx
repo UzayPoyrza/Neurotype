@@ -1,12 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Session } from '../types';
-import { Chip } from './Chip';
-import { PrimaryButton } from './PrimaryButton';
+import { theme } from '../styles/theme';
 
 interface SessionCardProps {
   session: Session;
-  onStart: (session: Session) => void;
+  onStart: () => void;
   variant?: 'recommended' | 'list';
 }
 
@@ -15,114 +14,104 @@ export const SessionCard: React.FC<SessionCardProps> = ({
   onStart, 
   variant = 'list' 
 }) => {
-  const isRecommended = variant === 'recommended';
-  
   return (
-    <View style={[
-      styles.card,
-      isRecommended ? styles.recommendedCard : styles.listCard
-    ]}>
+    <TouchableOpacity
+      style={[
+        styles.card,
+        variant === 'recommended' ? styles.recommendedCard : styles.listCard,
+      ]}
+      onPress={onStart}
+      testID="session-card"
+    >
       <View style={styles.header}>
-        <View style={styles.titleContainer}>
-          <Text style={[
-            styles.title,
-            isRecommended ? styles.recommendedTitle : styles.listTitle
-          ]}>
-            {session.title}
-          </Text>
-          <Text style={styles.duration}>
-            {session.durationMin} min
-          </Text>
+        <Text style={styles.title}>{session.title}</Text>
+        <View style={styles.durationBadge}>
+          <Text style={styles.durationText}>{session.durationMin}m</Text>
         </View>
-        {isRecommended && (
-          <View style={styles.recommendedBadge}>
-            <Text style={styles.recommendedText}>
-              Recommended
-            </Text>
-          </View>
-        )}
       </View>
       
-      <View style={styles.chipsContainer}>
-        <Chip 
-          label={session.modality.charAt(0).toUpperCase() + session.modality.slice(1)} 
-          variant="modality"
-        />
-        <Chip 
-          label={session.goal.charAt(0).toUpperCase() + session.goal.slice(1)} 
-          variant="goal"
-        />
+      <View style={styles.details}>
+        <View style={styles.detailItem}>
+          <Text style={styles.detailLabel}>Modality:</Text>
+          <Text style={styles.detailValue}>{session.modality}</Text>
+        </View>
+        <View style={styles.detailItem}>
+          <Text style={styles.detailLabel}>Goal:</Text>
+          <Text style={styles.detailValue}>{session.goal}</Text>
+        </View>
       </View>
       
-      <PrimaryButton
-        title="Start"
-        testID={isRecommended ? "start-session" : "start-from-explore"}
-        onPress={() => onStart(session)}
-      />
-    </View>
+      <View style={styles.actionButton}>
+        <Text style={styles.actionText}>Start Session</Text>
+      </View>
+    </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
+    ...theme.common.card,
   },
   recommendedCard: {
-    marginBottom: 16,
+    borderWidth: theme.borders.width.thick,
+    borderColor: theme.colors.primary,
   },
   listCard: {
-    marginBottom: 12,
+    borderWidth: theme.borders.width.normal,
+    borderColor: theme.colors.primary,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  titleContainer: {
-    flex: 1,
-    marginRight: 12,
+    alignItems: 'center',
+    marginBottom: theme.spacing.md,
   },
   title: {
-    fontWeight: '600',
-    color: '#111827',
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.primary,
+    fontFamily: theme.typography.fontFamily,
+    flex: 1,
   },
-  recommendedTitle: {
-    fontSize: 20,
+  durationBadge: {
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.borders.radius.sm,
+    borderWidth: theme.borders.width.thin,
+    borderColor: theme.colors.primary,
   },
-  listTitle: {
-    fontSize: 18,
+  durationText: {
+    fontSize: theme.typography.sizes.xs,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.primary,
+    fontFamily: theme.typography.fontFamily,
   },
-  duration: {
-    color: '#6b7280',
-    marginTop: 4,
+  details: {
+    marginBottom: theme.spacing.lg,
   },
-  recommendedBadge: {
-    backgroundColor: '#dbeafe',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  recommendedText: {
-    color: '#1e40af',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  chipsContainer: {
+  detailItem: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 16,
+    marginBottom: theme.spacing.xs,
+  },
+  detailLabel: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.secondary,
+    fontFamily: theme.typography.fontFamily,
+    width: 80,
+  },
+  detailValue: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.medium,
+    color: theme.colors.primary,
+    fontFamily: theme.typography.fontFamily,
+    textTransform: 'capitalize',
+  },
+  actionButton: {
+    ...theme.common.button,
+  },
+  actionText: {
+    ...theme.common.buttonText,
   },
 }); 

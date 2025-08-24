@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Session } from './src/types';
 import { TodayScreen } from './src/screens/TodayScreen';
+import { ProgressScreen } from './src/screens/ProgressScreen';
 import { ExploreScreen } from './src/screens/ExploreScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { PlayerScreen } from './src/screens/PlayerScreen';
@@ -36,6 +37,8 @@ export default function App() {
 
               if (route.name === 'Today') {
                 iconName = focused ? 'home' : 'home-outline';
+              } else if (route.name === 'Progress') {
+                iconName = focused ? 'trending-up' : 'trending-up-outline';
               } else if (route.name === 'Explore') {
                 iconName = focused ? 'search' : 'search-outline';
               } else if (route.name === 'Profile') {
@@ -62,6 +65,10 @@ export default function App() {
           <Tab.Screen 
             name="Today" 
             component={() => <TodayScreen onStartSession={handleStartSession} />}
+          />
+          <Tab.Screen 
+            name="Progress" 
+            component={ProgressScreen}
           />
           <Tab.Screen 
             name="Explore" 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, Switch, StyleSheet } from 'react-native';
 import { useStore } from '../store/useStore';
+import { theme } from '../styles/theme';
 
 export const ProfileScreen: React.FC = () => {
   const { userProgress, reminderEnabled, toggleReminder } = useStore();
@@ -15,10 +16,22 @@ export const ProfileScreen: React.FC = () => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.content}>
-        {/* Header */}
-        <Text style={styles.header}>
-          Profile
-        </Text>
+        {/* Form-like Header */}
+        <View style={styles.formHeader}>
+          <View style={styles.titleField}>
+            <View style={styles.infoIcon}>
+              <Text style={styles.infoText}>i</Text>
+            </View>
+            <Text style={styles.titlePlaceholder}>User Profile</Text>
+            <View style={styles.checkButton}>
+              <Text style={styles.checkText}>✓</Text>
+            </View>
+          </View>
+          
+          <View style={styles.descriptionField}>
+            <Text style={styles.descriptionPlaceholder}>Your meditation profile and settings</Text>
+          </View>
+        </View>
 
         {/* Stats Block */}
         <View style={styles.card}>
@@ -94,7 +107,7 @@ export const ProfileScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* App Info */}
+        {/* About */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>
             About Neurotype
@@ -116,43 +129,92 @@ export const ProfileScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
+    ...theme.common.container,
   },
   content: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    ...theme.common.content,
   },
-  header: {
-    fontSize: 30,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 24,
+  formHeader: {
+    marginBottom: 40,
+  },
+  titleField: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borders.radius.lg,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    borderWidth: theme.borders.width.thick,
+    borderColor: theme.colors.primary,
+    ...theme.shadows.medium,
+  },
+  infoIcon: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: theme.borders.width.normal,
+    borderColor: theme.colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: theme.spacing.md,
+  },
+  infoText: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.primary,
+    fontStyle: 'italic',
+  },
+  titlePlaceholder: {
+    flex: 1,
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.secondary,
+    fontFamily: theme.typography.fontFamily,
+  },
+  checkButton: {
+    width: 24,
+    height: 24,
+    borderRadius: theme.borders.radius.sm,
+    backgroundColor: theme.colors.success,
+    borderWidth: theme.borders.width.normal,
+    borderColor: theme.colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkText: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.primary,
+  },
+  descriptionField: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borders.radius.lg,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    borderWidth: theme.borders.width.thick,
+    borderColor: theme.colors.primary,
+    ...theme.shadows.medium,
+    marginTop: theme.spacing.sm,
+    marginLeft: theme.spacing.xl,
+  },
+  descriptionPlaceholder: {
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.secondary,
+    fontFamily: theme.typography.fontFamily,
   },
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 24,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
+    ...theme.common.card,
+    marginBottom: theme.spacing.xxl,
   },
   cardTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 16,
+    fontSize: theme.typography.sizes.xl,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.primary,
+    marginBottom: theme.spacing.xl,
+    fontFamily: theme.typography.fontFamily,
   },
   statsList: {
-    gap: 16,
+    gap: theme.spacing.xl,
   },
   statRow: {
     flexDirection: 'row',
@@ -160,15 +222,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statLabel: {
-    color: '#6b7280',
+    color: theme.colors.secondary,
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.semibold,
+    fontFamily: theme.typography.fontFamily,
   },
   statValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#3b82f6',
+    fontSize: theme.typography.sizes.xl,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.primary,
+    fontFamily: theme.typography.fontFamily,
   },
   neurotypeList: {
-    gap: 12,
+    gap: theme.spacing.lg,
   },
   neurotypeRow: {
     flexDirection: 'row',
@@ -176,16 +242,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   neurotypeLabel: {
-    color: '#6b7280',
+    color: theme.colors.secondary,
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.semibold,
+    fontFamily: theme.typography.fontFamily,
   },
   neurotypeValue: {
-    fontWeight: '600',
-    color: '#111827',
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.primary,
+    fontFamily: theme.typography.fontFamily,
   },
   neurotypeNote: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginTop: 16,
+    color: theme.colors.secondary,
+    fontSize: theme.typography.sizes.sm,
+    fontStyle: 'italic',
+    marginTop: theme.spacing.md,
+    fontFamily: theme.typography.fontFamily,
   },
   reminderRow: {
     flexDirection: 'row',
@@ -196,24 +269,31 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   reminderTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 4,
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.primary,
+    marginBottom: theme.spacing.xs,
+    fontFamily: theme.typography.fontFamily,
   },
   reminderTime: {
-    color: '#6b7280',
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.secondary,
+    fontFamily: theme.typography.fontFamily,
   },
   aboutText: {
-    color: '#6b7280',
+    color: theme.colors.secondary,
+    fontSize: theme.typography.sizes.md,
     lineHeight: 24,
-    marginBottom: 16,
+    marginBottom: theme.spacing.lg,
+    fontFamily: theme.typography.fontFamily,
   },
   versionInfo: {
-    gap: 8,
+    alignItems: 'center',
   },
   versionText: {
-    fontSize: 14,
-    color: '#6b7280',
+    color: theme.colors.secondary,
+    fontSize: theme.typography.sizes.sm,
+    marginBottom: theme.spacing.xs,
+    fontFamily: theme.typography.fontFamily,
   },
 }); 

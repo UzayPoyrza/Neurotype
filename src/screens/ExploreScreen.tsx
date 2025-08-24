@@ -5,98 +5,147 @@ import { SessionCard } from '../components/SessionCard';
 import { Chip } from '../components/Chip';
 import { useStore } from '../store/useStore';
 import { mockSessions } from '../data/mockData';
+import { theme } from '../styles/theme';
 
-interface ExploreScreenProps {
-  onStartSession: (session: Session) => void;
-}
-
-const modalities: (Modality | 'all')[] = ['all', 'sound', 'movement', 'mantra', 'visualization', 'somatic', 'mindfulness'];
-const goals: (Goal | 'all')[] = ['all', 'anxiety', 'focus', 'sleep'];
-
-export const ExploreScreen: React.FC<ExploreScreenProps> = ({ onStartSession }) => {
+export const ExploreScreen: React.FC = () => {
   const { filters, setFilters } = useStore();
 
+  const modalities: (Modality | 'all')[] = ['all', 'sound', 'movement', 'mantra', 'visualization', 'somatic', 'mindfulness'];
+  const goals: (Goal | 'all')[] = ['all', 'anxiety', 'focus', 'sleep'];
+
   const filteredSessions = mockSessions.filter(session => {
-    const modalityMatch = filters.modality === 'all' || session.modality === filters.modality;
-    const goalMatch = filters.goal === 'all' || session.goal === filters.goal;
-    return modalityMatch && goalMatch;
+    if (filters.modality !== 'all' && session.modality !== filters.modality) return false;
+    if (filters.goal !== 'all' && session.goal !== filters.goal) return false;
+    return true;
   });
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.content}>
-        {/* Header */}
-        <Text style={styles.header}>
-          Explore
-        </Text>
+        {/* Form-like Header */}
+        <View style={styles.formHeader}>
+          <View style={styles.titleField}>
+            <View style={styles.infoIcon}>
+              <Text style={styles.infoText}>i</Text>
+            </View>
+            <Text style={styles.titlePlaceholder}>Intervention Library</Text>
+            <View style={styles.checkButton}>
+              <Text style={styles.checkText}>✓</Text>
+            </View>
+          </View>
+          
+          <View style={styles.descriptionField}>
+            <Text style={styles.descriptionPlaceholder}>Evidence-based meditation protocols</Text>
+          </View>
+        </View>
 
-        {/* Modality Filters */}
-        <View style={styles.section}>
+        {/* Filter Methodology */}
+        <View style={styles.methodologySection}>
           <Text style={styles.sectionTitle}>
-            Modality
+            FILTERING METHODOLOGY
           </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow}>
-            {modalities.map((modality) => (
-              <View key={modality} style={styles.chipContainer}>
-                <Chip
-                  label={modality === 'all' ? 'All' : modality.charAt(0).toUpperCase() + modality.slice(1)}
-                  selected={filters.modality === modality}
-                  onPress={() => setFilters({ ...filters, modality })}
-                  variant="modality"
-                />
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* Goal Filters */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            Goal
+          <Text style={styles.sectionSubtitle}>
+            Select parameters to narrow intervention options
           </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow}>
-            {goals.map((goal) => (
-              <View key={goal} style={styles.chipContainer}>
-                <Chip
-                  label={goal === 'all' ? 'All' : goal.charAt(0).toUpperCase() + goal.slice(1)}
-                  selected={filters.goal === goal}
-                  onPress={() => setFilters({ ...filters, goal })}
-                  variant="goal"
-                />
-              </View>
-            ))}
-          </ScrollView>
-        </View>
 
-        {/* Results Count */}
-        <View style={styles.resultsCount}>
-          <Text style={styles.resultsText}>
-            {filteredSessions.length} session{filteredSessions.length !== 1 ? 's' : ''} found
-          </Text>
-        </View>
-
-        {/* Session List */}
-        <View style={styles.sessionList}>
-          {filteredSessions.map((session) => (
-            <SessionCard
-              key={session.id}
-              session={session}
-              onStart={onStartSession}
-              variant="list"
-            />
-          ))}
-        </View>
-
-        {filteredSessions.length === 0 && (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>
-              No sessions match your current filters.
+          {/* Modality Filters */}
+          <View style={styles.filterSection}>
+            <Text style={styles.filterLabel}>
+              NEUROLOGICAL MODALITY:
             </Text>
-            <Text style={styles.emptySubtext}>
-              Try adjusting your selection.
+            <View style={styles.chipsRow}>
+              {modalities.map(modality => (
+                <View key={modality} style={styles.chipContainer}>
+                  <Chip
+                    label={modality === 'all' ? 'All Modalities' : modality}
+                    selected={filters.modality === modality}
+                    onPress={() => setFilters({ ...filters, modality })}
+                  />
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Goal Filters */}
+          <View style={styles.filterSection}>
+            <Text style={styles.filterLabel}>
+              THERAPEUTIC OUTCOME:
+            </Text>
+            <View style={styles.chipsRow}>
+              {goals.map(goal => (
+                <View key={goal} style={styles.chipContainer}>
+                  <Chip
+                    label={goal === 'all' ? 'All Goals' : goal}
+                    selected={filters.goal === goal}
+                    onPress={() => setFilters({ ...filters, goal })}
+                  />
+                </View>
+              ))}
+            </View>
+          </View>
+        </View>
+
+        {/* Results Analysis */}
+        <View style={styles.resultsSection}>
+          <Text style={styles.sectionTitle}>
+            RESULTS ANALYSIS
+          </Text>
+          <View style={styles.resultsHeader}>
+            <Text style={styles.resultsText}>
+              {filteredSessions.length} interventions match your criteria
             </Text>
           </View>
-        )}
+        </View>
+
+        {/* Intervention List */}
+        <View style={styles.interventionsSection}>
+          <Text style={styles.sectionTitle}>
+            AVAILABLE INTERVENTIONS
+          </Text>
+          
+          {filteredSessions.length > 0 ? (
+            <View style={styles.sessionList}>
+              {filteredSessions.map(session => (
+                <SessionCard
+                  key={session.id}
+                  session={session}
+                  onStart={() => {}}
+                  variant="list"
+                />
+              ))}
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>
+                No interventions match current criteria
+              </Text>
+              <Text style={styles.emptySubtext}>
+                Try adjusting your modality or goal filters
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Research Notes */}
+        <View style={styles.notesSection}>
+          <Text style={styles.sectionTitle}>
+            RESEARCH NOTES
+          </Text>
+          <View style={styles.notesBox}>
+            <Text style={styles.notesText}>
+              • All protocols based on peer-reviewed neuroscience research
+            </Text>
+            <Text style={styles.notesText}>
+              • Efficacy measured through standardized anxiety scales
+            </Text>
+            <Text style={styles.notesText}>
+              • Recommended session duration: 5-15 minutes for optimal results
+            </Text>
+            <Text style={styles.notesText}>
+              • Consistency is key: aim for daily practice for 21+ days
+            </Text>
+          </View>
+        </View>
       </View>
     </ScrollView>
   );
@@ -104,54 +153,177 @@ export const ExploreScreen: React.FC<ExploreScreenProps> = ({ onStartSession }) 
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
+    ...theme.common.container,
   },
   content: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    ...theme.common.content,
   },
-  header: {
-    fontSize: 30,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 24,
+  formHeader: {
+    marginBottom: 40,
   },
-  section: {
-    marginBottom: 24,
+  titleField: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borders.radius.lg,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    borderWidth: theme.borders.width.thick,
+    borderColor: theme.colors.primary,
+    ...theme.shadows.medium,
+  },
+  infoIcon: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: theme.borders.width.normal,
+    borderColor: theme.colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: theme.spacing.md,
+  },
+  infoText: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.primary,
+    fontStyle: 'italic',
+  },
+  titlePlaceholder: {
+    flex: 1,
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.secondary,
+    fontFamily: theme.typography.fontFamily,
+  },
+  checkButton: {
+    width: 24,
+    height: 24,
+    borderRadius: theme.borders.radius.sm,
+    backgroundColor: theme.colors.success,
+    borderWidth: theme.borders.width.normal,
+    borderColor: theme.colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkText: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.primary,
+  },
+  descriptionField: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borders.radius.lg,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    borderWidth: theme.borders.width.thick,
+    borderColor: theme.colors.primary,
+    ...theme.shadows.medium,
+    marginTop: theme.spacing.sm,
+    marginLeft: theme.spacing.xl,
+  },
+  descriptionPlaceholder: {
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.secondary,
+    fontFamily: theme.typography.fontFamily,
+  },
+  methodologySection: {
+    marginBottom: 25,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 12,
+    fontSize: theme.typography.sizes.xl,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.primary,
+    marginBottom: theme.spacing.sm,
+    fontFamily: theme.typography.fontFamily,
+  },
+  sectionSubtitle: {
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.medium,
+    color: theme.colors.secondary,
+    marginBottom: theme.spacing.xl,
+    fontFamily: theme.typography.fontFamily,
+  },
+  filterSection: {
+    marginBottom: 25,
+  },
+  filterLabel: {
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.primary,
+    marginBottom: theme.spacing.md,
+    fontFamily: theme.typography.fontFamily,
   },
   chipsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing.md,
   },
   chipContainer: {
-    marginRight: 8,
+    marginBottom: theme.spacing.sm,
   },
-  resultsCount: {
-    marginBottom: 16,
+  resultsSection: {
+    marginBottom: 25,
+  },
+  resultsHeader: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borders.radius.lg,
+    padding: theme.spacing.lg,
+    borderWidth: theme.borders.width.thick,
+    borderColor: theme.colors.primary,
+    ...theme.shadows.medium,
   },
   resultsText: {
-    color: '#6b7280',
+    color: theme.colors.primary,
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.semibold,
+    fontFamily: theme.typography.fontFamily,
+  },
+  interventionsSection: {
+    marginBottom: 25,
   },
   sessionList: {
-    marginBottom: 24,
+    gap: theme.spacing.lg,
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 32,
+    paddingVertical: 50,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borders.radius.lg,
+    borderWidth: theme.borders.width.thick,
+    borderColor: theme.colors.primary,
+    ...theme.shadows.medium,
   },
   emptyText: {
-    color: '#6b7280',
+    color: theme.colors.primary,
     textAlign: 'center',
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.semibold,
+    fontFamily: theme.typography.fontFamily,
   },
   emptySubtext: {
-    color: '#6b7280',
+    color: theme.colors.secondary,
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: theme.spacing.md,
+    fontSize: theme.typography.sizes.md,
+    fontFamily: theme.typography.fontFamily,
+    fontWeight: theme.typography.weights.medium,
+  },
+  notesSection: {
+    marginBottom: 20,
+  },
+  notesBox: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borders.radius.lg,
+    padding: theme.spacing.xl,
+    borderWidth: theme.borders.width.thick,
+    borderColor: theme.colors.primary,
+    ...theme.shadows.medium,
+  },
+  notesText: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.secondary,
+    marginBottom: theme.spacing.sm,
+    fontFamily: theme.typography.fontFamily,
+    lineHeight: 20,
   },
 }); 

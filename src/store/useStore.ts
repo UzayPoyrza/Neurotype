@@ -1,14 +1,16 @@
 import { create } from 'zustand';
-import { UserProgress, FilterState, SessionDelta } from '../types';
+import { UserProgress, FilterState, SessionDelta, Session } from '../types';
 import { initialUserProgress } from '../data/mockData';
 
 interface AppState {
   userProgress: UserProgress;
   filters: FilterState;
   reminderEnabled: boolean;
+  activeSession: Session | null;
   addSessionDelta: (delta: SessionDelta) => void;
   setFilters: (filters: FilterState) => void;
   toggleReminder: () => void;
+  setActiveSession: (session: Session | null) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -18,6 +20,7 @@ export const useStore = create<AppState>((set) => ({
     goal: 'all'
   },
   reminderEnabled: false,
+  activeSession: null,
   
   addSessionDelta: (delta: SessionDelta) => 
     set((state) => ({
@@ -32,5 +35,8 @@ export const useStore = create<AppState>((set) => ({
     set({ filters }),
     
   toggleReminder: () => 
-    set((state) => ({ reminderEnabled: !state.reminderEnabled }))
+    set((state) => ({ reminderEnabled: !state.reminderEnabled })),
+    
+  setActiveSession: (session: Session | null) => 
+    set({ activeSession: session })
 })); 

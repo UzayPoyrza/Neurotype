@@ -1,33 +1,32 @@
 import React from 'react';
-import { Text, TouchableOpacity, TouchableOpacityProps, StyleSheet } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 
-interface PrimaryButtonProps extends TouchableOpacityProps {
+interface PrimaryButtonProps {
   title: string;
+  onPress: () => void;
   testID?: string;
-  variant?: 'primary' | 'secondary';
+  disabled?: boolean;
 }
 
 export const PrimaryButton: React.FC<PrimaryButtonProps> = ({ 
   title, 
-  testID, 
-  variant = 'primary',
-  disabled = false,
-  ...props 
+  onPress, 
+  testID,
+  disabled = false 
 }) => {
   return (
     <TouchableOpacity
-      testID={testID}
       style={[
         styles.button,
-        variant === 'primary' ? styles.primaryButton : styles.secondaryButton,
-        disabled && styles.disabled
+        disabled ? styles.disabledButton : styles.enabledButton,
       ]}
+      onPress={onPress}
       disabled={disabled}
-      {...props}
+      testID={testID}
     >
       <Text style={[
-        styles.text,
-        variant === 'primary' ? styles.primaryText : styles.secondaryText
+        styles.buttonText,
+        disabled ? styles.disabledText : styles.enabledText,
       ]}>
         {title}
       </Text>
@@ -40,27 +39,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
-    flexDirection: 'row',
-    justifyContent: 'center',
+    borderWidth: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 1, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  primaryButton: {
-    backgroundColor: '#3b82f6',
+  enabledButton: {
+    backgroundColor: '#000000',
+    borderColor: '#000000',
   },
-  secondaryButton: {
-    backgroundColor: '#e5e7eb',
+  disabledButton: {
+    backgroundColor: '#f0f0f0',
+    borderColor: '#cccccc',
   },
-  disabled: {
-    opacity: 0.5,
-  },
-  text: {
+  buttonText: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'System',
   },
-  primaryText: {
+  enabledText: {
     color: '#ffffff',
   },
-  secondaryText: {
-    color: '#374151',
+  disabledText: {
+    color: '#999999',
   },
 }); 

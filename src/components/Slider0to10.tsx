@@ -5,48 +5,40 @@ interface Slider0to10Props {
   value: number;
   onValueChange: (value: number) => void;
   label: string;
-  disabled?: boolean;
 }
 
 export const Slider0to10: React.FC<Slider0to10Props> = ({ 
   value, 
   onValueChange, 
-  label,
-  disabled = false 
+  label 
 }) => {
   const numbers = Array.from({ length: 11 }, (_, i) => i);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>
-        {label}
-      </Text>
+      <Text style={styles.label}>{label}</Text>
       <View style={styles.sliderContainer}>
-        {numbers.map((num) => (
+        {numbers.map((number) => (
           <TouchableOpacity
-            key={num}
-            onPress={() => !disabled && onValueChange(num)}
-            disabled={disabled}
+            key={number}
             style={[
               styles.numberButton,
-              value === num ? styles.selectedButton : styles.unselectedButton,
-              disabled && styles.disabled
+              value === number ? styles.selectedButton : styles.unselectedButton,
             ]}
+            onPress={() => onValueChange(number)}
           >
-            <Text 
-              style={[
-                styles.numberText,
-                value === num ? styles.selectedText : styles.unselectedText
-              ]}
-            >
-              {num}
+            <Text style={[
+              styles.numberText,
+              value === number ? styles.selectedText : styles.unselectedText,
+            ]}>
+              {number}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
-      <View style={styles.labels}>
-        <Text style={styles.endLabel}>Calm</Text>
-        <Text style={styles.endLabel}>Anxious</Text>
+      <View style={styles.scaleLabels}>
+        <Text style={styles.scaleLabel}>Low</Text>
+        <Text style={styles.scaleLabel}>High</Text>
       </View>
     </View>
   );
@@ -54,52 +46,60 @@ export const Slider0to10: React.FC<Slider0to10Props> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 24,
+    marginVertical: 16,
   },
   label: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 12,
+    fontFamily: 'System',
   },
   sliderContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 8,
   },
   numberButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 1, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   selectedButton: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: '#000000',
+    borderColor: '#000000',
   },
   unselectedButton: {
-    backgroundColor: '#e5e7eb',
-  },
-  disabled: {
-    opacity: 0.5,
+    backgroundColor: '#ffffff',
+    borderColor: '#000000',
   },
   numberText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
+    fontFamily: 'System',
   },
   selectedText: {
     color: '#ffffff',
   },
   unselectedText: {
-    color: '#6b7280',
+    color: '#000000',
   },
-  labels: {
+  scaleLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 8,
   },
-  endLabel: {
+  scaleLabel: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#666666',
+    fontFamily: 'System',
   },
 }); 

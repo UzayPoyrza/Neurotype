@@ -1,41 +1,26 @@
 import React from 'react';
-import { Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Modality, Goal } from '../types';
+import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { theme } from '../styles/theme';
 
 interface ChipProps {
   label: string;
-  selected?: boolean;
-  onPress?: () => void;
-  variant?: 'modality' | 'goal';
+  selected: boolean;
+  onPress: () => void;
 }
 
-export const Chip: React.FC<ChipProps> = ({ 
-  label, 
-  selected = false, 
-  onPress, 
-  variant = 'modality' 
-}) => {
-  const getChipStyle = () => {
-    if (selected) {
-      return variant === 'modality' ? styles.selectedModality : styles.selectedGoal;
-    }
-    return styles.unselected;
-  };
-
-  const getTextStyle = () => {
-    if (selected) {
-      return variant === 'modality' ? styles.selectedModalityText : styles.selectedGoalText;
-    }
-    return styles.unselectedText;
-  };
-
+export const Chip: React.FC<ChipProps> = ({ label, selected, onPress }) => {
   return (
     <TouchableOpacity
+      style={[
+        styles.chip,
+        selected ? styles.selectedChip : styles.unselectedChip,
+      ]}
       onPress={onPress}
-      style={[styles.chip, getChipStyle()]}
-      disabled={!onPress}
     >
-      <Text style={[styles.text, getTextStyle()]}>
+      <Text style={[
+        styles.chipText,
+        selected ? styles.selectedText : styles.unselectedText,
+      ]}>
         {label}
       </Text>
     </TouchableOpacity>
@@ -44,34 +29,29 @@ export const Chip: React.FC<ChipProps> = ({
 
 const styles = StyleSheet.create({
   chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 20,
-    borderWidth: 1,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.borders.radius.xxl,
+    borderWidth: theme.borders.width.normal,
+    ...theme.shadows.small,
   },
-  selectedModality: {
-    backgroundColor: '#dbeafe',
-    borderColor: '#93c5fd',
+  selectedChip: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
-  selectedGoal: {
-    backgroundColor: '#dcfce7',
-    borderColor: '#86efac',
+  unselectedChip: {
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.primary,
   },
-  unselected: {
-    backgroundColor: '#f3f4f6',
-    borderColor: '#e5e7eb',
+  chipText: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.semibold,
+    fontFamily: theme.typography.fontFamily,
   },
-  text: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  selectedModalityText: {
-    color: '#1e40af',
-  },
-  selectedGoalText: {
-    color: '#166534',
+  selectedText: {
+    color: theme.colors.surface,
   },
   unselectedText: {
-    color: '#6b7280',
+    color: theme.colors.primary,
   },
 }); 

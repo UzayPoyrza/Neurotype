@@ -25,28 +25,35 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
       useNativeDriver: true,
     }).start();
 
-    // Blinking cursor animation
+    // Blinking cursor animation with better mobile support
     const blinkCursor = () => {
-      Animated.loop(
+      const blinkLoop = Animated.loop(
         Animated.sequence([
           Animated.timing(cursorAnim, {
             toValue: 0,
-            duration: 600,
-            useNativeDriver: true,
+            duration: 400,
+            useNativeDriver: false, // Changed to false for better mobile support
           }),
           Animated.timing(cursorAnim, {
             toValue: 1,
-            duration: 600,
-            useNativeDriver: true,
+            duration: 400,
+            useNativeDriver: false, // Changed to false for better mobile support
           }),
         ])
-      ).start();
+      );
+      blinkLoop.start();
+      return blinkLoop;
     };
-    blinkCursor();
+
+    let blinkAnimation = blinkCursor();
 
     // Start typing sequence
     const startTyping = () => {
       setIsTyping(true);
+      // Stop blinking and keep cursor solid during typing
+      blinkAnimation.stop();
+      cursorAnim.setValue(1);
+      
       let index = 0;
       const typeInterval = setInterval(() => {
         if (index < fullText.length) {
@@ -57,14 +64,18 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
           setIsTypingComplete(true);
           setIsTyping(false);
           
+          // Start blinking again after typing
+          blinkAnimation = blinkCursor();
+          
           // Blink cursor a few more times, then hide it
           setTimeout(() => {
+            blinkAnimation.stop();
             setShowCursor(false);
             // Transition to home screen
             setTimeout(() => {
               onFinish();
-            }, 500);
-          }, 1200);
+            }, 800);
+          }, 800);
         }
       }, 60); // Faster typing speed (was 100ms, now 60ms)
     };
@@ -117,7 +128,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f8f6f1',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -126,28 +137,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconContainer: {
-    marginBottom: theme.spacing.xxxl,
+    marginBottom: theme.spacing.xl,
   },
   icon: {
-    width: 120,
-    height: 120,
+    width: 220,
+    height: 220,
   },
   textContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: 100,
+    height: 120,
   },
   handwritingText: {
-    fontSize: 32,
+    fontSize: 40,
     fontWeight: '400',
-    color: '#000000',
+    color: '#353634',
     fontFamily: 'System',
     fontStyle: 'italic',
     textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 0.5, height: 0.5 },
+    textShadowRadius: 0.5,
   },
   cursor: {
-    fontSize: 32,
-    color: '#000000',
+    fontSize: 40,
+    color: '#353634',
     fontWeight: '400',
   },
 });

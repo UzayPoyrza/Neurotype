@@ -4,7 +4,7 @@ export const theme = {
   colors: {
     primary: '#000000',
     secondary: '#666666',
-    background: '#f5f5f5',
+    background: '#f8f6f1',
     surface: '#ffffff',
     success: '#90EE90',
     disabled: '#cccccc',
@@ -79,7 +79,7 @@ export const theme = {
   common: {
     container: {
       flex: 1,
-      backgroundColor: '#f5f5f5',
+      backgroundColor: '#f8f6f1',
     },
     content: {
       paddingHorizontal: 20,

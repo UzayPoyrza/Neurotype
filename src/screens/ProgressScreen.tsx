@@ -1,9 +1,9 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useStore } from '../store/useStore';
 import { Sparkline } from '../components/Sparkline';
 import { theme } from '../styles/theme';
-import { TopNav } from '../components/TopNav';
+import { TwoLayerScreen } from '../components/TwoLayerScreen';
 
 export const ProgressScreen: React.FC = () => {
   const userProgress = useStore(state => state.userProgress);
@@ -28,10 +28,8 @@ export const ProgressScreen: React.FC = () => {
     : 0;
 
   return (
-    <View style={styles.container}>
-      <TopNav title="Progress" />
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.content}>
+    <TwoLayerScreen title="Progress">
+      <View style={styles.content}>
           {/* Form-like Header */}
           <View style={styles.formHeader}>
             <View style={styles.titleField}>
@@ -198,20 +196,13 @@ export const ProgressScreen: React.FC = () => {
                 No sessions completed yet
               </Text>
             )}
-          </View>
-        </View>
-      </ScrollView>
-    </View>
+                  </View>
+      </View>
+    </TwoLayerScreen>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    ...theme.common.container,
-  },
-  scrollView: {
-    flex: 1,
-  },
   content: {
     ...theme.common.content,
   },

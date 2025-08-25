@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, ScrollView, Switch, StyleSheet } from 'react-native';
+import { View, Text, Switch, StyleSheet } from 'react-native';
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
-import { TopNav } from '../components/TopNav';
+import { TwoLayerScreen } from '../components/TwoLayerScreen';
 
 export const ProfileScreen: React.FC = () => {
   const { userProgress, reminderEnabled, toggleReminder } = useStore();
@@ -15,10 +15,8 @@ export const ProfileScreen: React.FC = () => {
     : 0;
 
   return (
-    <View style={styles.container}>
-      <TopNav title="Profile" />
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.content}>
+    <TwoLayerScreen title="Profile">
+      <View style={styles.content}>
         {/* Form-like Header */}
         <View style={styles.formHeader}>
           <View style={styles.titleField}>
@@ -126,18 +124,11 @@ export const ProfileScreen: React.FC = () => {
           </View>
         </View>
       </View>
-      </ScrollView>
-    </View>
+    </TwoLayerScreen>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    ...theme.common.container,
-  },
-  scrollView: {
-    flex: 1,
-  },
   content: {
     ...theme.common.content,
   },

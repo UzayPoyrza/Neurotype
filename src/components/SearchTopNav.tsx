@@ -1,5 +1,5 @@
 import React, { useState, useImperativeHandle, forwardRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Animated } from 'react-native';
 import { theme } from '../styles/theme';
 
 interface SearchTopNavProps {
@@ -127,4 +127,4 @@ const styles = StyleSheet.create({
     fontFamily: theme.typography.fontFamily,
     paddingVertical: 0,
   },
-});
+}); 

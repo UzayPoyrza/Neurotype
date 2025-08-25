@@ -1,10 +1,10 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Session } from '../types';
 import { useStore } from '../store/useStore';
 import { mockSessions } from '../data/mockData';
 import { theme } from '../styles/theme';
-import { TopNav } from '../components/TopNav';
+import { TwoLayerScreen } from '../components/TwoLayerScreen';
 
 export const TodayScreen: React.FC = () => {
   const { setActiveSession } = useStore();
@@ -74,10 +74,8 @@ export const TodayScreen: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <TopNav title="Today" />
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.content}>
+    <TwoLayerScreen title="Today">
+      <View style={styles.content}>
         {/* Form-like Header */}
         <View style={styles.formHeader}>
           <View style={styles.titleField}>
@@ -145,18 +143,11 @@ export const TodayScreen: React.FC = () => {
           </Text>
         </View>
       </View>
-      </ScrollView>
-    </View>
+    </TwoLayerScreen>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    ...theme.common.container,
-  },
-  scrollView: {
-    flex: 1,
-  },
   content: {
     ...theme.common.content,
   },

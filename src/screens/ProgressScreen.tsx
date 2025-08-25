@@ -3,6 +3,7 @@ import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useStore } from '../store/useStore';
 import { Sparkline } from '../components/Sparkline';
 import { theme } from '../styles/theme';
+import { TopNav } from '../components/TopNav';
 
 export const ProgressScreen: React.FC = () => {
   const userProgress = useStore(state => state.userProgress);
@@ -27,183 +28,189 @@ export const ProgressScreen: React.FC = () => {
     : 0;
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.content}>
-        {/* Form-like Header */}
-        <View style={styles.formHeader}>
-          <View style={styles.titleField}>
-            <View style={styles.infoIcon}>
-              <Text style={styles.infoText}>i</Text>
+    <View style={styles.container}>
+      <TopNav title="Progress" />
+      <ScrollView style={styles.scrollView}>
+        <View style={styles.content}>
+          {/* Form-like Header */}
+          <View style={styles.formHeader}>
+            <View style={styles.titleField}>
+              <View style={styles.infoIcon}>
+                <Text style={styles.infoText}>i</Text>
+              </View>
+              <Text style={styles.titlePlaceholder}>Progress Report</Text>
+              <View style={styles.checkButton}>
+                <Text style={styles.checkText}>✓</Text>
+              </View>
             </View>
-            <Text style={styles.titlePlaceholder}>Progress Report</Text>
-            <View style={styles.checkButton}>
-              <Text style={styles.checkText}>✓</Text>
+            
+            <View style={styles.descriptionField}>
+              <Text style={styles.descriptionPlaceholder}>Your meditation journey analytics</Text>
             </View>
           </View>
-          
-          <View style={styles.descriptionField}>
-            <Text style={styles.descriptionPlaceholder}>Your meditation journey analytics</Text>
-          </View>
-        </View>
 
-        {/* Overall Stats */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>
-            Overall Progress
-          </Text>
-          
-          <View style={styles.statsGrid}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>
-                {totalSessions}
-              </Text>
-              <Text style={styles.statLabel}>Total Sessions</Text>
-            </View>
+          {/* Overall Stats */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>
+              Overall Progress
+            </Text>
             
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>
-                {userProgress.streak}
-              </Text>
-              <Text style={styles.statLabel}>Day Streak</Text>
-            </View>
-            
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>
-                {avgDelta > 0 ? avgDelta.toFixed(1) : '0'}
-              </Text>
-              <Text style={styles.statLabel}>Avg Reduction</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Weekly Progress */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>
-            This Week
-          </Text>
-          
-          <View style={styles.weeklyStats}>
-            <View style={styles.weeklyItem}>
-              <Text style={styles.weeklyLabel}>Sessions</Text>
-              <Text style={styles.weeklyValue}>{weeklySessions.length}</Text>
-            </View>
-            
-            <View style={styles.weeklyItem}>
-              <Text style={styles.weeklyLabel}>Avg Reduction</Text>
-              <Text style={styles.weeklyValue}>
-                {weeklyAvgDelta > 0 ? weeklyAvgDelta.toFixed(1) : '0'} pts
-              </Text>
-            </View>
-            
-            <View style={styles.weeklyItem}>
-              <Text style={styles.weeklyLabel}>Best Session</Text>
-              <Text style={styles.weeklyValue}>
-                {weeklySessions.length > 0 
-                  ? Math.max(...weeklySessions.map(d => d.before - d.after))
-                  : '0'} pts
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Monthly Progress */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>
-            This Month
-          </Text>
-          
-          <View style={styles.monthlyStats}>
-            <View style={styles.monthlyItem}>
-              <Text style={styles.monthlyLabel}>Sessions</Text>
-              <Text style={styles.monthlyValue}>{monthlySessions.length}</Text>
-            </View>
-            
-            <View style={styles.monthlyItem}>
-              <Text style={styles.monthlyLabel}>Avg Reduction</Text>
-              <Text style={styles.monthlyValue}>
-                {monthlyAvgDelta > 0 ? monthlyAvgDelta.toFixed(1) : '0'} pts
-              </Text>
-            </View>
-            
-            <View style={styles.monthlyItem}>
-              <Text style={styles.monthlyLabel}>Consistency</Text>
-              <Text style={styles.monthlyValue}>
-                {monthlySessions.length > 0 
-                  ? Math.round((monthlySessions.length / 30) * 100)
-                  : '0'}%
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Trend Chart */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>
-            Anxiety Reduction Trend
-          </Text>
-          
-          {userProgress.sessionDeltas.length > 0 ? (
-            <View>
-              <Sparkline data={userProgress.sessionDeltas} width={300} height={80} />
-              <View style={styles.trendInfo}>
-                <Text style={styles.trendLabel}>
-                  Last 7 sessions
+            <View style={styles.statsGrid}>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>
+                  {totalSessions}
                 </Text>
-                <Text style={styles.trendValue}>
-                  {avgDelta > 0 ? '↓' : '→'} {Math.abs(avgDelta).toFixed(1)} pts avg
+                <Text style={styles.statLabel}>Total Sessions</Text>
+              </View>
+              
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>
+                  {userProgress.streak}
+                </Text>
+                <Text style={styles.statLabel}>Day Streak</Text>
+              </View>
+              
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>
+                  {avgDelta > 0 ? avgDelta.toFixed(1) : '0'}
+                </Text>
+                <Text style={styles.statLabel}>Avg Reduction</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Weekly Progress */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>
+              This Week
+            </Text>
+            
+            <View style={styles.weeklyStats}>
+              <View style={styles.weeklyItem}>
+                <Text style={styles.weeklyLabel}>Sessions</Text>
+                <Text style={styles.weeklyValue}>{weeklySessions.length}</Text>
+              </View>
+              
+              <View style={styles.weeklyItem}>
+                <Text style={styles.weeklyLabel}>Avg Reduction</Text>
+                <Text style={styles.weeklyValue}>
+                  {weeklyAvgDelta > 0 ? weeklyAvgDelta.toFixed(1) : '0'} pts
+                </Text>
+              </View>
+              
+              <View style={styles.weeklyItem}>
+                <Text style={styles.weeklyLabel}>Best Session</Text>
+                <Text style={styles.weeklyValue}>
+                  {weeklySessions.length > 0 
+                    ? Math.max(...weeklySessions.map(d => d.before - d.after))
+                    : '0'} pts
                 </Text>
               </View>
             </View>
-          ) : (
-            <Text style={styles.emptyText}>
-              Complete your first session to see your progress trend
-            </Text>
-          )}
-        </View>
+          </View>
 
-        {/* Session History */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>
-            Recent Sessions
-          </Text>
-          
-          {userProgress.sessionDeltas.length > 0 ? (
-            <View style={styles.sessionHistory}>
-              {userProgress.sessionDeltas.slice(-5).reverse().map((session, index) => (
-                <View key={index} style={styles.sessionItem}>
-                  <View style={styles.sessionDate}>
-                    <Text style={styles.sessionDateText}>
-                      {new Date(session.date).toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        day: 'numeric' 
-                      })}
-                    </Text>
-                  </View>
-                  <View style={styles.sessionScores}>
-                    <Text style={styles.sessionScore}>
-                      {session.before} → {session.after}
-                    </Text>
-                    <Text style={styles.sessionReduction}>
-                      -{session.before - session.after} pts
-                    </Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <Text style={styles.emptyText}>
-              No sessions completed yet
+          {/* Monthly Progress */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>
+              This Month
             </Text>
-          )}
+            
+            <View style={styles.monthlyStats}>
+              <View style={styles.monthlyItem}>
+                <Text style={styles.monthlyLabel}>Sessions</Text>
+                <Text style={styles.monthlyValue}>{monthlySessions.length}</Text>
+              </View>
+              
+              <View style={styles.monthlyItem}>
+                <Text style={styles.monthlyLabel}>Avg Reduction</Text>
+                <Text style={styles.monthlyValue}>
+                  {monthlyAvgDelta > 0 ? monthlyAvgDelta.toFixed(1) : '0'} pts
+                </Text>
+              </View>
+              
+              <View style={styles.monthlyItem}>
+                <Text style={styles.monthlyLabel}>Consistency</Text>
+                <Text style={styles.monthlyValue}>
+                  {monthlySessions.length > 0 
+                    ? Math.round((monthlySessions.length / 30) * 100)
+                    : '0'}%
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Trend Chart */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>
+              Anxiety Reduction Trend
+            </Text>
+            
+            {userProgress.sessionDeltas.length > 0 ? (
+              <View>
+                <Sparkline data={userProgress.sessionDeltas} width={300} height={80} />
+                <View style={styles.trendInfo}>
+                  <Text style={styles.trendLabel}>
+                    Last 7 sessions
+                  </Text>
+                  <Text style={styles.trendValue}>
+                    {avgDelta > 0 ? '↓' : '→'} {Math.abs(avgDelta).toFixed(1)} pts avg
+                  </Text>
+                </View>
+              </View>
+            ) : (
+              <Text style={styles.emptyText}>
+                Complete your first session to see your progress trend
+              </Text>
+            )}
+          </View>
+
+          {/* Session History */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>
+              Recent Sessions
+            </Text>
+            
+            {userProgress.sessionDeltas.length > 0 ? (
+              <View style={styles.sessionHistory}>
+                {userProgress.sessionDeltas.slice(-5).reverse().map((session, index) => (
+                  <View key={index} style={styles.sessionItem}>
+                    <View style={styles.sessionDate}>
+                      <Text style={styles.sessionDateText}>
+                        {new Date(session.date).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric' 
+                        })}
+                      </Text>
+                    </View>
+                    <View style={styles.sessionScores}>
+                      <Text style={styles.sessionScore}>
+                        {session.before} → {session.after}
+                      </Text>
+                      <Text style={styles.sessionReduction}>
+                        -{session.before - session.after} pts
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.emptyText}>
+                No sessions completed yet
+              </Text>
+            )}
+          </View>
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     ...theme.common.container,
+  },
+  scrollView: {
+    flex: 1,
   },
   content: {
     ...theme.common.content,

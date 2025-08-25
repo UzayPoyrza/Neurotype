@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { Session, Modality, Goal } from '../types';
 import { SessionCard } from '../components/SessionCard';
@@ -6,9 +6,12 @@ import { Chip } from '../components/Chip';
 import { useStore } from '../store/useStore';
 import { mockSessions } from '../data/mockData';
 import { theme } from '../styles/theme';
+import { SearchTopNav, SearchTopNavRef } from '../components/SearchTopNav';
+import { useScrollDetection } from '../hooks/useScrollDetection';
 
 export const ExploreScreen: React.FC = () => {
   const { filters, setFilters } = useStore();
+  const searchNavRef = useRef<SearchTopNavRef>(null);
 
   const modalities: (Modality | 'all')[] = ['all', 'sound', 'movement', 'mantra', 'visualization', 'somatic', 'mindfulness'];
   const goals: (Goal | 'all')[] = ['all', 'anxiety', 'focus', 'sleep'];
@@ -19,8 +22,29 @@ export const ExploreScreen: React.FC = () => {
     return true;
   });
 
+  const { handleScroll } = useScrollDetection({
+    onScrollUp: () => searchNavRef.current?.showSearchBar(),
+    onScrollDown: () => searchNavRef.current?.hideSearchBar(),
+    threshold: 5,
+  });
+
+  const handleSearch = (query: string) => {
+    // Handle search functionality here
+    console.log('Search query:', query);
+  };
+
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
+      <SearchTopNav 
+        ref={searchNavRef}
+        onSearch={handleSearch}
+        placeholder="Search interventions..."
+      />
+      <ScrollView 
+        style={styles.scrollView}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
       <View style={styles.content}>
         {/* Form-like Header */}
         <View style={styles.formHeader}>
@@ -147,7 +171,8 @@ export const ExploreScreen: React.FC = () => {
           </View>
         </View>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 };
 
@@ -155,8 +180,12 @@ const styles = StyleSheet.create({
   container: {
     ...theme.common.container,
   },
+  scrollView: {
+    flex: 1,
+  },
   content: {
     ...theme.common.content,
+    paddingTop: 10, // Reduced padding since we have the search bar
   },
   formHeader: {
     marginBottom: 40,

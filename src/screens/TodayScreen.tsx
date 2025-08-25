@@ -4,6 +4,7 @@ import { Session } from '../types';
 import { useStore } from '../store/useStore';
 import { mockSessions } from '../data/mockData';
 import { theme } from '../styles/theme';
+import { TopNav } from '../components/TopNav';
 
 export const TodayScreen: React.FC = () => {
   const { setActiveSession } = useStore();
@@ -73,8 +74,10 @@ export const TodayScreen: React.FC = () => {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.content}>
+    <View style={styles.container}>
+      <TopNav title="Today" />
+      <ScrollView style={styles.scrollView}>
+        <View style={styles.content}>
         {/* Form-like Header */}
         <View style={styles.formHeader}>
           <View style={styles.titleField}>
@@ -142,13 +145,17 @@ export const TodayScreen: React.FC = () => {
           </Text>
         </View>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     ...theme.common.container,
+  },
+  scrollView: {
+    flex: 1,
   },
   content: {
     ...theme.common.content,

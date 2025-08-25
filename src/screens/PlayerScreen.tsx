@@ -5,6 +5,7 @@ import { Slider0to10 } from '../components/Slider0to10';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
+import { TopNav } from '../components/TopNav';
 
 type PlayerState = 'timer' | 'before' | 'after' | 'complete';
 
@@ -89,15 +90,13 @@ export const PlayerScreen: React.FC = () => {
     <>
       <StatusBar hidden={true} />
       <View style={styles.container}>
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.content}>
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={closeSession} style={styles.closeButton}>
-              <Text style={styles.closeText}>✕</Text>
-            </TouchableOpacity>
-            <Text style={styles.title}>{activeSession.title}</Text>
-          </View>
+        <TopNav 
+          title={activeSession.title} 
+          showBackButton={true}
+          onBackPress={closeSession}
+        />
+        <ScrollView style={styles.scrollView}>
+          <View style={styles.content}>
 
           {playerState === 'timer' && (
             <View style={styles.timerContainer}>
@@ -162,36 +161,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 30,
   },
-  header: {
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 20,
-    paddingTop: 48,
-    paddingBottom: 20,
-    borderBottomWidth: 4,
-    borderBottomColor: '#e2e8f0',
-    alignItems: 'center',
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 20,
-    left: 20,
-    padding: 10,
-  },
-  closeText: {
-    fontSize: 24,
-    color: '#2d3748',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1a202c',
-    marginBottom: 10,
-    fontFamily: 'System',
-    fontStyle: 'italic',
-    textShadowColor: 'rgba(0, 0, 0, 0.1)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
-  },
+
   timerContainer: {
     alignItems: 'center',
     marginBottom: 30,

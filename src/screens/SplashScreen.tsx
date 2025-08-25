@@ -74,8 +74,8 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
             // Transition to home screen
             setTimeout(() => {
               onFinish();
-            }, 800);
-          }, 800);
+            }, 900); 
+          }, 600);
         }
       }, 60); // Faster typing speed (was 100ms, now 60ms)
     };
@@ -135,9 +135,10 @@ const styles = StyleSheet.create({
   content: {
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: -60,
   },
   iconContainer: {
-    marginBottom: theme.spacing.xl,
+    marginBottom: 0,
   },
   icon: {
     width: 220,
@@ -146,10 +147,10 @@ const styles = StyleSheet.create({
   textContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: 120,
+    height: 60,
   },
   handwritingText: {
-    fontSize: 40,
+    fontSize: 48,
     fontWeight: '400',
     color: '#353634',
     fontFamily: 'System',
@@ -160,7 +161,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 0.5,
   },
   cursor: {
-    fontSize: 40,
+    fontSize: 48,
     color: '#353634',
     fontWeight: '400',
   },

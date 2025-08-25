@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Image, Animated } from 'react-native';
+import { View, Text, StyleSheet, Image, Animated, StatusBar } from 'react-native';
 import { theme } from '../styles/theme';
 
 interface SplashScreenProps {
@@ -86,7 +86,9 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   }, []); // Empty dependency array to prevent re-runs
 
   return (
-    <View style={styles.container}>
+    <>
+      <StatusBar hidden={true} />
+      <View style={styles.container}>
       <Animated.View 
         style={[
           styles.content,
@@ -122,6 +124,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
         </View>
       </Animated.View>
     </View>
+    </>
   );
 };
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Animated, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Animated, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, StatusBar } from 'react-native';
 import { theme } from '../styles/theme';
 
 interface RegisterScreenProps {
@@ -70,10 +70,12 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onRegister, onBa
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <>
+      <StatusBar hidden={true} />
+      <KeyboardAvoidingView 
+        style={styles.container} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -224,6 +226,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onRegister, onBa
         </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
+    </>
   );
 };
 

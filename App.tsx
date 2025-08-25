@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
-import { Modal, View } from 'react-native';
+import { Modal, View, StatusBar } from 'react-native';
+import { TodayIcon, ProgressIcon, ExploreIcon, ProfileIcon } from './src/components/icons';
 
 import { TodayScreen } from './src/screens/TodayScreen';
 import { ProgressScreen } from './src/screens/ProgressScreen';
@@ -54,39 +54,49 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
-      <Tab.Navigator
-        screenOptions={({ route }) => ({
-          tabBarIcon: ({ focused, color, size }) => {
-            let iconName: keyof typeof Ionicons.glyphMap;
-
-            if (route.name === 'Today') {
-              iconName = focused ? 'today' : 'today-outline';
-            } else if (route.name === 'Progress') {
-              iconName = focused ? 'trending-up' : 'trending-up-outline';
-            } else if (route.name === 'Explore') {
-              iconName = focused ? 'search' : 'search-outline';
-            } else if (route.name === 'Profile') {
-              iconName = focused ? 'person' : 'person-outline';
-            } else {
-              iconName = 'help-outline';
-            }
-
-            return <Ionicons name={iconName} size={size} color={color} />;
-          },
-          tabBarActiveTintColor: '#000000',
-          tabBarInactiveTintColor: '#666666',
-          tabBarStyle: {
-            backgroundColor: '#ffffff',
-            borderTopWidth: 2,
-            borderTopColor: '#000000',
-            paddingBottom: 5,
-            paddingTop: 5,
-            height: 60,
-          },
-          headerShown: false,
-        })}
-      >
+    <>
+      <StatusBar hidden={true} />
+      <NavigationContainer>
+        <Tab.Navigator
+          screenOptions={({ route }) => ({
+            tabBarIcon: ({ focused, color, size }) => {
+              const iconSize = size + 4; // Make icons slightly larger
+              if (route.name === 'Today') {
+                return <TodayIcon size={iconSize} color={color} focused={focused} />;
+              } else if (route.name === 'Progress') {
+                return <ProgressIcon size={iconSize} color={color} focused={focused} />;
+              } else if (route.name === 'Explore') {
+                return <ExploreIcon size={iconSize} color={color} focused={focused} />;
+              } else if (route.name === 'Profile') {
+                return <ProfileIcon size={iconSize} color={color} focused={focused} />;
+              } else {
+                return <TodayIcon size={iconSize} color={color} focused={focused} />;
+              }
+            },
+            tabBarActiveTintColor: '#000000',
+            tabBarInactiveTintColor: '#666666',
+            tabBarIconStyle: {
+              marginTop: -3,
+            },
+            tabBarStyle: {
+              backgroundColor: '#ffffff',
+              borderTopWidth: 2,
+              borderTopColor: '#000000',
+              paddingBottom: 15,
+              paddingTop: 5,
+              height: 80,
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              elevation: 0,
+              shadowOpacity: 0,
+              zIndex: 1000,
+            },
+            headerShown: false,
+            tabBarShowLabel: true,
+          })}
+        >
         <Tab.Screen name="Today" component={TodayScreen} />
         <Tab.Screen name="Progress" component={ProgressScreen} />
         <Tab.Screen name="Explore" component={ExploreScreen} />
@@ -102,5 +112,6 @@ export default function App() {
         <PlayerScreen />
       </Modal>
     </NavigationContainer>
+    </>
   );
 }

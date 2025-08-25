@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Alert, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, Alert, StyleSheet, TouchableOpacity, StatusBar } from 'react-native';
 import { SessionDelta } from '../types';
 import { Slider0to10 } from '../components/Slider0to10';
 import { PrimaryButton } from '../components/PrimaryButton';
@@ -86,7 +86,9 @@ export const PlayerScreen: React.FC = () => {
   if (!activeSession) return null;
 
   return (
-    <View style={styles.container}>
+    <>
+      <StatusBar hidden={true} />
+      <View style={styles.container}>
       <ScrollView style={styles.scrollView}>
         <View style={styles.content}>
           {/* Header */}
@@ -143,6 +145,7 @@ export const PlayerScreen: React.FC = () => {
         </View>
       </ScrollView>
     </View>
+    </>
   );
 };
 

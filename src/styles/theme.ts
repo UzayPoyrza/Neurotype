@@ -100,7 +100,7 @@ export const theme = {
     content: {
       paddingHorizontal: 20,
       paddingTop: 20,
-      paddingBottom: 40,
+      paddingBottom: 120, // Increased to account for larger tab bar
     },
     card: {
       backgroundColor: '#ffffff',

@@ -9,6 +9,13 @@ export const theme = {
     success: '#90EE90',
     disabled: '#cccccc',
     disabledText: '#999999',
+    text: {
+      primary: '#000000',
+      secondary: '#666666',
+      onPrimary: '#ffffff',
+    },
+    border: '#000000',
+    shadow: '#000000',
   },
   
   // Typography
@@ -55,6 +62,15 @@ export const theme = {
       normal: 2,
       thick: 3,
     },
+  },
+  
+  // Border Radius (for direct access)
+  borderRadius: {
+    sm: 6,
+    md: 8,
+    lg: 12,
+    xl: 16,
+    xxl: 20,
   },
   
   // Shadows

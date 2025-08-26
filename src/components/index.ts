@@ -1,5 +1,6 @@
 // Navigation Components
 export { TopNav } from './TopNav';
+export { SearchBar } from './SearchBar';
 export { InstagramStyleNav, InstagramStyleNavRef } from './InstagramStyleNav';
 export { InstagramStyleScreen } from './InstagramStyleScreen';
 

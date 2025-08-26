@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Session, Modality, Goal } from '../types';
 import { SessionCard } from '../components/SessionCard';
 import { Chip } from '../components/Chip';
+import { SearchBar } from '../components/SearchBar';
 import { useStore } from '../store/useStore';
 import { mockSessions } from '../data/mockData';
 import { theme } from '../styles/theme';
@@ -10,18 +11,47 @@ import { InstagramStyleScreen } from '../components/InstagramStyleScreen';
 
 export const ExploreScreen: React.FC = () => {
   const { filters, setFilters } = useStore();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   const modalities: (Modality | 'all')[] = ['all', 'sound', 'movement', 'mantra', 'visualization', 'somatic', 'mindfulness'];
   const goals: (Goal | 'all')[] = ['all', 'anxiety', 'focus', 'sleep'];
 
-  const filteredSessions = mockSessions.filter(session => {
-    if (filters.modality !== 'all' && session.modality !== filters.modality) return false;
-    if (filters.goal !== 'all' && session.goal !== filters.goal) return false;
-    return true;
-  });
+  const filteredSessions = useMemo(() => {
+    return mockSessions.filter(session => {
+      // Filter by modality and goal
+      if (filters.modality !== 'all' && session.modality !== filters.modality) return false;
+      if (filters.goal !== 'all' && session.goal !== filters.goal) return false;
+      
+      // Filter by search query
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        const matchesTitle = session.title.toLowerCase().includes(query);
+        const matchesModality = session.modality.toLowerCase().includes(query);
+        const matchesGoal = session.goal.toLowerCase().includes(query);
+        
+        if (!matchesTitle && !matchesModality && !matchesGoal) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+  }, [filters, searchQuery]);
 
   return (
-    <InstagramStyleScreen title="Explore">
+    <InstagramStyleScreen 
+      searchComponent={
+        <SearchBar
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Search interventions..."
+          onFocus={() => setIsSearchFocused(true)}
+          onBlur={() => setIsSearchFocused(false)}
+        />
+      }
+      isSearchFocused={isSearchFocused}
+    >
       <View style={styles.content}>
         {/* Form-like Header */}
         <View style={styles.formHeader}>

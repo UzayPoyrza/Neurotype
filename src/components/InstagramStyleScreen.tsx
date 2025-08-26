@@ -5,7 +5,8 @@ import { useInstagramScrollDetection } from '../hooks/useInstagramScrollDetectio
 import { theme } from '../styles/theme';
 
 interface InstagramStyleScreenProps {
-  title: string;
+  title?: string;
+  searchComponent?: React.ReactNode;
   showBackButton?: boolean;
   onBackPress?: () => void;
   rightComponent?: React.ReactNode;
@@ -13,10 +14,12 @@ interface InstagramStyleScreenProps {
   style?: any;
   contentStyle?: any;
   scrollViewStyle?: any;
+  isSearchFocused?: boolean;
 }
 
 export const InstagramStyleScreen: React.FC<InstagramStyleScreenProps> = ({
   title,
+  searchComponent,
   showBackButton = false,
   onBackPress,
   rightComponent,
@@ -24,6 +27,7 @@ export const InstagramStyleScreen: React.FC<InstagramStyleScreenProps> = ({
   style,
   contentStyle,
   scrollViewStyle,
+  isSearchFocused = false,
 }) => {
   const navRef = useRef<InstagramStyleNavRef>(null);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -33,7 +37,7 @@ export const InstagramStyleScreen: React.FC<InstagramStyleScreenProps> = ({
   
   const { scrollY, handleScroll } = useInstagramScrollDetection({
     onScrollEnd: (direction) => {
-      if (navRef.current) {
+      if (navRef.current && !isSearchFocused) {
         if (direction === 'up') {
           navRef.current.showRevealBar();
         } else {
@@ -61,12 +65,14 @@ export const InstagramStyleScreen: React.FC<InstagramStyleScreenProps> = ({
       <InstagramStyleNav
         ref={navRef}
         title={title}
+        searchComponent={searchComponent}
         showBackButton={showBackButton}
         onBackPress={onBackPress}
         rightComponent={rightComponent}
         scrollY={scrollY}
         contentHeight={contentHeight}
         scrollViewHeight={scrollViewHeight}
+        isSearchFocused={isSearchFocused}
         onScrollEnd={(direction) => {
           if (direction === 'up') {
             navRef.current?.showRevealBar();
@@ -79,7 +85,7 @@ export const InstagramStyleScreen: React.FC<InstagramStyleScreenProps> = ({
         ref={scrollViewRef}
         style={[styles.scrollView, scrollViewStyle]}
         contentContainerStyle={[styles.contentContainer, contentStyle]}
-        onScroll={handleScroll}
+        onScroll={isSearchFocused ? undefined : handleScroll}
         scrollEventThrottle={1} // Maximum responsiveness for 1:1 movement
         showsVerticalScrollIndicator={false}
         onLayout={handleScrollViewLayout}

@@ -4,7 +4,7 @@ import { Session } from '../types';
 import { useStore } from '../store/useStore';
 import { mockSessions } from '../data/mockData';
 import { theme } from '../styles/theme';
-import { TwoLayerScreen } from '../components/TwoLayerScreen';
+import { InstagramStyleScreen } from '../components/InstagramStyleScreen';
 
 export const TodayScreen: React.FC = () => {
   const { setActiveSession } = useStore();
@@ -74,7 +74,7 @@ export const TodayScreen: React.FC = () => {
   };
 
   return (
-    <TwoLayerScreen title="Today">
+    <InstagramStyleScreen title="Today">
       <View style={styles.content}>
         {/* Form-like Header */}
         <View style={styles.formHeader}>
@@ -143,7 +143,7 @@ export const TodayScreen: React.FC = () => {
           </Text>
         </View>
       </View>
-    </TwoLayerScreen>
+    </InstagramStyleScreen>
   );
 };
 

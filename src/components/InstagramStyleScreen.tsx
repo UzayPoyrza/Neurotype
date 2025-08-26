@@ -1,45 +1,43 @@
 import React, { useRef, useCallback, useState } from 'react';
 import { View, ScrollView, StyleSheet, LayoutChangeEvent } from 'react-native';
-import { TwoLayerHeader, TwoLayerHeaderRef } from './TwoLayerHeader';
-import { useScrollLinkedDetection } from '../hooks/useScrollLinkedDetection';
+import { InstagramStyleNav, InstagramStyleNavRef } from './InstagramStyleNav';
+import { useInstagramScrollDetection } from '../hooks/useInstagramScrollDetection';
 import { theme } from '../styles/theme';
 
-interface TwoLayerScreenProps {
+interface InstagramStyleScreenProps {
   title: string;
   showBackButton?: boolean;
   onBackPress?: () => void;
   rightComponent?: React.ReactNode;
-  forceRevealVisible?: boolean;
   children: React.ReactNode;
   style?: any;
   contentStyle?: any;
   scrollViewStyle?: any;
 }
 
-export const TwoLayerScreen: React.FC<TwoLayerScreenProps> = ({
+export const InstagramStyleScreen: React.FC<InstagramStyleScreenProps> = ({
   title,
   showBackButton = false,
   onBackPress,
   rightComponent,
-  forceRevealVisible = false,
   children,
   style,
   contentStyle,
   scrollViewStyle,
 }) => {
-  const headerRef = useRef<TwoLayerHeaderRef>(null);
+  const navRef = useRef<InstagramStyleNavRef>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const [scrollViewHeight, setScrollViewHeight] = useState(0);
   const [contentHeight, setContentHeight] = useState(0);
-  const headerHeight = 80;
+  const headerHeight = 120; // TopShell (60) + RevealBar (60)
   
-  const { scrollY, handleScroll } = useScrollLinkedDetection({
+  const { scrollY, handleScroll } = useInstagramScrollDetection({
     onScrollEnd: (direction) => {
-      if (headerRef.current) {
+      if (navRef.current) {
         if (direction === 'up') {
-          headerRef.current.showRevealBar();
+          navRef.current.showRevealBar();
         } else {
-          headerRef.current.hideRevealBar();
+          navRef.current.hideRevealBar();
         }
       }
     },
@@ -60,21 +58,29 @@ export const TwoLayerScreen: React.FC<TwoLayerScreenProps> = ({
 
   return (
     <View style={[styles.container, style]}>
-      <TwoLayerHeader
-        ref={headerRef}
+      <InstagramStyleNav
+        ref={navRef}
         title={title}
         showBackButton={showBackButton}
         onBackPress={onBackPress}
         rightComponent={rightComponent}
-        forceRevealVisible={forceRevealVisible}
         scrollY={scrollY}
+        contentHeight={contentHeight}
+        scrollViewHeight={scrollViewHeight}
+        onScrollEnd={(direction) => {
+          if (direction === 'up') {
+            navRef.current?.showRevealBar();
+          } else {
+            navRef.current?.hideRevealBar();
+          }
+        }}
       />
       <ScrollView
         ref={scrollViewRef}
         style={[styles.scrollView, scrollViewStyle]}
         contentContainerStyle={[styles.contentContainer, contentStyle]}
         onScroll={handleScroll}
-        scrollEventThrottle={1}
+        scrollEventThrottle={1} // Maximum responsiveness for 1:1 movement
         showsVerticalScrollIndicator={false}
         onLayout={handleScrollViewLayout}
         onContentSizeChange={(width, height) => {
@@ -96,7 +102,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    paddingTop: 140, // Account for RevealBar (60) + TopShell (80)
+    paddingTop: 120, // Account for TopShell (60) + RevealBar (60)
   },
   contentContainer: {
     flexGrow: 1,

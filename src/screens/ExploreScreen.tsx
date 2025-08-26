@@ -6,7 +6,7 @@ import { Chip } from '../components/Chip';
 import { useStore } from '../store/useStore';
 import { mockSessions } from '../data/mockData';
 import { theme } from '../styles/theme';
-import { TwoLayerScreen } from '../components/TwoLayerScreen';
+import { InstagramStyleScreen } from '../components/InstagramStyleScreen';
 
 export const ExploreScreen: React.FC = () => {
   const { filters, setFilters } = useStore();
@@ -21,7 +21,7 @@ export const ExploreScreen: React.FC = () => {
   });
 
   return (
-    <TwoLayerScreen title="Explore">
+    <InstagramStyleScreen title="Explore">
       <View style={styles.content}>
         {/* Form-like Header */}
         <View style={styles.formHeader}>
@@ -148,7 +148,7 @@ export const ExploreScreen: React.FC = () => {
           </View>
         </View>
       </View>
-    </TwoLayerScreen>
+    </InstagramStyleScreen>
   );
 };
 

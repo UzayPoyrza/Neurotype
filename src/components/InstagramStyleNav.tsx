@@ -211,10 +211,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   topShell: {
-    backgroundColor: theme.colors.surface,
-    borderBottomWidth: theme.borders.width.thick,
-    borderBottomColor: theme.colors.primary,
-    ...theme.shadows.medium,
+    backgroundColor: '#ffffff',
     height: 60, // Fixed height for status bar + padding
   },
   topShellContent: {
@@ -222,10 +219,9 @@ const styles = StyleSheet.create({
     paddingTop: 20, // Status bar padding
   },
   revealBar: {
-    backgroundColor: theme.colors.surface,
+    backgroundColor: '#ffffff',
     borderBottomWidth: theme.borders.width.thick,
     borderBottomColor: theme.colors.primary,
-    ...theme.shadows.medium,
     height: 60,
   },
   revealBarContent: {

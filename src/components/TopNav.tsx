@@ -85,8 +85,6 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     backgroundColor: theme.colors.surface,
-    borderBottomWidth: theme.borders.width.thick,
-    borderBottomColor: theme.colors.primary,
     ...theme.shadows.medium,
   },
   content: {

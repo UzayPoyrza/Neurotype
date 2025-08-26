@@ -35,7 +35,7 @@ export const InstagramStyleScreen: React.FC<InstagramStyleScreenProps> = ({
   const [contentHeight, setContentHeight] = useState(0);
   const headerHeight = 120; // TopShell (60) + RevealBar (60)
   
-  const { scrollY, handleScroll } = useInstagramScrollDetection({
+  const { scrollY, handleScroll, handleTouchStart, handleTouchEnd } = useInstagramScrollDetection({
     onScrollEnd: (direction) => {
       if (navRef.current && !isSearchFocused) {
         if (direction === 'up') {
@@ -86,6 +86,8 @@ export const InstagramStyleScreen: React.FC<InstagramStyleScreenProps> = ({
         style={[styles.scrollView, scrollViewStyle]}
         contentContainerStyle={[styles.contentContainer, contentStyle]}
         onScroll={isSearchFocused ? undefined : handleScroll}
+        onTouchStart={isSearchFocused ? undefined : handleTouchStart}
+        onTouchEnd={isSearchFocused ? undefined : handleTouchEnd}
         scrollEventThrottle={1} // Maximum responsiveness for 1:1 movement
         showsVerticalScrollIndicator={false}
         onLayout={handleScrollViewLayout}

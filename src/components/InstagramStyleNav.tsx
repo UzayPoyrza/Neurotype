@@ -44,6 +44,8 @@ export const InstagramStyleNav = forwardRef<InstagramStyleNavRef, InstagramStyle
   
   // Animated value for the top shell border
   const topShellBorderOpacity = useRef(new Animated.Value(0)).current;
+  // Animated value for the reveal bar content opacity
+  const revealBarContentOpacity = useRef(new Animated.Value(1)).current;
   
   // Snap to nearest state (fully shown or fully hidden)
   const snapToNearest = useCallback(() => {
@@ -117,17 +119,22 @@ export const InstagramStyleNav = forwardRef<InstagramStyleNavRef, InstagramStyle
     }
   }, [isSearchFocused, revealTranslateY]);
 
-  // Animate top shell border based on reveal bar position
+  // Animate top shell border and reveal bar content based on reveal bar position
   React.useEffect(() => {
     const listener = revealTranslateY.addListener(({ value }) => {
       // Calculate opacity based on how much the reveal bar has moved up
       const progress = Math.abs(value) / slideRange;
       const opacity = Math.min(progress, 1);
       topShellBorderOpacity.setValue(opacity);
+      
+      // Calculate content opacity with stronger fade effect
+      // Use exponential curve for more pronounced fade
+      const contentOpacity = Math.max(Math.pow(1 - progress, 2), 0);
+      revealBarContentOpacity.setValue(contentOpacity);
     });
 
     return () => revealTranslateY.removeListener(listener);
-  }, [revealTranslateY, topShellBorderOpacity, slideRange]);
+  }, [revealTranslateY, topShellBorderOpacity, revealBarContentOpacity, slideRange]);
 
   const showRevealBar = useCallback(() => {
     if (!isAnimating.current) {
@@ -181,11 +188,25 @@ export const InstagramStyleNav = forwardRef<InstagramStyleNavRef, InstagramStyle
         ]}
       >
         {searchComponent ? (
-          <View style={styles.searchContainer}>
+          <Animated.View 
+            style={[
+              styles.searchContainer,
+              {
+                opacity: revealBarContentOpacity,
+              }
+            ]}
+          >
             {searchComponent}
-          </View>
+          </Animated.View>
         ) : (
-          <View style={styles.revealBarContent}>
+          <Animated.View 
+            style={[
+              styles.revealBarContent,
+              {
+                opacity: revealBarContentOpacity,
+              }
+            ]}
+          >
             {/* Left side - Back button or empty space */}
             <View style={styles.leftSection}>
               {showBackButton && (
@@ -210,7 +231,7 @@ export const InstagramStyleNav = forwardRef<InstagramStyleNavRef, InstagramStyle
             <View style={styles.rightSection}>
               {rightComponent}
             </View>
-          </View>
+          </Animated.View>
         )}
       </Animated.View>
 

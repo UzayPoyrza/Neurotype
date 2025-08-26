@@ -124,8 +124,11 @@ export const InstagramStyleNav = forwardRef<InstagramStyleNavRef, InstagramStyle
     const listener = revealTranslateY.addListener(({ value }) => {
       // Calculate opacity based on how much the reveal bar has moved up
       const progress = Math.abs(value) / slideRange;
-      const opacity = Math.min(progress, 1);
-      topShellBorderOpacity.setValue(opacity);
+      
+      // Top border fades in much later and more gradually
+      // Use a steep curve that only becomes visible in the last 20% of the animation
+      const borderOpacity = progress < 0.8 ? 0 : Math.pow((progress - 0.8) / 0.2, 3);
+      topShellBorderOpacity.setValue(Math.min(borderOpacity, 1));
       
       // Calculate content opacity with stronger fade effect
       // Use exponential curve for more pronounced fade

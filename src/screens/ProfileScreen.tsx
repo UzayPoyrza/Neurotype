@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Switch, StyleSheet } from 'react-native';
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
-import { InstagramStyleScreen } from '../components/InstagramStyleScreen';
+import { ScreenWrapper } from '../components/ScreenWrapper';
 
 export const ProfileScreen: React.FC = () => {
   const { userProgress, reminderEnabled, toggleReminder } = useStore();
@@ -15,7 +15,7 @@ export const ProfileScreen: React.FC = () => {
     : 0;
 
   return (
-    <InstagramStyleScreen title="Profile">
+    <ScreenWrapper title="Profile">
       <View style={styles.content}>
         {/* Form-like Header */}
         <View style={styles.formHeader}>
@@ -124,7 +124,7 @@ export const ProfileScreen: React.FC = () => {
           </View>
         </View>
       </View>
-    </InstagramStyleScreen>
+    </ScreenWrapper>
   );
 };
 

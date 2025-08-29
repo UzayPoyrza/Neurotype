@@ -5,7 +5,7 @@ import { Slider0to10 } from '../components/Slider0to10';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
-import { TopNav } from '../components/TopNav';
+
 
 type PlayerState = 'timer' | 'before' | 'after' | 'complete';
 
@@ -90,11 +90,12 @@ export const PlayerScreen: React.FC = () => {
     <>
       <StatusBar hidden={true} />
       <View style={styles.container}>
-        <TopNav 
-          title={activeSession.title} 
-          showBackButton={true}
-          onBackPress={closeSession}
-        />
+        <View style={styles.header}>
+          <TouchableOpacity onPress={closeSession} style={styles.backButton}>
+            <Text style={styles.backButtonText}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{activeSession.title}</Text>
+        </View>
         <ScrollView style={styles.scrollView}>
           <View style={styles.content}>
 
@@ -152,6 +153,30 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+    backgroundColor: '#ffffff',
+  },
+  backButton: {
+    padding: 8,
+    marginRight: 12,
+  },
+  backButtonText: {
+    fontSize: 24,
+    color: '#2d3748',
+    fontWeight: '600',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2d3748',
+    flex: 1,
   },
   scrollView: {
     flex: 1,

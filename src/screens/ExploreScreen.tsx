@@ -7,7 +7,7 @@ import { SearchBar } from '../components/SearchBar';
 import { useStore } from '../store/useStore';
 import { mockSessions } from '../data/mockData';
 import { theme } from '../styles/theme';
-import { InstagramStyleScreen } from '../components/InstagramStyleScreen';
+import { ScreenWrapper } from '../components/ScreenWrapper';
 
 export const ExploreScreen: React.FC = () => {
   const { filters, setFilters } = useStore();
@@ -40,18 +40,14 @@ export const ExploreScreen: React.FC = () => {
   }, [filters, searchQuery]);
 
   return (
-    <InstagramStyleScreen 
-      searchComponent={
-        <SearchBar
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholder="Search interventions..."
-          onFocus={() => setIsSearchFocused(true)}
-          onBlur={() => setIsSearchFocused(false)}
-        />
-      }
-      isSearchFocused={isSearchFocused}
-    >
+    <ScreenWrapper title="Explore">
+      <SearchBar
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        placeholder="Search interventions..."
+        onFocus={() => setIsSearchFocused(true)}
+        onBlur={() => setIsSearchFocused(false)}
+      />
       <View style={styles.content}>
         {/* Form-like Header */}
         <View style={styles.formHeader}>
@@ -178,7 +174,7 @@ export const ExploreScreen: React.FC = () => {
           </View>
         </View>
       </View>
-    </InstagramStyleScreen>
+    </ScreenWrapper>
   );
 };
 

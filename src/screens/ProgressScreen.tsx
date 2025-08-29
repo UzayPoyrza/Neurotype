@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useStore } from '../store/useStore';
 import { Sparkline } from '../components/Sparkline';
 import { theme } from '../styles/theme';
-import { InstagramStyleScreen } from '../components/InstagramStyleScreen';
+import { ScreenWrapper } from '../components/ScreenWrapper';
 
 export const ProgressScreen: React.FC = () => {
   const userProgress = useStore(state => state.userProgress);
@@ -28,7 +28,7 @@ export const ProgressScreen: React.FC = () => {
     : 0;
 
   return (
-    <InstagramStyleScreen title="Progress">
+    <ScreenWrapper title="Progress">
       <View style={styles.content}>
           {/* Form-like Header */}
           <View style={styles.formHeader}>
@@ -198,7 +198,7 @@ export const ProgressScreen: React.FC = () => {
             )}
                   </View>
       </View>
-    </InstagramStyleScreen>
+    </ScreenWrapper>
   );
 };
 

@@ -19,18 +19,18 @@ export const ProgressIcon: React.FC<ProgressIconProps> = ({
       <Path 
         d="M3 17l6-6 4 4 8-8" 
         stroke={iconColor} 
-        strokeWidth="2" 
+        strokeWidth="1.5" 
         strokeLinecap="round" 
         strokeLinejoin="round"
         fill="none"
       />
       <Path 
-        d="M21 7v10h-2" 
+        d="M3 17l6-6 4 4 8-8L21 17H3z" 
         stroke={iconColor} 
-        strokeWidth="2" 
+        strokeWidth="1.5" 
         strokeLinecap="round" 
         strokeLinejoin="round"
-        fill="none"
+        fill={focused ? iconColor : "none"}
       />
     </Svg>
   );

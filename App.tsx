@@ -64,7 +64,7 @@ export default function App() {
               if (route.name === 'Today') {
                 return <TodayIcon size={iconSize} color={color} focused={focused} />;
               } else if (route.name === 'Progress') {
-                return <ProgressIcon size={iconSize} color={color} focused={focused} />;
+                return <ProgressIcon size={size + 12} color={color} focused={focused} />;
               } else if (route.name === 'Explore') {
                 return <ExploreIcon size={iconSize} color={color} focused={focused} />;
               } else if (route.name === 'Profile') {

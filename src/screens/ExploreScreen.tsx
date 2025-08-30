@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal } from 'react-native';
+import React, { useState, useMemo, useRef } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, PanResponder } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { Session, Modality, Goal } from '../types';
@@ -124,6 +124,28 @@ export const ExploreScreen: React.FC = () => {
     // Reserved for future top nav filtering functionality
   };
 
+  // Pan responder for swipe-to-dismiss modal
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        // Only respond to upward swipes
+        return Math.abs(gestureState.dy) > Math.abs(gestureState.dx) && gestureState.dy < -10;
+      },
+      onPanResponderMove: (evt, gestureState) => {
+        // Allow upward movement
+        if (gestureState.dy < 0) {
+          // Could add visual feedback here
+        }
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        // If swiped up more than 50 pixels, close modal
+        if (gestureState.dy < -50) {
+          setShowSortModal(false);
+        }
+      },
+    })
+  ).current;
+
   const titleComponent = (
     <View style={styles.titleContainer}>
       <ExploreIcon size={20} color={theme.colors.primary} focused={true} />
@@ -199,76 +221,79 @@ export const ExploreScreen: React.FC = () => {
         <Modal
           visible={showSortModal}
           animationType="slide"
-          presentationStyle="pageSheet"
-          transparent={false}
+          transparent={true}
+          onRequestClose={() => setShowSortModal(false)}
         >
-          <View style={styles.sortModal}>
-            <View style={styles.sortModalHeader}>
-              <Text style={styles.sortModalTitle}>Sort by</Text>
-              <TouchableOpacity 
-                style={styles.cancelButton}
-                onPress={() => setShowSortModal(false)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-            
-            <View style={styles.sortOptions}>
-              <TouchableOpacity 
-                style={styles.sortOption}
-                onPress={() => {
-                  setSelectedSort('recents');
-                  setShowSortModal(false);
-                }}
-              >
-                <Text style={[
-                  styles.sortOptionText,
-                  selectedSort === 'recents' && styles.sortOptionTextActive
-                ]}>
-                  Recents
-                </Text>
-                {selectedSort === 'recents' && (
-                  <Text style={styles.checkMark}>✓</Text>
-                )}
-              </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowSortModal(false)}
+          >
+            <View style={styles.sortModal} {...panResponder.panHandlers}>
+              {/* Modal Handle */}
+              <View style={styles.modalHandle} />
               
-              <TouchableOpacity 
-                style={styles.sortOption}
-                onPress={() => {
-                  setSelectedSort('alphabetical');
-                  setShowSortModal(false);
-                }}
-              >
-                <Text style={[
-                  styles.sortOptionText,
-                  selectedSort === 'alphabetical' && styles.sortOptionTextActive
-                ]}>
-                  Alphabetical
-                </Text>
-                {selectedSort === 'alphabetical' && (
-                  <Text style={styles.checkMark}>✓</Text>
-                )}
-              </TouchableOpacity>
+              <View style={styles.sortModalHeader}>
+                <Text style={styles.sortModalTitle}>Sort by</Text>
+              </View>
               
-              <TouchableOpacity 
-                style={styles.sortOption}
-                onPress={() => {
-                  setSelectedSort('category');
-                  setShowSortModal(false);
-                }}
-              >
-                <Text style={[
-                  styles.sortOptionText,
-                  selectedSort === 'category' && styles.sortOptionTextActive
-                ]}>
-                  By Category
-                </Text>
-                {selectedSort === 'category' && (
-                  <Text style={styles.checkMark}>✓</Text>
-                )}
-              </TouchableOpacity>
+              <View style={styles.sortOptions}>
+                <TouchableOpacity 
+                  style={styles.sortOption}
+                  onPress={() => {
+                    setSelectedSort('recents');
+                    setShowSortModal(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.sortOptionText,
+                    selectedSort === 'recents' && styles.sortOptionTextActive
+                  ]}>
+                    Recents
+                  </Text>
+                  {selectedSort === 'recents' && (
+                    <Text style={styles.checkMark}>✓</Text>
+                  )}
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.sortOption}
+                  onPress={() => {
+                    setSelectedSort('alphabetical');
+                    setShowSortModal(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.sortOptionText,
+                    selectedSort === 'alphabetical' && styles.sortOptionTextActive
+                  ]}>
+                    Alphabetical
+                  </Text>
+                  {selectedSort === 'alphabetical' && (
+                    <Text style={styles.checkMark}>✓</Text>
+                  )}
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.sortOption}
+                  onPress={() => {
+                    setSelectedSort('category');
+                    setShowSortModal(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.sortOptionText,
+                    selectedSort === 'category' && styles.sortOptionTextActive
+                  ]}>
+                    By Category
+                  </Text>
+                  {selectedSort === 'category' && (
+                    <Text style={styles.checkMark}>✓</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
+          </TouchableOpacity>
         </Modal>
       </View>
     </ExploreScreenComponent>
@@ -313,17 +338,35 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
     fontFamily: theme.typography.fontFamily,
   },
-  sortModal: {
+  modalOverlay: {
     flex: 1,
-    backgroundColor: theme.colors.background,
-    paddingTop: 60,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  sortModal: {
+    backgroundColor: theme.colors.surface,
+    borderTopLeftRadius: theme.borders.radius.xl,
+    borderTopRightRadius: theme.borders.radius.xl,
+    borderWidth: theme.borders.width.thick,
+    borderBottomWidth: 0,
+    borderColor: theme.colors.primary,
+    ...theme.shadows.medium,
+    maxHeight: '50%',
+    paddingBottom: 40, // Account for safe area
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: theme.colors.disabled,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.lg,
   },
   sortModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.xl,
+    paddingBottom: theme.spacing.lg,
     borderBottomWidth: theme.borders.width.normal,
     borderBottomColor: theme.colors.primary,
   },
@@ -333,31 +376,25 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
     fontFamily: theme.typography.fontFamily,
   },
-  cancelButton: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.sm,
-  },
-  cancelButtonText: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
-  },
   sortOptions: {
     paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.lg,
   },
   sortOption: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: theme.spacing.lg,
-    borderBottomWidth: theme.borders.width.thin,
-    borderBottomColor: theme.colors.disabled,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borders.radius.md,
+    paddingHorizontal: theme.spacing.lg,
+    marginVertical: theme.spacing.xs,
+    borderWidth: theme.borders.width.normal,
+    borderColor: theme.colors.primary,
+    ...theme.shadows.small,
   },
   sortOptionText: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.medium,
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.semibold,
     color: theme.colors.primary,
     fontFamily: theme.typography.fontFamily,
   },
@@ -366,7 +403,7 @@ const styles = StyleSheet.create({
     color: theme.colors.success,
   },
   checkMark: {
-    fontSize: theme.typography.sizes.lg,
+    fontSize: theme.typography.sizes.md,
     fontWeight: theme.typography.weights.bold,
     color: theme.colors.success,
   },

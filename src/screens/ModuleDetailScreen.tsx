@@ -163,6 +163,7 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     alignItems: 'center',
+    marginTop: -60, // Move content up to align icon with back button top
   },
   moduleIcon: {
     width: 80,

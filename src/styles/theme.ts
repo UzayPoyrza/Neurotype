@@ -16,6 +16,14 @@ export const theme = {
     },
     border: '#000000',
     shadow: '#000000',
+    // Filter bar specific colors
+    filter: {
+      active: '#000000',
+      inactive: '#ffffff',
+      border: '#000000',
+      badge: '#90EE90',
+      separator: '#e0e0e0',
+    },
   },
   
   // Typography

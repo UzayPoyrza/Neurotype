@@ -158,6 +158,9 @@ export const SpotifyFilterBar: React.FC<SpotifyFilterBarProps> = ({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.primaryRow}
         style={styles.primaryScrollView}
+        bounces={true}
+        alwaysBounceHorizontal={true}
+        decelerationRate="fast"
       >
         {categories.map((category) => (
           <TouchableOpacity
@@ -207,6 +210,9 @@ export const SpotifyFilterBar: React.FC<SpotifyFilterBarProps> = ({
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.secondaryRowContent}
+            bounces={true}
+            alwaysBounceHorizontal={true}
+            decelerationRate="fast"
           >
             {/* Back Button */}
             <TouchableOpacity
@@ -269,6 +275,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.md,
     gap: theme.spacing.md,
+    paddingRight: theme.spacing.xxxl, // Extra padding on the right for infinite scroll feel
   },
   primaryChip: {
     flexDirection: 'row',
@@ -320,6 +327,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.md,
     gap: theme.spacing.md,
+    paddingRight: theme.spacing.xxxl, // Extra padding on the right for infinite scroll feel
   },
   backChip: {
     paddingHorizontal: theme.spacing.lg,

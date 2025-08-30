@@ -206,13 +206,17 @@ export const ExploreScreenNav = forwardRef<ExploreScreenNavRef, ExploreScreenNav
               }
             ]}
           >
-            {searchComponent}
-            <SpotifyFilterBar
-              categories={filterCategories}
-              onSelectionChange={onFilterSelectionChange}
-              initialSelection={filterSelection}
-              style={styles.filterBar}
-            />
+            <View style={styles.searchWrapper}>
+              {searchComponent}
+            </View>
+            <View style={styles.filterWrapper}>
+              <SpotifyFilterBar
+                categories={filterCategories}
+                onSelectionChange={onFilterSelectionChange}
+                initialSelection={filterSelection}
+                style={styles.filterBar}
+              />
+            </View>
           </Animated.View>
         ) : (
           <Animated.View 
@@ -312,14 +316,21 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     flex: 1,
-    paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.md,
     justifyContent: 'flex-start',
     alignItems: 'center',
   },
+  searchWrapper: {
+    width: '100%',
+    paddingHorizontal: theme.spacing.lg,
+    alignItems: 'center',
+  },
+  filterWrapper: {
+    width: '100%',
+    marginHorizontal: -theme.spacing.lg, // Break out of parent padding
+  },
   filterBar: {
     marginTop: theme.spacing.sm,
-    width: '100%',
   },
   revealBarContent: {
     flexDirection: 'row',

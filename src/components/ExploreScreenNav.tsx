@@ -47,7 +47,7 @@ export const ExploreScreenNav = forwardRef<ExploreScreenNavRef, ExploreScreenNav
   const lastScrollY = useRef(0);
   const scrollDirection = useRef<'up' | 'down' | null>(null);
   const revealBarHeight = 120; // Increased height to accommodate filter bar
-  const slideRange = 60; // Height of TopShell - how far to slide
+  const slideRange = 120; // Full height of RevealBar - slide it completely behind TopShell
   
   // Animated value for the top shell border
   const topShellBorderOpacity = useRef(new Animated.Value(0)).current;

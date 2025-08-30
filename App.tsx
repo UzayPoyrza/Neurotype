@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Modal, View, StatusBar } from 'react-native';
 import { TodayIcon, ProgressIcon, ExploreIcon, ProfileIcon } from './src/components/icons';
+import { AnimatedTabBar } from './src/components/AnimatedTabBar';
 
 import { TodayScreen } from './src/screens/TodayScreen';
 import { ProgressScreen } from './src/screens/ProgressScreen';
@@ -58,44 +59,11 @@ export default function App() {
       <StatusBar hidden={true} />
       <NavigationContainer>
         <Tab.Navigator
-          screenOptions={({ route }) => ({
-            tabBarIcon: ({ focused, color, size }) => {
-              const iconSize = size + 4; // Make icons slightly larger
-              if (route.name === 'Today') {
-                return <TodayIcon size={iconSize} color={color} focused={focused} />;
-              } else if (route.name === 'Progress') {
-                return <ProgressIcon size={size + 12} color={color} focused={focused} />;
-              } else if (route.name === 'Explore') {
-                return <ExploreIcon size={iconSize} color={color} focused={focused} />;
-              } else if (route.name === 'Profile') {
-                return <ProfileIcon size={iconSize} color={color} focused={focused} />;
-              } else {
-                return <TodayIcon size={iconSize} color={color} focused={focused} />;
-              }
-            },
-            tabBarActiveTintColor: '#000000',
-            tabBarInactiveTintColor: '#666666',
-            tabBarIconStyle: {
-              marginTop: -3,
-            },
-            tabBarStyle: {
-              backgroundColor: '#ffffff',
-              borderTopWidth: 2,
-              borderTopColor: '#000000',
-              paddingBottom: 15,
-              paddingTop: 5,
-              height: 80,
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              elevation: 0,
-              shadowOpacity: 0,
-              zIndex: 1000,
-            },
+          tabBar={props => <AnimatedTabBar {...props} />}
+          screenOptions={{
             headerShown: false,
-            tabBarShowLabel: true,
-          })}
+            tabBarShowLabel: false,
+          }}
         >
         <Tab.Screen name="Today" component={TodayScreen} />
         <Tab.Screen name="Progress" component={ProgressScreen} />

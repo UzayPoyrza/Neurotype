@@ -4,22 +4,92 @@ import { Session, Modality, Goal } from '../types';
 import { SessionCard } from '../components/SessionCard';
 import { Chip } from '../components/Chip';
 import { SearchBar } from '../components/SearchBar';
+import { FilterCategory, FilterSelection } from '../components/SpotifyFilterBar';
 import { useStore } from '../store/useStore';
 import { mockSessions } from '../data/mockData';
 import { theme } from '../styles/theme';
-import { InstagramStyleScreen } from '../components/InstagramStyleScreen';
+import { ExploreScreen as ExploreScreenComponent } from '../components/ExploreScreen';
 
 export const ExploreScreen: React.FC = () => {
   const { filters, setFilters } = useStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [filterSelection, setFilterSelection] = useState<FilterSelection | undefined>();
+
+  // Define filter categories for Spotify-style filter bar
+  const filterCategories: FilterCategory[] = [
+    {
+      id: 'modality',
+      label: 'Modality',
+      multiSelect: false,
+      options: [
+        { id: 'all', label: 'All Modalities' },
+        { id: 'sound', label: 'Sound', badge: 12 },
+        { id: 'movement', label: 'Movement', badge: 8 },
+        { id: 'mantra', label: 'Mantra', badge: 6 },
+        { id: 'visualization', label: 'Visualization', badge: 9 },
+        { id: 'somatic', label: 'Somatic', badge: 5 },
+        { id: 'mindfulness', label: 'Mindfulness', badge: 15 },
+      ],
+    },
+    {
+      id: 'goal',
+      label: 'Goal',
+      multiSelect: true,
+      options: [
+        { id: 'all', label: 'All Goals' },
+        { id: 'anxiety', label: 'Anxiety Relief', badge: 18 },
+        { id: 'focus', label: 'Focus & Clarity', badge: 14 },
+        { id: 'sleep', label: 'Better Sleep', badge: 11 },
+        { id: 'stress', label: 'Stress Reduction', badge: 16 },
+        { id: 'creativity', label: 'Creativity', badge: 7 },
+      ],
+    },
+    {
+      id: 'duration',
+      label: 'Duration',
+      multiSelect: false,
+      options: [
+        { id: 'all', label: 'Any Duration' },
+        { id: 'short', label: 'Short (5-10 min)', badge: 22 },
+        { id: 'medium', label: 'Medium (10-20 min)', badge: 18 },
+        { id: 'long', label: 'Long (20+ min)', badge: 8 },
+      ],
+    },
+    {
+      id: 'level',
+      label: 'Level',
+      multiSelect: false,
+      options: [
+        { id: 'all', label: 'All Levels' },
+        { id: 'beginner', label: 'Beginner', badge: 25 },
+        { id: 'intermediate', label: 'Intermediate', badge: 15 },
+        { id: 'advanced', label: 'Advanced', badge: 8 },
+      ],
+    },
+  ];
 
   const modalities: (Modality | 'all')[] = ['all', 'sound', 'movement', 'mantra', 'visualization', 'somatic', 'mindfulness'];
   const goals: (Goal | 'all')[] = ['all', 'anxiety', 'focus', 'sleep'];
 
   const filteredSessions = useMemo(() => {
     return mockSessions.filter(session => {
-      // Filter by modality and goal
+      // Filter by Spotify filter bar selections
+      if (filterSelection) {
+        const { parentId, optionIds } = filterSelection;
+        
+        if (parentId === 'modality' && !optionIds.includes('all')) {
+          if (!optionIds.includes(session.modality)) return false;
+        }
+        
+        if (parentId === 'goal' && !optionIds.includes('all')) {
+          if (!optionIds.includes(session.goal)) return false;
+        }
+        
+        // Add more filtering logic for duration and level when those fields are added to sessions
+      }
+      
+      // Legacy filtering (keeping for backward compatibility)
       if (filters.modality !== 'all' && session.modality !== filters.modality) return false;
       if (filters.goal !== 'all' && session.goal !== filters.goal) return false;
       
@@ -37,10 +107,14 @@ export const ExploreScreen: React.FC = () => {
       
       return true;
     });
-  }, [filters, searchQuery]);
+  }, [filters, searchQuery, filterSelection]);
+
+  const handleFilterSelectionChange = (selection: FilterSelection) => {
+    setFilterSelection(selection);
+  };
 
   return (
-    <InstagramStyleScreen 
+    <ExploreScreenComponent 
       searchComponent={
         <SearchBar
           value={searchQuery}
@@ -50,6 +124,9 @@ export const ExploreScreen: React.FC = () => {
           onBlur={() => setIsSearchFocused(false)}
         />
       }
+      filterCategories={filterCategories}
+      onFilterSelectionChange={handleFilterSelectionChange}
+      filterSelection={filterSelection}
       isSearchFocused={isSearchFocused}
     >
       <View style={styles.content}>
@@ -178,7 +255,7 @@ export const ExploreScreen: React.FC = () => {
           </View>
         </View>
       </View>
-    </InstagramStyleScreen>
+    </ExploreScreenComponent>
   );
 };
 

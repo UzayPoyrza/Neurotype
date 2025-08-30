@@ -22,7 +22,7 @@ export const ExploreIcon: React.FC<ExploreIconProps> = ({
         r="8" 
         stroke={iconColor} 
         strokeWidth="2" 
-        fill={focused ? iconColor : "none"}
+        fill="none"
       />
       <Path 
         d="m21 21-4.35-4.35" 
@@ -30,8 +30,16 @@ export const ExploreIcon: React.FC<ExploreIconProps> = ({
         strokeWidth="2" 
         strokeLinecap="round" 
         strokeLinejoin="round"
-        fill={focused ? iconColor : "none"}
+        fill="none"
       />
+      {focused && (
+        <Circle 
+          cx="11" 
+          cy="11" 
+          r="5" 
+          fill={iconColor}
+        />
+      )}
     </Svg>
   );
 }; 

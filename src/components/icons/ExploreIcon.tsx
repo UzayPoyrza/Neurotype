@@ -16,7 +16,14 @@ export const ExploreIcon: React.FC<ExploreIconProps> = ({
   
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Circle cx="11" cy="11" r="8" stroke={iconColor} strokeWidth="2" fill="none"/>
+      <Circle 
+        cx="11" 
+        cy="11" 
+        r="8" 
+        stroke={iconColor} 
+        strokeWidth="2" 
+        fill="none"
+      />
       <Path 
         d="m21 21-4.35-4.35" 
         stroke={iconColor} 
@@ -25,6 +32,14 @@ export const ExploreIcon: React.FC<ExploreIconProps> = ({
         strokeLinejoin="round"
         fill="none"
       />
+      {focused && (
+        <Circle 
+          cx="11" 
+          cy="11" 
+          r="5" 
+          fill={iconColor}
+        />
+      )}
     </Svg>
   );
 }; 

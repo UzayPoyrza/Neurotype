@@ -16,21 +16,22 @@ export const ProgressIcon: React.FC<ProgressIconProps> = ({
   
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      {/* Simple filled bar chart that fits the meditation theme */}
       <Path 
-        d="M3 17l6-6 4 4 8-8" 
-        stroke={iconColor} 
-        strokeWidth="2" 
-        strokeLinecap="round" 
-        strokeLinejoin="round"
-        fill="none"
+        d="M3 22V6h4v16H3z" 
+        fill={iconColor}
       />
       <Path 
-        d="M21 7v10h-2" 
-        stroke={iconColor} 
-        strokeWidth="2" 
-        strokeLinecap="round" 
-        strokeLinejoin="round"
-        fill="none"
+        d="M8 22V2h4v20H8z" 
+        fill={iconColor}
+      />
+      <Path 
+        d="M13 22V8h4v14H13z" 
+        fill={iconColor}
+      />
+      <Path 
+        d="M18 22V4h3v18H18z" 
+        fill={iconColor}
       />
     </Svg>
   );

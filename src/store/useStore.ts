@@ -6,10 +6,12 @@ interface AppState {
   userProgress: UserProgress;
   filters: FilterState;
   reminderEnabled: boolean;
+  darkThemeEnabled: boolean;
   activeSession: Session | null;
   addSessionDelta: (delta: SessionDelta) => void;
   setFilters: (filters: FilterState) => void;
   toggleReminder: () => void;
+  toggleDarkTheme: () => void;
   setActiveSession: (session: Session | null) => void;
 }
 
@@ -20,6 +22,7 @@ export const useStore = create<AppState>((set) => ({
     goal: 'all'
   },
   reminderEnabled: false,
+  darkThemeEnabled: false,
   activeSession: null,
   
   addSessionDelta: (delta: SessionDelta) => 
@@ -36,6 +39,9 @@ export const useStore = create<AppState>((set) => ({
     
   toggleReminder: () => 
     set((state) => ({ reminderEnabled: !state.reminderEnabled })),
+    
+  toggleDarkTheme: () => 
+    set((state) => ({ darkThemeEnabled: !state.darkThemeEnabled })),
     
   setActiveSession: (session: Session | null) => 
     set({ activeSession: session })

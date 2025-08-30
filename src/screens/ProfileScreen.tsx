@@ -5,7 +5,7 @@ import { theme } from '../styles/theme';
 import { InstagramStyleScreen } from '../components/InstagramStyleScreen';
 
 export const ProfileScreen: React.FC = () => {
-  const { userProgress, reminderEnabled, toggleReminder } = useStore();
+  const { userProgress, reminderEnabled, toggleReminder, darkThemeEnabled, toggleDarkTheme } = useStore();
 
   // Calculate stats
   const totalSessions = userProgress.sessionDeltas.length;
@@ -104,6 +104,27 @@ export const ProfileScreen: React.FC = () => {
               onValueChange={toggleReminder}
               trackColor={{ false: '#e5e7eb', true: '#3b82f6' }}
               thumbColor={reminderEnabled ? '#ffffff' : '#ffffff'}
+            />
+          </View>
+        </View>
+
+        {/* Dark Theme Toggle */}
+        <View style={styles.card}>
+          <View style={styles.reminderRow}>
+            <View style={styles.reminderContent}>
+              <Text style={styles.reminderTitle}>
+                Dark Theme
+              </Text>
+              <Text style={styles.reminderTime}>
+                Switch to dark mode
+              </Text>
+            </View>
+            <Switch
+              testID="toggle-dark-theme"
+              value={darkThemeEnabled}
+              onValueChange={toggleDarkTheme}
+              trackColor={{ false: '#e5e7eb', true: '#3b82f6' }}
+              thumbColor={darkThemeEnabled ? '#ffffff' : '#ffffff'}
             />
           </View>
         </View>

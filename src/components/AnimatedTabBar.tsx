@@ -45,7 +45,7 @@ export const AnimatedTabBar: React.FC<BottomTabBarProps> = ({
       case 'Today':
         return <TodayIcon size={iconSize} color={color} focused={focused} />;
       case 'Progress':
-        return <ProgressIcon size={size + 12} color={color} focused={focused} />;
+        return <ProgressIcon size={iconSize} color={color} focused={focused} />;
       case 'Explore':
         return <ExploreIcon size={iconSize} color={color} focused={focused} />;
       case 'Profile':
@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
   iconContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: -3,
+    marginTop: -6,
   },
   label: {
     fontSize: 12,

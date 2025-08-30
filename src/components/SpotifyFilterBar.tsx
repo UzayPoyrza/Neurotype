@@ -1,21 +1,12 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  Animated,
-  LayoutAnimation,
-  Platform,
-  UIManager,
 } from 'react-native';
 import { theme } from '../styles/theme';
-
-// Enable LayoutAnimation on Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 export interface FilterOption {
   id: string;
@@ -52,44 +43,16 @@ export const SpotifyFilterBar: React.FC<SpotifyFilterBarProps> = ({
   const [selections, setSelections] = useState<Record<string, string[]>>(
     initialSelection ? { [initialSelection.parentId]: initialSelection.optionIds } : {}
   );
-  
-  const secondaryRowHeight = useRef(new Animated.Value(0)).current;
-  const secondaryRowOpacity = useRef(new Animated.Value(0)).current;
 
   const handlePrimaryChipPress = useCallback((categoryId: string) => {
     if (activeCategory === categoryId) {
-      // Close secondary row
+      // Close secondary options
       setActiveCategory(null);
-      Animated.parallel([
-        Animated.timing(secondaryRowHeight, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: false,
-        }),
-        Animated.timing(secondaryRowOpacity, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: false,
-        }),
-      ]).start();
     } else {
-      // Open secondary row
+      // Show secondary options in same row
       setActiveCategory(categoryId);
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      Animated.parallel([
-        Animated.timing(secondaryRowHeight, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: false,
-        }),
-        Animated.timing(secondaryRowOpacity, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: false,
-        }),
-      ]).start();
     }
-  }, [activeCategory, secondaryRowHeight, secondaryRowOpacity]);
+  }, [activeCategory]);
 
   const handleSecondaryChipPress = useCallback((categoryId: string, optionId: string) => {
     const category = categories.find(cat => cat.id === categoryId);
@@ -124,19 +87,7 @@ export const SpotifyFilterBar: React.FC<SpotifyFilterBarProps> = ({
 
   const handleBackPress = useCallback(() => {
     setActiveCategory(null);
-    Animated.parallel([
-      Animated.timing(secondaryRowHeight, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: false,
-      }),
-      Animated.timing(secondaryRowOpacity, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: false,
-      }),
-    ]).start();
-  }, [secondaryRowHeight, secondaryRowOpacity]);
+  }, []);
 
   const getActiveCategory = () => categories.find(cat => cat.id === activeCategory);
 
@@ -152,7 +103,7 @@ export const SpotifyFilterBar: React.FC<SpotifyFilterBarProps> = ({
 
   return (
     <View style={[styles.container, style]}>
-      {/* Primary Filter Row */}
+      {/* Single Filter Row - Primary and Secondary in same row */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -162,7 +113,8 @@ export const SpotifyFilterBar: React.FC<SpotifyFilterBarProps> = ({
         alwaysBounceHorizontal={true}
         decelerationRate="fast"
       >
-        {categories.map((category) => (
+        {/* Show primary categories when no category is active */}
+        {!activeCategory && categories.map((category) => (
           <TouchableOpacity
             key={category.id}
             style={[
@@ -190,30 +142,10 @@ export const SpotifyFilterBar: React.FC<SpotifyFilterBarProps> = ({
             )}
           </TouchableOpacity>
         ))}
-      </ScrollView>
 
-      {/* Secondary Filter Row */}
-      <Animated.View
-        style={[
-          styles.secondaryRow,
-          {
-            opacity: secondaryRowOpacity,
-            maxHeight: secondaryRowHeight.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0, 60],
-            }),
-          },
-        ]}
-      >
+        {/* Show secondary options when a category is active */}
         {activeCategory && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.secondaryRowContent}
-            bounces={true}
-            alwaysBounceHorizontal={true}
-            decelerationRate="fast"
-          >
+          <>
             {/* Back Button */}
             <TouchableOpacity
               style={styles.backChip}
@@ -222,7 +154,7 @@ export const SpotifyFilterBar: React.FC<SpotifyFilterBarProps> = ({
               accessibilityRole="button"
               accessibilityLabel="Go back to primary filters"
             >
-              <Text style={styles.backChipText}>× Back</Text>
+              <Text style={styles.backChipText}>← Back</Text>
             </TouchableOpacity>
 
             {/* Secondary Options */}
@@ -257,9 +189,9 @@ export const SpotifyFilterBar: React.FC<SpotifyFilterBarProps> = ({
                 </TouchableOpacity>
               );
             })}
-          </ScrollView>
+          </>
         )}
-      </Animated.View>
+      </ScrollView>
     </View>
   );
 };
@@ -316,18 +248,6 @@ const styles = StyleSheet.create({
     fontWeight: theme.typography.weights.bold,
     color: theme.colors.filter.active,
     fontFamily: theme.typography.fontFamily,
-  },
-  secondaryRow: {
-    borderTopWidth: theme.borders.width.thin,
-    borderTopColor: theme.colors.filter.separator,
-    backgroundColor: 'transparent',
-    overflow: 'hidden',
-  },
-  secondaryRowContent: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
-    gap: theme.spacing.md,
-    paddingRight: theme.spacing.xxxl, // Extra padding on the right for infinite scroll feel
   },
   backChip: {
     paddingHorizontal: theme.spacing.lg,

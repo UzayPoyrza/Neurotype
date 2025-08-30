@@ -56,7 +56,7 @@ export const ExploreScreenNav = forwardRef<ExploreScreenNavRef, ExploreScreenNav
   
   // Snap to nearest state (fully shown or fully hidden)
   const snapToNearest = useCallback(() => {
-    if (isAnimating.current) return;
+    if (isAnimating.current || isSearchFocused) return;
     
     const currentTranslateY = (revealTranslateY as any)._value || 0;
     const threshold = slideRange / 2;
@@ -73,11 +73,11 @@ export const ExploreScreenNav = forwardRef<ExploreScreenNavRef, ExploreScreenNav
         onScrollEnd(targetValue === 0 ? 'up' : 'down');
       }
     });
-  }, [revealTranslateY, slideRange, onScrollEnd]);
+  }, [revealTranslateY, slideRange, onScrollEnd, isSearchFocused]);
 
   // Scroll-linked 1:1 movement
   React.useEffect(() => {
-    if (scrollY && !isSearchFocused) {
+    if (scrollY && !isSearchFocused && !isAnimating.current) {
       const listener = scrollY.addListener(({ value }) => {
         const scrollDifference = value - lastScrollY.current;
         
@@ -123,8 +123,12 @@ export const ExploreScreenNav = forwardRef<ExploreScreenNavRef, ExploreScreenNav
       revealTranslateY.setValue(0);
       // Stop any ongoing animations
       revealTranslateY.stopAnimation();
+      // Prevent any scroll-linked movement
+      if (scrollY) {
+        scrollY.stopAnimation();
+      }
     }
-  }, [isSearchFocused, revealTranslateY]);
+  }, [isSearchFocused, revealTranslateY, scrollY]);
 
   // Animate top shell border and reveal bar content based on reveal bar position
   React.useEffect(() => {
@@ -147,7 +151,7 @@ export const ExploreScreenNav = forwardRef<ExploreScreenNavRef, ExploreScreenNav
   }, [revealTranslateY, topShellBorderOpacity, revealBarContentOpacity, slideRange]);
 
   const showRevealBar = useCallback(() => {
-    if (!isAnimating.current) {
+    if (!isAnimating.current && !isSearchFocused) {
       isAnimating.current = true;
       Animated.timing(revealTranslateY, {
         toValue: 0,
@@ -157,10 +161,10 @@ export const ExploreScreenNav = forwardRef<ExploreScreenNavRef, ExploreScreenNav
         isAnimating.current = false;
       });
     }
-  }, [revealTranslateY]);
+  }, [revealTranslateY, isSearchFocused]);
 
   const hideRevealBar = useCallback(() => {
-    if (!isAnimating.current) {
+    if (!isAnimating.current && !isSearchFocused) {
       isAnimating.current = true;
       Animated.timing(revealTranslateY, {
         toValue: -slideRange,
@@ -170,7 +174,7 @@ export const ExploreScreenNav = forwardRef<ExploreScreenNavRef, ExploreScreenNav
         isAnimating.current = false;
       });
     }
-  }, [revealTranslateY, slideRange]);
+  }, [revealTranslateY, slideRange, isSearchFocused]);
 
   useImperativeHandle(ref, () => ({
     showRevealBar,
@@ -330,7 +334,7 @@ const styles = StyleSheet.create({
     marginHorizontal: -theme.spacing.lg, // Break out of parent padding
   },
   filterBar: {
-    marginTop: theme.spacing.sm,
+    marginTop: theme.spacing.xs, // Reduced from sm to xs for closer spacing
   },
   revealBarContent: {
     flexDirection: 'row',

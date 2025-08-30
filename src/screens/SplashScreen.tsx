@@ -138,10 +138,12 @@ const styles = StyleSheet.create({
   content: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -60,
   },
   iconContainer: {
-    marginBottom: 0,
+    marginBottom: 20,
+    marginLeft: -15,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   icon: {
     width: 220,
@@ -151,6 +153,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     height: 60,
+    width: '100%',
   },
   handwritingText: {
     fontSize: 48,

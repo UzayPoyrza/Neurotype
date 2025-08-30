@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
 import { Session, Modality, Goal } from '../types';
 import { SessionCard } from '../components/SessionCard';
 import { ModuleCard } from '../components/ModuleCard';
@@ -12,8 +14,15 @@ import { mentalHealthModules, MentalHealthModule } from '../data/modules';
 import { theme } from '../styles/theme';
 import { ExploreScreen as ExploreScreenComponent } from '../components/ExploreScreen';
 
+type ExploreStackParamList = {
+  ExploreMain: undefined;
+  ModuleDetail: { moduleId: string };
+};
+
+type ExploreScreenNavigationProp = StackNavigationProp<ExploreStackParamList, 'ExploreMain'>;
+
 export const ExploreScreen: React.FC = () => {
-  const setActiveModuleId = useStore(state => state.setActiveModuleId);
+  const navigation = useNavigation<ExploreScreenNavigationProp>();
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -57,7 +66,7 @@ export const ExploreScreen: React.FC = () => {
   }, [searchQuery, selectedCategory]);
 
   const handleModulePress = (moduleId: string) => {
-    setActiveModuleId(moduleId);
+    navigation.navigate('ModuleDetail', { moduleId });
   };
 
   const handleFilterSelectionChange = (selection: FilterSelection) => {
@@ -93,21 +102,19 @@ export const ExploreScreen: React.FC = () => {
 
         {/* Module Grid */}
         <View style={styles.moduleGrid}>
-          <FlatList
-            data={filteredModules}
-            renderItem={({ item }) => (
-              <ModuleCard
-                module={item}
-                onPress={handleModulePress}
-              />
-            )}
-            keyExtractor={(item) => item.id}
-            numColumns={2}
-            columnWrapperStyle={styles.row}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.gridContainer}
-            ItemSeparatorComponent={() => <View style={{ height: theme.spacing.md }} />}
-          />
+          {/* Create rows of 2 modules each */}
+          {Array.from({ length: Math.ceil(filteredModules.length / 2) }, (_, rowIndex) => (
+            <View key={rowIndex} style={styles.moduleRow}>
+              {filteredModules.slice(rowIndex * 2, rowIndex * 2 + 2).map((module) => (
+                <View key={module.id} style={styles.moduleCardWrapper}>
+                  <ModuleCard
+                    module={module}
+                    onPress={handleModulePress}
+                  />
+                </View>
+              ))}
+            </View>
+          ))}
         </View>
 
         {/* Empty State */}
@@ -147,13 +154,15 @@ const styles = StyleSheet.create({
     fontFamily: theme.typography.fontFamily,
   },
   moduleGrid: {
-    flex: 1,
+    gap: theme.spacing.md,
   },
-  gridContainer: {
-    paddingBottom: theme.spacing.xl,
-  },
-  row: {
+  moduleRow: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
+    marginBottom: theme.spacing.md,
+  },
+  moduleCardWrapper: {
+    // No additional styles needed - ModuleCard handles its own sizing
   },
   emptyState: {
     alignItems: 'center',

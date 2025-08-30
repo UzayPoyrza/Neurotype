@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
 import { SessionCard } from '../components/SessionCard';
 import { mockSessions } from '../data/mockData';
 import { mentalHealthModules } from '../data/modules';
@@ -7,17 +9,22 @@ import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
 import { Session } from '../types';
 
-interface ModuleDetailScreenProps {
-  moduleId: string;
-  onClose: () => void;
-}
+type ExploreStackParamList = {
+  ExploreMain: undefined;
+  ModuleDetail: { moduleId: string };
+};
 
-export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = ({
-  moduleId,
-  onClose,
-}) => {
+type ModuleDetailRouteProp = RouteProp<ExploreStackParamList, 'ModuleDetail'>;
+type ModuleDetailNavigationProp = StackNavigationProp<ExploreStackParamList, 'ModuleDetail'>;
+
+interface ModuleDetailScreenProps {}
+
+export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
+  const route = useRoute<ModuleDetailRouteProp>();
+  const navigation = useNavigation<ModuleDetailNavigationProp>();
   const setActiveSession = useStore(state => state.setActiveSession);
   
+  const { moduleId } = route.params;
   const module = mentalHealthModules.find(m => m.id === moduleId);
   
   // Filter sessions based on module type
@@ -49,15 +56,14 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = ({
 
   const handleSessionStart = (session: Session) => {
     setActiveSession(session);
-    onClose(); // Close the module detail when starting a session
   };
 
   if (!module) {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Text style={styles.closeButtonText}>✕</Text>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Text style={styles.backButtonText}>← Back</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.errorContainer}>
@@ -71,8 +77,8 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = ({
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <Text style={styles.closeButtonText}>✕</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
         <View style={styles.headerContent}>
           <View style={[styles.moduleIcon, { backgroundColor: module.color }]}>
@@ -138,22 +144,22 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.primary,
     ...theme.shadows.medium,
   },
-  closeButton: {
-    alignSelf: 'flex-end',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  backButton: {
+    alignSelf: 'flex-start',
     backgroundColor: theme.colors.background,
     borderWidth: theme.borders.width.thick,
     borderColor: theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderRadius: theme.borders.radius.lg,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
     marginBottom: theme.spacing.lg,
+    ...theme.shadows.medium,
   },
-  closeButtonText: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.bold,
+  backButtonText: {
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.semibold,
     color: theme.colors.primary,
+    fontFamily: theme.typography.fontFamily,
   },
   headerContent: {
     alignItems: 'center',

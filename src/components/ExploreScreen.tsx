@@ -6,6 +6,7 @@ import { theme } from '../styles/theme';
 
 interface ExploreScreenProps {
   title?: string;
+  titleComponent?: React.ReactNode;
   searchComponent?: React.ReactNode;
   filterCategories: any[];
   onFilterSelectionChange: (selection: any) => void;
@@ -22,6 +23,7 @@ interface ExploreScreenProps {
 
 export const ExploreScreen: React.FC<ExploreScreenProps> = ({
   title,
+  titleComponent,
   searchComponent,
   filterCategories,
   onFilterSelectionChange,
@@ -71,6 +73,7 @@ export const ExploreScreen: React.FC<ExploreScreenProps> = ({
       <ExploreScreenNav
         ref={navRef}
         title={title}
+        titleComponent={titleComponent}
         searchComponent={searchComponent}
         filterCategories={filterCategories}
         onFilterSelectionChange={onFilterSelectionChange}

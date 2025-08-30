@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { Session, Modality, Goal } from '../types';
@@ -8,6 +8,7 @@ import { ModuleCard } from '../components/ModuleCard';
 import { Chip } from '../components/Chip';
 import { SearchBar } from '../components/SearchBar';
 import { FilterCategory, FilterSelection } from '../components/SpotifyFilterBar';
+import { ExploreIcon } from '../components/icons';
 import { useStore } from '../store/useStore';
 import { mockSessions } from '../data/mockData';
 import { mentalHealthModules, MentalHealthModule } from '../data/modules';
@@ -23,33 +24,44 @@ type ExploreScreenNavigationProp = StackNavigationProp<ExploreStackParamList, 'E
 
 export const ExploreScreen: React.FC = () => {
   const navigation = useNavigation<ExploreScreenNavigationProp>();
+  const addRecentModule = useStore(state => state.addRecentModule);
+  const recentModuleIds = useStore(state => state.recentModuleIds);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedSort, setSelectedSort] = useState<string>('recents');
+  const [showSortModal, setShowSortModal] = useState(false);
 
-  // Define filter categories for module filtering
+  // Define filter categories for top nav pill filters
   const filterCategories: FilterCategory[] = [
     {
-      id: 'category',
-      label: 'Category',
+      id: 'modality',
+      label: 'Modality',
       multiSelect: false,
       options: [
-        { id: 'all', label: 'All Categories' },
-        { id: 'disorder', label: 'Mental Health Disorders', badge: 6 },
-        { id: 'wellness', label: 'Wellness & Recovery', badge: 3 },
-        { id: 'skill', label: 'Skills & Techniques', badge: 3 },
+        { id: 'all', label: 'All Modalities' },
+        { id: 'sound', label: 'Sound', badge: 12 },
+        { id: 'movement', label: 'Movement', badge: 8 },
+        { id: 'mindfulness', label: 'Mindfulness', badge: 15 },
+        { id: 'visualization', label: 'Visualization', badge: 9 },
+      ],
+    },
+    {
+      id: 'goal',
+      label: 'Goal',
+      multiSelect: true,
+      options: [
+        { id: 'all', label: 'All Goals' },
+        { id: 'anxiety', label: 'Anxiety Relief', badge: 18 },
+        { id: 'focus', label: 'Focus & Clarity', badge: 14 },
+        { id: 'sleep', label: 'Better Sleep', badge: 11 },
+        { id: 'stress', label: 'Stress Reduction', badge: 16 },
       ],
     },
   ];
 
-  // Filter modules based on search and category
+  // Filter and sort modules
   const filteredModules = useMemo(() => {
-    return mentalHealthModules.filter(module => {
-      // Filter by category
-      if (selectedCategory !== 'all' && module.category !== selectedCategory) {
-        return false;
-      }
-      
+    let modules = mentalHealthModules.filter(module => {
       // Filter by search query
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
@@ -63,20 +75,65 @@ export const ExploreScreen: React.FC = () => {
       
       return true;
     });
-  }, [searchQuery, selectedCategory]);
+
+    // Sort modules based on selected sort option
+    switch (selectedSort) {
+      case 'recents':
+        // Sort by recent access, then alphabetically for unaccessed modules
+        modules = modules.sort((a, b) => {
+          const aRecentIndex = recentModuleIds.indexOf(a.id);
+          const bRecentIndex = recentModuleIds.indexOf(b.id);
+          
+          if (aRecentIndex !== -1 && bRecentIndex !== -1) {
+            // Both are recent, sort by recent order
+            return aRecentIndex - bRecentIndex;
+          } else if (aRecentIndex !== -1) {
+            // Only a is recent
+            return -1;
+          } else if (bRecentIndex !== -1) {
+            // Only b is recent
+            return 1;
+          } else {
+            // Neither is recent, sort alphabetically
+            return a.title.localeCompare(b.title);
+          }
+        });
+        break;
+      case 'alphabetical':
+        modules = modules.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      case 'category':
+        modules = modules.sort((a, b) => {
+          if (a.category !== b.category) {
+            return a.category.localeCompare(b.category);
+          }
+          return a.title.localeCompare(b.title);
+        });
+        break;
+    }
+
+    return modules;
+  }, [searchQuery, selectedSort, recentModuleIds]);
 
   const handleModulePress = (moduleId: string) => {
+    addRecentModule(moduleId);
     navigation.navigate('ModuleDetail', { moduleId });
   };
 
   const handleFilterSelectionChange = (selection: FilterSelection) => {
-    if (selection.parentId === 'category') {
-      setSelectedCategory(selection.optionIds[0] || 'all');
-    }
+    // Reserved for future top nav filtering functionality
   };
+
+  const titleComponent = (
+    <View style={styles.titleContainer}>
+      <ExploreIcon size={20} color={theme.colors.primary} focused={true} />
+      <Text style={styles.titleText}>Your Library</Text>
+    </View>
+  );
 
   return (
     <ExploreScreenComponent 
+      titleComponent={titleComponent}
       searchComponent={
         <SearchBar
           value={searchQuery}
@@ -88,16 +145,25 @@ export const ExploreScreen: React.FC = () => {
       }
       filterCategories={filterCategories}
       onFilterSelectionChange={handleFilterSelectionChange}
-      filterSelection={{ parentId: 'category', optionIds: [selectedCategory] }}
+      filterSelection={undefined}
       isSearchFocused={isSearchFocused}
     >
       <View style={styles.content}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Mental Health Modules</Text>
-          <Text style={styles.headerSubtitle}>
-            Choose a module to explore guided meditations
-          </Text>
+        {/* Sorting Section */}
+        <View style={styles.sortingSection}>
+          <TouchableOpacity 
+            style={styles.sortingButton}
+            onPress={() => setShowSortModal(true)}
+          >
+            <View style={styles.sortingHeader}>
+              <Text style={styles.sortingArrow}>↓</Text>
+              <Text style={styles.sortingTitle}>
+                {selectedSort === 'recents' ? 'Recents' : 
+                 selectedSort === 'alphabetical' ? 'Alphabetical' : 
+                 'By Category'}
+              </Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* Module Grid */}
@@ -128,6 +194,82 @@ export const ExploreScreen: React.FC = () => {
             </Text>
           </View>
         )}
+
+        {/* Sort Modal */}
+        <Modal
+          visible={showSortModal}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          transparent={false}
+        >
+          <View style={styles.sortModal}>
+            <View style={styles.sortModalHeader}>
+              <Text style={styles.sortModalTitle}>Sort by</Text>
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => setShowSortModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.sortOptions}>
+              <TouchableOpacity 
+                style={styles.sortOption}
+                onPress={() => {
+                  setSelectedSort('recents');
+                  setShowSortModal(false);
+                }}
+              >
+                <Text style={[
+                  styles.sortOptionText,
+                  selectedSort === 'recents' && styles.sortOptionTextActive
+                ]}>
+                  Recents
+                </Text>
+                {selectedSort === 'recents' && (
+                  <Text style={styles.checkMark}>✓</Text>
+                )}
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.sortOption}
+                onPress={() => {
+                  setSelectedSort('alphabetical');
+                  setShowSortModal(false);
+                }}
+              >
+                <Text style={[
+                  styles.sortOptionText,
+                  selectedSort === 'alphabetical' && styles.sortOptionTextActive
+                ]}>
+                  Alphabetical
+                </Text>
+                {selectedSort === 'alphabetical' && (
+                  <Text style={styles.checkMark}>✓</Text>
+                )}
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.sortOption}
+                onPress={() => {
+                  setSelectedSort('category');
+                  setShowSortModal(false);
+                }}
+              >
+                <Text style={[
+                  styles.sortOptionText,
+                  selectedSort === 'category' && styles.sortOptionTextActive
+                ]}>
+                  By Category
+                </Text>
+                {selectedSort === 'category' && (
+                  <Text style={styles.checkMark}>✓</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </View>
     </ExploreScreenComponent>
   );
@@ -137,21 +279,96 @@ const styles = StyleSheet.create({
   content: {
     ...theme.common.content,
   },
-  header: {
-    marginBottom: theme.spacing.xl,
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
   },
-  headerTitle: {
-    fontSize: theme.typography.sizes.xxl,
+  titleText: {
+    fontSize: theme.typography.sizes.lg,
     fontWeight: theme.typography.weights.bold,
     color: theme.colors.primary,
     fontFamily: theme.typography.fontFamily,
-    marginBottom: theme.spacing.sm,
   },
-  headerSubtitle: {
+  sortingSection: {
+    marginBottom: theme.spacing.xl,
+  },
+  sortingButton: {
+    alignSelf: 'flex-start',
+  },
+  sortingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  sortingArrow: {
     fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.medium,
-    color: theme.colors.secondary,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.primary,
     fontFamily: theme.typography.fontFamily,
+  },
+  sortingTitle: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.primary,
+    fontFamily: theme.typography.fontFamily,
+  },
+  sortModal: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    paddingTop: 60,
+  },
+  sortModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.xl,
+    borderBottomWidth: theme.borders.width.normal,
+    borderBottomColor: theme.colors.primary,
+  },
+  sortModalTitle: {
+    fontSize: theme.typography.sizes.xl,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.primary,
+    fontFamily: theme.typography.fontFamily,
+  },
+  cancelButton: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.sm,
+  },
+  cancelButtonText: {
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.primary,
+    fontFamily: theme.typography.fontFamily,
+  },
+  sortOptions: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.lg,
+  },
+  sortOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: theme.spacing.lg,
+    borderBottomWidth: theme.borders.width.thin,
+    borderBottomColor: theme.colors.disabled,
+  },
+  sortOptionText: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.medium,
+    color: theme.colors.primary,
+    fontFamily: theme.typography.fontFamily,
+  },
+  sortOptionTextActive: {
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.success,
+  },
+  checkMark: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.success,
   },
   moduleGrid: {
     gap: theme.spacing.md,

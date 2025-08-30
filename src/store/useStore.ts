@@ -9,12 +9,14 @@ interface AppState {
   darkThemeEnabled: boolean;
   activeSession: Session | null;
   activeModuleId: string | null;
+  recentModuleIds: string[];
   addSessionDelta: (delta: SessionDelta) => void;
   setFilters: (filters: FilterState) => void;
   toggleReminder: () => void;
   toggleDarkTheme: () => void;
   setActiveSession: (session: Session | null) => void;
   setActiveModuleId: (moduleId: string | null) => void;
+  addRecentModule: (moduleId: string) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -27,6 +29,7 @@ export const useStore = create<AppState>((set) => ({
   darkThemeEnabled: false,
   activeSession: null,
   activeModuleId: null,
+  recentModuleIds: [],
   
   addSessionDelta: (delta: SessionDelta) => 
     set((state) => ({
@@ -50,5 +53,13 @@ export const useStore = create<AppState>((set) => ({
     set({ activeSession: session }),
     
   setActiveModuleId: (moduleId: string | null) => 
-    set({ activeModuleId: moduleId })
+    set({ activeModuleId: moduleId }),
+    
+  addRecentModule: (moduleId: string) => 
+    set((state) => ({
+      recentModuleIds: [
+        moduleId,
+        ...state.recentModuleIds.filter(id => id !== moduleId)
+      ].slice(0, 10) // Keep only last 10 recent modules
+    }))
 })); 

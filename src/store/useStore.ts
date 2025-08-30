@@ -8,11 +8,13 @@ interface AppState {
   reminderEnabled: boolean;
   darkThemeEnabled: boolean;
   activeSession: Session | null;
+  activeModuleId: string | null;
   addSessionDelta: (delta: SessionDelta) => void;
   setFilters: (filters: FilterState) => void;
   toggleReminder: () => void;
   toggleDarkTheme: () => void;
   setActiveSession: (session: Session | null) => void;
+  setActiveModuleId: (moduleId: string | null) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -24,6 +26,7 @@ export const useStore = create<AppState>((set) => ({
   reminderEnabled: false,
   darkThemeEnabled: false,
   activeSession: null,
+  activeModuleId: null,
   
   addSessionDelta: (delta: SessionDelta) => 
     set((state) => ({
@@ -44,5 +47,8 @@ export const useStore = create<AppState>((set) => ({
     set((state) => ({ darkThemeEnabled: !state.darkThemeEnabled })),
     
   setActiveSession: (session: Session | null) => 
-    set({ activeSession: session })
+    set({ activeSession: session }),
+    
+  setActiveModuleId: (moduleId: string | null) => 
+    set({ activeModuleId: moduleId })
 })); 

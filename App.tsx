@@ -10,6 +10,7 @@ import { ProgressScreen } from './src/screens/ProgressScreen';
 import { ExploreScreen } from './src/screens/ExploreScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { PlayerScreen } from './src/screens/PlayerScreen';
+import { ModuleDetailScreen } from './src/screens/ModuleDetailScreen';
 import { SplashScreen } from './src/screens/SplashScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { RegisterScreen } from './src/screens/RegisterScreen';
@@ -22,6 +23,8 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const activeSession = useStore(state => state.activeSession);
+  const activeModuleId = useStore(state => state.activeModuleId);
+  const setActiveModuleId = useStore(state => state.setActiveModuleId);
 
   const handleSplashFinish = () => {
     setShowSplash(false);
@@ -78,6 +81,20 @@ export default function App() {
         presentationStyle="fullScreen"
       >
         <PlayerScreen />
+      </Modal>
+
+      {/* Module Detail Modal */}
+      <Modal
+        visible={!!activeModuleId}
+        animationType="slide"
+        presentationStyle="fullScreen"
+      >
+        {activeModuleId && (
+          <ModuleDetailScreen
+            moduleId={activeModuleId}
+            onClose={() => setActiveModuleId(null)}
+          />
+        )}
       </Modal>
     </NavigationContainer>
     </>

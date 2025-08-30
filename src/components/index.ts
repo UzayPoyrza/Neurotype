@@ -8,6 +8,7 @@ export { ExploreScreen as ExploreScreenComponent } from './ExploreScreen';
 
 // Other Components
 export { Chip } from './Chip';
+export { ModuleCard } from './ModuleCard';
 export { PrimaryButton } from './PrimaryButton';
 export { SessionCard } from './SessionCard';
 export { Slider0to10 } from './Slider0to10';

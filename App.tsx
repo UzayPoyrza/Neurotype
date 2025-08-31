@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator, CardStyleInterpolators, StackCardInterpolationProps } from '@react-navigation/stack';
+import { Easing } from 'react-native-reanimated';
 import { Modal, View, StatusBar, Dimensions } from 'react-native';
 import { TodayIcon, ProgressIcon, ExploreIcon, ProfileIcon } from './src/components/icons';
 import { AnimatedTabBar } from './src/components/AnimatedTabBar';
@@ -32,17 +33,21 @@ const ExploreStackNavigator = () => {
         gestureDirection: 'horizontal',
         // Use optimized iOS-style transition with performance improvements
         cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+        gestureResponseDistance: 20, // Consistent responsive gesture start
+        gestureVelocityImpact: 0.15, // Balanced velocity threshold
         transitionSpec: {
           open: {
             animation: 'timing',
             config: {
               duration: 250,
+              useNativeDriver: true, // Use native driver for better performance
             },
           },
           close: {
             animation: 'timing',
             config: {
-              duration: 200,
+              duration: 200, // Slightly longer for smoother close
+              useNativeDriver: true, // Use native driver for better performance
             },
           },
         },
@@ -55,8 +60,28 @@ const ExploreStackNavigator = () => {
         options={{
           gestureEnabled: true,
           gestureDirection: 'horizontal',
-          // Use same optimized transition
+          // Maximum responsiveness settings
+          gestureResponseDistance: 60, // Extra large response area
+          gestureVelocityImpact: 0.005, // Minimal velocity needed
+          // Use iOS transition with ultra-fast timing
           cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+          transitionSpec: {
+            open: {
+              animation: 'timing',
+              config: {
+                duration: 250,
+                useNativeDriver: true,
+              },
+            },
+            close: {
+              animation: 'timing',
+              config: {
+                duration: 80, // Ultra-fast close
+                easing: Easing.out(Easing.cubic), // Smooth easing for butter smooth release
+                useNativeDriver: true,
+              },
+            },
+          },
         }}
       />
     </ExploreStack.Navigator>

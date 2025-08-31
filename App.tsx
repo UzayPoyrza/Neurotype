@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Modal, View, StatusBar } from 'react-native';
+import { createStackNavigator, CardStyleInterpolators, StackCardInterpolationProps } from '@react-navigation/stack';
+import { Easing } from 'react-native-reanimated';
+import { Modal, View, StatusBar, Dimensions } from 'react-native';
 import { TodayIcon, ProgressIcon, ExploreIcon, ProfileIcon } from './src/components/icons';
 import { AnimatedTabBar } from './src/components/AnimatedTabBar';
 
@@ -17,14 +19,80 @@ import { RegisterScreen } from './src/screens/RegisterScreen';
 import { useStore } from './src/store/useStore';
 
 const Tab = createBottomTabNavigator();
+const ExploreStack = createStackNavigator();
+
+
+
+// Explore Stack Navigator
+const ExploreStackNavigator = () => {
+  return (
+    <ExploreStack.Navigator
+      screenOptions={{
+        headerShown: false,
+        gestureEnabled: true,
+        gestureDirection: 'horizontal',
+        // Use optimized iOS-style transition with performance improvements
+        cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+        gestureResponseDistance: 20, // Consistent responsive gesture start
+        gestureVelocityImpact: 0.15, // Balanced velocity threshold
+        transitionSpec: {
+          open: {
+            animation: 'timing',
+            config: {
+              duration: 250,
+              useNativeDriver: true, // Use native driver for better performance
+            },
+          },
+          close: {
+            animation: 'timing',
+            config: {
+              duration: 200, // Slightly longer for smoother close
+              useNativeDriver: true, // Use native driver for better performance
+            },
+          },
+        },
+      }}
+    >
+      <ExploreStack.Screen name="ExploreMain" component={ExploreScreen} />
+      <ExploreStack.Screen 
+        name="ModuleDetail" 
+        component={ModuleDetailScreen}
+        options={{
+          gestureEnabled: true,
+          gestureDirection: 'horizontal',
+          // Maximum responsiveness settings
+          gestureResponseDistance: 60, // Extra large response area
+          gestureVelocityImpact: 0.005, // Minimal velocity needed
+          // Use iOS transition with ultra-fast timing
+          cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+          transitionSpec: {
+            open: {
+              animation: 'timing',
+              config: {
+                duration: 250,
+                useNativeDriver: true,
+              },
+            },
+            close: {
+              animation: 'timing',
+              config: {
+                duration: 80, // Ultra-fast close
+                easing: Easing.out(Easing.cubic), // Smooth easing for butter smooth release
+                useNativeDriver: true,
+              },
+            },
+          },
+        }}
+      />
+    </ExploreStack.Navigator>
+  );
+};
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const activeSession = useStore(state => state.activeSession);
-  const activeModuleId = useStore(state => state.activeModuleId);
-  const setActiveModuleId = useStore(state => state.setActiveModuleId);
 
   const handleSplashFinish = () => {
     setShowSplash(false);
@@ -70,7 +138,7 @@ export default function App() {
         >
         <Tab.Screen name="Today" component={TodayScreen} />
         <Tab.Screen name="Progress" component={ProgressScreen} />
-        <Tab.Screen name="Explore" component={ExploreScreen} />
+        <Tab.Screen name="Explore" component={ExploreStackNavigator} />
         <Tab.Screen name="Profile" component={ProfileScreen} />
       </Tab.Navigator>
 
@@ -81,20 +149,6 @@ export default function App() {
         presentationStyle="fullScreen"
       >
         <PlayerScreen />
-      </Modal>
-
-      {/* Module Detail Modal */}
-      <Modal
-        visible={!!activeModuleId}
-        animationType="slide"
-        presentationStyle="fullScreen"
-      >
-        {activeModuleId && (
-          <ModuleDetailScreen
-            moduleId={activeModuleId}
-            onClose={() => setActiveModuleId(null)}
-          />
-        )}
       </Modal>
     </NavigationContainer>
     </>

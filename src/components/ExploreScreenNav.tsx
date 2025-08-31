@@ -6,6 +6,7 @@ import { SpotifyFilterBar, FilterCategory, FilterSelection } from './SpotifyFilt
 
 interface ExploreScreenNavProps {
   title?: string;
+  titleComponent?: React.ReactNode;
   searchComponent?: React.ReactNode;
   filterCategories: FilterCategory[];
   onFilterSelectionChange: (selection: FilterSelection) => void;
@@ -28,6 +29,7 @@ export interface ExploreScreenNavRef {
 
 export const ExploreScreenNav = forwardRef<ExploreScreenNavRef, ExploreScreenNavProps>(({
   title,
+  titleComponent,
   searchComponent,
   filterCategories,
   onFilterSelectionChange,
@@ -246,9 +248,11 @@ export const ExploreScreenNav = forwardRef<ExploreScreenNavRef, ExploreScreenNav
 
             {/* Center - Title */}
             <View style={styles.centerSection}>
-              <Text style={styles.title} numberOfLines={1}>
-                {title}
-              </Text>
+              {titleComponent || (
+                <Text style={styles.title} numberOfLines={1}>
+                  {title}
+                </Text>
+              )}
             </View>
 
             {/* Right side - Optional component or empty space */}

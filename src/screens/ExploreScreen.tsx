@@ -1,5 +1,12 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, PanResponder, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, PanResponder } from 'react-native';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withTiming, 
+  Easing,
+  runOnJS 
+} from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { Session, Modality, Goal } from '../types';
@@ -30,8 +37,8 @@ export const ExploreScreen: React.FC = () => {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [selectedSort, setSelectedSort] = useState<string>('recents');
   const [showSortModal, setShowSortModal] = useState(false);
-  const overlayOpacity = useRef(new Animated.Value(0)).current;
-  const modalTranslateY = useRef(new Animated.Value(300)).current;
+  const overlayOpacity = useSharedValue(0);
+  const modalTranslateY = useSharedValue(300);
 
   // Define filter categories for top nav pill filters
   const filterCategories: FilterCategory[] = [
@@ -126,40 +133,37 @@ export const ExploreScreen: React.FC = () => {
   useEffect(() => {
     if (showSortModal) {
       // Reset modal position immediately before animating
-      modalTranslateY.setValue(300);
-      overlayOpacity.setValue(0);
+      modalTranslateY.value = 300;
+      overlayOpacity.value = 0;
       
-      // Fade in overlay quickly
-      Animated.timing(overlayOpacity, {
-        toValue: 1,
-        duration: 150,
-        useNativeDriver: true,
-      }).start();
-      
-      // Slide up modal content with smooth easing
-      Animated.timing(modalTranslateY, {
-        toValue: 0,
-        duration: 400,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }).start();
+      // Animate both overlay and modal smoothly
+      overlayOpacity.value = withTiming(1, { duration: 150 });
+      modalTranslateY.value = withTiming(0, { 
+        duration: 400, 
+        easing: Easing.out(Easing.cubic) 
+      });
     } else {
-      // Fade out overlay
-      Animated.timing(overlayOpacity, {
-        toValue: 0,
-        duration: 150,
-        useNativeDriver: true,
-      }).start();
-      
-      // Slide down modal content with smooth easing
-      Animated.timing(modalTranslateY, {
-        toValue: 300,
-        duration: 350,
-        easing: Easing.in(Easing.cubic),
-        useNativeDriver: true,
-      }).start();
+      // Animate out
+      overlayOpacity.value = withTiming(0, { duration: 150 });
+      modalTranslateY.value = withTiming(300, { 
+        duration: 350, 
+        easing: Easing.in(Easing.cubic) 
+      });
     }
-  }, [showSortModal, overlayOpacity, modalTranslateY]);
+  }, [showSortModal]);
+
+  // Animated styles using reanimated
+  const overlayAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: overlayOpacity.value,
+    };
+  });
+
+  const modalAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateY: modalTranslateY.value }],
+    };
+  });
 
   const handleFilterSelectionChange = (selection: FilterSelection) => {
     // Reserved for future top nav filtering functionality
@@ -267,7 +271,7 @@ export const ExploreScreen: React.FC = () => {
         >
           <View style={styles.modalContainer}>
             <Animated.View 
-              style={[styles.modalOverlay, { opacity: overlayOpacity }]}
+              style={[styles.modalOverlay, overlayAnimatedStyle]}
             />
             <TouchableOpacity 
               style={styles.overlayTouchable}
@@ -275,7 +279,7 @@ export const ExploreScreen: React.FC = () => {
               onPress={() => setShowSortModal(false)}
             />
             <Animated.View 
-              style={[styles.sortModal, { transform: [{ translateY: modalTranslateY }] }]} 
+              style={[styles.sortModal, modalAnimatedStyle]} 
               {...panResponder.panHandlers}
             >
               {/* Modal Handle */}

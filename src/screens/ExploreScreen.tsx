@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, PanResponder, Animated } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, PanResponder, Animated, Easing } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { Session, Modality, Goal } from '../types';
@@ -125,6 +125,10 @@ export const ExploreScreen: React.FC = () => {
   // Animate modal when visibility changes
   useEffect(() => {
     if (showSortModal) {
+      // Reset modal position immediately before animating
+      modalTranslateY.setValue(300);
+      overlayOpacity.setValue(0);
+      
       // Fade in overlay quickly
       Animated.timing(overlayOpacity, {
         toValue: 1,
@@ -132,10 +136,11 @@ export const ExploreScreen: React.FC = () => {
         useNativeDriver: true,
       }).start();
       
-      // Slide up modal content
+      // Slide up modal content with smooth easing
       Animated.timing(modalTranslateY, {
         toValue: 0,
-        duration: 300,
+        duration: 400,
+        easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }).start();
     } else {
@@ -146,10 +151,11 @@ export const ExploreScreen: React.FC = () => {
         useNativeDriver: true,
       }).start();
       
-      // Slide down modal content
+      // Slide down modal content with smooth easing
       Animated.timing(modalTranslateY, {
         toValue: 300,
-        duration: 250,
+        duration: 350,
+        easing: Easing.in(Easing.cubic),
         useNativeDriver: true,
       }).start();
     }

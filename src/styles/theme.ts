@@ -24,6 +24,21 @@ export const theme = {
       badge: '#90EE90',
       separator: '#e0e0e0',
     },
+    // Category specific colors for module badges
+    category: {
+      disorder: {
+        background: '#FF6B6B', // Vibrant red background
+        text: '#FFFFFF',       // White text for contrast
+      },
+      wellness: {
+        background: '#4ECDC4', // Vibrant teal background
+        text: '#FFFFFF',       // White text for contrast
+      },
+      skill: {
+        background: '#45B7D1', // Vibrant blue background
+        text: '#FFFFFF',       // White text for contrast
+      },
+    },
   },
   
   // Typography

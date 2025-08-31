@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
-import { Modal, View, StatusBar } from 'react-native';
+import { createStackNavigator, CardStyleInterpolators, StackCardInterpolationProps } from '@react-navigation/stack';
+import { Modal, View, StatusBar, Dimensions } from 'react-native';
 import { TodayIcon, ProgressIcon, ExploreIcon, ProfileIcon } from './src/components/icons';
 import { AnimatedTabBar } from './src/components/AnimatedTabBar';
 
@@ -20,6 +20,8 @@ import { useStore } from './src/store/useStore';
 const Tab = createBottomTabNavigator();
 const ExploreStack = createStackNavigator();
 
+
+
 // Explore Stack Navigator
 const ExploreStackNavigator = () => {
   return (
@@ -28,9 +30,22 @@ const ExploreStackNavigator = () => {
         headerShown: false,
         gestureEnabled: true,
         gestureDirection: 'horizontal',
-        // Use reanimated-optimized slide transition for 60fps performance
+        // Use optimized iOS-style transition with performance improvements
         cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
-        animationTypeForReplace: 'push',
+        transitionSpec: {
+          open: {
+            animation: 'timing',
+            config: {
+              duration: 250,
+            },
+          },
+          close: {
+            animation: 'timing',
+            config: {
+              duration: 200,
+            },
+          },
+        },
       }}
     >
       <ExploreStack.Screen name="ExploreMain" component={ExploreScreen} />
@@ -40,7 +55,7 @@ const ExploreStackNavigator = () => {
         options={{
           gestureEnabled: true,
           gestureDirection: 'horizontal',
-          // Ensure smooth reanimated-based transitions
+          // Use same optimized transition
           cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
         }}
       />

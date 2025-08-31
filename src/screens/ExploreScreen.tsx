@@ -4,6 +4,8 @@ import Animated, {
   useSharedValue, 
   useAnimatedStyle, 
   withTiming, 
+  withSequence,
+  withDelay,
   Easing,
   runOnJS 
 } from 'react-native-reanimated';
@@ -38,7 +40,10 @@ export const ExploreScreen: React.FC = () => {
   const [selectedSort, setSelectedSort] = useState<string>('recents');
   const [showSortModal, setShowSortModal] = useState(false);
   const overlayOpacity = useSharedValue(0);
-  const modalTranslateY = useSharedValue(300);
+  const modalTranslateY = useSharedValue(300); // Start below screen
+  const [isShuffling, setIsShuffling] = useState(false);
+  const moduleOpacity = useSharedValue(1);
+  const moduleScale = useSharedValue(1);
 
   // Define filter categories for top nav pill filters
   const filterCategories: FilterCategory[] = [
@@ -133,17 +138,17 @@ export const ExploreScreen: React.FC = () => {
   useEffect(() => {
     if (showSortModal) {
       // Reset modal position immediately before animating
-      modalTranslateY.value = 300;
+      modalTranslateY.value = 300; // Start below screen
       overlayOpacity.value = 0;
       
-      // Animate both overlay and modal smoothly
+      // Animate both overlay and modal smoothly - slide up from bottom
       overlayOpacity.value = withTiming(1, { duration: 150 });
       modalTranslateY.value = withTiming(0, { 
         duration: 400, 
         easing: Easing.out(Easing.cubic) 
       });
     } else {
-      // Animate out
+      // Animate out - slide back down
       overlayOpacity.value = withTiming(0, { duration: 150 });
       modalTranslateY.value = withTiming(300, { 
         duration: 350, 
@@ -164,6 +169,29 @@ export const ExploreScreen: React.FC = () => {
       transform: [{ translateY: modalTranslateY.value }],
     };
   });
+
+  const moduleGridAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: moduleOpacity.value,
+      transform: [{ scale: moduleScale.value }],
+    };
+  });
+
+  // Shuffle animation for modules
+  const triggerShuffleAnimation = () => {
+    setIsShuffling(true);
+    
+    // Fall down animation
+    moduleOpacity.value = withTiming(0, { duration: 200 });
+    moduleScale.value = withTiming(0.8, { duration: 200 });
+    
+    // After falling, shuffle back up
+    setTimeout(() => {
+      moduleOpacity.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.back(1.2)) });
+      moduleScale.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.back(1.2)) });
+      setIsShuffling(false);
+    }, 250);
+  };
 
   const handleFilterSelectionChange = (selection: FilterSelection) => {
     // Reserved for future top nav filtering functionality
@@ -234,7 +262,7 @@ export const ExploreScreen: React.FC = () => {
         </View>
 
         {/* Module Grid */}
-        <View style={styles.moduleGrid}>
+        <Animated.View style={[styles.moduleGrid, moduleGridAnimatedStyle]}>
           {/* Create rows of 2 modules each */}
           {Array.from({ length: Math.ceil(filteredModules.length / 2) }, (_, rowIndex) => (
             <View key={rowIndex} style={styles.moduleRow}>
@@ -248,7 +276,7 @@ export const ExploreScreen: React.FC = () => {
               ))}
             </View>
           ))}
-        </View>
+        </Animated.View>
 
         {/* Empty State */}
         {filteredModules.length === 0 && (
@@ -290,7 +318,10 @@ export const ExploreScreen: React.FC = () => {
                 <TouchableOpacity 
                   style={styles.sortOption}
                   onPress={() => {
-                    setSelectedSort('recents');
+                    if (selectedSort !== 'recents') {
+                      triggerShuffleAnimation();
+                      setSelectedSort('recents');
+                    }
                     setShowSortModal(false);
                   }}
                 >
@@ -308,7 +339,10 @@ export const ExploreScreen: React.FC = () => {
                 <TouchableOpacity 
                   style={styles.sortOption}
                   onPress={() => {
-                    setSelectedSort('alphabetical');
+                    if (selectedSort !== 'alphabetical') {
+                      triggerShuffleAnimation();
+                      setSelectedSort('alphabetical');
+                    }
                     setShowSortModal(false);
                   }}
                 >
@@ -326,7 +360,10 @@ export const ExploreScreen: React.FC = () => {
                 <TouchableOpacity 
                   style={styles.sortOption}
                   onPress={() => {
-                    setSelectedSort('category');
+                    if (selectedSort !== 'category') {
+                      triggerShuffleAnimation();
+                      setSelectedSort('category');
+                    }
                     setShowSortModal(false);
                   }}
                 >

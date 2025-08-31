@@ -152,17 +152,17 @@ export const ExploreScreen: React.FC = () => {
         easing: Easing.out(Easing.cubic) 
       });
     } else {
-      // Animate out - slide back down
-      overlayOpacity.value = withTiming(0, { duration: 150 });
+      // Animate out - slide back down faster
+      overlayOpacity.value = withTiming(0, { duration: 100 });
       modalTranslateY.value = withTiming(300, { 
-        duration: 350, 
+        duration: 200, 
         easing: Easing.in(Easing.cubic) 
       });
       
       // Hide modal after animation completes
       setTimeout(() => {
         setModalVisible(false);
-      }, 350);
+      }, 200);
     }
   }, [showSortModal]);
 
@@ -328,10 +328,15 @@ export const ExploreScreen: React.FC = () => {
                   style={styles.sortOption}
                   onPress={() => {
                     if (selectedSort !== 'recents') {
-                      triggerShuffleAnimation();
-                      setSelectedSort('recents');
+                      setShowSortModal(false);
+                      // Trigger shuffle after modal closes
+                      setTimeout(() => {
+                        setSelectedSort('recents');
+                        triggerShuffleAnimation();
+                      }, 250); // Wait for modal to close
+                    } else {
+                      setShowSortModal(false);
                     }
-                    setShowSortModal(false);
                   }}
                 >
                   <Text style={[
@@ -349,10 +354,15 @@ export const ExploreScreen: React.FC = () => {
                   style={styles.sortOption}
                   onPress={() => {
                     if (selectedSort !== 'alphabetical') {
-                      triggerShuffleAnimation();
-                      setSelectedSort('alphabetical');
+                      setShowSortModal(false);
+                      // Trigger shuffle after modal closes
+                      setTimeout(() => {
+                        setSelectedSort('alphabetical');
+                        triggerShuffleAnimation();
+                      }, 250); // Wait for modal to close
+                    } else {
+                      setShowSortModal(false);
                     }
-                    setShowSortModal(false);
                   }}
                 >
                   <Text style={[
@@ -370,10 +380,15 @@ export const ExploreScreen: React.FC = () => {
                   style={styles.sortOption}
                   onPress={() => {
                     if (selectedSort !== 'category') {
-                      triggerShuffleAnimation();
-                      setSelectedSort('category');
+                      setShowSortModal(false);
+                      // Trigger shuffle after modal closes
+                      setTimeout(() => {
+                        setSelectedSort('category');
+                        triggerShuffleAnimation();
+                      }, 250); // Wait for modal to close
+                    } else {
+                      setShowSortModal(false);
                     }
-                    setShowSortModal(false);
                   }}
                 >
                   <Text style={[

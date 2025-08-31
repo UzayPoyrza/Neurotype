@@ -39,6 +39,7 @@ export const ExploreScreen: React.FC = () => {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [selectedSort, setSelectedSort] = useState<string>('recents');
   const [showSortModal, setShowSortModal] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
   const overlayOpacity = useSharedValue(0);
   const modalTranslateY = useSharedValue(300); // Start below screen
   const [isShuffling, setIsShuffling] = useState(false);
@@ -137,6 +138,9 @@ export const ExploreScreen: React.FC = () => {
   // Animate modal when visibility changes
   useEffect(() => {
     if (showSortModal) {
+      // Show modal immediately
+      setModalVisible(true);
+      
       // Reset modal position immediately before animating
       modalTranslateY.value = 300; // Start below screen
       overlayOpacity.value = 0;
@@ -154,6 +158,11 @@ export const ExploreScreen: React.FC = () => {
         duration: 350, 
         easing: Easing.in(Easing.cubic) 
       });
+      
+      // Hide modal after animation completes
+      setTimeout(() => {
+        setModalVisible(false);
+      }, 350);
     }
   }, [showSortModal]);
 
@@ -211,9 +220,9 @@ export const ExploreScreen: React.FC = () => {
         }
       },
       onPanResponderRelease: (evt, gestureState) => {
-        // If swiped up more than 50 pixels, close modal
+        // If swiped up more than 50 pixels, close modal with animation
         if (gestureState.dy < -50) {
-          setShowSortModal(false);
+          setShowSortModal(false); // This will trigger the useEffect animation
         }
       },
     })
@@ -292,7 +301,7 @@ export const ExploreScreen: React.FC = () => {
 
         {/* Sort Modal */}
         <Modal
-          visible={showSortModal}
+          visible={modalVisible}
           animationType="none"
           transparent={true}
           onRequestClose={() => setShowSortModal(false)}

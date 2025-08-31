@@ -200,8 +200,37 @@ export const SpotifyFilterBar: React.FC<SpotifyFilterBarProps> = ({
         newSelections = [...currentSelections, optionId];
       }
     } else {
-      // Single-select mode
-      newSelections = [optionId];
+      // Single-select mode - allow deselection
+      if (currentSelections.includes(optionId)) {
+        // Deselect if already selected
+        newSelections = [];
+        
+        // Update state immediately
+        const updatedSelections = {
+          ...selections,
+          [categoryId]: newSelections,
+        };
+        setSelections(updatedSelections);
+        onSelectionChange({
+          parentId: categoryId,
+          optionIds: newSelections,
+        });
+        
+        // Close secondary filters and return to primary with animation
+        filterOpacity.value = withTiming(0, { duration: 150 });
+        filterTranslateX.value = withTiming(30, { duration: 150 });
+        
+        setTimeout(() => {
+          setActiveCategory(null);
+          filterOpacity.value = withTiming(1, { duration: 200 });
+          filterTranslateX.value = withTiming(0, { duration: 200 });
+        }, 150);
+        
+        return; // Exit early to avoid duplicate state update
+      } else {
+        // Select new option
+        newSelections = [optionId];
+      }
     }
 
     const updatedSelections = {
@@ -214,11 +243,19 @@ export const SpotifyFilterBar: React.FC<SpotifyFilterBarProps> = ({
       parentId: categoryId,
       optionIds: newSelections,
     });
-  }, [selections, categories, onSelectionChange]);
+  }, [selections, categories, onSelectionChange, filterOpacity, filterTranslateX]);
 
   const handleBackPress = useCallback(() => {
-    setActiveCategory(null);
-  }, []);
+    // Animate back to primary filters
+    filterOpacity.value = withTiming(0, { duration: 150 });
+    filterTranslateX.value = withTiming(30, { duration: 150 });
+    
+    setTimeout(() => {
+      setActiveCategory(null);
+      filterOpacity.value = withTiming(1, { duration: 200 });
+      filterTranslateX.value = withTiming(0, { duration: 200 });
+    }, 150);
+  }, [filterOpacity, filterTranslateX]);
 
   const getActiveCategory = () => categories.find(cat => cat.id === activeCategory);
 

@@ -282,9 +282,6 @@ export const ExploreScreen: React.FC = () => {
               style={[styles.sortModal, modalAnimatedStyle]} 
               {...panResponder.panHandlers}
             >
-              {/* Modal Handle */}
-              <View style={styles.modalHandle} />
-              
               <View style={styles.sortModalHeader}>
                 <Text style={styles.sortModalTitle}>Sort by</Text>
               </View>
@@ -344,6 +341,13 @@ export const ExploreScreen: React.FC = () => {
                   )}
                 </TouchableOpacity>
               </View>
+              
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => setShowSortModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
             </Animated.View>
           </View>
         </Modal>
@@ -420,21 +424,31 @@ const styles = StyleSheet.create({
     maxHeight: '50%',
     paddingBottom: 40, // Account for safe area
   },
-  modalHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: theme.colors.disabled,
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginTop: theme.spacing.md,
-    marginBottom: theme.spacing.lg,
-  },
   sortModalHeader: {
     alignItems: 'center',
     paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.lg,
     paddingBottom: theme.spacing.lg,
     borderBottomWidth: theme.borders.width.normal,
     borderBottomColor: theme.colors.primary,
+  },
+  cancelButton: {
+    backgroundColor: theme.colors.background,
+    borderWidth: theme.borders.width.normal,
+    borderColor: '#ff4444',
+    borderRadius: theme.borders.radius.md,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.sm,
+    marginBottom: theme.spacing.lg,
+    alignSelf: 'center',
+    ...theme.shadows.small,
+  },
+  cancelButtonText: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.semibold,
+    color: '#ff4444',
+    fontFamily: theme.typography.fontFamily,
+    textAlign: 'center',
   },
   sortModalTitle: {
     fontSize: theme.typography.sizes.xl,

@@ -6,6 +6,13 @@ import {
   ScrollView,
   StyleSheet,
 } from 'react-native';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withTiming, 
+  withSpring,
+  Easing 
+} from 'react-native-reanimated';
 import { theme } from '../styles/theme';
 
 export interface FilterOption {
@@ -33,6 +40,112 @@ interface SpotifyFilterBarProps {
   style?: any;
 }
 
+interface AnimatedFilterChipProps {
+  category: FilterCategory;
+  isSelected: boolean;
+  selectionCount: number;
+  onPress: () => void;
+}
+
+const AnimatedFilterChip: React.FC<AnimatedFilterChipProps> = ({
+  category,
+  isSelected,
+  selectionCount,
+  onPress,
+}) => {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: scale.value }],
+    };
+  });
+
+  const handlePress = () => {
+    // Bounce animation
+    scale.value = withSpring(0.95, { damping: 15, stiffness: 400 });
+    setTimeout(() => {
+      scale.value = withSpring(1, { damping: 15, stiffness: 400 });
+    }, 100);
+    
+    onPress();
+  };
+
+  return (
+    <TouchableOpacity onPress={handlePress} activeOpacity={0.7}>
+      <Animated.View style={[
+        styles.primaryChip,
+        isSelected && styles.activePrimaryChip,
+        animatedStyle
+      ]}>
+        <Text style={[
+          styles.primaryChipText,
+          isSelected && styles.activePrimaryChipText,
+        ]}>
+          {category.label}
+        </Text>
+        {isSelected && selectionCount > 0 && (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{selectionCount}</Text>
+          </View>
+        )}
+      </Animated.View>
+    </TouchableOpacity>
+  );
+};
+
+interface AnimatedSecondaryChipProps {
+  option: FilterOption;
+  isSelected: boolean;
+  onPress: () => void;
+}
+
+const AnimatedSecondaryChip: React.FC<AnimatedSecondaryChipProps> = ({
+  option,
+  isSelected,
+  onPress,
+}) => {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: scale.value }],
+    };
+  });
+
+  const handlePress = () => {
+    // Bounce animation
+    scale.value = withSpring(0.9, { damping: 15, stiffness: 400 });
+    setTimeout(() => {
+      scale.value = withSpring(1, { damping: 15, stiffness: 400 });
+    }, 100);
+    
+    onPress();
+  };
+
+  return (
+    <TouchableOpacity onPress={handlePress} activeOpacity={0.7}>
+      <Animated.View style={[
+        styles.secondaryChip,
+        isSelected && styles.selectedSecondaryChip,
+        animatedStyle
+      ]}>
+        <Text style={[
+          styles.secondaryChipText,
+          isSelected && styles.selectedSecondaryChipText,
+        ]}>
+          {option.label}
+        </Text>
+        {option.badge && (
+          <View style={styles.optionBadge}>
+            <Text style={styles.optionBadgeText}>{option.badge}</Text>
+          </View>
+        )}
+      </Animated.View>
+    </TouchableOpacity>
+  );
+};
+
 export const SpotifyFilterBar: React.FC<SpotifyFilterBarProps> = ({
   categories,
   onSelectionChange,
@@ -43,16 +156,34 @@ export const SpotifyFilterBar: React.FC<SpotifyFilterBarProps> = ({
   const [selections, setSelections] = useState<Record<string, string[]>>(
     initialSelection ? { [initialSelection.parentId]: initialSelection.optionIds } : {}
   );
+  
+  // Animation for transition between primary and secondary filters
+  const filterOpacity = useSharedValue(1);
+  const filterTranslateX = useSharedValue(0);
 
   const handlePrimaryChipPress = useCallback((categoryId: string) => {
     if (activeCategory === categoryId) {
-      // Close secondary options
-      setActiveCategory(null);
+      // Close secondary options with animation
+      filterOpacity.value = withTiming(0, { duration: 150 });
+      filterTranslateX.value = withTiming(30, { duration: 150 });
+      
+      setTimeout(() => {
+        setActiveCategory(null);
+        filterOpacity.value = withTiming(1, { duration: 200 });
+        filterTranslateX.value = withTiming(0, { duration: 200 });
+      }, 150);
     } else {
-      // Show secondary options in same row
-      setActiveCategory(categoryId);
+      // Open secondary options with animation
+      filterOpacity.value = withTiming(0, { duration: 150 });
+      filterTranslateX.value = withTiming(-30, { duration: 150 });
+      
+      setTimeout(() => {
+        setActiveCategory(categoryId);
+        filterOpacity.value = withTiming(1, { duration: 200 });
+        filterTranslateX.value = withTiming(0, { duration: 200 });
+      }, 150);
     }
-  }, [activeCategory]);
+  }, [activeCategory, filterOpacity, filterTranslateX]);
 
   const handleSecondaryChipPress = useCallback((categoryId: string, optionId: string) => {
     const category = categories.find(cat => cat.id === categoryId);
@@ -101,47 +232,39 @@ export const SpotifyFilterBar: React.FC<SpotifyFilterBarProps> = ({
     return categorySelections.length;
   };
 
+  // Animated style for filter transition
+  const filterAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: filterOpacity.value,
+      transform: [{ translateX: filterTranslateX.value }],
+    };
+  });
+
   return (
     <View style={[styles.container, style]}>
       {/* Single Filter Row - Primary and Secondary in same row */}
-      <ScrollView
+      <Animated.ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.primaryRow}
-        style={styles.primaryScrollView}
+        style={[styles.primaryScrollView, filterAnimatedStyle]}
         bounces={true}
         alwaysBounceHorizontal={true}
         decelerationRate="fast"
       >
         {/* Show primary categories when no category is active */}
-        {!activeCategory && categories.map((category) => (
-          <TouchableOpacity
-            key={category.id}
-            style={[
-              styles.primaryChip,
-              activeCategory === category.id && styles.activePrimaryChip,
-            ]}
-            onPress={() => handlePrimaryChipPress(category.id)}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel={`${category.label} filter${hasActiveSelections(category.id) ? `, ${getSelectionCount(category.id)} selected` : ''}`}
-            accessibilityState={{ selected: activeCategory === category.id }}
-          >
-            <Text style={[
-              styles.primaryChipText,
-              activeCategory === category.id && styles.activePrimaryChipText,
-            ]}>
-              {category.label}
-            </Text>
-            {hasActiveSelections(category.id) && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>
-                  {getSelectionCount(category.id)}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        ))}
+        {!activeCategory && categories.map((category) => {
+          const isSelected = hasActiveSelections(category.id);
+          return (
+            <AnimatedFilterChip
+              key={category.id}
+              category={category}
+              isSelected={isSelected}
+              selectionCount={getSelectionCount(category.id)}
+              onPress={() => handlePrimaryChipPress(category.id)}
+            />
+          );
+        })}
 
         {/* Show secondary options when a category is active */}
         {activeCategory && (
@@ -161,37 +284,17 @@ export const SpotifyFilterBar: React.FC<SpotifyFilterBarProps> = ({
             {getActiveCategory()?.options.map((option) => {
               const isSelected = (selections[activeCategory] || []).includes(option.id);
               return (
-                <TouchableOpacity
+                <AnimatedSecondaryChip
                   key={option.id}
-                  style={[
-                    styles.secondaryChip,
-                    isSelected && styles.selectedSecondaryChip,
-                  ]}
+                  option={option}
+                  isSelected={isSelected}
                   onPress={() => handleSecondaryChipPress(activeCategory, option.id)}
-                  activeOpacity={0.7}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${option.label}${isSelected ? ', selected' : ''}`}
-                  accessibilityState={{ selected: isSelected }}
-                >
-                  <Text style={[
-                    styles.secondaryChipText,
-                    isSelected && styles.selectedSecondaryChipText,
-                  ]}>
-                    {option.label}
-                  </Text>
-                  {option.badge && (
-                    <View style={styles.optionBadge}>
-                      <Text style={styles.optionBadgeText}>
-                        {option.badge}
-                      </Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
+                />
               );
             })}
           </>
         )}
-      </ScrollView>
+      </Animated.ScrollView>
     </View>
   );
 };

@@ -35,8 +35,14 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ module, onPress }) => {
         </Text>
         
         <View style={styles.footer}>
-          <View style={styles.categoryBadge}>
-            <Text style={styles.categoryText}>
+          <View style={[
+            styles.categoryBadge,
+            { backgroundColor: theme.colors.category[module.category].background }
+          ]}>
+            <Text style={[
+              styles.categoryText,
+              { color: theme.colors.category[module.category].text }
+            ]}>
               {module.category.toUpperCase()}
             </Text>
           </View>
@@ -122,7 +128,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   categoryBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: theme.borders.radius.sm,
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: theme.spacing.xs,

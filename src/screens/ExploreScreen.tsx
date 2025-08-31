@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, PanResponder } from 'react-native';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, PanResponder, Animated } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { Session, Modality, Goal } from '../types';
@@ -30,6 +30,8 @@ export const ExploreScreen: React.FC = () => {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [selectedSort, setSelectedSort] = useState<string>('recents');
   const [showSortModal, setShowSortModal] = useState(false);
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
+  const modalTranslateY = useRef(new Animated.Value(300)).current;
 
   // Define filter categories for top nav pill filters
   const filterCategories: FilterCategory[] = [
@@ -119,6 +121,39 @@ export const ExploreScreen: React.FC = () => {
     addRecentModule(moduleId);
     navigation.navigate('ModuleDetail', { moduleId });
   };
+
+  // Animate modal when visibility changes
+  useEffect(() => {
+    if (showSortModal) {
+      // Fade in overlay quickly
+      Animated.timing(overlayOpacity, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }).start();
+      
+      // Slide up modal content
+      Animated.timing(modalTranslateY, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      // Fade out overlay
+      Animated.timing(overlayOpacity, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }).start();
+      
+      // Slide down modal content
+      Animated.timing(modalTranslateY, {
+        toValue: 300,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [showSortModal, overlayOpacity, modalTranslateY]);
 
   const handleFilterSelectionChange = (selection: FilterSelection) => {
     // Reserved for future top nav filtering functionality
@@ -220,16 +255,23 @@ export const ExploreScreen: React.FC = () => {
         {/* Sort Modal */}
         <Modal
           visible={showSortModal}
-          animationType="slide"
+          animationType="none"
           transparent={true}
           onRequestClose={() => setShowSortModal(false)}
         >
-          <TouchableOpacity 
-            style={styles.modalOverlay}
-            activeOpacity={1}
-            onPress={() => setShowSortModal(false)}
-          >
-            <View style={styles.sortModal} {...panResponder.panHandlers}>
+          <View style={styles.modalContainer}>
+            <Animated.View 
+              style={[styles.modalOverlay, { opacity: overlayOpacity }]}
+            />
+            <TouchableOpacity 
+              style={styles.overlayTouchable}
+              activeOpacity={1}
+              onPress={() => setShowSortModal(false)}
+            />
+            <Animated.View 
+              style={[styles.sortModal, { transform: [{ translateY: modalTranslateY }] }]} 
+              {...panResponder.panHandlers}
+            >
               {/* Modal Handle */}
               <View style={styles.modalHandle} />
               
@@ -292,8 +334,8 @@ export const ExploreScreen: React.FC = () => {
                   )}
                 </TouchableOpacity>
               </View>
-            </View>
-          </TouchableOpacity>
+            </Animated.View>
+          </View>
         </Modal>
       </View>
     </ExploreScreenComponent>
@@ -338,10 +380,24 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
     fontFamily: theme.typography.fontFamily,
   },
-  modalOverlay: {
+  modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  overlayTouchable: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   sortModal: {
     backgroundColor: theme.colors.surface,
@@ -409,6 +465,7 @@ const styles = StyleSheet.create({
   },
   moduleGrid: {
     gap: theme.spacing.md,
+    minHeight: 600, // Ensure enough height for web scrolling
   },
   moduleRow: {
     flexDirection: 'row',

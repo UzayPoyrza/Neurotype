@@ -290,6 +290,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.borders.radius.md,
     paddingVertical: theme.spacing.md,
     alignItems: 'center',
+    justifyContent: 'center',
     ...theme.shadows.medium,
   },
   shareButtonText: {
@@ -306,6 +307,7 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.primary,
     paddingVertical: theme.spacing.md,
     alignItems: 'center',
+    justifyContent: 'center',
     ...theme.shadows.medium,
   },
   inviteButtonText: {

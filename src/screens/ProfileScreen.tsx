@@ -1,34 +1,30 @@
 import React, { useState } from 'react';
-import { View, Text, Switch, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
 import { InstagramStyleScreen } from '../components/InstagramStyleScreen';
 import { ProfilePictureModal } from '../components/ProfilePictureModal';
 import { SubscriptionBadge } from '../components/SubscriptionBadge';
-import { SettingsPanel } from '../components/SettingsPanel';
 import { UserIcon, SettingsIcon } from '../components/icons';
 
+type ProfileStackParamList = {
+  ProfileMain: undefined;
+  Settings: undefined;
+};
+
+type ProfileScreenNavigationProp = StackNavigationProp<ProfileStackParamList, 'ProfileMain'>;
+
 export const ProfileScreen: React.FC = () => {
+  const navigation = useNavigation<ProfileScreenNavigationProp>();
   const { 
-    userProgress, 
-    reminderEnabled, 
-    toggleReminder, 
-    darkThemeEnabled, 
-    toggleDarkTheme,
     profileIcon,
     setProfileIcon,
     subscriptionType
   } = useStore();
   
   const [modalVisible, setModalVisible] = useState(false);
-  const [settingsPanelVisible, setSettingsPanelVisible] = useState(false);
-
-  // Calculate stats
-  const totalSessions = userProgress.sessionDeltas.length;
-  const recentDeltas = userProgress.sessionDeltas.slice(-7);
-  const avgDelta = recentDeltas.length > 0 
-    ? recentDeltas.reduce((sum, delta) => sum + (delta.before - delta.after), 0) / recentDeltas.length
-    : 0;
 
   return (
     <InstagramStyleScreen 
@@ -49,138 +45,90 @@ export const ProfileScreen: React.FC = () => {
       rightComponent={
         <SettingsIcon 
           size={40}
-          onPress={() => setSettingsPanelVisible(true)}
+          onPress={() => navigation.navigate('Settings')}
         />
       }
     >
       <View style={styles.content}>
-        {/* Form-like Header */}
-        <View style={styles.formHeader}>
-          <View style={styles.titleField}>
-            <UserIcon 
-              size={32}
-              profileIcon={profileIcon}
-              onPress={() => setModalVisible(true)}
-            />
-            <Text style={styles.titlePlaceholder}>User Profile</Text>
-            <View style={styles.checkButton}>
-              <Text style={styles.checkText}>✓</Text>
-            </View>
+        {/* Affiliate Program */}
+        <View style={styles.affiliateContainer}>
+          {/* Header */}
+          <View style={styles.affiliateHeader}>
+            <Text style={styles.affiliateEmoji}>🎁</Text>
+            <Text style={styles.affiliateTitle}>Share & Earn</Text>
+            <Text style={styles.affiliateSubtitle}>Give your friends 30 days of premium meditation</Text>
           </View>
-          
-          <View style={styles.descriptionField}>
-            <Text style={styles.descriptionPlaceholder}>Your meditation profile and settings</Text>
-          </View>
-        </View>
 
-        {/* Stats Block */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>
-            Your Stats
-          </Text>
-          
-          <View style={styles.statsList}>
-            <View style={styles.statRow}>
-              <Text style={styles.statLabel}>Current Streak</Text>
-              <Text style={styles.statValue}>
-                {userProgress.streak} days
+          {/* Main Card */}
+          <View style={styles.affiliateCard}>
+            <View style={styles.benefitSection}>
+              <Text style={styles.benefitTitle}>How it works:</Text>
+              
+              <View style={styles.stepsList}>
+                <View style={styles.step}>
+                  <View style={styles.stepNumber}>
+                    <Text style={styles.stepNumberText}>1</Text>
+                  </View>
+                  <Text style={styles.stepText}>Share your unique referral link</Text>
+                </View>
+                
+                <View style={styles.step}>
+                  <View style={styles.stepNumber}>
+                    <Text style={styles.stepNumberText}>2</Text>
+                  </View>
+                  <Text style={styles.stepText}>Friend downloads and signs up</Text>
+                </View>
+                
+                <View style={styles.step}>
+                  <View style={styles.stepNumber}>
+                    <Text style={styles.stepNumberText}>3</Text>
+                  </View>
+                  <Text style={styles.stepText}>They get 30 days of premium free!</Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.rewardSection}>
+              <Text style={styles.rewardTitle}>🌟 Your Reward</Text>
+              <Text style={styles.rewardDescription}>
+                For every friend who joins, you'll earn premium credits and exclusive meditation content!
               </Text>
             </View>
-            
-            <View style={styles.statRow}>
-              <Text style={styles.statLabel}>Sessions Completed</Text>
-              <Text style={styles.statValue}>
-                {totalSessions}
-              </Text>
+
+            {/* Referral Link */}
+            <View style={styles.referralSection}>
+              <Text style={styles.referralLabel}>Your referral link:</Text>
+              <View style={styles.referralLinkContainer}>
+                <Text style={styles.referralLink}>neurotype.app/ref/user123</Text>
+                <TouchableOpacity style={styles.copyButton}>
+                  <Text style={styles.copyButtonText}>Copy</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-            
-            <View style={styles.statRow}>
-              <Text style={styles.statLabel}>Avg Anxiety Reduction</Text>
-              <Text style={styles.statValue}>
-                {avgDelta > 0 ? avgDelta.toFixed(1) : '0'} points
-              </Text>
+
+            {/* Action Buttons */}
+            <View style={styles.actionButtons}>
+              <TouchableOpacity style={styles.shareButton}>
+                <Text style={styles.shareButtonText}>📱 Share Link</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.inviteButton}>
+                <Text style={styles.inviteButtonText}>✉️ Send Invite</Text>
+              </TouchableOpacity>
             </View>
           </View>
-        </View>
 
-        {/* Neurotype */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>
-            Your Neurotype
-          </Text>
-          
-          <View style={styles.neurotypeList}>
-            <View style={styles.neurotypeRow}>
-              <Text style={styles.neurotypeLabel}>Primary</Text>
-              <Text style={styles.neurotypeValue}>Sound</Text>
+          {/* Stats */}
+          <View style={styles.affiliateStats}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>0</Text>
+              <Text style={styles.statLabel}>Friends Invited</Text>
             </View>
-            
-            <View style={styles.neurotypeRow}>
-              <Text style={styles.neurotypeLabel}>Secondary</Text>
-              <Text style={styles.neurotypeValue}>Movement</Text>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>0</Text>
+              <Text style={styles.statLabel}>Credits Earned</Text>
             </View>
-          </View>
-          
-          <Text style={styles.neurotypeNote}>
-            Based on your meditation patterns and responses
-          </Text>
-        </View>
-
-        {/* Reminder Toggle */}
-        <View style={styles.card}>
-          <View style={styles.reminderRow}>
-            <View style={styles.reminderContent}>
-              <Text style={styles.reminderTitle}>
-                Daily Reminder
-              </Text>
-              <Text style={styles.reminderTime}>
-                8:00 PM
-              </Text>
-            </View>
-            <Switch
-              testID="toggle-reminder"
-              value={reminderEnabled}
-              onValueChange={toggleReminder}
-              trackColor={{ false: '#e5e7eb', true: '#3b82f6' }}
-              thumbColor={reminderEnabled ? '#ffffff' : '#ffffff'}
-            />
-          </View>
-        </View>
-
-        {/* Dark Theme Toggle */}
-        <View style={styles.card}>
-          <View style={styles.reminderRow}>
-            <View style={styles.reminderContent}>
-              <Text style={styles.reminderTitle}>
-                Dark Theme
-              </Text>
-              <Text style={styles.reminderTime}>
-                Switch to dark mode
-              </Text>
-            </View>
-            <Switch
-              testID="toggle-dark-theme"
-              value={darkThemeEnabled}
-              onValueChange={toggleDarkTheme}
-              trackColor={{ false: '#e5e7eb', true: '#3b82f6' }}
-              thumbColor={darkThemeEnabled ? '#ffffff' : '#ffffff'}
-            />
-          </View>
-        </View>
-
-        {/* About */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>
-            About Neurotype
-          </Text>
-          
-          <Text style={styles.aboutText}>
-            The first meditation app that adapts to your brain type, using neuroscience to match you with the meditation method proven to work for you.
-          </Text>
-          
-          <View style={styles.versionInfo}>
-            <Text style={styles.versionText}>Version 1.0.0</Text>
-            <Text style={styles.versionText}>Built with ❤️ for your mental wellness</Text>
           </View>
         </View>
       </View>
@@ -192,12 +140,6 @@ export const ProfileScreen: React.FC = () => {
         onSelectIcon={setProfileIcon}
         currentIcon={profileIcon}
       />
-      
-      {/* Settings Panel */}
-      <SettingsPanel
-        visible={settingsPanelVisible}
-        onClose={() => setSettingsPanelVisible(false)}
-      />
     </InstagramStyleScreen>
   );
 };
@@ -206,151 +148,202 @@ const styles = StyleSheet.create({
   content: {
     ...theme.common.content,
   },
-  formHeader: {
-    marginBottom: 40,
-  },
-  titleField: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borders.radius.lg,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
-    borderWidth: theme.borders.width.thick,
-    borderColor: theme.colors.primary,
-    ...theme.shadows.medium,
-  },
-
-  titlePlaceholder: {
+  affiliateContainer: {
     flex: 1,
+  },
+  affiliateHeader: {
+    alignItems: 'center',
+    marginBottom: theme.spacing.xxxl,
+  },
+  affiliateEmoji: {
+    fontSize: 48,
+    marginBottom: theme.spacing.md,
+  },
+  affiliateTitle: {
+    fontSize: theme.typography.sizes.xxl,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.primary,
+    marginBottom: theme.spacing.sm,
+    fontFamily: theme.typography.fontFamily,
+    textAlign: 'center',
+  },
+  affiliateSubtitle: {
+    fontSize: theme.typography.sizes.lg,
+    color: theme.colors.secondary,
+    fontFamily: theme.typography.fontFamily,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  affiliateCard: {
+    ...theme.common.card,
+    marginBottom: theme.spacing.xxxl,
+    padding: theme.spacing.xl,
+  },
+  benefitSection: {
+    marginBottom: theme.spacing.xl,
+  },
+  benefitTitle: {
     fontSize: theme.typography.sizes.lg,
     fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.secondary,
-    fontFamily: theme.typography.fontFamily,
-  },
-  checkButton: {
-    width: 24,
-    height: 24,
-    borderRadius: theme.borders.radius.sm,
-    backgroundColor: theme.colors.success,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkText: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.bold,
     color: theme.colors.primary,
-  },
-  descriptionField: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borders.radius.lg,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
-    borderWidth: theme.borders.width.thick,
-    borderColor: theme.colors.primary,
-    ...theme.shadows.medium,
-    marginTop: theme.spacing.sm,
-    marginLeft: theme.spacing.xl,
-  },
-  descriptionPlaceholder: {
-    fontSize: theme.typography.sizes.md,
-    color: theme.colors.secondary,
-    fontFamily: theme.typography.fontFamily,
-  },
-  card: {
-    ...theme.common.card,
-    marginBottom: theme.spacing.xxl,
-  },
-  cardTitle: {
-    fontSize: theme.typography.sizes.xl,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.primary,
-    marginBottom: theme.spacing.xl,
-    fontFamily: theme.typography.fontFamily,
-  },
-  statsList: {
-    gap: theme.spacing.xl,
-  },
-  statRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  statLabel: {
-    color: theme.colors.secondary,
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.semibold,
-    fontFamily: theme.typography.fontFamily,
-  },
-  statValue: {
-    fontSize: theme.typography.sizes.xl,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
-  },
-  neurotypeList: {
-    gap: theme.spacing.lg,
-  },
-  neurotypeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  neurotypeLabel: {
-    color: theme.colors.secondary,
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.semibold,
-    fontFamily: theme.typography.fontFamily,
-  },
-  neurotypeValue: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
-  },
-  neurotypeNote: {
-    color: theme.colors.secondary,
-    fontSize: theme.typography.sizes.sm,
-    fontStyle: 'italic',
-    marginTop: theme.spacing.md,
-    fontFamily: theme.typography.fontFamily,
-  },
-  reminderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  reminderContent: {
-    flex: 1,
-  },
-  reminderTitle: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.primary,
-    marginBottom: theme.spacing.xs,
-    fontFamily: theme.typography.fontFamily,
-  },
-  reminderTime: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.secondary,
-    fontFamily: theme.typography.fontFamily,
-  },
-  aboutText: {
-    color: theme.colors.secondary,
-    fontSize: theme.typography.sizes.md,
-    lineHeight: 24,
     marginBottom: theme.spacing.lg,
     fontFamily: theme.typography.fontFamily,
   },
-  versionInfo: {
+  stepsList: {
+    gap: theme.spacing.lg,
+  },
+  step: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  versionText: {
+  stepNumber: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: theme.colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: theme.spacing.md,
+    ...theme.shadows.small,
+  },
+  stepNumberText: {
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.surface,
+    fontFamily: theme.typography.fontFamily,
+  },
+  stepText: {
+    flex: 1,
+    fontSize: theme.typography.sizes.md,
     color: theme.colors.secondary,
+    fontFamily: theme.typography.fontFamily,
+    lineHeight: 20,
+  },
+  rewardSection: {
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.borders.radius.lg,
+    padding: theme.spacing.lg,
+    borderWidth: theme.borders.width.normal,
+    borderColor: theme.colors.primary,
+    marginBottom: theme.spacing.xl,
+  },
+  rewardTitle: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.primary,
+    marginBottom: theme.spacing.sm,
+    fontFamily: theme.typography.fontFamily,
+  },
+  rewardDescription: {
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.secondary,
+    fontFamily: theme.typography.fontFamily,
+    lineHeight: 20,
+  },
+  referralSection: {
+    marginBottom: theme.spacing.xl,
+  },
+  referralLabel: {
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.primary,
+    marginBottom: theme.spacing.sm,
+    fontFamily: theme.typography.fontFamily,
+  },
+  referralLinkContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.borders.radius.md,
+    borderWidth: theme.borders.width.normal,
+    borderColor: theme.colors.primary,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    ...theme.shadows.small,
+  },
+  referralLink: {
+    flex: 1,
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.secondary,
+    fontFamily: theme.typography.fontFamily,
+  },
+  copyButton: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borders.radius.sm,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
+    ...theme.shadows.small,
+  },
+  copyButtonText: {
     fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.surface,
+    fontFamily: theme.typography.fontFamily,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+  },
+  shareButton: {
+    flex: 1,
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borders.radius.md,
+    paddingVertical: theme.spacing.md,
+    alignItems: 'center',
+    ...theme.shadows.medium,
+  },
+  shareButtonText: {
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.surface,
+    fontFamily: theme.typography.fontFamily,
+  },
+  inviteButton: {
+    flex: 1,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borders.radius.md,
+    borderWidth: theme.borders.width.thick,
+    borderColor: theme.colors.primary,
+    paddingVertical: theme.spacing.md,
+    alignItems: 'center',
+    ...theme.shadows.medium,
+  },
+  inviteButtonText: {
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.primary,
+    fontFamily: theme.typography.fontFamily,
+  },
+  affiliateStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borders.radius.lg,
+    borderWidth: theme.borders.width.thick,
+    borderColor: theme.colors.primary,
+    paddingVertical: theme.spacing.xl,
+    ...theme.shadows.medium,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: theme.typography.sizes.xxl,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.primary,
     marginBottom: theme.spacing.xs,
     fontFamily: theme.typography.fontFamily,
+  },
+  statLabel: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.secondary,
+    fontFamily: theme.typography.fontFamily,
+    textAlign: 'center',
+  },
+  statDivider: {
+    width: 2,
+    height: 40,
+    backgroundColor: theme.colors.primary,
   },
 }); 

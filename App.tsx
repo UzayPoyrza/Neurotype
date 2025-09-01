@@ -11,6 +11,7 @@ import { TodayScreen } from './src/screens/TodayScreen';
 import { ProgressScreen } from './src/screens/ProgressScreen';
 import { ExploreScreen } from './src/screens/ExploreScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
+import { SettingsScreen } from './src/screens/SettingsScreen';
 import { PlayerScreen } from './src/screens/PlayerScreen';
 import { ModuleDetailScreen } from './src/screens/ModuleDetailScreen';
 import { SplashScreen } from './src/screens/SplashScreen';
@@ -20,6 +21,7 @@ import { useStore } from './src/store/useStore';
 
 const Tab = createBottomTabNavigator();
 const ExploreStack = createStackNavigator();
+const ProfileStack = createStackNavigator();
 
 
 
@@ -40,14 +42,12 @@ const ExploreStackNavigator = () => {
             animation: 'timing',
             config: {
               duration: 250,
-              useNativeDriver: true, // Use native driver for better performance
             },
           },
           close: {
             animation: 'timing',
             config: {
-              duration: 200, // Slightly longer for smoother close
-              useNativeDriver: true, // Use native driver for better performance
+              duration: 200,
             },
           },
         },
@@ -70,7 +70,6 @@ const ExploreStackNavigator = () => {
               animation: 'timing',
               config: {
                 duration: 250,
-                useNativeDriver: true,
               },
             },
             close: {
@@ -78,13 +77,55 @@ const ExploreStackNavigator = () => {
               config: {
                 duration: 80, // Ultra-fast close
                 easing: Easing.out(Easing.cubic), // Smooth easing for butter smooth release
-                useNativeDriver: true,
               },
             },
           },
         }}
       />
     </ExploreStack.Navigator>
+  );
+};
+
+// Profile Stack Navigator
+const ProfileStackNavigator = () => {
+  return (
+    <ProfileStack.Navigator
+      screenOptions={{
+        headerShown: false,
+        gestureEnabled: true,
+        gestureDirection: 'horizontal',
+        // Use the same optimized iOS-style transition as Explore
+        cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+        gestureResponseDistance: 60, // Extra large response area
+        gestureVelocityImpact: 0.005, // Minimal velocity needed
+        transitionSpec: {
+          open: {
+            animation: 'timing',
+            config: {
+              duration: 250,
+            },
+          },
+          close: {
+            animation: 'timing',
+            config: {
+              duration: 80, // Ultra-fast close like modules
+              easing: Easing.out(Easing.cubic),
+            },
+          },
+        },
+      }}
+    >
+      <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
+      <ProfileStack.Screen 
+        name="Settings" 
+        component={SettingsScreen}
+        options={{
+          gestureEnabled: true,
+          gestureDirection: 'horizontal',
+          cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+        }}
+      />
+    </ProfileStack.Navigator>
   );
 };
 
@@ -139,7 +180,7 @@ export default function App() {
         <Tab.Screen name="Today" component={TodayScreen} />
         <Tab.Screen name="Progress" component={ProgressScreen} />
         <Tab.Screen name="Explore" component={ExploreStackNavigator} />
-        <Tab.Screen name="Profile" component={ProfileScreen} />
+        <Tab.Screen name="Profile" component={ProfileStackNavigator} />
       </Tab.Navigator>
 
       {/* Player Modal */}

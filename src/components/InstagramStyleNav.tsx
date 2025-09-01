@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { theme } from '../styles/theme';
 
 interface InstagramStyleNavProps {
-  title?: string;
+  title?: string | React.ReactNode;
   searchComponent?: React.ReactNode;
   showBackButton?: boolean;
   onBackPress?: () => void;
@@ -225,9 +225,13 @@ export const InstagramStyleNav = forwardRef<InstagramStyleNavRef, InstagramStyle
 
             {/* Center - Title */}
             <View style={styles.centerSection}>
-              <Text style={styles.title} numberOfLines={1}>
-                {title}
-              </Text>
+              {typeof title === 'string' ? (
+                <Text style={styles.title} numberOfLines={1}>
+                  {title}
+                </Text>
+              ) : (
+                title
+              )}
             </View>
 
             {/* Right side - Optional component or empty space */}

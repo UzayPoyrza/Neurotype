@@ -7,6 +7,7 @@ interface AppState {
   filters: FilterState;
   reminderEnabled: boolean;
   darkThemeEnabled: boolean;
+  profileIcon: string;
   activeSession: Session | null;
   activeModuleId: string | null;
   recentModuleIds: string[];
@@ -14,6 +15,7 @@ interface AppState {
   setFilters: (filters: FilterState) => void;
   toggleReminder: () => void;
   toggleDarkTheme: () => void;
+  setProfileIcon: (icon: string) => void;
   setActiveSession: (session: Session | null) => void;
   setActiveModuleId: (moduleId: string | null) => void;
   addRecentModule: (moduleId: string) => void;
@@ -27,6 +29,7 @@ export const useStore = create<AppState>((set) => ({
   },
   reminderEnabled: false,
   darkThemeEnabled: false,
+  profileIcon: '👤',
   activeSession: null,
   activeModuleId: null,
   recentModuleIds: [],
@@ -48,6 +51,9 @@ export const useStore = create<AppState>((set) => ({
     
   toggleDarkTheme: () => 
     set((state) => ({ darkThemeEnabled: !state.darkThemeEnabled })),
+    
+  setProfileIcon: (icon: string) => 
+    set({ profileIcon: icon }),
     
   setActiveSession: (session: Session | null) => 
     set({ activeSession: session }),

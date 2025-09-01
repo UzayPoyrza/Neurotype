@@ -5,7 +5,7 @@ import { useInstagramScrollDetection } from '../hooks/useInstagramScrollDetectio
 import { theme } from '../styles/theme';
 
 interface InstagramStyleScreenProps {
-  title?: string;
+  title?: string | React.ReactNode;
   searchComponent?: React.ReactNode;
   showBackButton?: boolean;
   onBackPress?: () => void;

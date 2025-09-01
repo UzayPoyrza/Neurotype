@@ -1,11 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, Switch, StyleSheet } from 'react-native';
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
 import { InstagramStyleScreen } from '../components/InstagramStyleScreen';
+import { ProfilePictureModal } from '../components/ProfilePictureModal';
+import { UserIcon } from '../components/icons';
 
 export const ProfileScreen: React.FC = () => {
-  const { userProgress, reminderEnabled, toggleReminder, darkThemeEnabled, toggleDarkTheme } = useStore();
+  const { 
+    userProgress, 
+    reminderEnabled, 
+    toggleReminder, 
+    darkThemeEnabled, 
+    toggleDarkTheme,
+    profileIcon,
+    setProfileIcon
+  } = useStore();
+  
+  const [modalVisible, setModalVisible] = useState(false);
 
   // Calculate stats
   const totalSessions = userProgress.sessionDeltas.length;
@@ -15,14 +27,24 @@ export const ProfileScreen: React.FC = () => {
     : 0;
 
   return (
-    <InstagramStyleScreen title="Profile">
+    <InstagramStyleScreen 
+      title={
+        <UserIcon 
+          size={40}
+          profileIcon={profileIcon}
+          onPress={() => setModalVisible(true)}
+        />
+      }
+    >
       <View style={styles.content}>
         {/* Form-like Header */}
         <View style={styles.formHeader}>
           <View style={styles.titleField}>
-            <View style={styles.infoIcon}>
-              <Text style={styles.infoText}>i</Text>
-            </View>
+            <UserIcon 
+              size={32}
+              profileIcon={profileIcon}
+              onPress={() => setModalVisible(true)}
+            />
             <Text style={styles.titlePlaceholder}>User Profile</Text>
             <View style={styles.checkButton}>
               <Text style={styles.checkText}>✓</Text>
@@ -145,6 +167,14 @@ export const ProfileScreen: React.FC = () => {
           </View>
         </View>
       </View>
+      
+      {/* Profile Picture Modal */}
+      <ProfilePictureModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onSelectIcon={setProfileIcon}
+        currentIcon={profileIcon}
+      />
     </InstagramStyleScreen>
   );
 };
@@ -167,22 +197,7 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.primary,
     ...theme.shadows.medium,
   },
-  infoIcon: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: theme.spacing.md,
-  },
-  infoText: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.primary,
-    fontStyle: 'italic',
-  },
+
   titlePlaceholder: {
     flex: 1,
     fontSize: theme.typography.sizes.lg,

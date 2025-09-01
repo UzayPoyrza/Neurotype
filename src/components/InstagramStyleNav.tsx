@@ -8,6 +8,7 @@ interface InstagramStyleNavProps {
   searchComponent?: React.ReactNode;
   showBackButton?: boolean;
   onBackPress?: () => void;
+  leftComponent?: React.ReactNode;
   rightComponent?: React.ReactNode;
   scrollY?: Animated.Value;
   onScrollEnd?: (direction: 'up' | 'down') => void;
@@ -27,6 +28,7 @@ export const InstagramStyleNav = forwardRef<InstagramStyleNavRef, InstagramStyle
   searchComponent,
   showBackButton = false,
   onBackPress,
+  leftComponent,
   rightComponent,
   scrollY,
   onScrollEnd,
@@ -210,7 +212,7 @@ export const InstagramStyleNav = forwardRef<InstagramStyleNavRef, InstagramStyle
               }
             ]}
           >
-            {/* Left side - Back button or empty space */}
+            {/* Left side - Back button, custom component, or empty space */}
             <View style={styles.leftSection}>
               {showBackButton && (
                 <TouchableOpacity
@@ -221,6 +223,7 @@ export const InstagramStyleNav = forwardRef<InstagramStyleNavRef, InstagramStyle
                   <Text style={styles.backButtonText}>←</Text>
                 </TouchableOpacity>
               )}
+              {!showBackButton && leftComponent}
             </View>
 
             {/* Center - Title */}

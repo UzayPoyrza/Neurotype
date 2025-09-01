@@ -1,0 +1,60 @@
+import React from 'react';
+import { TouchableOpacity, StyleSheet } from 'react-native';
+import Svg, { Circle, Path } from 'react-native-svg';
+import { theme } from '../../styles/theme';
+
+interface SettingsIconProps {
+  size?: number;
+  onPress?: () => void;
+}
+
+export const SettingsIcon: React.FC<SettingsIconProps> = ({ 
+  size = 40,
+  onPress 
+}) => {
+  const iconSize = size * 0.6;
+  
+  return (
+    <TouchableOpacity
+      style={[
+        styles.container,
+        {
+          width: size,
+          height: size,
+          borderRadius: theme.borders.radius.md,
+        }
+      ]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <Svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">
+        {/* Outer gear */}
+        <Path
+          d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
+          stroke={theme.colors.primary}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <Path
+          d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z"
+          stroke={theme.colors.primary}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
+    </TouchableOpacity>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: theme.colors.surface,
+    borderWidth: theme.borders.width.thick,
+    borderColor: theme.colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...theme.shadows.medium,
+  },
+});

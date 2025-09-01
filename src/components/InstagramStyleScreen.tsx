@@ -9,6 +9,7 @@ interface InstagramStyleScreenProps {
   searchComponent?: React.ReactNode;
   showBackButton?: boolean;
   onBackPress?: () => void;
+  leftComponent?: React.ReactNode;
   rightComponent?: React.ReactNode;
   children: React.ReactNode;
   style?: any;
@@ -22,6 +23,7 @@ export const InstagramStyleScreen: React.FC<InstagramStyleScreenProps> = ({
   searchComponent,
   showBackButton = false,
   onBackPress,
+  leftComponent,
   rightComponent,
   children,
   style,
@@ -68,6 +70,7 @@ export const InstagramStyleScreen: React.FC<InstagramStyleScreenProps> = ({
         searchComponent={searchComponent}
         showBackButton={showBackButton}
         onBackPress={onBackPress}
+        leftComponent={leftComponent}
         rightComponent={rightComponent}
         scrollY={scrollY}
         contentHeight={contentHeight}

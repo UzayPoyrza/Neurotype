@@ -4,7 +4,9 @@ import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
 import { InstagramStyleScreen } from '../components/InstagramStyleScreen';
 import { ProfilePictureModal } from '../components/ProfilePictureModal';
-import { UserIcon } from '../components/icons';
+import { SubscriptionBadge } from '../components/SubscriptionBadge';
+import { SettingsPanel } from '../components/SettingsPanel';
+import { UserIcon, SettingsIcon } from '../components/icons';
 
 export const ProfileScreen: React.FC = () => {
   const { 
@@ -14,10 +16,12 @@ export const ProfileScreen: React.FC = () => {
     darkThemeEnabled, 
     toggleDarkTheme,
     profileIcon,
-    setProfileIcon
+    setProfileIcon,
+    subscriptionType
   } = useStore();
   
   const [modalVisible, setModalVisible] = useState(false);
+  const [settingsPanelVisible, setSettingsPanelVisible] = useState(false);
 
   // Calculate stats
   const totalSessions = userProgress.sessionDeltas.length;
@@ -33,6 +37,19 @@ export const ProfileScreen: React.FC = () => {
           size={40}
           profileIcon={profileIcon}
           onPress={() => setModalVisible(true)}
+        />
+      }
+      showBackButton={false}
+      leftComponent={
+        <SubscriptionBadge 
+          subscriptionType={subscriptionType}
+          size="small"
+        />
+      }
+      rightComponent={
+        <SettingsIcon 
+          size={40}
+          onPress={() => setSettingsPanelVisible(true)}
         />
       }
     >
@@ -174,6 +191,12 @@ export const ProfileScreen: React.FC = () => {
         onClose={() => setModalVisible(false)}
         onSelectIcon={setProfileIcon}
         currentIcon={profileIcon}
+      />
+      
+      {/* Settings Panel */}
+      <SettingsPanel
+        visible={settingsPanelVisible}
+        onClose={() => setSettingsPanelVisible(false)}
       />
     </InstagramStyleScreen>
   );

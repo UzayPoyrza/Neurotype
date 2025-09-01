@@ -130,6 +130,67 @@ export const ProfileScreen: React.FC = () => {
               <Text style={styles.statLabel}>Credits Earned</Text>
             </View>
           </View>
+
+          {/* Activity History */}
+          <View style={styles.activitySection}>
+            <Text style={styles.activityTitle}>Activity History</Text>
+            <Text style={styles.activitySubtitle}>
+              Looks like you don't have anything in your history just yet. Want to start with a mini-meditation?
+            </Text>
+
+            <View style={styles.meditationsList}>
+              <TouchableOpacity style={styles.meditationItem}>
+                <View style={[styles.meditationIcon, { backgroundColor: '#FF8C42' }]}>
+                  <Text style={styles.meditationEmoji}>😌</Text>
+                </View>
+                <View style={styles.meditationInfo}>
+                  <View style={styles.meditationHeader}>
+                    <Text style={styles.lockIcon}>🔒</Text>
+                    <Text style={styles.meditationTitle}>Breathe</Text>
+                  </View>
+                  <View style={styles.meditationDetails}>
+                    <Text style={styles.soundIcon}>🔊</Text>
+                    <Text style={styles.meditationMeta}>Meditation • 1-3 min</Text>
+                  </View>
+                </View>
+                <Text style={styles.arrowIcon}>›</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.meditationItem}>
+                <View style={[styles.meditationIcon, { backgroundColor: '#4CAF50' }]}>
+                  <Text style={styles.meditationEmoji}>🧘</Text>
+                </View>
+                <View style={styles.meditationInfo}>
+                  <View style={styles.meditationHeader}>
+                    <Text style={styles.lockIcon}>🔒</Text>
+                    <Text style={styles.meditationTitle}>Body Scan</Text>
+                  </View>
+                  <View style={styles.meditationDetails}>
+                    <Text style={styles.soundIcon}>🔊</Text>
+                    <Text style={styles.meditationMeta}>Meditation • 1-3 min</Text>
+                  </View>
+                </View>
+                <Text style={styles.arrowIcon}>›</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.meditationItem}>
+                <View style={[styles.meditationIcon, { backgroundColor: '#2196F3' }]}>
+                  <Text style={styles.meditationEmoji}>🌊</Text>
+                </View>
+                <View style={styles.meditationInfo}>
+                  <View style={styles.meditationHeader}>
+                    <Text style={styles.lockIcon}>🔒</Text>
+                    <Text style={styles.meditationTitle}>Unwind</Text>
+                  </View>
+                  <View style={styles.meditationDetails}>
+                    <Text style={styles.soundIcon}>🔊</Text>
+                    <Text style={styles.meditationMeta}>Meditation • 1-3 min</Text>
+                  </View>
+                </View>
+                <Text style={styles.arrowIcon}>›</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </View>
       
@@ -347,5 +408,85 @@ const styles = StyleSheet.create({
     width: 2,
     height: 40,
     backgroundColor: theme.colors.primary,
+  },
+  activitySection: {
+    marginTop: theme.spacing.xxxl,
+  },
+  activityTitle: {
+    fontSize: theme.typography.sizes.xxl,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.primary,
+    marginBottom: theme.spacing.lg,
+    fontFamily: theme.typography.fontFamily,
+  },
+  activitySubtitle: {
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.secondary,
+    fontFamily: theme.typography.fontFamily,
+    lineHeight: 22,
+    marginBottom: theme.spacing.xl,
+  },
+  meditationsList: {
+    gap: theme.spacing.lg,
+  },
+  meditationItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borders.radius.lg,
+    padding: theme.spacing.lg,
+    borderWidth: theme.borders.width.normal,
+    borderColor: theme.colors.primary,
+    ...theme.shadows.small,
+  },
+  meditationIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: theme.borders.radius.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: theme.spacing.md,
+    borderWidth: theme.borders.width.normal,
+    borderColor: theme.colors.primary,
+    ...theme.shadows.small,
+  },
+  meditationEmoji: {
+    fontSize: 24,
+  },
+  meditationInfo: {
+    flex: 1,
+  },
+  meditationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: theme.spacing.xs,
+  },
+  lockIcon: {
+    fontSize: theme.typography.sizes.md,
+    marginRight: theme.spacing.sm,
+  },
+  meditationTitle: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.primary,
+    fontFamily: theme.typography.fontFamily,
+  },
+  meditationDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  soundIcon: {
+    fontSize: theme.typography.sizes.sm,
+    marginRight: theme.spacing.sm,
+  },
+  meditationMeta: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.secondary,
+    fontFamily: theme.typography.fontFamily,
+  },
+  arrowIcon: {
+    fontSize: 24,
+    color: theme.colors.secondary,
+    marginLeft: theme.spacing.md,
   },
 }); 

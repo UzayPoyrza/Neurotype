@@ -18,8 +18,8 @@ export { Sparkline } from './Sparkline';
 export { SpotifyFilterBar } from './SpotifyFilterBar';
 
 // Today Page Components
-export { ModuleSelector } from './ModuleSelector';
 export { ModuleRoadmap } from './ModuleRoadmap';
+export { ModuleGridModal } from './ModuleGridModal';
 export { SessionBottomSheet } from './SessionBottomSheet';
 export { SessionProgressView } from './SessionProgressView';
 export { SessionRating } from './SessionRating';

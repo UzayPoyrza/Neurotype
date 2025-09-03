@@ -1,13 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Animated, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Animated, Dimensions, TouchableOpacity } from 'react-native';
 import { Session } from '../types';
 import { useStore } from '../store/useStore';
 import { mockSessions } from '../data/mockData';
 import { mentalHealthModules } from '../data/modules';
 import { theme } from '../styles/theme';
 import { InstagramStyleScreen } from '../components/InstagramStyleScreen';
-import { ModuleSelector } from '../components/ModuleSelector';
 import { ModuleRoadmap } from '../components/ModuleRoadmap';
+import { ModuleGridModal } from '../components/ModuleGridModal';
 import { SessionBottomSheet } from '../components/SessionBottomSheet';
 import { SessionProgressView } from '../components/SessionProgressView';
 import { SessionRating } from '../components/SessionRating';
@@ -23,6 +23,7 @@ export const TodayScreen: React.FC = () => {
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [sessionState, setSessionState] = useState<SessionState>('not_started');
   const [showBottomSheet, setShowBottomSheet] = useState(false);
+  const [showModuleModal, setShowModuleModal] = useState(false);
   const [todayCompleted, setTodayCompleted] = useState(false);
   const [triggerUnlock, setTriggerUnlock] = useState(false);
   
@@ -88,15 +89,8 @@ export const TodayScreen: React.FC = () => {
   }
 
   return (
-    <InstagramStyleScreen title="Today">
+    <InstagramStyleScreen title={`${selectedModule.title} Journey`}>
       <View style={styles.container}>
-        {/* Module Selector */}
-        <ModuleSelector
-          modules={mentalHealthModules}
-          selectedModuleId={selectedModuleId}
-          onModuleSelect={setSelectedModuleId}
-        />
-
         {/* Module Roadmap */}
         <ModuleRoadmap
           module={selectedModule}
@@ -104,6 +98,24 @@ export const TodayScreen: React.FC = () => {
           triggerUnlockAnimation={triggerUnlock}
           onUnlockComplete={handleUnlockComplete}
           onSessionSelect={handleSessionSelect}
+        />
+
+        {/* Floating Module Selector Button */}
+        <TouchableOpacity
+          style={[styles.floatingButton, { backgroundColor: selectedModule.color }]}
+          onPress={() => setShowModuleModal(true)}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.floatingButtonIcon}>🔄</Text>
+        </TouchableOpacity>
+
+        {/* Module Grid Modal */}
+        <ModuleGridModal
+          modules={mentalHealthModules}
+          selectedModuleId={selectedModuleId}
+          isVisible={showModuleModal}
+          onModuleSelect={setSelectedModuleId}
+          onClose={() => setShowModuleModal(false)}
         />
 
         {/* Session Bottom Sheet */}
@@ -122,5 +134,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'transparent',
+  },
+  floatingButton: {
+    position: 'absolute',
+    bottom: 30,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 100,
+  },
+  floatingButtonIcon: {
+    fontSize: 20,
+    color: theme.colors.surface,
   },
 }); 

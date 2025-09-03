@@ -19,12 +19,16 @@ type ProfileScreenNavigationProp = StackNavigationProp<ProfileStackParamList, 'P
 export const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const { 
+    userProgress,
     profileIcon,
     setProfileIcon,
     subscriptionType
   } = useStore();
   
   const [modalVisible, setModalVisible] = useState(false);
+
+  // Get recent activity from session deltas
+  const recentActivity = userProgress.sessionDeltas.slice(-10).reverse(); // Last 10 sessions, most recent first
 
   return (
     <InstagramStyleScreen 
@@ -134,62 +138,72 @@ export const ProfileScreen: React.FC = () => {
           {/* Activity History */}
           <View style={styles.activitySection}>
             <Text style={styles.activityTitle}>Activity History</Text>
-            <Text style={styles.activitySubtitle}>
-              Looks like you don't have anything in your history just yet. Want to start with a mini-meditation?
-            </Text>
-
-            <View style={styles.meditationsList}>
-              <TouchableOpacity style={styles.meditationItem}>
-                <View style={[styles.meditationIcon, { backgroundColor: '#FF8C42' }]}>
-                  <Text style={styles.meditationEmoji}>😌</Text>
+            
+            {recentActivity.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateEmoji}>🧘‍♀️</Text>
+                <Text style={styles.emptyStateTitle}>No sessions yet</Text>
+                <Text style={styles.emptyStateSubtitle}>
+                  Start your meditation journey today! Your completed sessions will appear here.
+                </Text>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.activitySubtitle}>
+                  Your recent meditation sessions and progress
+                </Text>
+                <View style={styles.activityList}>
+                  {recentActivity.map((session, index) => {
+                    const improvement = session.before - session.after;
+                    const date = new Date(session.timestamp);
+                    const formattedDate = date.toLocaleDateString('en-US', { 
+                      month: 'short', 
+                      day: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit'
+                    });
+                    
+                    return (
+                      <View key={index} style={styles.activityItem}>
+                        <View style={[
+                          styles.activityIcon, 
+                          { backgroundColor: improvement > 0 ? '#4CAF50' : '#FF9800' }
+                        ]}>
+                          <Text style={styles.activityEmoji}>
+                            {improvement > 0 ? '✨' : '🌱'}
+                          </Text>
+                        </View>
+                        <View style={styles.activityInfo}>
+                          <View style={styles.activityHeader}>
+                            <Text style={styles.activityTitle}>Meditation Session</Text>
+                            <Text style={styles.activityDate}>{formattedDate}</Text>
+                          </View>
+                          <View style={styles.activityDetails}>
+                            <Text style={styles.activityMeta}>
+                              Anxiety: {session.before} → {session.after} 
+                              {improvement > 0 && (
+                                <Text style={styles.improvementText}> (-{improvement.toFixed(1)})</Text>
+                              )}
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={[
+                          styles.improvementBadge,
+                          { backgroundColor: improvement > 0 ? '#E8F5E8' : '#FFF3E0' }
+                        ]}>
+                          <Text style={[
+                            styles.improvementBadgeText,
+                            { color: improvement > 0 ? '#2E7D32' : '#F57C00' }
+                          ]}>
+                            {improvement > 0 ? `↓${improvement.toFixed(1)}` : '→'}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })}
                 </View>
-                <View style={styles.meditationInfo}>
-                  <View style={styles.meditationHeader}>
-                    <Text style={styles.lockIcon}>🔒</Text>
-                    <Text style={styles.meditationTitle}>Breathe</Text>
-                  </View>
-                  <View style={styles.meditationDetails}>
-                    <Text style={styles.soundIcon}>🔊</Text>
-                    <Text style={styles.meditationMeta}>Meditation • 1-3 min</Text>
-                  </View>
-                </View>
-                <Text style={styles.arrowIcon}>›</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.meditationItem}>
-                <View style={[styles.meditationIcon, { backgroundColor: '#4CAF50' }]}>
-                  <Text style={styles.meditationEmoji}>🧘</Text>
-                </View>
-                <View style={styles.meditationInfo}>
-                  <View style={styles.meditationHeader}>
-                    <Text style={styles.lockIcon}>🔒</Text>
-                    <Text style={styles.meditationTitle}>Body Scan</Text>
-                  </View>
-                  <View style={styles.meditationDetails}>
-                    <Text style={styles.soundIcon}>🔊</Text>
-                    <Text style={styles.meditationMeta}>Meditation • 1-3 min</Text>
-                  </View>
-                </View>
-                <Text style={styles.arrowIcon}>›</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.meditationItem}>
-                <View style={[styles.meditationIcon, { backgroundColor: '#2196F3' }]}>
-                  <Text style={styles.meditationEmoji}>🌊</Text>
-                </View>
-                <View style={styles.meditationInfo}>
-                  <View style={styles.meditationHeader}>
-                    <Text style={styles.lockIcon}>🔒</Text>
-                    <Text style={styles.meditationTitle}>Unwind</Text>
-                  </View>
-                  <View style={styles.meditationDetails}>
-                    <Text style={styles.soundIcon}>🔊</Text>
-                    <Text style={styles.meditationMeta}>Meditation • 1-3 min</Text>
-                  </View>
-                </View>
-                <Text style={styles.arrowIcon}>›</Text>
-              </TouchableOpacity>
-            </View>
+              </>
+            )}
           </View>
         </View>
       </View>
@@ -488,5 +502,106 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: theme.colors.secondary,
     marginLeft: theme.spacing.md,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: theme.spacing.xxxl,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borders.radius.lg,
+    borderWidth: theme.borders.width.normal,
+    borderColor: theme.colors.primary,
+    ...theme.shadows.small,
+  },
+  emptyStateEmoji: {
+    fontSize: 48,
+    marginBottom: theme.spacing.lg,
+  },
+  emptyStateTitle: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.primary,
+    marginBottom: theme.spacing.sm,
+    fontFamily: theme.typography.fontFamily,
+  },
+  emptyStateSubtitle: {
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.secondary,
+    fontFamily: theme.typography.fontFamily,
+    textAlign: 'center',
+    lineHeight: 20,
+    paddingHorizontal: theme.spacing.lg,
+  },
+  activityList: {
+    gap: theme.spacing.md,
+  },
+  activityItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borders.radius.lg,
+    padding: theme.spacing.lg,
+    borderWidth: theme.borders.width.normal,
+    borderColor: theme.colors.primary,
+    ...theme.shadows.small,
+  },
+  activityIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: theme.borders.radius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: theme.spacing.md,
+    borderWidth: theme.borders.width.normal,
+    borderColor: theme.colors.primary,
+    ...theme.shadows.small,
+  },
+  activityEmoji: {
+    fontSize: 20,
+  },
+  activityInfo: {
+    flex: 1,
+  },
+  activityHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing.xs,
+  },
+  activityTitle: {
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.primary,
+    fontFamily: theme.typography.fontFamily,
+  },
+  activityDate: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.secondary,
+    fontFamily: theme.typography.fontFamily,
+  },
+  activityDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  activityMeta: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.secondary,
+    fontFamily: theme.typography.fontFamily,
+  },
+  improvementText: {
+    color: '#2E7D32',
+    fontWeight: theme.typography.weights.semibold,
+  },
+  improvementBadge: {
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.borders.radius.sm,
+    borderWidth: theme.borders.width.normal,
+    borderColor: theme.colors.primary,
+    marginLeft: theme.spacing.md,
+  },
+  improvementBadgeText: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.bold,
+    fontFamily: theme.typography.fontFamily,
   },
 }); 

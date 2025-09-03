@@ -27,7 +27,7 @@ export const ProfileScreen: React.FC = () => {
   
   const [modalVisible, setModalVisible] = useState(false);
 
-  // Get recent activity from session deltas
+    // Get recent activity from session deltas
   const recentActivity = userProgress.sessionDeltas.slice(-10).reverse(); // Last 10 sessions, most recent first
 
   return (

@@ -14,7 +14,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "statusBarHidden": true
+      "statusBarHidden": false,
+      "statusBarStyle": "dark"
     },
     "android": {
       "adaptiveIcon": {

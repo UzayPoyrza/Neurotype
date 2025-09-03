@@ -168,7 +168,7 @@ export default function App() {
 
   return (
     <>
-      <StatusBar hidden={true} />
+      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" translucent={false} />
       <NavigationContainer>
         <Tab.Navigator
           tabBar={props => <AnimatedTabBar {...props} />}

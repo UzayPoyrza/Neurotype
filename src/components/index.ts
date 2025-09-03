@@ -10,6 +10,8 @@ export { ExploreScreen as ExploreScreenComponent } from './ExploreScreen';
 export { Chip } from './Chip';
 export { ModuleCard } from './ModuleCard';
 export { PrimaryButton } from './PrimaryButton';
+export { ProfilePictureModal } from './ProfilePictureModal';
+export { SubscriptionBadge } from './SubscriptionBadge';
 export { SessionCard } from './SessionCard';
 export { Slider0to10 } from './Slider0to10';
 export { Sparkline } from './Sparkline';

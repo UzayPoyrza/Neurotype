@@ -20,6 +20,7 @@ export { SpotifyFilterBar } from './SpotifyFilterBar';
 // Today Page Components
 export { ModuleRoadmap } from './ModuleRoadmap';
 export { ModuleGridModal } from './ModuleGridModal';
+export { DraggableFloatingButton } from './DraggableFloatingButton';
 export { SessionBottomSheet } from './SessionBottomSheet';
 export { SessionProgressView } from './SessionProgressView';
 export { SessionRating } from './SessionRating';

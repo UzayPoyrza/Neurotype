@@ -12,6 +12,16 @@ interface RoadmapNode {
   status: 'locked' | 'available' | 'completed';
   isToday?: boolean;
   isUnlocking?: boolean;
+  isRecommended?: boolean;
+}
+
+interface TodayNode {
+  id: string;
+  sessions: Session[];
+  level: number;
+  status: 'available' | 'completed';
+  isToday: true;
+  recommendedSessionId: string;
 }
 
 interface ModuleRoadmapProps {
@@ -34,12 +44,11 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   const glowAnim = useRef(new Animated.Value(0)).current;
 
   // Generate roadmap based on module
-  const generateModuleRoadmap = (): RoadmapNode[] => {
-    const nodes: RoadmapNode[] = [];
+  const generateModuleRoadmap = (): (RoadmapNode | TodayNode)[] => {
+    const nodes: (RoadmapNode | TodayNode)[] = [];
     
     // Filter sessions relevant to this module
     const getModuleSessions = () => {
-      // For now, use mock sessions but filter by goal that matches module
       const relevantGoals = {
         'anxiety': ['anxiety'],
         'adhd': ['focus'],
@@ -84,18 +93,37 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         status = 'locked';
       }
       
-      nodes.push({
-        id: `${module.id}-level-${level}`,
-        session: {
-          ...session,
-          id: `${session.id}-${level}`,
-          title: `${session.title} - Level ${level}`,
-        },
-        level,
-        status,
-        isToday,
-        isUnlocking,
-      });
+      // Special handling for today's node - show multiple sessions
+      if (isToday) {
+        const todaySessions = moduleSessions.slice(0, 3); // Get 3 sessions for today
+        const recommendedSession = todaySessions[0]; // First one is recommended
+        
+        nodes.push({
+          id: `${module.id}-today-${level}`,
+          sessions: todaySessions.map((s, idx) => ({
+            ...s,
+            id: `${s.id}-today-${idx}`,
+            title: idx === 0 ? `${s.title} (Recommended)` : s.title,
+          })),
+          level,
+          status: status as 'available' | 'completed',
+          isToday: true,
+          recommendedSessionId: recommendedSession.id,
+        } as TodayNode);
+      } else {
+        nodes.push({
+          id: `${module.id}-level-${level}`,
+          session: {
+            ...session,
+            id: `${session.id}-${level}`,
+            title: `${session.title} - Level ${level}`,
+          },
+          level,
+          status,
+          isToday,
+          isUnlocking,
+        } as RoadmapNode);
+      }
     }
     
     return nodes;
@@ -162,7 +190,108 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
     return () => clearTimeout(timer);
   }, [todayIndex]);
 
-  const renderNode = (node: RoadmapNode, index: number) => {
+  const renderTodaySection = (node: TodayNode, index: number) => {
+    const isAvailable = node.status === 'available';
+    const isCompleted = node.status === 'completed';
+
+    return (
+      <View key={node.id} style={styles.todaySection}>
+        {/* Connection Line */}
+        {index > 0 && (
+          <View style={[styles.connectionLine, { backgroundColor: module.color }]} />
+        )}
+        
+        {/* Today Header */}
+        <View style={styles.todayHeaderContainer}>
+          <View style={[styles.todayLevelBadge, { backgroundColor: module.color }]}>
+            <Text style={styles.todayLevelText}>{node.level}</Text>
+          </View>
+          <Text style={styles.todayHeaderText}>TODAY'S FOCUS</Text>
+        </View>
+
+        {/* Swipable Today Nodes */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.todayNodesScroll}
+          contentContainerStyle={styles.todayNodesContainer}
+          snapToInterval={176} // 160 + 16 margin
+          decelerationRate="fast"
+          bounces={false}
+        >
+          {node.sessions.map((session, idx) => {
+            const isRecommended = session.id.includes(node.recommendedSessionId);
+            
+            return (
+              <View key={session.id} style={styles.todayNodeWrapper}>
+                <TouchableOpacity
+                  onPress={() => onSessionSelect?.(session)}
+                  activeOpacity={0.9}
+                >
+                  <Animated.View style={[
+                    styles.todayNode,
+                    isCompleted && styles.completedTodayNode,
+                    isAvailable && styles.availableTodayNode,
+                    isRecommended && styles.recommendedTodayNode,
+                    { borderColor: module.color },
+                    {
+                      shadowColor: module.color,
+                      shadowOpacity: isAvailable ? (isRecommended ? 0.4 : 0.2) : 0.1,
+                      shadowRadius: isAvailable ? (isRecommended ? 12 : 8) : 4,
+                      transform: [{
+                        scale: pulseAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: isRecommended ? [1, 1.03] : [1, 1.01],
+                        }),
+                      }],
+                    }
+                  ]}>
+                    {/* Recommended Badge */}
+                    {isRecommended && (
+                      <View style={[styles.recommendedBadge, { backgroundColor: module.color }]}>
+                        <Text style={styles.recommendedText}>★</Text>
+                      </View>
+                    )}
+
+                    {/* Session Content */}
+                    <View style={styles.todayNodeContent}>
+                      <Text style={[
+                        styles.todaySessionTitle,
+                        isRecommended && { color: module.color },
+                      ]} numberOfLines={2}>
+                        {session.title.replace(' (Recommended)', '')}
+                      </Text>
+                      
+                      <Text style={styles.todaySessionDuration}>
+                        {session.durationMin} min
+                      </Text>
+                      
+                      <Text style={styles.todaySessionModality}>
+                        {session.modality}
+                      </Text>
+
+                      {isRecommended && (
+                        <Text style={[styles.recommendedLabel, { color: module.color }]}>
+                          RECOMMENDED
+                        </Text>
+                      )}
+                    </View>
+
+                    {/* Play Icon */}
+                    <View style={[styles.todayPlayIcon, { backgroundColor: module.color }]}>
+                      <Text style={styles.playIconText}>▶</Text>
+                    </View>
+                  </Animated.View>
+                </TouchableOpacity>
+              </View>
+            );
+          })}
+        </ScrollView>
+      </View>
+    );
+  };
+
+  const renderRegularNode = (node: RoadmapNode, index: number) => {
     const isAvailable = node.status === 'available';
     const isCompleted = node.status === 'completed';
     const isLocked = node.status === 'locked';
@@ -185,12 +314,6 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         inputRange: [0, 1],
         outputRange: [4, 10],
       }) : 4,
-      transform: node.isToday ? [{
-        scale: pulseAnim.interpolate({
-          inputRange: [0, 1],
-          outputRange: [1, 1.05],
-        }),
-      }] : [],
     };
 
     return (
@@ -249,6 +372,13 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         </TouchableOpacity>
       </View>
     );
+  };
+
+  const renderNode = (node: RoadmapNode | TodayNode, index: number) => {
+    if (node.isToday && 'sessions' in node) {
+      return renderTodaySection(node as TodayNode, index);
+    }
+    return renderRegularNode(node as RoadmapNode, index);
   };
 
   return (
@@ -372,6 +502,134 @@ const styles = StyleSheet.create({
   lockedNode: {
     backgroundColor: '#f5f5f5',
     opacity: 0.6,
+  },
+  // Today Section Styles
+  todaySection: {
+    marginVertical: 32,
+    width: '100%',
+  },
+  todayHeaderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  todayLevelBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: theme.colors.surface,
+    marginRight: 8,
+  },
+  todayLevelText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: theme.colors.surface,
+  },
+  todayHeaderText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: theme.colors.primary,
+    letterSpacing: 0.5,
+    fontFamily: theme.typography.fontFamily,
+  },
+  todayNodesScroll: {
+    height: 220,
+  },
+  todayNodesContainer: {
+    paddingHorizontal: 20,
+  },
+  todayNodeWrapper: {
+    marginHorizontal: 8,
+  },
+  todayNode: {
+    width: 160,
+    height: 200,
+    borderRadius: 20,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 2,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 6,
+    padding: 16,
+    justifyContent: 'space-between',
+  },
+  completedTodayNode: {
+    backgroundColor: '#e8f5e8',
+  },
+  availableTodayNode: {
+    backgroundColor: theme.colors.surface,
+  },
+  recommendedTodayNode: {
+    borderWidth: 3,
+    backgroundColor: '#fff8f0',
+  },
+  recommendedBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: theme.colors.surface,
+  },
+  recommendedText: {
+    fontSize: 10,
+    color: theme.colors.surface,
+    fontWeight: 'bold',
+  },
+  todayNodeContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  todaySessionTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+    textAlign: 'center',
+    lineHeight: 16,
+    marginBottom: 8,
+    fontFamily: theme.typography.fontFamily,
+  },
+  todaySessionDuration: {
+    fontSize: 11,
+    color: theme.colors.text.secondary,
+    fontWeight: '500',
+    marginBottom: 4,
+    fontFamily: theme.typography.fontFamily,
+  },
+  todaySessionModality: {
+    fontSize: 10,
+    color: theme.colors.text.secondary,
+    textTransform: 'capitalize',
+    marginBottom: 8,
+    fontFamily: theme.typography.fontFamily,
+  },
+  recommendedLabel: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    fontFamily: theme.typography.fontFamily,
+  },
+  todayPlayIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playIconText: {
+    fontSize: 14,
+    color: theme.colors.surface,
+    fontWeight: 'bold',
+    marginLeft: 1,
   },
   levelBadge: {
     position: 'absolute',

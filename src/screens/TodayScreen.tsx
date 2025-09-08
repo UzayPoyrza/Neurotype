@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Animated, Dimensions, TouchableOpacity, FlatList } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Animated, Dimensions, TouchableOpacity, FlatList, AccessibilityInfo } from 'react-native';
 import { Session } from '../types';
 import { useStore } from '../store/useStore';
 import { mockSessions } from '../data/mockData';
@@ -28,6 +28,12 @@ export const TodayScreen: React.FC = () => {
   const [todayCompleted, setTodayCompleted] = useState(false);
   const [triggerUnlock, setTriggerUnlock] = useState(false);
   const [viewMode, setViewMode] = useState<'today' | 'roadmap'>('today');
+  const [showRecommendationInfo, setShowRecommendationInfo] = useState(false);
+  
+  // Animation refs - simplified to avoid native driver conflicts
+  const heroCardScale = useRef(new Animated.Value(1)).current;
+  const completionAnimation = useRef(new Animated.Value(0)).current;
+  const unlockAnimation = useRef(new Animated.Value(0)).current;
   
   const selectedModule = mentalHealthModules.find(m => m.id === selectedModuleId) || mentalHealthModules[0];
   
@@ -87,6 +93,15 @@ export const TodayScreen: React.FC = () => {
     setSessionState('completed');
     setSelectedSession(null);
     
+    // Trigger completion and unlock animations
+    triggerCompletionAnimation();
+    setTimeout(() => {
+      triggerUnlockAnimationSequence();
+    }, 300);
+    
+    // Accessibility announcement
+    AccessibilityInfo.announceForAccessibility('Session completed. Tomorrow unlocked.');
+    
     // Here you would typically save the rating to your store/backend
     console.log('Session rated:', rating);
   };
@@ -120,14 +135,61 @@ export const TodayScreen: React.FC = () => {
 
   const dateInfo = getCurrentDateInfo();
 
-  // Motivational messages based on progress
+  // Subtle motivational messages based on progress
   const getMotivationalMessage = () => {
     const streak = userProgress?.streak || 0;
-    if (streak === 0) return "Ready to start your journey?";
-    if (streak === 1) return "Great start! Let's build momentum.";
-    if (streak < 7) return `${streak} days strong! Keep going.`;
-    if (streak < 30) return `Amazing ${streak}-day streak! You're building a habit.`;
-    return `Incredible ${streak}-day journey! You're a meditation master.`;
+    if (streak === 0) return "Your journey begins today";
+    if (streak === 1) return "Building your practice";
+    if (streak < 7) return "Developing consistency";
+    if (streak < 30) return "Strengthening your routine";
+    return "Sustained mindful practice";
+  };
+
+  // Get calm accent color (teal instead of red)
+  const getAccentColor = () => {
+    return '#4ECDC4'; // Calm teal from theme
+  };
+
+  // Hero card press animations - simplified to avoid conflicts
+  const handleHeroCardPressIn = () => {
+    Animated.timing(heroCardScale, {
+      toValue: 0.98,
+      duration: 150,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleHeroCardPressOut = () => {
+    Animated.timing(heroCardScale, {
+      toValue: 1,
+      duration: 150,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  // Session completion animation
+  const triggerCompletionAnimation = () => {
+    Animated.sequence([
+      Animated.timing(completionAnimation, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(completionAnimation, {
+        toValue: 0,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  // Tomorrow unlock animation
+  const triggerUnlockAnimationSequence = () => {
+    Animated.timing(unlockAnimation, {
+      toValue: 1,
+      duration: 400,
+      useNativeDriver: true,
+    }).start();
   };
 
   // Render based on current state
@@ -164,96 +226,202 @@ export const TodayScreen: React.FC = () => {
         
         <View style={styles.motivationContainer}>
           <Text style={styles.motivationalText}>{getMotivationalMessage()}</Text>
-          <View style={[styles.moduleIndicator, { backgroundColor: selectedModule.color }]}>
-            <Text style={styles.moduleIndicatorText}>{selectedModule.title}</Text>
+          {/* Subtle streak indicator */}
+          <View style={styles.streakIndicator}>
+            <View style={styles.streakDots}>
+              {Array.from({ length: Math.min(userProgress?.streak || 0, 7) }, (_, i) => (
+                <View key={i} style={[styles.streakDot, { backgroundColor: getAccentColor() }]} />
+              ))}
+            </View>
+            <Text style={styles.streakText}>
+              {userProgress?.streak || 0} day{(userProgress?.streak || 0) !== 1 ? 's' : ''}
+            </Text>
           </View>
         </View>
       </View>
 
-      {/* Progress Summary */}
-      <View style={styles.progressSummary}>
-        <View style={styles.progressItem}>
-          <Text style={styles.progressNumber}>{userProgress?.streak || 0}</Text>
-          <Text style={styles.progressLabel}>Day Streak</Text>
+      {/* Compact Progress Summary */}
+      <View style={styles.compactProgressSummary}>
+        <View style={styles.compactProgressItem}>
+          <Text style={styles.compactProgressNumber}>{todayCompleted ? '1' : '0'}</Text>
+          <Text style={styles.compactProgressLabel}>Today</Text>
         </View>
-        <View style={styles.progressDivider} />
-        <View style={styles.progressItem}>
-          <Text style={styles.progressNumber}>{todayCompleted ? '1' : '0'}</Text>
-          <Text style={styles.progressLabel}>Today's Sessions</Text>
-        </View>
-        <View style={styles.progressDivider} />
-        <View style={styles.progressItem}>
-          <Text style={styles.progressNumber}>
+        <View style={styles.compactProgressDivider} />
+        <View style={styles.compactProgressItem}>
+          <Text style={styles.compactProgressNumber}>
             {userProgress?.sessionDeltas?.length || 0}
           </Text>
-          <Text style={styles.progressLabel}>Total Sessions</Text>
+          <Text style={styles.compactProgressLabel}>Total</Text>
         </View>
       </View>
 
       {/* Today's Focus Section */}
       <View style={styles.focusSection}>
-        <Text style={styles.sectionTitle}>Today's Focus</Text>
+        <View style={styles.focusHeader}>
+          <Text style={styles.sectionTitle}>Today's Focus</Text>
+          <TouchableOpacity 
+            style={styles.infoButton}
+            onPress={() => setShowRecommendationInfo(!showRecommendationInfo)}
+            accessibilityLabel="Why this is recommended"
+            accessibilityRole="button"
+          >
+            <Text style={styles.infoIcon}>i</Text>
+          </TouchableOpacity>
+        </View>
+
+        {showRecommendationInfo && (
+          <View style={styles.infoPanel}>
+            <Text style={styles.infoPanelText}>
+              This session is recommended based on your progress in the {selectedModule.title.toLowerCase()} roadmap, 
+              your recent feedback, and evidence-based sequencing for optimal mental health outcomes.
+            </Text>
+          </View>
+        )}
+
         <Text style={styles.sectionSubtitle}>
           Personalized for your {selectedModule.title.toLowerCase()} journey
         </Text>
 
-        {/* Recommended Session Card */}
-        <TouchableOpacity
-          style={[styles.recommendedCard, { borderColor: selectedModule.color }]}
-          onPress={() => handleSessionSelect(recommendedSession)}
-          activeOpacity={0.9}
+        {/* Enhanced Recommended Session Card */}
+        <Animated.View
+          style={[
+            styles.recommendedCardContainer,
+            {
+              transform: [{ scale: heroCardScale }],
+            }
+          ]}
         >
-          <View style={[styles.recommendedBadge, { backgroundColor: selectedModule.color }]}>
-            <Text style={styles.recommendedBadgeText}>★ RECOMMENDED</Text>
-          </View>
-          
-          <View style={styles.recommendedContent}>
-            <Text style={styles.recommendedTitle}>{recommendedSession.title}</Text>
-            <Text style={styles.recommendedReason}>
-              {recommendedSession.adaptiveReason || 'Based on your recent progress'}
-            </Text>
+          <TouchableOpacity
+            style={[styles.recommendedCard, { 
+              borderColor: getAccentColor(),
+              backgroundColor: todayCompleted ? '#e8f5e8' : 'rgba(78, 205, 196, 0.05)'
+            }]}
+            onPress={() => handleSessionSelect(recommendedSession)}
+            onPressIn={handleHeroCardPressIn}
+            onPressOut={handleHeroCardPressOut}
+            activeOpacity={1}
+            accessibilityLabel={`Play ${recommendedSession.title}, ${recommendedSession.durationMin} minutes, recommended`}
+            accessibilityRole="button"
+            accessible={true}
+          >
+            <View style={[styles.recommendedBadge, { backgroundColor: getAccentColor() }]}>
+              <Text style={styles.recommendedBadgeText}>RECOMMENDED</Text>
+            </View>
             
-            <View style={styles.recommendedDetails}>
-              <View style={styles.detailChip}>
-                <Text style={styles.detailChipText}>{recommendedSession.durationMin} min</Text>
-              </View>
-              <View style={styles.detailChip}>
-                <Text style={styles.detailChipText}>{recommendedSession.modality}</Text>
-              </View>
-              <View style={styles.detailChip}>
-                <Text style={styles.detailChipText}>{recommendedSession.goal}</Text>
+            {todayCompleted && (
+              <Animated.View 
+                style={[
+                  styles.completionCheck,
+                  {
+                    opacity: completionAnimation,
+                    transform: [{
+                      scale: completionAnimation.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.8, 1.2],
+                      })
+                    }]
+                  }
+                ]}
+              >
+                <Text style={styles.checkMark}>✓</Text>
+              </Animated.View>
+            )}
+            
+            <View style={styles.recommendedContent}>
+              <Text style={styles.recommendedTitle}>{recommendedSession.title}</Text>
+              <Text style={styles.recommendedReason}>
+                {recommendedSession.adaptiveReason || 'Based on your recent progress'}
+              </Text>
+              
+              <View style={styles.recommendedDetails}>
+                <View style={styles.detailChip}>
+                  <Text style={styles.detailChipIcon}>⏱</Text>
+                  <Text style={styles.detailChipText}>{recommendedSession.durationMin} min</Text>
+                </View>
+                <View style={styles.detailChip}>
+                  <Text style={styles.detailChipIcon}>🎧</Text>
+                  <Text style={styles.detailChipText}>{recommendedSession.modality}</Text>
+                </View>
+                <View style={styles.detailChip}>
+                  <Text style={styles.detailChipIcon}>🎯</Text>
+                  <Text style={styles.detailChipText}>{recommendedSession.goal}</Text>
+                </View>
               </View>
             </View>
-          </View>
 
-          <View style={[styles.playButton, { backgroundColor: selectedModule.color }]}>
-            <Text style={styles.playButtonText}>▶</Text>
+            <View style={[styles.playButton, { backgroundColor: getAccentColor() }]}>
+              <Text style={styles.playButtonText}>▶</Text>
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+
+        {/* Mini Roadmap Preview */}
+        <TouchableOpacity 
+          style={styles.miniRoadmap}
+          onPress={() => setViewMode('roadmap')}
+          accessibilityLabel="View full roadmap"
+          accessibilityRole="button"
+        >
+          <View style={styles.miniRoadmapTrack}>
+            <View style={[styles.miniRoadmapSegment, { backgroundColor: theme.colors.success }]}>
+              <Text style={styles.miniRoadmapLabel}>Past</Text>
+            </View>
+            <View style={[styles.miniRoadmapSegment, { backgroundColor: getAccentColor() }]}>
+              <Text style={[styles.miniRoadmapLabel, { color: theme.colors.surface }]}>Today</Text>
+            </View>
+            <Animated.View 
+              style={[
+                styles.miniRoadmapSegment, 
+                { 
+                  backgroundColor: theme.colors.disabled,
+                  opacity: unlockAnimation.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.5, 1],
+                  }),
+                  transform: [{
+                    translateX: unlockAnimation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, 2],
+                    })
+                  }]
+                }
+              ]}
+            >
+              <Text style={styles.miniRoadmapLabel}>Next</Text>
+            </Animated.View>
           </View>
         </TouchableOpacity>
 
-        {/* Alternative Sessions */}
-        <Text style={styles.alternativesTitle}>Other Options</Text>
-        <View style={styles.alternativesList}>
-          {todaySessions.filter(s => !s.isRecommended).map((session, index) => (
-            <TouchableOpacity
-              key={session.id}
-              style={styles.alternativeCard}
-              onPress={() => handleSessionSelect(session)}
-              activeOpacity={0.8}
-            >
-              <View style={styles.alternativeContent}>
-                <Text style={styles.alternativeTitle}>{session.title}</Text>
-                <View style={styles.alternativeDetails}>
-                  <Text style={styles.alternativeDetail}>{session.durationMin}m</Text>
-                  <Text style={styles.alternativeDetail}>•</Text>
-                  <Text style={styles.alternativeDetail}>{session.modality}</Text>
+        {/* Alternative Sessions with increased spacing */}
+        <View style={styles.alternativesSection}>
+          <Text style={styles.alternativesTitle}>Other Options</Text>
+          <View style={styles.alternativesList}>
+            {todaySessions.filter(s => !s.isRecommended).map((session, index) => (
+              <TouchableOpacity
+                key={session.id}
+                style={styles.alternativeCard}
+                onPress={() => handleSessionSelect(session)}
+                activeOpacity={0.8}
+                accessibilityLabel={`Play ${session.title}, ${session.durationMin} minutes`}
+                accessibilityRole="button"
+              >
+                <View style={styles.alternativeContent}>
+                  <Text style={styles.alternativeTitle}>{session.title}</Text>
+                  <View style={styles.alternativeDetails}>
+                    <Text style={styles.alternativeDetailIcon}>⏱</Text>
+                    <Text style={styles.alternativeDetail}>{session.durationMin}m</Text>
+                    <Text style={styles.alternativeDetailIcon}>🎧</Text>
+                    <Text style={styles.alternativeDetail}>{session.modality}</Text>
+                    <Text style={styles.alternativeDetailIcon}>🎯</Text>
+                    <Text style={styles.alternativeDetail}>{session.goal}</Text>
+                  </View>
                 </View>
-              </View>
-              <View style={styles.alternativePlayButton}>
-                <Text style={styles.alternativePlayText}>▶</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
+                <View style={styles.alternativePlayButton}>
+                  <Text style={styles.alternativePlayText}>▶</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
       </View>
 
@@ -340,7 +508,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   
-  // Hero Section
+  // Hero Section - Refined
   heroSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -349,7 +517,7 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.xxl,
     marginHorizontal: theme.spacing.lg,
     marginTop: theme.spacing.md,
-    marginBottom: theme.spacing.xl,
+    marginBottom: theme.spacing.lg,
     borderRadius: theme.borderRadius.lg,
     borderWidth: theme.borders.width.normal,
     borderColor: theme.colors.border,
@@ -395,67 +563,76 @@ const styles = StyleSheet.create({
   
   motivationalText: {
     fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.medium,
-    color: theme.colors.text.primary,
+    fontWeight: theme.typography.weights.normal, // Lighter weight
+    color: theme.colors.text.secondary, // More subtle
     fontFamily: theme.typography.fontFamily,
     textAlign: 'right',
     marginBottom: theme.spacing.sm,
   },
-  
-  moduleIndicator: {
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.borderRadius.md,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.surface,
+
+  // Subtle streak indicator
+  streakIndicator: {
+    alignItems: 'flex-end',
   },
-  
-  moduleIndicatorText: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.surface,
-    fontFamily: theme.typography.fontFamily,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  
-  // Progress Summary
-  progressSummary: {
+
+  streakDots: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    marginBottom: theme.spacing.xs,
+    gap: 3,
+  },
+
+  streakDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+
+  streakText: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.normal,
+    color: theme.colors.text.secondary,
+    fontFamily: theme.typography.fontFamily,
+  },
+  
+  // Compact Progress Summary
+  compactProgressSummary: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: theme.colors.surface,
     marginHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.xl,
-    paddingVertical: theme.spacing.lg,
-    borderRadius: theme.borderRadius.lg,
-    borderWidth: theme.borders.width.normal,
+    marginBottom: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    borderRadius: theme.borderRadius.md,
+    borderWidth: theme.borders.width.thin,
     borderColor: theme.colors.border,
     ...theme.shadows.small,
   },
   
-  progressItem: {
+  compactProgressItem: {
     alignItems: 'center',
+    marginHorizontal: theme.spacing.lg,
   },
   
-  progressNumber: {
-    fontSize: theme.typography.sizes.xxl,
-    fontWeight: theme.typography.weights.bold,
+  compactProgressNumber: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.semibold,
     color: theme.colors.text.primary,
     fontFamily: theme.typography.fontFamily,
   },
   
-  progressLabel: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.medium,
+  compactProgressLabel: {
+    fontSize: theme.typography.sizes.xs,
+    fontWeight: theme.typography.weights.normal, // Lighter weight
     color: theme.colors.text.secondary,
     fontFamily: theme.typography.fontFamily,
-    marginTop: theme.spacing.xs,
+    marginTop: 2,
   },
   
-  progressDivider: {
+  compactProgressDivider: {
     width: 1,
-    height: 30,
+    height: 20,
     backgroundColor: theme.colors.border,
   },
   
@@ -464,32 +641,83 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.xl,
   },
+
+  focusHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: theme.spacing.xs,
+  },
   
   sectionTitle: {
     fontSize: theme.typography.sizes.xl,
-    fontWeight: theme.typography.weights.bold,
+    fontWeight: theme.typography.weights.bold, // Stronger hierarchy
     color: theme.colors.text.primary,
     fontFamily: theme.typography.fontFamily,
-    marginBottom: theme.spacing.xs,
+  },
+
+  infoButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: theme.colors.background,
+    borderWidth: theme.borders.width.thin,
+    borderColor: theme.colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 44, // Accessibility
+    minWidth: 44,
+  },
+
+  infoIcon: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.text.secondary,
+    fontFamily: theme.typography.fontFamily,
+  },
+
+  infoPanel: {
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.borderRadius.md,
+    borderWidth: theme.borders.width.thin,
+    borderColor: theme.colors.border,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+  },
+
+  infoPanelText: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.normal,
+    color: theme.colors.text.secondary,
+    fontFamily: theme.typography.fontFamily,
+    lineHeight: 20,
   },
   
   sectionSubtitle: {
     fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.medium,
+    fontWeight: theme.typography.weights.normal, // Lighter weight
     color: theme.colors.text.secondary,
     fontFamily: theme.typography.fontFamily,
     marginBottom: theme.spacing.xl,
   },
   
-  // Recommended Session Card
+  // Enhanced Recommended Session Card
+  recommendedCardContainer: {
+    marginBottom: theme.spacing.xxxl, // Increased spacing
+  },
+
   recommendedCard: {
     backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
-    borderWidth: theme.borders.width.thick,
+    borderRadius: theme.borderRadius.xl, // Larger radius
+    borderWidth: theme.borders.width.normal,
     padding: theme.spacing.xl,
-    marginBottom: theme.spacing.xl,
     position: 'relative',
-    ...theme.shadows.medium,
+    minHeight: 180, // Larger card
+    shadowColor: '#4ECDC4', // Teal shadow
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
   },
   
   recommendedBadge: {
@@ -510,13 +738,31 @@ const styles = StyleSheet.create({
     fontFamily: theme.typography.fontFamily,
     letterSpacing: 0.5,
   },
+
+  completionCheck: {
+    position: 'absolute',
+    top: theme.spacing.lg,
+    right: theme.spacing.lg,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: theme.colors.success,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  checkMark: {
+    fontSize: 16,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.surface,
+  },
   
   recommendedContent: {
     marginBottom: theme.spacing.lg,
   },
   
   recommendedTitle: {
-    fontSize: theme.typography.sizes.xl,
+    fontSize: theme.typography.sizes.xxl, // Larger title
     fontWeight: theme.typography.weights.bold,
     color: theme.colors.text.primary,
     fontFamily: theme.typography.fontFamily,
@@ -525,7 +771,7 @@ const styles = StyleSheet.create({
   
   recommendedReason: {
     fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.medium,
+    fontWeight: theme.typography.weights.normal, // Lighter weight
     color: theme.colors.text.secondary,
     fontFamily: theme.typography.fontFamily,
     fontStyle: 'italic',
@@ -545,10 +791,17 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.sm,
     borderWidth: theme.borders.width.thin,
     borderColor: theme.colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+  },
+
+  detailChipIcon: {
+    fontSize: theme.typography.sizes.xs,
   },
   
   detailChipText: {
-    fontSize: theme.typography.sizes.sm,
+    fontSize: theme.typography.sizes.xs, // Smaller metadata
     fontWeight: theme.typography.weights.medium,
     color: theme.colors.text.primary,
     fontFamily: theme.typography.fontFamily,
@@ -575,8 +828,41 @@ const styles = StyleSheet.create({
     fontWeight: theme.typography.weights.bold,
     marginLeft: 2,
   },
+
+  // Mini Roadmap Preview
+  miniRoadmap: {
+    marginBottom: theme.spacing.xl,
+  },
+
+  miniRoadmapTrack: {
+    flexDirection: 'row',
+    height: 32,
+    borderRadius: theme.borderRadius.lg,
+    overflow: 'hidden',
+    borderWidth: theme.borders.width.thin,
+    borderColor: theme.colors.border,
+  },
+
+  miniRoadmapSegment: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  miniRoadmapLabel: {
+    fontSize: theme.typography.sizes.xs,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.text.primary,
+    fontFamily: theme.typography.fontFamily,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   
-  // Alternative Sessions
+  // Alternative Sessions - Refined
+  alternativesSection: {
+    marginTop: theme.spacing.xl, // Extra spacing
+  },
+
   alternativesTitle: {
     fontSize: theme.typography.sizes.lg,
     fontWeight: theme.typography.weights.semibold,
@@ -593,13 +879,18 @@ const styles = StyleSheet.create({
   alternativeCard: {
     backgroundColor: theme.colors.surface,
     borderRadius: theme.borderRadius.md,
-    borderWidth: theme.borders.width.normal,
+    borderWidth: theme.borders.width.thin, // Reduced elevation
     borderColor: theme.colors.border,
     padding: theme.spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    ...theme.shadows.small,
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05, // Lighter shadow
+    shadowRadius: 2,
+    elevation: 1,
+    minHeight: 44, // Accessibility
   },
   
   alternativeContent: {
@@ -608,7 +899,7 @@ const styles = StyleSheet.create({
   
   alternativeTitle: {
     fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.semibold,
+    fontWeight: theme.typography.weights.medium, // Lighter weight
     color: theme.colors.text.primary,
     fontFamily: theme.typography.fontFamily,
     marginBottom: theme.spacing.xs,
@@ -617,14 +908,19 @@ const styles = StyleSheet.create({
   alternativeDetails: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.sm,
+    gap: theme.spacing.xs,
+  },
+
+  alternativeDetailIcon: {
+    fontSize: theme.typography.sizes.xs,
   },
   
   alternativeDetail: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.medium,
+    fontSize: theme.typography.sizes.xs, // Smaller typography
+    fontWeight: theme.typography.weights.normal,
     color: theme.colors.text.secondary,
     fontFamily: theme.typography.fontFamily,
+    marginRight: theme.spacing.xs,
   },
   
   alternativePlayButton: {
@@ -632,14 +928,14 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     backgroundColor: theme.colors.background,
-    borderWidth: theme.borders.width.normal,
+    borderWidth: theme.borders.width.thin,
     borderColor: theme.colors.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
   
   alternativePlayText: {
-    fontSize: theme.typography.sizes.md,
+    fontSize: theme.typography.sizes.sm,
     color: theme.colors.text.primary,
     fontWeight: theme.typography.weights.bold,
     marginLeft: 1,

@@ -9,75 +9,17 @@ import {
   Dimensions,
 } from 'react-native';
 import { theme } from '../styles/theme';
+import Svg, { Path } from 'react-native-svg';
 
-// Clear change/swap icon component
+// Classic circular refresh icon using SVG (matches common refresh/swap symbol)
 const ChangeIcon: React.FC<{ size: number; color: string }> = ({ size, color }) => (
-  <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>
-    <View style={{
-      width: size * 0.8,
-      height: size * 0.8,
-      justifyContent: 'center',
-      alignItems: 'center',
-    }}>
-      {/* Two curved arrows forming a swap symbol */}
-      <View style={{
-        position: 'absolute',
-        width: size * 0.3,
-        height: size * 0.3,
-        borderWidth: 2,
-        borderColor: color,
-        borderTopColor: 'transparent',
-        borderRightColor: 'transparent',
-        borderRadius: size * 0.15,
-        transform: [{ rotate: '45deg' }, { translateX: -size * 0.1 }, { translateY: -size * 0.1 }],
-      }} />
-      
-      {/* Arrow head for first arrow */}
-      <View style={{
-        position: 'absolute',
-        width: size * 0.08,
-        height: 2,
-        backgroundColor: color,
-        transform: [{ rotate: '45deg' }, { translateX: -size * 0.05 }, { translateY: -size * 0.15 }],
-      }} />
-      <View style={{
-        position: 'absolute',
-        width: size * 0.08,
-        height: 2,
-        backgroundColor: color,
-        transform: [{ rotate: '-45deg' }, { translateX: -size * 0.15 }, { translateY: -size * 0.05 }],
-      }} />
-      
-      {/* Second curved arrow */}
-      <View style={{
-        position: 'absolute',
-        width: size * 0.3,
-        height: size * 0.3,
-        borderWidth: 2,
-        borderColor: color,
-        borderBottomColor: 'transparent',
-        borderLeftColor: 'transparent',
-        borderRadius: size * 0.15,
-        transform: [{ rotate: '45deg' }, { translateX: size * 0.1 }, { translateY: size * 0.1 }],
-      }} />
-      
-      {/* Arrow head for second arrow */}
-      <View style={{
-        position: 'absolute',
-        width: size * 0.08,
-        height: 2,
-        backgroundColor: color,
-        transform: [{ rotate: '45deg' }, { translateX: size * 0.05 }, { translateY: size * 0.15 }],
-      }} />
-      <View style={{
-        position: 'absolute',
-        width: size * 0.08,
-        height: 2,
-        backgroundColor: color,
-        transform: [{ rotate: '-45deg' }, { translateX: size * 0.15 }, { translateY: size * 0.05 }],
-      }} />
-    </View>
-  </View>
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    {/* Path adapted from the widely-recognized refresh/autorenew glyph */}
+    <Path
+      d="M12 6V3L8 7l4 4V8c3.31 0 6 2.69 6 6 0 .34-.03.67-.08 1h2.02c.04-.33.06-.66.06-1 0-4.42-3.58-8-8-8zM6 12c0-.34.03-.67.08-1H2.06c-.04.33-.06.66-.06 1 0 4.42 3.58 8 8 8v3l4-4-4-4v3c-3.31 0-6-2.69-6-6z"
+      fill={color}
+    />
+  </Svg>
 );
 
 type Corner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';

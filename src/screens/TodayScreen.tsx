@@ -435,13 +435,13 @@ const styles = StyleSheet.create({
     width: '100%',
     height: theme.borders.width.thick,
     backgroundColor: theme.colors.primary,
-    marginTop: 60, // Under dynamic island
+    marginTop: 50, // Under dynamic island - moved up
   },
   
   // Today View Styles
   todayContainer: {
     flex: 1,
-    paddingTop: 20, // Space for top line
+    paddingTop: 10, // Space for top line - reduced
   },
   
   // Hero Section - Refined
@@ -574,7 +574,7 @@ const styles = StyleSheet.create({
   // Focus Section
   focusSection: {
     paddingHorizontal: theme.spacing.lg,
-    marginTop: theme.spacing.lg,
+    marginTop: theme.spacing.sm, // Reduced from lg
     marginBottom: theme.spacing.xl,
   },
 
@@ -634,12 +634,12 @@ const styles = StyleSheet.create({
     fontWeight: theme.typography.weights.normal, // Lighter weight
     color: theme.colors.text.secondary,
     fontFamily: theme.typography.fontFamily,
-    marginBottom: theme.spacing.xl,
+    marginBottom: theme.spacing.lg, // Reduced from xl
   },
   
   // Enhanced Recommended Session Card
   recommendedCardContainer: {
-    marginBottom: theme.spacing.xxxl, // Increased spacing
+    marginBottom: theme.spacing.xl, // Reduced spacing
   },
 
   recommendedCard: {
@@ -796,7 +796,7 @@ const styles = StyleSheet.create({
   
   // Alternative Sessions - Refined
   alternativesSection: {
-    marginTop: theme.spacing.xl, // Extra spacing
+    marginTop: theme.spacing.lg, // Reduced spacing
   },
 
   alternativesTitle: {
@@ -809,7 +809,7 @@ const styles = StyleSheet.create({
   
   alternativesList: {
     gap: theme.spacing.md,
-    marginBottom: theme.spacing.xl,
+    marginBottom: theme.spacing.lg, // Reduced spacing
   },
   
   alternativeCard: {

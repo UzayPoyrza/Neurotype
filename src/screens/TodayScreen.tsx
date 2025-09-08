@@ -252,6 +252,7 @@ export const TodayScreen: React.FC = () => {
   const renderTodayView = () => (
     <ScrollView 
       style={styles.todayContainer} 
+      contentContainerStyle={styles.todayContentContainer}
       showsVerticalScrollIndicator={false}
       scrollEventThrottle={16}
     >
@@ -549,7 +550,11 @@ const styles = StyleSheet.create({
   // Today View Styles
   todayContainer: {
     flex: 1,
+  },
+
+  todayContentContainer: {
     paddingTop: 10, // Space for top line - reduced
+    paddingBottom: 100, // Space for bottom navigation
   },
   
   // Hero Section - Refined
@@ -961,7 +966,7 @@ const styles = StyleSheet.create({
   progressPathSection: {
     paddingHorizontal: theme.spacing.lg,
     marginTop: theme.spacing.lg,
-    marginBottom: theme.spacing.xl,
+    marginBottom: theme.spacing.xxxl, // Increased bottom margin
   },
 
   progressPathTitle: {
@@ -1178,6 +1183,7 @@ const styles = StyleSheet.create({
   roadmapContainer: {
     flex: 1,
     paddingTop: 20, // Space for top line
+    paddingBottom: 100, // Space for bottom navigation
   },
   
   backToToday: {

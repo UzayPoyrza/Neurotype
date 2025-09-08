@@ -5,7 +5,6 @@ import { useStore } from '../store/useStore';
 import { mockSessions } from '../data/mockData';
 import { mentalHealthModules } from '../data/modules';
 import { theme } from '../styles/theme';
-import { InstagramStyleScreen } from '../components/InstagramStyleScreen';
 import { ModuleRoadmap } from '../components/ModuleRoadmap';
 import { ModuleGridModal } from '../components/ModuleGridModal';
 import { DraggableFloatingButton } from '../components/DraggableFloatingButton';
@@ -213,48 +212,11 @@ export const TodayScreen: React.FC = () => {
   }
 
   const renderTodayView = () => (
-    <ScrollView style={styles.todayContainer} showsVerticalScrollIndicator={false}>
-      {/* Hero Section */}
-      <View style={[styles.heroSection, { backgroundColor: `${selectedModule.color}10` }]}>
-        <View style={styles.dateContainer}>
-          <Text style={styles.dayName}>{dateInfo.dayName}</Text>
-          <View style={styles.dateRow}>
-            <Text style={styles.dayNumber}>{dateInfo.dayNumber}</Text>
-            <Text style={styles.monthName}>{dateInfo.monthName}</Text>
-          </View>
-        </View>
-        
-        <View style={styles.motivationContainer}>
-          <Text style={styles.motivationalText}>{getMotivationalMessage()}</Text>
-          {/* Subtle streak indicator */}
-          <View style={styles.streakIndicator}>
-            <View style={styles.streakDots}>
-              {Array.from({ length: Math.min(userProgress?.streak || 0, 7) }, (_, i) => (
-                <View key={i} style={[styles.streakDot, { backgroundColor: getAccentColor() }]} />
-              ))}
-            </View>
-            <Text style={styles.streakText}>
-              {userProgress?.streak || 0} day{(userProgress?.streak || 0) !== 1 ? 's' : ''}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Compact Progress Summary */}
-      <View style={styles.compactProgressSummary}>
-        <View style={styles.compactProgressItem}>
-          <Text style={styles.compactProgressNumber}>{todayCompleted ? '1' : '0'}</Text>
-          <Text style={styles.compactProgressLabel}>Today</Text>
-        </View>
-        <View style={styles.compactProgressDivider} />
-        <View style={styles.compactProgressItem}>
-          <Text style={styles.compactProgressNumber}>
-            {userProgress?.sessionDeltas?.length || 0}
-          </Text>
-          <Text style={styles.compactProgressLabel}>Total</Text>
-        </View>
-      </View>
-
+    <ScrollView 
+      style={styles.todayContainer} 
+      showsVerticalScrollIndicator={false}
+      scrollEventThrottle={16}
+    >
       {/* Today's Focus Section */}
       <View style={styles.focusSection}>
         <View style={styles.focusHeader}>
@@ -281,6 +243,7 @@ export const TodayScreen: React.FC = () => {
         <Text style={styles.sectionSubtitle}>
           Personalized for your {selectedModule.title.toLowerCase()} journey
         </Text>
+
 
         {/* Enhanced Recommended Session Card */}
         <Animated.View
@@ -355,42 +318,6 @@ export const TodayScreen: React.FC = () => {
           </TouchableOpacity>
         </Animated.View>
 
-        {/* Mini Roadmap Preview */}
-        <TouchableOpacity 
-          style={styles.miniRoadmap}
-          onPress={() => setViewMode('roadmap')}
-          accessibilityLabel="View full roadmap"
-          accessibilityRole="button"
-        >
-          <View style={styles.miniRoadmapTrack}>
-            <View style={[styles.miniRoadmapSegment, { backgroundColor: theme.colors.success }]}>
-              <Text style={styles.miniRoadmapLabel}>Past</Text>
-            </View>
-            <View style={[styles.miniRoadmapSegment, { backgroundColor: getAccentColor() }]}>
-              <Text style={[styles.miniRoadmapLabel, { color: theme.colors.surface }]}>Today</Text>
-            </View>
-            <Animated.View 
-              style={[
-                styles.miniRoadmapSegment, 
-                { 
-                  backgroundColor: theme.colors.disabled,
-                  opacity: unlockAnimation.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.5, 1],
-                  }),
-                  transform: [{
-                    translateX: unlockAnimation.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, 2],
-                    })
-                  }]
-                }
-              ]}
-            >
-              <Text style={styles.miniRoadmapLabel}>Next</Text>
-            </Animated.View>
-          </View>
-        </TouchableOpacity>
 
         {/* Alternative Sessions with increased spacing */}
         <View style={styles.alternativesSection}>
@@ -464,32 +391,29 @@ export const TodayScreen: React.FC = () => {
 
   return (
     <>
-      <InstagramStyleScreen 
-        title={viewMode === 'today' ? '' : `${selectedModule.title} Journey`}
-        isSearchFocused={viewMode === 'today'}
-        forceNavUp={viewMode === 'today'}
-      >
-        <View style={styles.container}>
-          {viewMode === 'today' ? renderTodayView() : renderRoadmapView()}
+      <View style={styles.container}>
+        {/* Simple top line under dynamic island */}
+        <View style={styles.topLine} />
+        
+        {viewMode === 'today' ? renderTodayView() : renderRoadmapView()}
 
-          {/* Module Grid Modal */}
-          <ModuleGridModal
-            modules={mentalHealthModules}
-            selectedModuleId={selectedModuleId}
-            isVisible={showModuleModal}
-            onModuleSelect={setSelectedModuleId}
-            onClose={() => setShowModuleModal(false)}
-          />
+        {/* Module Grid Modal */}
+        <ModuleGridModal
+          modules={mentalHealthModules}
+          selectedModuleId={selectedModuleId}
+          isVisible={showModuleModal}
+          onModuleSelect={setSelectedModuleId}
+          onClose={() => setShowModuleModal(false)}
+        />
 
-          {/* Session Bottom Sheet */}
-          <SessionBottomSheet
-            session={selectedSession}
-            isVisible={showBottomSheet}
-            onClose={() => setShowBottomSheet(false)}
-            onStart={handleStartSession}
-          />
-        </View>
-      </InstagramStyleScreen>
+        {/* Session Bottom Sheet */}
+        <SessionBottomSheet
+          session={selectedSession}
+          isVisible={showBottomSheet}
+          onClose={() => setShowBottomSheet(false)}
+          onStart={handleStartSession}
+        />
+      </View>
 
       {/* Draggable Floating Button - Fixed to Screen */}
       <DraggableFloatingButton
@@ -504,12 +428,20 @@ export const TodayScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: theme.colors.surface,
+  },
+  
+  topLine: {
+    width: '100%',
+    height: theme.borders.width.thick,
+    backgroundColor: theme.colors.primary,
+    marginTop: 60, // Under dynamic island
   },
   
   // Today View Styles
   todayContainer: {
     flex: 1,
+    paddingTop: 20, // Space for top line
   },
   
   // Hero Section - Refined
@@ -604,7 +536,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: theme.colors.surface,
-    marginHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.lg,
     paddingVertical: theme.spacing.md,
     paddingHorizontal: theme.spacing.lg,
@@ -643,6 +574,7 @@ const styles = StyleSheet.create({
   // Focus Section
   focusSection: {
     paddingHorizontal: theme.spacing.lg,
+    marginTop: theme.spacing.lg,
     marginBottom: theme.spacing.xl,
   },
 
@@ -997,6 +929,7 @@ const styles = StyleSheet.create({
   // Roadmap View
   roadmapContainer: {
     flex: 1,
+    paddingTop: 20, // Space for top line
   },
   
   backToToday: {

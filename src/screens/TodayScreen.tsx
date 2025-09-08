@@ -417,25 +417,58 @@ export const TodayScreen: React.FC = () => {
             </View>
           </View>
           
-          {/* Mini Roadmap Visual */}
+          {/* Mini Roadmap Visual - Real Preview */}
           <View style={styles.miniRoadmapVisual}>
-            <View style={styles.miniRoadmapTrack}>
-              <View style={[styles.miniRoadmapSegment, { backgroundColor: theme.colors.success }]}>
-                <View style={styles.miniRoadmapDot} />
+            {/* Module Header Preview */}
+            <View style={styles.miniModuleHeader}>
+              <View style={[styles.miniModuleIndicator, { backgroundColor: selectedModule.color }]} />
+              <View style={styles.miniModuleInfo}>
+                <Text style={styles.miniModuleTitle}>{selectedModule.title}</Text>
+                <Text style={styles.miniModuleDescription}>Level 3 of 8</Text>
               </View>
-              <View style={[styles.miniRoadmapSegment, { backgroundColor: theme.colors.success }]}>
-                <View style={styles.miniRoadmapDot} />
-              </View>
-              <View style={[styles.miniRoadmapSegment, { backgroundColor: getAccentColor() }]}>
-                <View style={[styles.miniRoadmapDot, { backgroundColor: theme.colors.surface }]} />
-              </View>
-              <View style={[styles.miniRoadmapSegment, { backgroundColor: theme.colors.disabled }]}>
-                <View style={styles.miniRoadmapDot} />
-              </View>
-              <View style={[styles.miniRoadmapSegment, { backgroundColor: theme.colors.disabled }]}>
-                <View style={styles.miniRoadmapDot} />
+              <View style={styles.miniProgressIndicator}>
+                <Text style={styles.miniProgressText}>3/8</Text>
               </View>
             </View>
+
+            {/* Roadmap Nodes Preview */}
+            <View style={styles.miniRoadmapNodes}>
+              {/* Completed Node */}
+              <View style={[styles.miniRoadmapNode, styles.miniCompletedNode]}>
+                <Text style={styles.miniNodeLevel}>1</Text>
+              </View>
+              
+              {/* Connection Line */}
+              <View style={[styles.miniConnectionLine, { backgroundColor: selectedModule.color }]} />
+              
+              {/* Completed Node */}
+              <View style={[styles.miniRoadmapNode, styles.miniCompletedNode]}>
+                <Text style={styles.miniNodeLevel}>2</Text>
+              </View>
+              
+              {/* Connection Line */}
+              <View style={[styles.miniConnectionLine, { backgroundColor: selectedModule.color }]} />
+              
+              {/* Today Node */}
+              <View style={[styles.miniRoadmapNode, styles.miniTodayNode, { borderColor: selectedModule.color }]}>
+                <Text style={styles.miniNodeLevel}>3</Text>
+                <View style={[styles.miniTodayBadge, { backgroundColor: selectedModule.color }]}>
+                  <Text style={styles.miniTodayText}>TODAY</Text>
+                </View>
+              </View>
+              
+              {/* Connection Line */}
+              <View style={[styles.miniConnectionLine, { backgroundColor: theme.colors.disabled }]} />
+              
+              {/* Locked Node */}
+              <View style={[styles.miniRoadmapNode, styles.miniLockedNode]}>
+                <Text style={styles.miniNodeLevel}>4</Text>
+                <View style={styles.miniLockIcon}>
+                  <Text style={styles.miniLockText}>🔒</Text>
+                </View>
+              </View>
+            </View>
+
             <Text style={styles.miniRoadmapLabel}>Tap to expand and explore your full journey</Text>
           </View>
           </TouchableOpacity>
@@ -988,28 +1021,148 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  miniRoadmapTrack: {
+  // Mini Module Header
+  miniModuleHeader: {
     flexDirection: 'row',
-    height: 24,
-    borderRadius: theme.borderRadius.md,
-    overflow: 'hidden',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.borderRadius.sm,
+    marginBottom: theme.spacing.md,
+    backgroundColor: theme.colors.background,
     borderWidth: theme.borders.width.thin,
     borderColor: theme.colors.border,
-    marginBottom: theme.spacing.sm,
+    width: '100%',
   },
 
-  miniRoadmapSegment: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-
-  miniRoadmapDot: {
+  miniModuleIndicator: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: theme.colors.text.secondary,
+    marginRight: theme.spacing.xs,
+  },
+
+  miniModuleInfo: {
+    flex: 1,
+  },
+
+  miniModuleTitle: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.text.primary,
+    fontFamily: theme.typography.fontFamily,
+  },
+
+  miniModuleDescription: {
+    fontSize: theme.typography.sizes.xs,
+    color: theme.colors.text.secondary,
+    fontFamily: theme.typography.fontFamily,
+  },
+
+  miniProgressIndicator: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borders.radius.sm,
+    paddingHorizontal: theme.spacing.xs,
+    paddingVertical: 2,
+    borderWidth: theme.borders.width.thin,
+    borderColor: theme.colors.border,
+  },
+
+  miniProgressText: {
+    fontSize: theme.typography.sizes.xs,
+    fontWeight: theme.typography.weights.medium,
+    color: theme.colors.text.primary,
+    fontFamily: theme.typography.fontFamily,
+  },
+
+  // Mini Roadmap Nodes
+  miniRoadmapNodes: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: theme.spacing.sm,
+  },
+
+  miniRoadmapNode: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+
+  miniCompletedNode: {
+    backgroundColor: '#e8f5e8',
+    borderColor: theme.colors.success,
+  },
+
+  miniTodayNode: {
+    backgroundColor: theme.colors.surface,
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+
+  miniLockedNode: {
+    backgroundColor: theme.colors.background,
+    borderColor: theme.colors.disabled,
+  },
+
+  miniNodeLevel: {
+    fontSize: theme.typography.sizes.xs,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.text.primary,
+    fontFamily: theme.typography.fontFamily,
+  },
+
+  miniConnectionLine: {
+    width: 12,
+    height: 2,
+    borderRadius: 1,
+    marginHorizontal: 4,
+    opacity: 0.6,
+  },
+
+  miniTodayBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: theme.borders.radius.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.surface,
+  },
+
+  miniTodayText: {
+    fontSize: 6,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.surface,
+    fontFamily: theme.typography.fontFamily,
+  },
+
+  miniLockIcon: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: theme.colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+
+  miniLockText: {
+    fontSize: 6,
   },
 
   miniRoadmapLabel: {

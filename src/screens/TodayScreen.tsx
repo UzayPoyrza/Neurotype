@@ -528,7 +528,6 @@ export const TodayScreen: React.FC = () => {
       <DraggableFloatingButton
         backgroundColor={selectedModule.color}
         onPress={() => setShowModuleModal(true)}
-        icon="🔄"
       />
     </>
   );

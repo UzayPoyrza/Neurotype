@@ -15,6 +15,7 @@ interface InstagramStyleNavProps {
   contentHeight?: number;
   scrollViewHeight?: number;
   isSearchFocused?: boolean;
+  forceInitialPosition?: 'up' | 'down';
 }
 
 export interface InstagramStyleNavRef {
@@ -34,7 +35,8 @@ export const InstagramStyleNav = forwardRef<InstagramStyleNavRef, InstagramStyle
   onScrollEnd,
   contentHeight = 0,
   scrollViewHeight = 0,
-  isSearchFocused = false
+  isSearchFocused = false,
+  forceInitialPosition
 }, ref) => {
   const navigation = useNavigation();
   const revealTranslateY = useRef(new Animated.Value(0)).current;
@@ -114,12 +116,22 @@ export const InstagramStyleNav = forwardRef<InstagramStyleNavRef, InstagramStyle
   // Force navigation to stay visible when search is focused
   React.useEffect(() => {
     if (isSearchFocused) {
-      // Immediately show the navigation and prevent any movement
-      revealTranslateY.setValue(0);
+      // Position exactly like when scrolling down (line under dynamic island)
+      revealTranslateY.setValue(-slideRange); // -60px - same as when navigation moves up
       // Stop any ongoing animations
       revealTranslateY.stopAnimation();
     }
-  }, [isSearchFocused, revealTranslateY]);
+  }, [isSearchFocused, revealTranslateY, slideRange]);
+
+  // Force initial position
+  React.useEffect(() => {
+    if (forceInitialPosition === 'up') {
+      // Position exactly like when scrolling down (line under dynamic island)
+      revealTranslateY.setValue(-slideRange); // -60px - same as when navigation moves up
+    } else if (forceInitialPosition === 'down') {
+      revealTranslateY.setValue(0); // Default position
+    }
+  }, [forceInitialPosition, revealTranslateY, slideRange]);
 
   // Animate top shell border and reveal bar content based on reveal bar position
   React.useEffect(() => {

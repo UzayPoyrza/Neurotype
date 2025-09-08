@@ -464,7 +464,11 @@ export const TodayScreen: React.FC = () => {
 
   return (
     <>
-      <InstagramStyleScreen title={viewMode === 'today' ? 'Today' : `${selectedModule.title} Journey`}>
+      <InstagramStyleScreen 
+        title={viewMode === 'today' ? '' : `${selectedModule.title} Journey`}
+        isSearchFocused={viewMode === 'today'}
+        forceNavUp={viewMode === 'today'}
+      >
         <View style={styles.container}>
           {viewMode === 'today' ? renderTodayView() : renderRoadmapView()}
 

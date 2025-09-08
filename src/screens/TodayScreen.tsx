@@ -33,6 +33,7 @@ export const TodayScreen: React.FC = () => {
   const heroCardScale = useRef(new Animated.Value(1)).current;
   const completionAnimation = useRef(new Animated.Value(0)).current;
   const unlockAnimation = useRef(new Animated.Value(0)).current;
+  const roadmapCardScale = useRef(new Animated.Value(1)).current;
   
   const selectedModule = mentalHealthModules.find(m => m.id === selectedModuleId) || mentalHealthModules[0];
   
@@ -107,6 +108,43 @@ export const TodayScreen: React.FC = () => {
 
   const handleUnlockComplete = () => {
     setTriggerUnlock(false);
+  };
+
+  // Roadmap card press animations
+  const handleRoadmapCardPressIn = () => {
+    Animated.timing(roadmapCardScale, {
+      toValue: 0.95,
+      duration: 150,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleRoadmapCardPressOut = () => {
+    Animated.timing(roadmapCardScale, {
+      toValue: 1,
+      duration: 150,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleRoadmapCardPress = () => {
+    // First scale down, then expand animation
+    Animated.sequence([
+      Animated.timing(roadmapCardScale, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(roadmapCardScale, {
+        toValue: 1.05,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setViewMode('roadmap');
+      // Reset scale after navigation
+      roadmapCardScale.setValue(1);
+    });
   };
 
   const handleCancel = () => {
@@ -352,20 +390,57 @@ export const TodayScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Quick Access to Roadmap */}
-      <TouchableOpacity 
-        style={styles.roadmapPreview}
-        onPress={() => setViewMode('roadmap')}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.roadmapPreviewTitle}>View Your Progress Path</Text>
-        <Text style={styles.roadmapPreviewSubtitle}>
-          See your journey and unlock tomorrow's sessions
-        </Text>
-        <View style={styles.roadmapPreviewArrow}>
-          <Text style={styles.arrowText}>→</Text>
-        </View>
-      </TouchableOpacity>
+      {/* Progress Path Section */}
+      <View style={styles.progressPathSection}>
+        <Text style={styles.progressPathTitle}>View Your Progress Path</Text>
+        
+        {/* Mini Roadmap Preview Card */}
+        <Animated.View
+          style={[
+            styles.miniRoadmapCard,
+            {
+              transform: [{ scale: roadmapCardScale }],
+            }
+          ]}
+        >
+          <TouchableOpacity 
+            style={styles.miniRoadmapCardTouchable}
+            onPress={handleRoadmapCardPress}
+            onPressIn={handleRoadmapCardPressIn}
+            onPressOut={handleRoadmapCardPressOut}
+            activeOpacity={1}
+          >
+          <View style={styles.miniRoadmapHeader}>
+            <Text style={styles.miniRoadmapTitle}>{selectedModule.title} Journey</Text>
+            <View style={styles.miniRoadmapArrow}>
+              <Text style={styles.arrowText}>→</Text>
+            </View>
+          </View>
+          
+          {/* Mini Roadmap Visual */}
+          <View style={styles.miniRoadmapVisual}>
+            <View style={styles.miniRoadmapTrack}>
+              <View style={[styles.miniRoadmapSegment, { backgroundColor: theme.colors.success }]}>
+                <View style={styles.miniRoadmapDot} />
+              </View>
+              <View style={[styles.miniRoadmapSegment, { backgroundColor: theme.colors.success }]}>
+                <View style={styles.miniRoadmapDot} />
+              </View>
+              <View style={[styles.miniRoadmapSegment, { backgroundColor: getAccentColor() }]}>
+                <View style={[styles.miniRoadmapDot, { backgroundColor: theme.colors.surface }]} />
+              </View>
+              <View style={[styles.miniRoadmapSegment, { backgroundColor: theme.colors.disabled }]}>
+                <View style={styles.miniRoadmapDot} />
+              </View>
+              <View style={[styles.miniRoadmapSegment, { backgroundColor: theme.colors.disabled }]}>
+                <View style={styles.miniRoadmapDot} />
+              </View>
+            </View>
+            <Text style={styles.miniRoadmapLabel}>Tap to expand and explore your full journey</Text>
+          </View>
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
     </ScrollView>
   );
 
@@ -765,34 +840,6 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
 
-  // Mini Roadmap Preview
-  miniRoadmap: {
-    marginBottom: theme.spacing.xl,
-  },
-
-  miniRoadmapTrack: {
-    flexDirection: 'row',
-    height: 32,
-    borderRadius: theme.borderRadius.lg,
-    overflow: 'hidden',
-    borderWidth: theme.borders.width.thin,
-    borderColor: theme.colors.border,
-  },
-
-  miniRoadmapSegment: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  miniRoadmapLabel: {
-    fontSize: theme.typography.sizes.xs,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.text.primary,
-    fontFamily: theme.typography.fontFamily,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
   
   // Alternative Sessions - Refined
   alternativesSection: {
@@ -877,53 +924,101 @@ const styles = StyleSheet.create({
     marginLeft: 1,
   },
   
-  // Roadmap Preview
-  roadmapPreview: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.border,
-    padding: theme.spacing.xl,
-    marginHorizontal: theme.spacing.lg,
+  // Progress Path Section
+  progressPathSection: {
+    paddingHorizontal: theme.spacing.lg,
+    marginTop: theme.spacing.lg,
     marginBottom: theme.spacing.xl,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    ...theme.shadows.small,
   },
-  
-  roadmapPreviewTitle: {
+
+  progressPathTitle: {
     fontSize: theme.typography.sizes.lg,
     fontWeight: theme.typography.weights.semibold,
     color: theme.colors.text.primary,
     fontFamily: theme.typography.fontFamily,
-    marginBottom: theme.spacing.xs,
+    marginBottom: theme.spacing.md,
   },
-  
-  roadmapPreviewSubtitle: {
+
+  // Mini Roadmap Card
+  miniRoadmapCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    borderWidth: theme.borders.width.normal,
+    borderColor: theme.colors.border,
+    ...theme.shadows.small,
+  },
+
+  miniRoadmapCardTouchable: {
+    padding: theme.spacing.lg,
+  },
+
+  miniRoadmapHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: theme.spacing.md,
+  },
+
+  miniRoadmapTitle: {
     fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.medium,
-    color: theme.colors.text.secondary,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.text.primary,
     fontFamily: theme.typography.fontFamily,
-    flex: 1,
   },
-  
-  roadmapPreviewArrow: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+
+  miniRoadmapArrow: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: theme.colors.background,
     borderWidth: theme.borders.width.normal,
     borderColor: theme.colors.border,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: theme.spacing.lg,
   },
-  
+
   arrowText: {
-    fontSize: theme.typography.sizes.lg,
+    fontSize: theme.typography.sizes.md,
     fontWeight: theme.typography.weights.bold,
     color: theme.colors.text.primary,
+  },
+
+  // Mini Roadmap Visual
+  miniRoadmapVisual: {
+    alignItems: 'center',
+  },
+
+  miniRoadmapTrack: {
+    flexDirection: 'row',
+    height: 24,
+    borderRadius: theme.borderRadius.md,
+    overflow: 'hidden',
+    borderWidth: theme.borders.width.thin,
+    borderColor: theme.colors.border,
+    marginBottom: theme.spacing.sm,
+  },
+
+  miniRoadmapSegment: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+
+  miniRoadmapDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: theme.colors.text.secondary,
+  },
+
+  miniRoadmapLabel: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.normal,
+    color: theme.colors.text.secondary,
+    fontFamily: theme.typography.fontFamily,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   
   // Roadmap View

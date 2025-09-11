@@ -1,5 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MentalHealthModule } from '../data/modules';
 import { theme } from '../styles/theme';
 
@@ -14,18 +16,45 @@ const cardsPerRow = 2;
 const cardWidth = (screenWidth - (theme.spacing.lg * 2) - (cardMargin * (cardsPerRow - 1))) / cardsPerRow;
 
 export const ModuleCard: React.FC<ModuleCardProps> = ({ module, onPress }) => {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: scale.value }],
+    };
+  });
+
+  const handlePressIn = () => {
+    scale.value = withTiming(0.98, {
+      duration: 150,
+      easing: Easing.out(Easing.quad),
+    });
+  };
+
+  const handlePressOut = () => {
+    scale.value = withTiming(1, {
+      duration: 200,
+      easing: Easing.out(Easing.quad),
+    });
+  };
+
   return (
-    <TouchableOpacity
-      style={[styles.card, { backgroundColor: module.color }]}
-      onPress={() => onPress(module.id)}
-      activeOpacity={0.8}
-    >
+    <Animated.View style={animatedStyle}>
+      <TouchableOpacity
+        style={[styles.card, styles.touchArea, { backgroundColor: module.color }]}
+        onPress={() => onPress(module.id)}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        activeOpacity={1}
+        accessibilityRole="button"
+        accessibilityLabel={`${module.title}, ${module.meditationCount} meditations`}
+      >
       <View style={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title} numberOfLines={2}>
             {module.title}
           </Text>
-          <View style={styles.badge}>
+          <View style={[styles.badge, theme.shadows.small]}>
             <Text style={styles.badgeText}>{module.meditationCount}</Text>
           </View>
         </View>
@@ -49,9 +78,15 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ module, onPress }) => {
         </View>
       </View>
       
-      {/* Spotify-like gradient overlay for better text readability */}
-      <View style={styles.overlay} />
+      {/* White gradient overlay for better text readability */}
+      <LinearGradient
+        colors={['rgba(255,255,255,0.45)', 'rgba(255,255,255,0.10)']}
+        style={styles.overlay}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+      />
     </TouchableOpacity>
+    </Animated.View>
   );
 };
 
@@ -66,13 +101,15 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
   },
+  touchArea: {
+    flex: 1,
+  },
   overlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.15)',
     borderRadius: theme.borders.radius.lg,
   },
   content: {

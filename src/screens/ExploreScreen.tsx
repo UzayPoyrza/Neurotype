@@ -320,6 +320,7 @@ export const ExploreScreen: React.FC = () => {
               {...panResponder.panHandlers}
             >
               <View style={styles.sortModalHeader}>
+                <View style={styles.dragHandle} />
                 <Text style={styles.sortModalTitle}>Sort by</Text>
               </View>
               
@@ -492,6 +493,14 @@ const styles = StyleSheet.create({
     paddingBottom: theme.spacing.lg,
     borderBottomWidth: theme.borders.width.normal,
     borderBottomColor: theme.colors.primary,
+  },
+  dragHandle: {
+    width: 48,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: theme.colors.primary,
+    opacity: 0.15,
+    marginBottom: theme.spacing.sm,
   },
   cancelButton: {
     backgroundColor: theme.colors.background,

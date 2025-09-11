@@ -10,10 +10,11 @@ export const createSubtleBackground = (moduleColor: string): string => {
   const g = parseInt(hex.substr(2, 2), 16);
   const b = parseInt(hex.substr(4, 2), 16);
   
-  // Create a very subtle tint by mixing with white (95% white, 5% module color)
-  const mixedR = Math.round(255 * 0.95 + r * 0.05);
-  const mixedG = Math.round(255 * 0.95 + g * 0.05);
-  const mixedB = Math.round(255 * 0.95 + b * 0.05);
+  // Create a more noticeable tint by mixing with white (90% white, 10% module color)
+  // This makes blues and purples more visible while keeping it subtle
+  const mixedR = Math.round(255 * 0.90 + r * 0.10);
+  const mixedG = Math.round(255 * 0.90 + g * 0.10);
+  const mixedB = Math.round(255 * 0.90 + b * 0.10);
   
   return `rgb(${mixedR}, ${mixedG}, ${mixedB})`;
 };

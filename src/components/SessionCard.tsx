@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Session } from '../types';
 import { theme } from '../styles/theme';
@@ -14,6 +14,47 @@ export const SessionCard: React.FC<SessionCardProps> = ({
   onStart, 
   variant = 'list' 
 }) => {
+  const [isFavorited, setIsFavorited] = useState(false);
+
+  const getModalityColor = (modality: string) => {
+    switch (modality.toLowerCase()) {
+      case 'movement':
+        return '#ff9500'; // Orange
+      case 'somatic':
+        return '#34c759'; // Green  
+      case 'breathing':
+        return '#007aff'; // Blue
+      case 'visualization':
+        return '#af52de'; // Purple
+      case 'mindfulness':
+        return '#ff2d92'; // Pink
+      default:
+        return '#8e8e93'; // Gray
+    }
+  };
+
+  const getModalityIcon = (modality: string) => {
+    switch (modality.toLowerCase()) {
+      case 'movement':
+        return '🏃';
+      case 'somatic':
+        return '🧘';
+      case 'breathing':
+        return '💨';
+      case 'visualization':
+        return '👁️';
+      case 'mindfulness':
+        return '🌸';
+      default:
+        return '🎯';
+    }
+  };
+
+  const handleFavoritePress = (e: any) => {
+    e.stopPropagation(); // Prevent triggering onStart
+    setIsFavorited(!isFavorited);
+  };
+
   return (
     <TouchableOpacity
       style={[
@@ -23,26 +64,36 @@ export const SessionCard: React.FC<SessionCardProps> = ({
       onPress={onStart}
       testID="session-card"
     >
-      <View style={styles.header}>
-        <Text style={styles.title}>{session.title}</Text>
-        <View style={styles.durationBadge}>
-          <Text style={styles.durationText}>{session.durationMin}m</Text>
+      <View style={styles.content}>
+        <View style={styles.leftSection}>
+          <View style={styles.playIcon}>
+            <Text style={styles.playIconText}>▶</Text>
+          </View>
+          <View style={styles.sessionInfo}>
+            <Text style={styles.title}>{session.title}</Text>
+            <View style={styles.metaInfo}>
+              <View style={[styles.modalityBadge, { backgroundColor: getModalityColor(session.modality) }]}>
+                <Text style={styles.modalityIcon}>{getModalityIcon(session.modality)}</Text>
+                <Text style={styles.modalityText}>{session.modality}</Text>
+              </View>
+              <Text style={styles.goalText}>{session.goal}</Text>
+            </View>
+          </View>
         </View>
-      </View>
-      
-      <View style={styles.details}>
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Modality:</Text>
-          <Text style={styles.detailValue}>{session.modality}</Text>
+        
+        <View style={styles.rightSection}>
+          <TouchableOpacity 
+            style={styles.heartButton}
+            onPress={handleFavoritePress}
+          >
+            <Text style={styles.heartIcon}>
+              {isFavorited ? '❤️' : '🤍'}
+            </Text>
+          </TouchableOpacity>
+          <View style={styles.durationBadge}>
+            <Text style={styles.durationText}>{session.durationMin}m</Text>
+          </View>
         </View>
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Goal:</Text>
-          <Text style={styles.detailValue}>{session.goal}</Text>
-        </View>
-      </View>
-      
-      <View style={styles.actionButton}>
-        <Text style={styles.actionText}>Start Session</Text>
       </View>
     </TouchableOpacity>
   );
@@ -50,68 +101,126 @@ export const SessionCard: React.FC<SessionCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    ...theme.common.card,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 12,
+    marginHorizontal: 16,
+    marginVertical: 3,
+    height: 60,
+    width: '100%',
+    alignSelf: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
+    borderLeftWidth: 4,
+    borderLeftColor: '#007AFF',
   },
   recommendedCard: {
-    borderWidth: theme.borders.width.thick,
-    borderColor: theme.colors.primary,
+    borderLeftColor: '#34c759',
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 4,
   },
   listCard: {
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.primary,
+    borderLeftColor: '#007AFF',
   },
-  header: {
+  content: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing.md,
-  },
-  title: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
+    justifyContent: 'space-between',
     flex: 1,
   },
-  durationBadge: {
-    backgroundColor: '#f0f0f0',
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.borders.radius.sm,
-    borderWidth: theme.borders.width.thin,
-    borderColor: theme.colors.primary,
-  },
-  durationText: {
-    fontSize: theme.typography.sizes.xs,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
-  },
-  details: {
-    marginBottom: theme.spacing.lg,
-  },
-  detailItem: {
+  leftSection: {
     flexDirection: 'row',
-    marginBottom: theme.spacing.xs,
+    alignItems: 'center',
+    flex: 1,
   },
-  detailLabel: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.secondary,
-    fontFamily: theme.typography.fontFamily,
-    width: 80,
+  playIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f2f2f7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
-  detailValue: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.medium,
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
+  playIconText: {
+    fontSize: 14,
+    color: '#007AFF',
+    marginLeft: 1,
+  },
+  sessionInfo: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  title: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 2,
+  },
+  metaInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  modalityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 10,
+    marginRight: 6,
+  },
+  modalityIcon: {
+    fontSize: 10,
+    marginRight: 2,
+  },
+  modalityText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#ffffff',
     textTransform: 'capitalize',
   },
-  actionButton: {
-    ...theme.common.button,
+  goalText: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: '#8e8e93',
+    textTransform: 'capitalize',
   },
-  actionText: {
-    ...theme.common.buttonText,
+  rightSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heartButton: {
+    padding: 4,
+    marginRight: 8,
+    minWidth: 32,
+    minHeight: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  heartIcon: {
+    fontSize: 18,
+  },
+  durationBadge: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    minWidth: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  durationText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#ffffff',
+    textAlign: 'center',
   },
 }); 

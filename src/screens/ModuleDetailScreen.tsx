@@ -91,15 +91,6 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
 
       {/* Sessions List */}
       <View style={styles.content}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>
-            Guided Meditations
-          </Text>
-          <Text style={styles.sectionSubtitle}>
-            {moduleSessions.length} sessions available
-          </Text>
-        </View>
-
         <FlatList
           data={moduleSessions}
           renderItem={({ item }) => (
@@ -116,13 +107,15 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
         />
 
         {moduleSessions.length === 0 && (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>
-              Coming Soon
-            </Text>
-            <Text style={styles.emptySubtext}>
-              Meditations for {module.title} are being prepared
-            </Text>
+          <View style={styles.emptyStateContainer}>
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>
+                Coming Soon
+              </Text>
+              <Text style={styles.emptySubtext}>
+                Meditations for {module.title} are being prepared
+              </Text>
+            </View>
           </View>
         )}
       </View>
@@ -204,7 +197,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 24,
+    paddingTop: 12,
   },
   sectionHeader: {
     marginBottom: 24,
@@ -223,12 +216,18 @@ const styles = StyleSheet.create({
   listContainer: {
     paddingBottom: 100,
   },
+  emptyStateContainer: {
+    position: 'absolute',
+    top: 60,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+  },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 60,
+    paddingVertical: 40,
     backgroundColor: '#ffffff',
     borderRadius: 16,
-    marginHorizontal: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,

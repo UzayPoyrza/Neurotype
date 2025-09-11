@@ -61,7 +61,7 @@ export const AnimatedTabBar: React.FC<BottomTabBarProps> = ({
         const { options } = descriptors[route.key];
         const isFocused = state.index === index;
 
-        const color = isFocused ? '#000000' : '#666666';
+        const color = isFocused ? '#007AFF' : '#8e8e93';
         const size = 24;
 
         return (
@@ -97,12 +97,12 @@ export const AnimatedTabBar: React.FC<BottomTabBarProps> = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
-    borderTopWidth: 2,
-    borderTopColor: '#000000',
-    paddingBottom: 15,
-    paddingTop: 5,
-    height: 80,
+    backgroundColor: '#f2f2f7', // iOS system background to match screens
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0', // Subtle border
+    paddingBottom: 20, // Increased for better spacing
+    paddingTop: 8,
+    height: 85, // Slightly taller for better proportions
     position: 'absolute',
     bottom: 0,
     left: 0,
@@ -115,21 +115,26 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 4,
   },
   iconContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: -6,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginBottom: 2,
   },
   label: {
-    fontSize: 12,
-    marginTop: 4,
+    fontSize: 11,
     fontWeight: '500',
+    textAlign: 'center',
   },
   focusedLabel: {
-    color: '#000000',
+    color: '#007AFF', // iOS blue for active state
+    fontWeight: '600',
   },
   unfocusedLabel: {
-    color: '#666666',
+    color: '#8e8e93', // iOS secondary text color
   },
 }); 

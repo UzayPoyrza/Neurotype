@@ -308,8 +308,8 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: theme.borders.width.thick,
-    backgroundColor: theme.colors.primary,
+    height: 1,
+    backgroundColor: '#e0e0e0',
   },
   revealBar: {
     backgroundColor: '#f2f2f7', // Match iOS system background

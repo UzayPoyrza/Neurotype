@@ -273,32 +273,37 @@ export const ExploreScreen: React.FC = () => {
 
           {/* Module Grid */}
           <Animated.View style={[styles.moduleGrid, moduleGridAnimatedStyle]}>
-            {filteredModules.map((module) => (
-              <View key={module.id} style={styles.moduleCardWrapper}>
-                <TouchableOpacity
-                  style={styles.moduleCard}
-                  onPress={() => handleModulePress(module.id)}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.moduleCardHeader}>
-                    <View style={[styles.moduleIndicator, { backgroundColor: module.color }]} />
-                    <Text style={styles.moduleCategory}>{module.category.toUpperCase()}</Text>
+            {/* Create rows of 2 modules each */}
+            {Array.from({ length: Math.ceil(filteredModules.length / 2) }, (_, rowIndex) => (
+              <View key={rowIndex} style={styles.moduleRow}>
+                {filteredModules.slice(rowIndex * 2, rowIndex * 2 + 2).map((module) => (
+                  <View key={module.id} style={styles.moduleCardWrapper}>
+                    <TouchableOpacity
+                      style={styles.moduleCard}
+                      onPress={() => handleModulePress(module.id)}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.moduleCardHeader}>
+                        <View style={[styles.moduleIndicator, { backgroundColor: module.color }]} />
+                        <Text style={styles.moduleCategory}>{module.category.toUpperCase()}</Text>
+                      </View>
+                      
+                      <Text style={styles.moduleTitle}>{module.title}</Text>
+                      <Text style={styles.moduleDescription} numberOfLines={2}>
+                        {module.description}
+                      </Text>
+                      
+                      <View style={styles.moduleFooter}>
+                        <Text style={styles.sessionCount}>
+                          {module.meditationCount} sessions
+                        </Text>
+                        <View style={styles.moduleArrow}>
+                          <Text style={styles.moduleArrowText}>→</Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
                   </View>
-                  
-                  <Text style={styles.moduleTitle}>{module.title}</Text>
-                  <Text style={styles.moduleDescription} numberOfLines={2}>
-                    {module.description}
-                  </Text>
-                  
-                  <View style={styles.moduleFooter}>
-                    <Text style={styles.sessionCount}>
-                      {module.meditationCount} sessions
-                    </Text>
-                    <View style={styles.moduleArrow}>
-                      <Text style={styles.moduleArrowText}>→</Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
+                ))}
               </View>
             ))}
           </Animated.View>
@@ -487,18 +492,25 @@ const styles = StyleSheet.create({
   moduleGrid: {
     gap: 12,
   },
-  moduleCardWrapper: {
+  moduleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: 12,
+  },
+  moduleCardWrapper: {
+    flex: 1,
+    marginHorizontal: 6,
   },
   moduleCard: {
     backgroundColor: '#ffffff',
     borderRadius: 16,
-    padding: 16,
+    padding: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    minHeight: 140,
   },
   moduleCardHeader: {
     flexDirection: 'row',
@@ -518,17 +530,17 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   moduleTitle: {
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: '600',
     color: '#000000',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   moduleDescription: {
-    fontSize: 15,
+    fontSize: 13,
     color: '#8e8e93',
     fontWeight: '400',
-    lineHeight: 20,
-    marginBottom: 16,
+    lineHeight: 18,
+    marginBottom: 12,
   },
   moduleFooter: {
     flexDirection: 'row',

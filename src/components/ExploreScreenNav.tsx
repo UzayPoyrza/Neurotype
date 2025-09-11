@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   topShell: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f2f2f7', // Match iOS system background
     height: 60, // Fixed height for status bar + padding
     position: 'absolute',
     top: 0,
@@ -312,9 +312,9 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary,
   },
   revealBar: {
-    backgroundColor: '#ffffff',
-    borderBottomWidth: theme.borders.width.thick,
-    borderBottomColor: theme.colors.primary,
+    backgroundColor: '#f2f2f7', // Match iOS system background
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0', // Subtle border
     height: 120, // Increased height to accommodate filter bar
     position: 'absolute',
     top: 60, // Start below TopShell

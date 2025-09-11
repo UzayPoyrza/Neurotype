@@ -118,7 +118,7 @@ export const ExploreScreen: React.FC<ExploreScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#f2f2f7', // iOS system background
   },
   scrollView: {
     flex: 1,

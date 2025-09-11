@@ -288,7 +288,9 @@ export const ExploreScreen: React.FC = () => {
                         <Text style={styles.moduleCategory}>{module.category.toUpperCase()}</Text>
                       </View>
                       
-                      <Text style={styles.moduleTitle}>{module.title}</Text>
+                      <Text style={styles.moduleTitle} numberOfLines={1} ellipsizeMode="tail">
+                        {module.title}
+                      </Text>
                       <Text style={styles.moduleDescription} numberOfLines={2}>
                         {module.description}
                       </Text>
@@ -496,12 +498,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
-    minHeight: 140,
+    height: 140, // Fixed height for consistency
+    justifyContent: 'space-between', // Distribute content evenly
   },
   moduleCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8, // Reduced from 12
   },
   moduleIndicator: {
     width: 8,
@@ -516,22 +519,25 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   moduleTitle: {
-    fontSize: 17,
+    fontSize: 16, // Slightly smaller to fit better
     fontWeight: '600',
     color: '#000000',
-    marginBottom: 6,
+    marginBottom: 4, // Reduced from 6
+    lineHeight: 20, // Add line height for better control
   },
   moduleDescription: {
-    fontSize: 13,
+    fontSize: 12, // Slightly smaller
     color: '#8e8e93',
     fontWeight: '400',
-    lineHeight: 18,
-    marginBottom: 12,
+    lineHeight: 16, // Tighter line height
+    marginBottom: 8, // Reduced from 12
+    flex: 1, // Take available space
   },
   moduleFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginTop: 'auto', // Push to bottom
   },
   sessionCount: {
     fontSize: 13,

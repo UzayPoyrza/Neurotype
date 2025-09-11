@@ -466,53 +466,7 @@ export const TodayScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f2f2f7', // iOS system background
-  },
-  scrollView: {
-    flex: 1,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
-  },
-  title: {
-    fontSize: 34,
-    fontWeight: 'bold',
-    color: '#000000',
-    marginBottom: 4,
-  },
-  dateText: {
-    fontSize: 17,
-    color: '#8e8e93',
-    fontWeight: '400',
-  },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    marginHorizontal: 20,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  cardTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#000000',
-  },
+  ...theme.health, // Use global Apple Health styles
   moduleButton: {
     flexDirection: 'row',
     alignItems: 'center',

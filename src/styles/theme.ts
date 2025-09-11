@@ -116,6 +116,7 @@ export const theme = {
   
   // Common Styles
   common: {
+    // Legacy styles for backward compatibility
     container: {
       flex: 1,
       backgroundColor: '#f8f6f1',
@@ -188,6 +189,133 @@ export const theme = {
       fontWeight: '400' as const,
       color: '#000000',
       fontFamily: 'System',
+    },
+  },
+
+  // Apple Health-inspired styles
+  health: {
+    container: {
+      flex: 1,
+      backgroundColor: '#f2f2f7', // iOS system background
+    },
+    scrollView: {
+      flex: 1,
+    },
+    content: {
+      paddingHorizontal: 20,
+      paddingTop: 20,
+      paddingBottom: 120,
+    },
+    card: {
+      backgroundColor: '#ffffff',
+      borderRadius: 16,
+      marginHorizontal: 20,
+      marginBottom: 12,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    cardPadding: {
+      padding: 16,
+    },
+    cardHeader: {
+      flexDirection: 'row' as const,
+      justifyContent: 'space-between' as const,
+      alignItems: 'center' as const,
+      paddingHorizontal: 16,
+      paddingTop: 16,
+      paddingBottom: 8,
+    },
+    cardTitle: {
+      fontSize: 17,
+      fontWeight: '600' as const,
+      color: '#000000',
+    },
+    cardSubtitle: {
+      fontSize: 15,
+      color: '#8e8e93',
+      fontWeight: '400' as const,
+      marginBottom: 16,
+    },
+    header: {
+      paddingHorizontal: 20,
+      paddingTop: 60,
+      paddingBottom: 20,
+    },
+    title: {
+      fontSize: 34,
+      fontWeight: 'bold' as const,
+      color: '#000000',
+      marginBottom: 4,
+    },
+    dateText: {
+      fontSize: 17,
+      color: '#8e8e93',
+      fontWeight: '400' as const,
+    },
+    subtitle: {
+      fontSize: 17,
+      color: '#8e8e93',
+      fontWeight: '400' as const,
+    },
+    button: {
+      backgroundColor: '#007AFF',
+      borderRadius: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 24,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+    },
+    buttonText: {
+      fontSize: 17,
+      fontWeight: '600' as const,
+      color: '#ffffff',
+    },
+    secondaryButton: {
+      backgroundColor: '#f2f2f7',
+      borderRadius: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 24,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+    },
+    secondaryButtonText: {
+      fontSize: 17,
+      fontWeight: '600' as const,
+      color: '#000000',
+    },
+    inputField: {
+      backgroundColor: '#ffffff',
+      borderRadius: 12,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderWidth: 1,
+      borderColor: '#e0e0e0',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    inputFieldFocused: {
+      borderColor: '#007AFF',
+      shadowOpacity: 0.15,
+    },
+    bodyText: {
+      fontSize: 17,
+      fontWeight: '400' as const,
+      color: '#000000',
+      lineHeight: 22,
+    },
+    captionText: {
+      fontSize: 13,
+      fontWeight: '400' as const,
+      color: '#8e8e93',
+    },
+    bottomSpacing: {
+      height: 120,
     },
   },
 };

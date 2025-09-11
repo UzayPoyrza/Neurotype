@@ -441,15 +441,7 @@ export const ExploreScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f2f2f7', // iOS system background
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 120,
-  },
+  ...theme.health, // Use global Apple Health styles
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -462,14 +454,8 @@ const styles = StyleSheet.create({
     fontFamily: theme.typography.fontFamily,
   },
   sortingCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
+    ...theme.health.card,
     marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   sortingButton: {
     padding: 16,

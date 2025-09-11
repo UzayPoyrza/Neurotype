@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
-import { InstagramStyleScreen } from '../components/InstagramStyleScreen';
 import { ProfilePictureModal } from '../components/ProfilePictureModal';
 import { SubscriptionBadge } from '../components/SubscriptionBadge';
 import { UserIcon, SettingsIcon } from '../components/icons';
@@ -31,75 +30,85 @@ export const ProfileScreen: React.FC = () => {
   const recentActivity = userProgress.sessionDeltas.slice(-10).reverse(); // Last 10 sessions, most recent first
 
   return (
-    <InstagramStyleScreen 
-      title={
-        <UserIcon 
-          size={40}
-          profileIcon={profileIcon}
-          onPress={() => setModalVisible(true)}
-        />
-      }
-      showBackButton={false}
-      leftComponent={
-        <SubscriptionBadge 
-          subscriptionType={subscriptionType}
-          size="small"
-        />
-      }
-      rightComponent={
-        <SettingsIcon 
-          size={40}
-          onPress={() => navigation.navigate('Settings')}
-        />
-      }
-    >
-      <View style={styles.content}>
-        {/* Affiliate Program */}
-        <View style={styles.affiliateContainer}>
-          {/* Header */}
-          <View style={styles.affiliateHeader}>
-            <Text style={styles.affiliateEmoji}>🎁</Text>
-            <Text style={styles.affiliateTitle}>Share & Earn</Text>
-            <Text style={styles.affiliateSubtitle}>Give your friends 30 days of premium meditation</Text>
+    <View style={styles.container}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerTop}>
+            <SubscriptionBadge 
+              subscriptionType={subscriptionType}
+              size="small"
+            />
+            <Text style={styles.title}>Profile</Text>
+            <SettingsIcon 
+              size={32}
+              onPress={() => navigation.navigate('Settings')}
+            />
           </View>
+        </View>
 
-          {/* Main Card */}
-          <View style={styles.affiliateCard}>
-            <View style={styles.benefitSection}>
-              <Text style={styles.benefitTitle}>How it works:</Text>
+        {/* Profile Section */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>👤 Your Profile</Text>
+          </View>
+          
+          <View style={styles.profileContent}>
+            <TouchableOpacity
+              style={styles.profilePictureContainer}
+              onPress={() => setModalVisible(true)}
+            >
+              <UserIcon 
+                size={80}
+                profileIcon={profileIcon}
+                onPress={() => setModalVisible(true)}
+              />
+              <Text style={styles.changePhotoText}>Tap to change</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Share & Earn Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>🎁 Share & Earn</Text>
+          </View>
+          
+          <View style={styles.shareContent}>
+            <Text style={styles.shareSubtitle}>
+              Give your friends 30 days of premium meditation
+            </Text>
+
+            <View style={styles.stepsList}>
+              <View style={styles.step}>
+                <View style={styles.stepNumber}>
+                  <Text style={styles.stepNumberText}>1</Text>
+                </View>
+                <Text style={styles.stepText}>Share your unique referral link</Text>
+              </View>
               
-              <View style={styles.stepsList}>
-                <View style={styles.step}>
-                  <View style={styles.stepNumber}>
-                    <Text style={styles.stepNumberText}>1</Text>
-                  </View>
-                  <Text style={styles.stepText}>Share your unique referral link</Text>
+              <View style={styles.step}>
+                <View style={styles.stepNumber}>
+                  <Text style={styles.stepNumberText}>2</Text>
                 </View>
-                
-                <View style={styles.step}>
-                  <View style={styles.stepNumber}>
-                    <Text style={styles.stepNumberText}>2</Text>
-                  </View>
-                  <Text style={styles.stepText}>Friend downloads and signs up</Text>
+                <Text style={styles.stepText}>Friend downloads and signs up</Text>
+              </View>
+              
+              <View style={styles.step}>
+                <View style={styles.stepNumber}>
+                  <Text style={styles.stepNumberText}>3</Text>
                 </View>
-                
-                <View style={styles.step}>
-                  <View style={styles.stepNumber}>
-                    <Text style={styles.stepNumberText}>3</Text>
-                  </View>
-                  <Text style={styles.stepText}>They get 30 days of premium free!</Text>
-                </View>
+                <Text style={styles.stepText}>They get 30 days of premium free!</Text>
               </View>
             </View>
 
             <View style={styles.rewardSection}>
               <Text style={styles.rewardTitle}>🌟 Your Reward</Text>
               <Text style={styles.rewardDescription}>
-                For every friend who joins, you'll earn premium credits and exclusive meditation content!
+                Earn premium credits and exclusive content for each friend who joins!
               </Text>
             </View>
 
-            {/* Referral Link */}
             <View style={styles.referralSection}>
               <Text style={styles.referralLabel}>Your referral link:</Text>
               <View style={styles.referralLinkContainer}>
@@ -110,7 +119,6 @@ export const ProfileScreen: React.FC = () => {
               </View>
             </View>
 
-            {/* Action Buttons */}
             <View style={styles.actionButtons}>
               <TouchableOpacity style={styles.shareButton}>
                 <Text style={styles.shareButtonText}>📱 Share Link</Text>
@@ -121,9 +129,15 @@ export const ProfileScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
           </View>
+        </View>
 
-          {/* Stats */}
-          <View style={styles.affiliateStats}>
+        {/* Stats Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>📊 Your Stats</Text>
+          </View>
+          
+          <View style={styles.statsContent}>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>0</Text>
               <Text style={styles.statLabel}>Friends Invited</Text>
@@ -134,11 +148,15 @@ export const ProfileScreen: React.FC = () => {
               <Text style={styles.statLabel}>Credits Earned</Text>
             </View>
           </View>
+        </View>
 
-          {/* Activity History */}
-          <View style={styles.activitySection}>
-            <Text style={styles.activityTitle}>Activity History</Text>
-            
+        {/* Activity History Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>📈 Activity History</Text>
+          </View>
+          
+          <View style={styles.activityContent}>
             {recentActivity.length === 0 ? (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyStateEmoji}>🧘‍♀️</Text>
@@ -155,7 +173,7 @@ export const ProfileScreen: React.FC = () => {
                 <View style={styles.activityList}>
                   {recentActivity.map((session, index) => {
                     const improvement = session.before - session.after;
-                    const date = new Date(session.timestamp);
+                    const date = new Date(session.date);
                     const formattedDate = date.toLocaleDateString('en-US', { 
                       month: 'short', 
                       day: 'numeric',
@@ -167,7 +185,7 @@ export const ProfileScreen: React.FC = () => {
                       <View key={index} style={styles.activityItem}>
                         <View style={[
                           styles.activityIcon, 
-                          { backgroundColor: improvement > 0 ? '#4CAF50' : '#FF9800' }
+                          { backgroundColor: improvement > 0 ? '#34c759' : '#ff9500' }
                         ]}>
                           <Text style={styles.activityEmoji}>
                             {improvement > 0 ? '✨' : '🌱'}
@@ -189,11 +207,11 @@ export const ProfileScreen: React.FC = () => {
                         </View>
                         <View style={[
                           styles.improvementBadge,
-                          { backgroundColor: improvement > 0 ? '#E8F5E8' : '#FFF3E0' }
+                          { backgroundColor: improvement > 0 ? '#e8f5e8' : '#fff3e0' }
                         ]}>
                           <Text style={[
                             styles.improvementBadgeText,
-                            { color: improvement > 0 ? '#2E7D32' : '#F57C00' }
+                            { color: improvement > 0 ? '#34c759' : '#ff9500' }
                           ]}>
                             {improvement > 0 ? `↓${improvement.toFixed(1)}` : '→'}
                           </Text>
@@ -206,7 +224,10 @@ export const ProfileScreen: React.FC = () => {
             )}
           </View>
         </View>
-      </View>
+
+        {/* Bottom spacing */}
+        <View style={styles.bottomSpacing} />
+      </ScrollView>
       
       {/* Profile Picture Modal */}
       <ProfilePictureModal
@@ -215,348 +236,231 @@ export const ProfileScreen: React.FC = () => {
         onSelectIcon={setProfileIcon}
         currentIcon={profileIcon}
       />
-    </InstagramStyleScreen>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  content: {
-    ...theme.common.content,
-  },
-  affiliateContainer: {
-    flex: 1,
-  },
-  affiliateHeader: {
+  ...theme.health, // Use global Apple Health styles
+  headerTop: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: theme.spacing.xxxl,
+    justifyContent: 'space-between',
   },
-  affiliateEmoji: {
-    fontSize: 48,
-    marginBottom: theme.spacing.md,
+  profileContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+    alignItems: 'center',
   },
-  affiliateTitle: {
-    fontSize: theme.typography.sizes.xxl,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.primary,
-    marginBottom: theme.spacing.sm,
-    fontFamily: theme.typography.fontFamily,
+  profilePictureContainer: {
+    alignItems: 'center',
+  },
+  changePhotoText: {
+    fontSize: 13,
+    color: '#8e8e93',
+    fontWeight: '400',
+    marginTop: 8,
+  },
+  shareContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
+  shareSubtitle: {
+    fontSize: 15,
+    color: '#8e8e93',
+    fontWeight: '400',
+    marginBottom: 20,
     textAlign: 'center',
-  },
-  affiliateSubtitle: {
-    fontSize: theme.typography.sizes.lg,
-    color: theme.colors.secondary,
-    fontFamily: theme.typography.fontFamily,
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-  affiliateCard: {
-    ...theme.common.card,
-    marginBottom: theme.spacing.xxxl,
-    padding: theme.spacing.xl,
-  },
-  benefitSection: {
-    marginBottom: theme.spacing.xl,
-  },
-  benefitTitle: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.primary,
-    marginBottom: theme.spacing.lg,
-    fontFamily: theme.typography.fontFamily,
   },
   stepsList: {
-    gap: theme.spacing.lg,
+    marginBottom: 20,
   },
   step: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 12,
   },
   stepNumber: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: theme.colors.primary,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: theme.spacing.md,
-    ...theme.shadows.small,
+    marginRight: 12,
   },
   stepNumberText: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.surface,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#ffffff',
   },
   stepText: {
     flex: 1,
-    fontSize: theme.typography.sizes.md,
-    color: theme.colors.secondary,
-    fontFamily: theme.typography.fontFamily,
-    lineHeight: 20,
+    fontSize: 15,
+    color: '#000000',
+    fontWeight: '400',
   },
   rewardSection: {
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.borders.radius.lg,
-    padding: theme.spacing.lg,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.primary,
-    marginBottom: theme.spacing.xl,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
   },
   rewardTitle: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.primary,
-    marginBottom: theme.spacing.sm,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 8,
   },
   rewardDescription: {
-    fontSize: theme.typography.sizes.md,
-    color: theme.colors.secondary,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 15,
+    color: '#8e8e93',
+    fontWeight: '400',
     lineHeight: 20,
   },
   referralSection: {
-    marginBottom: theme.spacing.xl,
+    marginBottom: 20,
   },
   referralLabel: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.primary,
-    marginBottom: theme.spacing.sm,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#000000',
+    marginBottom: 8,
   },
   referralLinkContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.borders.radius.md,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.primary,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    ...theme.shadows.small,
+    backgroundColor: '#f2f2f7',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   referralLink: {
     flex: 1,
-    fontSize: theme.typography.sizes.md,
-    color: theme.colors.secondary,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 15,
+    color: '#8e8e93',
+    fontWeight: '400',
   },
   copyButton: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.borders.radius.sm,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.xs,
-    ...theme.shadows.small,
+    backgroundColor: '#007AFF',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
   copyButtonText: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.surface,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#ffffff',
   },
   actionButtons: {
     flexDirection: 'row',
-    gap: theme.spacing.md,
+    gap: 12,
   },
   shareButton: {
     flex: 1,
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.borders.radius.md,
-    paddingVertical: theme.spacing.md,
+    backgroundColor: '#007AFF',
+    borderRadius: 12,
+    paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    ...theme.shadows.medium,
   },
   shareButtonText: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.surface,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#ffffff',
   },
   inviteButton: {
     flex: 1,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borders.radius.md,
-    borderWidth: theme.borders.width.thick,
-    borderColor: theme.colors.primary,
-    paddingVertical: theme.spacing.md,
+    backgroundColor: '#f2f2f7',
+    borderRadius: 12,
+    paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    ...theme.shadows.medium,
   },
   inviteButtonText: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#000000',
   },
-  affiliateStats: {
+  statsContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borders.radius.lg,
-    borderWidth: theme.borders.width.thick,
-    borderColor: theme.colors.primary,
-    paddingVertical: theme.spacing.xl,
-    ...theme.shadows.medium,
+    paddingHorizontal: 16,
+    paddingBottom: 20,
   },
   statItem: {
     flex: 1,
     alignItems: 'center',
   },
   statNumber: {
-    fontSize: theme.typography.sizes.xxl,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.primary,
-    marginBottom: theme.spacing.xs,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginBottom: 4,
   },
   statLabel: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.secondary,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 13,
+    color: '#8e8e93',
+    fontWeight: '400',
     textAlign: 'center',
   },
   statDivider: {
-    width: 2,
-    height: 40,
-    backgroundColor: theme.colors.primary,
+    width: 1,
+    height: 32,
+    backgroundColor: '#e0e0e0',
+    marginHorizontal: 20,
   },
-  activitySection: {
-    marginTop: theme.spacing.xxxl,
-  },
-  activityTitle: {
-    fontSize: theme.typography.sizes.xxl,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.primary,
-    marginBottom: theme.spacing.lg,
-    fontFamily: theme.typography.fontFamily,
+  activityContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
   },
   activitySubtitle: {
-    fontSize: theme.typography.sizes.md,
-    color: theme.colors.secondary,
-    fontFamily: theme.typography.fontFamily,
-    lineHeight: 22,
-    marginBottom: theme.spacing.xl,
-  },
-  meditationsList: {
-    gap: theme.spacing.lg,
-  },
-  meditationItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borders.radius.lg,
-    padding: theme.spacing.lg,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.primary,
-    ...theme.shadows.small,
-  },
-  meditationIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: theme.borders.radius.lg,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: theme.spacing.md,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.primary,
-    ...theme.shadows.small,
-  },
-  meditationEmoji: {
-    fontSize: 24,
-  },
-  meditationInfo: {
-    flex: 1,
-  },
-  meditationHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: theme.spacing.xs,
-  },
-  lockIcon: {
-    fontSize: theme.typography.sizes.md,
-    marginRight: theme.spacing.sm,
-  },
-  meditationTitle: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
-  },
-  meditationDetails: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  soundIcon: {
-    fontSize: theme.typography.sizes.sm,
-    marginRight: theme.spacing.sm,
-  },
-  meditationMeta: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.secondary,
-    fontFamily: theme.typography.fontFamily,
-  },
-  arrowIcon: {
-    fontSize: 24,
-    color: theme.colors.secondary,
-    marginLeft: theme.spacing.md,
+    fontSize: 15,
+    color: '#8e8e93',
+    fontWeight: '400',
+    marginBottom: 16,
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: theme.spacing.xxxl,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borders.radius.lg,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.primary,
-    ...theme.shadows.small,
+    paddingVertical: 40,
   },
   emptyStateEmoji: {
     fontSize: 48,
-    marginBottom: theme.spacing.lg,
+    marginBottom: 16,
   },
   emptyStateTitle: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.primary,
-    marginBottom: theme.spacing.sm,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 8,
   },
   emptyStateSubtitle: {
-    fontSize: theme.typography.sizes.md,
-    color: theme.colors.secondary,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 15,
+    color: '#8e8e93',
+    fontWeight: '400',
     textAlign: 'center',
     lineHeight: 20,
-    paddingHorizontal: theme.spacing.lg,
   },
   activityList: {
-    gap: theme.spacing.md,
+    gap: 12,
   },
   activityItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borders.radius.lg,
-    padding: theme.spacing.lg,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.primary,
-    ...theme.shadows.small,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    padding: 12,
   },
   activityIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: theme.borders.radius.md,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: theme.spacing.md,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.primary,
-    ...theme.shadows.small,
+    marginRight: 12,
   },
   activityEmoji: {
-    fontSize: 20,
+    fontSize: 18,
   },
   activityInfo: {
     flex: 1,
@@ -565,43 +469,39 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing.xs,
+    marginBottom: 4,
   },
   activityTitle: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#000000',
   },
   activityDate: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.secondary,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 13,
+    color: '#8e8e93',
+    fontWeight: '400',
   },
   activityDetails: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   activityMeta: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.secondary,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 13,
+    color: '#8e8e93',
+    fontWeight: '400',
   },
   improvementText: {
-    color: '#2E7D32',
-    fontWeight: theme.typography.weights.semibold,
+    color: '#34c759',
+    fontWeight: '600',
   },
   improvementBadge: {
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.borders.radius.sm,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.primary,
-    marginLeft: theme.spacing.md,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginLeft: 12,
   },
   improvementBadgeText: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.bold,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 }); 

@@ -2,6 +2,22 @@ import { create } from 'zustand';
 import { UserProgress, FilterState, SessionDelta, Session } from '../types';
 import { initialUserProgress } from '../data/mockData';
 
+// Helper function to create subtle background colors from module colors
+export const createSubtleBackground = (moduleColor: string): string => {
+  // Convert hex to RGB
+  const hex = moduleColor.replace('#', '');
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+  
+  // Create a very subtle tint by mixing with white (95% white, 5% module color)
+  const mixedR = Math.round(255 * 0.95 + r * 0.05);
+  const mixedG = Math.round(255 * 0.95 + g * 0.05);
+  const mixedB = Math.round(255 * 0.95 + b * 0.05);
+  
+  return `rgb(${mixedR}, ${mixedG}, ${mixedB})`;
+};
+
 interface AppState {
   userProgress: UserProgress;
   filters: FilterState;
@@ -12,6 +28,7 @@ interface AppState {
   activeSession: Session | null;
   activeModuleId: string | null;
   recentModuleIds: string[];
+  globalBackgroundColor: string;
   addSessionDelta: (delta: SessionDelta) => void;
   setFilters: (filters: FilterState) => void;
   toggleReminder: () => void;
@@ -21,6 +38,7 @@ interface AppState {
   setActiveSession: (session: Session | null) => void;
   setActiveModuleId: (moduleId: string | null) => void;
   addRecentModule: (moduleId: string) => void;
+  setGlobalBackgroundColor: (color: string) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -36,6 +54,7 @@ export const useStore = create<AppState>((set) => ({
   activeSession: null,
   activeModuleId: null,
   recentModuleIds: [],
+  globalBackgroundColor: '#f2f2f7', // Default iOS background
   
   addSessionDelta: (delta: SessionDelta) => 
     set((state) => ({
@@ -73,5 +92,8 @@ export const useStore = create<AppState>((set) => ({
         moduleId,
         ...state.recentModuleIds.filter(id => id !== moduleId)
       ].slice(0, 10) // Keep only last 10 recent modules
-    }))
+    })),
+    
+  setGlobalBackgroundColor: (color: string) => 
+    set({ globalBackgroundColor: color })
 })); 

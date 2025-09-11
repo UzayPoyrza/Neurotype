@@ -23,6 +23,7 @@ export const ProfileScreen: React.FC = () => {
     setProfileIcon,
     subscriptionType
   } = useStore();
+  const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -30,7 +31,7 @@ export const ProfileScreen: React.FC = () => {
   const recentActivity = userProgress.sessionDeltas.slice(-10).reverse(); // Last 10 sessions, most recent first
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>

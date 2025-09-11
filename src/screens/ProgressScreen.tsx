@@ -89,6 +89,7 @@ const MeditationCalendar: React.FC = () => {
 
 export const ProgressScreen: React.FC = () => {
   const userProgress = useStore(state => state.userProgress);
+  const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const { today } = getCurrentDateInfo();
 
   // Calculate stats
@@ -105,7 +106,7 @@ export const ProgressScreen: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>

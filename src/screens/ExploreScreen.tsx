@@ -35,6 +35,7 @@ export const ExploreScreen: React.FC = () => {
   const navigation = useNavigation<ExploreScreenNavigationProp>();
   const addRecentModule = useStore(state => state.addRecentModule);
   const recentModuleIds = useStore(state => state.recentModuleIds);
+  const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [selectedSort, setSelectedSort] = useState<string>('recents');
@@ -236,7 +237,7 @@ export const ExploreScreen: React.FC = () => {
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
       <ExploreScreenComponent 
         titleComponent={titleComponent}
         searchComponent={

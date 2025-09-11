@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Animated, Dimensions, TouchableOpacity, FlatList, AccessibilityInfo } from 'react-native';
 import { Session } from '../types';
-import { useStore } from '../store/useStore';
+import { useStore, createSubtleBackground } from '../store/useStore';
 import { mockSessions } from '../data/mockData';
 import { mentalHealthModules } from '../data/modules';
 import { theme } from '../styles/theme';
@@ -15,7 +15,8 @@ import { SessionRating } from '../components/SessionRating';
 type SessionState = 'not_started' | 'in_progress' | 'completed' | 'rating';
 
 export const TodayScreen: React.FC = () => {
-  const { setActiveSession } = useStore();
+  const { setActiveSession, setGlobalBackgroundColor } = useStore();
+  const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const userProgress = useStore(state => state.userProgress);
   
   // Module and session state management
@@ -36,6 +37,12 @@ export const TodayScreen: React.FC = () => {
   const roadmapCardScale = useRef(new Animated.Value(1)).current;
   
   const selectedModule = mentalHealthModules.find(m => m.id === selectedModuleId) || mentalHealthModules[0];
+  
+  // Update global background color when module changes
+  useEffect(() => {
+    const subtleColor = createSubtleBackground(selectedModule.color);
+    setGlobalBackgroundColor(subtleColor);
+  }, [selectedModule.color, setGlobalBackgroundColor]);
   
   // Generate adaptive sessions based on module and progress
   const getTodaySessions = () => {
@@ -246,7 +253,7 @@ export const TodayScreen: React.FC = () => {
   };
 
   const renderTodayView = () => (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
@@ -416,7 +423,7 @@ export const TodayScreen: React.FC = () => {
   );
 
   const renderRoadmapView = () => (
-    <View style={styles.roadmapContainer}>
+    <View style={[styles.roadmapContainer, { backgroundColor: globalBackgroundColor }]}>
       <TouchableOpacity 
         style={styles.backToToday}
         onPress={() => setViewMode('today')}

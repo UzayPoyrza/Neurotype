@@ -23,6 +23,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
   const route = useRoute<ModuleDetailRouteProp>();
   const navigation = useNavigation<ModuleDetailNavigationProp>();
   const setActiveSession = useStore(state => state.setActiveSession);
+  const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   
   const { moduleId } = route.params;
   const module = mentalHealthModules.find(m => m.id === moduleId);
@@ -60,7 +61,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
 
   if (!module) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Text style={styles.backButtonText}>← Back</Text>
@@ -74,7 +75,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>

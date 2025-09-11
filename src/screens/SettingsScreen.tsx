@@ -14,9 +14,10 @@ export const SettingsScreen: React.FC = () => {
     subscriptionType,
     setSubscriptionType,
   } = useStore();
+  const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>

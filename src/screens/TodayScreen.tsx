@@ -153,25 +153,6 @@ export const TodayScreen: React.FC = () => {
     setSessionState('not_started');
   };
 
-  // Get current date info
-  const getCurrentDateInfo = () => {
-    const today = new Date();
-    const options: Intl.DateTimeFormatOptions = { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    };
-    return {
-      fullDate: today.toLocaleDateString('en-US', options),
-      dayName: today.toLocaleDateString('en-US', { weekday: 'long' }),
-      dayNumber: today.getDate(),
-      monthName: today.toLocaleDateString('en-US', { month: 'long' })
-    };
-  };
-
-  const dateInfo = getCurrentDateInfo();
-
   // Subtle motivational messages based on progress
   const getMotivationalMessage = () => {
     const streak = userProgress?.streak || 0;
@@ -249,233 +230,189 @@ export const TodayScreen: React.FC = () => {
     );
   }
 
+  // Get current date info
+  const getCurrentDateInfo = () => {
+    const today = new Date();
+    return {
+      dayName: today.toLocaleDateString('en-US', { weekday: 'short' }),
+      dayNumber: today.getDate(),
+      monthName: today.toLocaleDateString('en-US', { month: 'short' }),
+      fullDate: today.toLocaleDateString('en-US', { 
+        weekday: 'short', 
+        month: 'short', 
+        day: 'numeric' 
+      })
+    };
+  };
+
   const renderTodayView = () => (
-    <ScrollView 
-      style={styles.todayContainer} 
-      contentContainerStyle={styles.todayContentContainer}
-      showsVerticalScrollIndicator={false}
-      scrollEventThrottle={16}
-    >
-      {/* Today's Focus Section */}
-      <View style={styles.focusSection}>
-        <View style={styles.focusHeader}>
-          <Text style={styles.sectionTitle}>Today's Focus</Text>
-          <TouchableOpacity 
-            style={styles.infoButton}
-            onPress={() => setShowRecommendationInfo(!showRecommendationInfo)}
-            accessibilityLabel="Why this is recommended"
-            accessibilityRole="button"
-          >
-            <Text style={styles.infoIcon}>i</Text>
-          </TouchableOpacity>
+    <View style={styles.container}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Today</Text>
+          <Text style={styles.dateText}>{getCurrentDateInfo().fullDate}</Text>
         </View>
 
-        {showRecommendationInfo && (
-          <View style={styles.infoPanel}>
-            <Text style={styles.infoPanelText}>
-              This session is recommended based on your progress in the {selectedModule.title.toLowerCase()} roadmap, 
-              your recent feedback, and evidence-based sequencing for optimal mental health outcomes.
-            </Text>
+        {/* Today's Focus Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>🧘‍♀️ Today's Focus</Text>
+            <TouchableOpacity 
+              style={styles.moduleButton}
+              onPress={() => setShowModuleModal(true)}
+            >
+              <View style={[styles.moduleIndicator, { backgroundColor: selectedModule.color }]} />
+              <Text style={styles.moduleButtonText}>{selectedModule.title}</Text>
+            </TouchableOpacity>
           </View>
-        )}
+          
+          <Text style={styles.focusSubtitle}>
+            Personalized for your {selectedModule.title.toLowerCase()} journey
+          </Text>
 
-        <Text style={styles.sectionSubtitle}>
-          Personalized for your {selectedModule.title.toLowerCase()} journey
-        </Text>
-
-
-        {/* Enhanced Recommended Session Card */}
-        <Animated.View
-          style={[
-            styles.recommendedCardContainer,
-            {
-              transform: [{ scale: heroCardScale }],
-            }
-          ]}
-        >
-          <TouchableOpacity
-            style={[styles.recommendedCard, { 
-              borderColor: getAccentColor(),
-              backgroundColor: todayCompleted ? '#e8f5e8' : 'rgba(78, 205, 196, 0.05)'
-            }]}
-            onPress={() => handleSessionSelect(recommendedSession)}
-            onPressIn={handleHeroCardPressIn}
-            onPressOut={handleHeroCardPressOut}
-            activeOpacity={1}
-            accessibilityLabel={`Play ${recommendedSession.title}, ${recommendedSession.durationMin} minutes, recommended`}
-            accessibilityRole="button"
-            accessible={true}
+          {/* Recommended Session */}
+          <Animated.View
+            style={[
+              styles.recommendedSessionContainer,
+              {
+                transform: [{ scale: heroCardScale }],
+              }
+            ]}
           >
-            <View style={[styles.recommendedBadge, { backgroundColor: getAccentColor() }]}>
-              <Text style={styles.recommendedBadgeText}>RECOMMENDED</Text>
-            </View>
-            
-            {todayCompleted && (
-              <Animated.View 
-                style={[
-                  styles.completionCheck,
-                  {
-                    opacity: completionAnimation,
-                    transform: [{
-                      scale: completionAnimation.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0.8, 1.2],
-                      })
-                    }]
-                  }
-                ]}
-              >
-                <Text style={styles.checkMark}>✓</Text>
-              </Animated.View>
-            )}
-            
-            <View style={styles.recommendedContent}>
-              <Text style={styles.recommendedTitle}>{recommendedSession.title}</Text>
-              <Text style={styles.recommendedReason}>
-                {recommendedSession.adaptiveReason || 'Based on your recent progress'}
-              </Text>
-              
-              <View style={styles.recommendedDetails}>
-                <View style={styles.detailChip}>
-                  <Text style={styles.detailChipIcon}>⏱</Text>
-                  <Text style={styles.detailChipText}>{recommendedSession.durationMin} min</Text>
-                </View>
-                <View style={styles.detailChip}>
-                  <Text style={styles.detailChipIcon}>🎧</Text>
-                  <Text style={styles.detailChipText}>{recommendedSession.modality}</Text>
-                </View>
-                <View style={styles.detailChip}>
-                  <Text style={styles.detailChipIcon}>🎯</Text>
-                  <Text style={styles.detailChipText}>{recommendedSession.goal}</Text>
+            <TouchableOpacity
+              style={[styles.recommendedSession, { 
+                backgroundColor: todayCompleted ? '#e8f5e8' : '#ffffff'
+              }]}
+              onPress={() => handleSessionSelect(recommendedSession)}
+              onPressIn={handleHeroCardPressIn}
+              onPressOut={handleHeroCardPressOut}
+              activeOpacity={1}
+            >
+              <View style={styles.sessionContent}>
+                <Text style={styles.sessionTitle}>{recommendedSession.title}</Text>
+                <Text style={styles.sessionSubtitle}>
+                  {recommendedSession.adaptiveReason || 'Recommended for you'}
+                </Text>
+                
+                <View style={styles.sessionMeta}>
+                  <Text style={styles.sessionMetaText}>
+                    {recommendedSession.durationMin} min • {recommendedSession.modality}
+                  </Text>
                 </View>
               </View>
-            </View>
 
-            <View style={[styles.playButton, { backgroundColor: getAccentColor() }]}>
-              <Text style={styles.playButtonText}>▶</Text>
-            </View>
-          </TouchableOpacity>
-        </Animated.View>
+              <View style={[styles.sessionPlayButton, { backgroundColor: selectedModule.color }]}>
+                <Text style={styles.sessionPlayText}>▶</Text>
+              </View>
 
+              {todayCompleted && (
+                <View style={styles.sessionCompletedBadge}>
+                  <Text style={styles.sessionCompletedText}>✓</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
 
-        {/* Alternative Sessions with increased spacing */}
-        <View style={styles.alternativesSection}>
-          <Text style={styles.alternativesTitle}>Other Options</Text>
-          <View style={styles.alternativesList}>
+        {/* Alternative Sessions Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>💡 Other Options</Text>
+          </View>
+          
+          <View style={styles.alternativeSessionsList}>
             {todaySessions.filter(s => !s.isRecommended).map((session, index) => (
               <TouchableOpacity
                 key={session.id}
-                style={styles.alternativeCard}
+                style={styles.alternativeSession}
                 onPress={() => handleSessionSelect(session)}
                 activeOpacity={0.8}
-                accessibilityLabel={`Play ${session.title}, ${session.durationMin} minutes`}
-                accessibilityRole="button"
               >
-                <View style={styles.alternativeContent}>
-                  <Text style={styles.alternativeTitle}>{session.title}</Text>
-                  <View style={styles.alternativeDetails}>
-                    <Text style={styles.alternativeDetailIcon}>⏱</Text>
-                    <Text style={styles.alternativeDetail}>{session.durationMin}m</Text>
-                    <Text style={styles.alternativeDetailIcon}>🎧</Text>
-                    <Text style={styles.alternativeDetail}>{session.modality}</Text>
-                    <Text style={styles.alternativeDetailIcon}>🎯</Text>
-                    <Text style={styles.alternativeDetail}>{session.goal}</Text>
-                  </View>
+                <View style={styles.alternativeSessionContent}>
+                  <Text style={styles.alternativeSessionTitle}>{session.title}</Text>
+                  <Text style={styles.alternativeSessionMeta}>
+                    {session.durationMin} min • {session.modality}
+                  </Text>
                 </View>
-                <View style={styles.alternativePlayButton}>
-                  <Text style={styles.alternativePlayText}>▶</Text>
+                <View style={styles.alternativeSessionPlayButton}>
+                  <Text style={styles.alternativeSessionPlayText}>▶</Text>
                 </View>
               </TouchableOpacity>
             ))}
           </View>
         </View>
-      </View>
 
-      {/* Progress Path Section */}
-      <View style={styles.progressPathSection}>
-        <Text style={styles.progressPathTitle}>View Your Progress Path</Text>
-        
-        {/* Mini Roadmap Preview Card */}
-        <Animated.View
-          style={[
-            styles.miniRoadmapCard,
-            {
-              transform: [{ scale: roadmapCardScale }],
-            }
-          ]}
-        >
-          <TouchableOpacity 
-            style={styles.miniRoadmapCardTouchable}
-            onPress={handleRoadmapCardPress}
-            onPressIn={handleRoadmapCardPressIn}
-            onPressOut={handleRoadmapCardPressOut}
-            activeOpacity={1}
-          >
-          <View style={styles.miniRoadmapHeader}>
-            <Text style={styles.miniRoadmapTitle}>{selectedModule.title} Journey</Text>
-            <View style={styles.miniRoadmapArrow}>
-              <Text style={styles.arrowText}>→</Text>
-            </View>
+        {/* Progress Path Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>🗺️ Progress Path</Text>
           </View>
           
-          {/* Mini Roadmap Visual - Real Preview */}
-          <View style={styles.miniRoadmapVisual}>
-            {/* Module Header Preview */}
-            <View style={styles.miniModuleHeader}>
-              <View style={[styles.miniModuleIndicator, { backgroundColor: selectedModule.color }]} />
-              <View style={styles.miniModuleInfo}>
-                <Text style={styles.miniModuleTitle}>{selectedModule.title}</Text>
-                <Text style={styles.miniModuleDescription}>Level 3 of 8</Text>
+          <Animated.View
+            style={[
+              styles.progressPathContainer,
+              {
+                transform: [{ scale: roadmapCardScale }],
+              }
+            ]}
+          >
+            <TouchableOpacity 
+              style={styles.progressPath}
+              onPress={handleRoadmapCardPress}
+              onPressIn={handleRoadmapCardPressIn}
+              onPressOut={handleRoadmapCardPressOut}
+              activeOpacity={1}
+            >
+              <View style={styles.progressPathHeader}>
+                <Text style={styles.progressPathTitle}>{selectedModule.title} Journey</Text>
+                <Text style={styles.progressPathSubtitle}>Level 3 of 8</Text>
               </View>
-              <View style={styles.miniProgressIndicator}>
-                <Text style={styles.miniProgressText}>3/8</Text>
-              </View>
-            </View>
 
-            {/* Roadmap Nodes Preview */}
-            <View style={styles.miniRoadmapNodes}>
-              {/* Completed Node */}
-              <View style={[styles.miniRoadmapNode, styles.miniCompletedNode]}>
-                <Text style={styles.miniNodeLevel}>1</Text>
-              </View>
-              
-              {/* Connection Line */}
-              <View style={[styles.miniConnectionLine, { backgroundColor: selectedModule.color }]} />
-              
-              {/* Completed Node */}
-              <View style={[styles.miniRoadmapNode, styles.miniCompletedNode]}>
-                <Text style={styles.miniNodeLevel}>2</Text>
-              </View>
-              
-              {/* Connection Line */}
-              <View style={[styles.miniConnectionLine, { backgroundColor: selectedModule.color }]} />
-              
-              {/* Today Node */}
-              <View style={[styles.miniRoadmapNode, styles.miniTodayNode, { borderColor: selectedModule.color }]}>
-                <Text style={styles.miniNodeLevel}>3</Text>
-                <View style={[styles.miniTodayBadge, { backgroundColor: selectedModule.color }]}>
-                  <Text style={styles.miniTodayText}>TODAY</Text>
+              <View style={styles.progressNodes}>
+                <View style={[styles.progressNode, styles.completedNode]}>
+                  <Text style={styles.progressNodeText}>1</Text>
+                </View>
+                <View style={[styles.progressLine, { backgroundColor: selectedModule.color }]} />
+                <View style={[styles.progressNode, styles.completedNode]}>
+                  <Text style={styles.progressNodeText}>2</Text>
+                </View>
+                <View style={[styles.progressLine, { backgroundColor: selectedModule.color }]} />
+                <View style={[styles.progressNode, styles.currentNode, { borderColor: selectedModule.color }]}>
+                  <Text style={styles.progressNodeText}>3</Text>
+                </View>
+                <View style={[styles.progressLine, { backgroundColor: '#e0e0e0' }]} />
+                <View style={[styles.progressNode, styles.lockedNode]}>
+                  <Text style={styles.progressNodeText}>4</Text>
                 </View>
               </View>
-              
-              {/* Connection Line */}
-              <View style={[styles.miniConnectionLine, { backgroundColor: theme.colors.disabled }]} />
-              
-              {/* Locked Node */}
-              <View style={[styles.miniRoadmapNode, styles.miniLockedNode]}>
-                <Text style={styles.miniNodeLevel}>4</Text>
-                <View style={styles.miniLockIcon}>
-                  <Text style={styles.miniLockText}>🔒</Text>
-                </View>
-              </View>
-            </View>
 
-            <Text style={styles.miniRoadmapLabel}>Tap to expand and explore your full journey</Text>
+              <Text style={styles.progressPathFooter}>
+                Tap to view your full journey
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+
+        {/* Motivation Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>✨ Keep Going</Text>
           </View>
-          </TouchableOpacity>
-        </Animated.View>
-      </View>
-    </ScrollView>
+          
+          <View style={styles.motivationContent}>
+            <Text style={styles.motivationText}>{getMotivationalMessage()}</Text>
+            <View style={styles.streakInfo}>
+              <Text style={styles.streakNumber}>{userProgress.streak}</Text>
+              <Text style={styles.streakLabel}>day streak</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Bottom spacing */}
+        <View style={styles.bottomSpacing} />
+      </ScrollView>
+    </View>
   );
 
   const renderRoadmapView = () => (
@@ -500,29 +437,24 @@ export const TodayScreen: React.FC = () => {
 
   return (
     <>
-      <View style={styles.container}>
-        {/* Simple top line under dynamic island */}
-        <View style={styles.topLine} />
-        
-        {viewMode === 'today' ? renderTodayView() : renderRoadmapView()}
+      {viewMode === 'today' ? renderTodayView() : renderRoadmapView()}
 
-        {/* Module Grid Modal */}
-        <ModuleGridModal
-          modules={mentalHealthModules}
-          selectedModuleId={selectedModuleId}
-          isVisible={showModuleModal}
-          onModuleSelect={setSelectedModuleId}
-          onClose={() => setShowModuleModal(false)}
-        />
+      {/* Module Grid Modal */}
+      <ModuleGridModal
+        modules={mentalHealthModules}
+        selectedModuleId={selectedModuleId}
+        isVisible={showModuleModal}
+        onModuleSelect={setSelectedModuleId}
+        onClose={() => setShowModuleModal(false)}
+      />
 
-        {/* Session Bottom Sheet */}
-        <SessionBottomSheet
-          session={selectedSession}
-          isVisible={showBottomSheet}
-          onClose={() => setShowBottomSheet(false)}
-          onStart={handleStartSession}
-        />
-      </View>
+      {/* Session Bottom Sheet */}
+      <SessionBottomSheet
+        session={selectedSession}
+        isVisible={showBottomSheet}
+        onClose={() => setShowBottomSheet(false)}
+        onStart={handleStartSession}
+      />
 
       {/* Draggable Floating Button - Fixed to Screen */}
       <DraggableFloatingButton
@@ -536,665 +468,296 @@ export const TodayScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#f2f2f7', // iOS system background
   },
-  
-  topLine: {
-    width: '100%',
-    height: theme.borders.width.thick,
-    backgroundColor: theme.colors.primary,
-    marginTop: 50, // Under dynamic island - moved up
-  },
-  
-  // Today View Styles
-  todayContainer: {
+  scrollView: {
     flex: 1,
   },
-
-  todayContentContainer: {
-    paddingTop: 10, // Space for top line - reduced
-    paddingBottom: 100, // Space for bottom navigation
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 20,
   },
-  
-  // Hero Section - Refined
-  heroSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: theme.spacing.xl,
-    paddingVertical: theme.spacing.xxl,
-    marginHorizontal: theme.spacing.lg,
-    marginTop: theme.spacing.md,
-    marginBottom: theme.spacing.lg,
-    borderRadius: theme.borderRadius.lg,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.border,
-    ...theme.shadows.medium,
+  title: {
+    fontSize: 34,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginBottom: 4,
   },
-  
-  dateContainer: {
-    flex: 1,
+  dateText: {
+    fontSize: 17,
+    color: '#8e8e93',
+    fontWeight: '400',
   },
-  
-  dayName: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.medium,
-    color: theme.colors.text.secondary,
-    fontFamily: theme.typography.fontFamily,
-    marginBottom: theme.spacing.xs,
-  },
-  
-  dateRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  
-  dayNumber: {
-    fontSize: 36,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.text.primary,
-    fontFamily: theme.typography.fontFamily,
-    marginRight: theme.spacing.sm,
-  },
-  
-  monthName: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.text.primary,
-    fontFamily: theme.typography.fontFamily,
-  },
-  
-  motivationContainer: {
-    flex: 1,
-    alignItems: 'flex-end',
-  },
-  
-  motivationalText: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.normal, // Lighter weight
-    color: theme.colors.text.secondary, // More subtle
-    fontFamily: theme.typography.fontFamily,
-    textAlign: 'right',
-    marginBottom: theme.spacing.sm,
-  },
-
-  // Subtle streak indicator
-  streakIndicator: {
-    alignItems: 'flex-end',
-  },
-
-  streakDots: {
-    flexDirection: 'row',
-    marginBottom: theme.spacing.xs,
-    gap: 3,
-  },
-
-  streakDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-
-  streakText: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.normal,
-    color: theme.colors.text.secondary,
-    fontFamily: theme.typography.fontFamily,
-  },
-  
-  // Compact Progress Summary
-  compactProgressSummary: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    marginBottom: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.lg,
-    borderRadius: theme.borderRadius.md,
-    borderWidth: theme.borders.width.thin,
-    borderColor: theme.colors.border,
-    ...theme.shadows.small,
-  },
-  
-  compactProgressItem: {
-    alignItems: 'center',
-    marginHorizontal: theme.spacing.lg,
-  },
-  
-  compactProgressNumber: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.text.primary,
-    fontFamily: theme.typography.fontFamily,
-  },
-  
-  compactProgressLabel: {
-    fontSize: theme.typography.sizes.xs,
-    fontWeight: theme.typography.weights.normal, // Lighter weight
-    color: theme.colors.text.secondary,
-    fontFamily: theme.typography.fontFamily,
-    marginTop: 2,
-  },
-  
-  compactProgressDivider: {
-    width: 1,
-    height: 20,
-    backgroundColor: theme.colors.border,
-  },
-  
-  // Focus Section
-  focusSection: {
-    paddingHorizontal: theme.spacing.lg,
-    marginTop: theme.spacing.sm, // Reduced from lg
-    marginBottom: theme.spacing.xl,
-  },
-
-  focusHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: theme.spacing.xs,
-  },
-  
-  sectionTitle: {
-    fontSize: theme.typography.sizes.xl,
-    fontWeight: theme.typography.weights.bold, // Stronger hierarchy
-    color: theme.colors.text.primary,
-    fontFamily: theme.typography.fontFamily,
-  },
-
-  infoButton: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: theme.colors.background,
-    borderWidth: theme.borders.width.thin,
-    borderColor: theme.colors.border,
-    justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: 44, // Accessibility
-    minWidth: 44,
-  },
-
-  infoIcon: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.text.secondary,
-    fontFamily: theme.typography.fontFamily,
-  },
-
-  infoPanel: {
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.borderRadius.md,
-    borderWidth: theme.borders.width.thin,
-    borderColor: theme.colors.border,
-    padding: theme.spacing.md,
-    marginBottom: theme.spacing.md,
-  },
-
-  infoPanelText: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.normal,
-    color: theme.colors.text.secondary,
-    fontFamily: theme.typography.fontFamily,
-    lineHeight: 20,
-  },
-  
-  sectionSubtitle: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.normal, // Lighter weight
-    color: theme.colors.text.secondary,
-    fontFamily: theme.typography.fontFamily,
-    marginBottom: theme.spacing.lg, // Reduced from xl
-  },
-  
-  // Enhanced Recommended Session Card
-  recommendedCardContainer: {
-    marginBottom: theme.spacing.xl, // Reduced spacing
-  },
-
-  recommendedCard: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.xl, // Larger radius
-    borderWidth: theme.borders.width.normal,
-    padding: theme.spacing.xl,
-    position: 'relative',
-    minHeight: 180, // Larger card
-    shadowColor: '#4ECDC4', // Teal shadow
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  
-  recommendedBadge: {
-    position: 'absolute',
-    top: -8,
-    left: theme.spacing.lg,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.borderRadius.sm,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.surface,
-  },
-  
-  recommendedBadgeText: {
-    fontSize: theme.typography.sizes.xs,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.surface,
-    fontFamily: theme.typography.fontFamily,
-    letterSpacing: 0.5,
-  },
-
-  completionCheck: {
-    position: 'absolute',
-    top: theme.spacing.lg,
-    right: theme.spacing.lg,
-    width: 32,
-    height: 32,
+  card: {
+    backgroundColor: '#ffffff',
     borderRadius: 16,
-    backgroundColor: theme.colors.success,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  checkMark: {
-    fontSize: 16,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.surface,
-  },
-  
-  recommendedContent: {
-    marginBottom: theme.spacing.lg,
-  },
-  
-  recommendedTitle: {
-    fontSize: theme.typography.sizes.xxl, // Larger title
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.text.primary,
-    fontFamily: theme.typography.fontFamily,
-    marginBottom: theme.spacing.sm,
-  },
-  
-  recommendedReason: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.normal, // Lighter weight
-    color: theme.colors.text.secondary,
-    fontFamily: theme.typography.fontFamily,
-    fontStyle: 'italic',
-    marginBottom: theme.spacing.lg,
-  },
-  
-  recommendedDetails: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.sm,
-  },
-  
-  detailChip: {
-    backgroundColor: theme.colors.background,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.borderRadius.sm,
-    borderWidth: theme.borders.width.thin,
-    borderColor: theme.colors.border,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
-  },
-
-  detailChipIcon: {
-    fontSize: theme.typography.sizes.xs,
-  },
-  
-  detailChipText: {
-    fontSize: theme.typography.sizes.xs, // Smaller metadata
-    fontWeight: theme.typography.weights.medium,
-    color: theme.colors.text.primary,
-    fontFamily: theme.typography.fontFamily,
-    textTransform: 'capitalize',
-  },
-  
-  playButton: {
-    position: 'absolute',
-    bottom: theme.spacing.lg,
-    right: theme.spacing.lg,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.surface,
-    ...theme.shadows.small,
-  },
-  
-  playButtonText: {
-    fontSize: theme.typography.sizes.lg,
-    color: theme.colors.surface,
-    fontWeight: theme.typography.weights.bold,
-    marginLeft: 2,
-  },
-
-  
-  // Alternative Sessions - Refined
-  alternativesSection: {
-    marginTop: theme.spacing.lg, // Reduced spacing
-  },
-
-  alternativesTitle: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.text.primary,
-    fontFamily: theme.typography.fontFamily,
-    marginBottom: theme.spacing.md,
-  },
-  
-  alternativesList: {
-    gap: theme.spacing.md,
-    marginBottom: theme.spacing.lg, // Reduced spacing
-  },
-  
-  alternativeCard: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.md,
-    borderWidth: theme.borders.width.thin, // Reduced elevation
-    borderColor: theme.colors.border,
-    padding: theme.spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    shadowColor: theme.colors.shadow,
+    marginHorizontal: 20,
+    marginBottom: 12,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05, // Lighter shadow
-    shadowRadius: 2,
-    elevation: 1,
-    minHeight: 44, // Accessibility
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  
-  alternativeContent: {
-    flex: 1,
-  },
-  
-  alternativeTitle: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.medium, // Lighter weight
-    color: theme.colors.text.primary,
-    fontFamily: theme.typography.fontFamily,
-    marginBottom: theme.spacing.xs,
-  },
-  
-  alternativeDetails: {
+  cardHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
-  },
-
-  alternativeDetailIcon: {
-    fontSize: theme.typography.sizes.xs,
-  },
-  
-  alternativeDetail: {
-    fontSize: theme.typography.sizes.xs, // Smaller typography
-    fontWeight: theme.typography.weights.normal,
-    color: theme.colors.text.secondary,
-    fontFamily: theme.typography.fontFamily,
-    marginRight: theme.spacing.xs,
-  },
-  
-  alternativePlayButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: theme.colors.background,
-    borderWidth: theme.borders.width.thin,
-    borderColor: theme.colors.border,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  
-  alternativePlayText: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.text.primary,
-    fontWeight: theme.typography.weights.bold,
-    marginLeft: 1,
-  },
-  
-  // Progress Path Section
-  progressPathSection: {
-    paddingHorizontal: theme.spacing.lg,
-    marginTop: theme.spacing.lg,
-    marginBottom: theme.spacing.xxxl, // Increased bottom margin
-  },
-
-  progressPathTitle: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.text.primary,
-    fontFamily: theme.typography.fontFamily,
-    marginBottom: theme.spacing.md,
-  },
-
-  // Mini Roadmap Card
-  miniRoadmapCard: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.border,
-    ...theme.shadows.small,
-  },
-
-  miniRoadmapCardTouchable: {
-    padding: theme.spacing.lg,
-  },
-
-  miniRoadmapHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: theme.spacing.md,
-  },
-
-  miniRoadmapTitle: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.text.primary,
-    fontFamily: theme.typography.fontFamily,
-  },
-
-  miniRoadmapArrow: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: theme.colors.background,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.border,
-    justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
   },
-
-  arrowText: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.text.primary,
+  cardTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000000',
   },
-
-  // Mini Roadmap Visual
-  miniRoadmapVisual: {
-    alignItems: 'center',
-  },
-
-  // Mini Module Header
-  miniModuleHeader: {
+  moduleButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.borderRadius.sm,
-    marginBottom: theme.spacing.md,
-    backgroundColor: theme.colors.background,
-    borderWidth: theme.borders.width.thin,
-    borderColor: theme.colors.border,
-    width: '100%',
+    backgroundColor: '#f2f2f7',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
   },
-
-  miniModuleIndicator: {
+  moduleIndicator: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginRight: theme.spacing.xs,
+    marginRight: 6,
   },
-
-  miniModuleInfo: {
-    flex: 1,
+  moduleButtonText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#000000',
   },
-
-  miniModuleTitle: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.text.primary,
-    fontFamily: theme.typography.fontFamily,
+  focusSubtitle: {
+    fontSize: 15,
+    color: '#8e8e93',
+    fontWeight: '400',
+    paddingHorizontal: 16,
+    marginBottom: 16,
   },
-
-  miniModuleDescription: {
-    fontSize: theme.typography.sizes.xs,
-    color: theme.colors.text.secondary,
-    fontFamily: theme.typography.fontFamily,
+  recommendedSessionContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
   },
-
-  miniProgressIndicator: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borders.radius.sm,
-    paddingHorizontal: theme.spacing.xs,
-    paddingVertical: 2,
-    borderWidth: theme.borders.width.thin,
-    borderColor: theme.colors.border,
-  },
-
-  miniProgressText: {
-    fontSize: theme.typography.sizes.xs,
-    fontWeight: theme.typography.weights.medium,
-    color: theme.colors.text.primary,
-    fontFamily: theme.typography.fontFamily,
-  },
-
-  // Mini Roadmap Nodes
-  miniRoadmapNodes: {
+  recommendedSession: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    position: 'relative',
   },
-
-  miniRoadmapNode: {
+  sessionContent: {
+    flex: 1,
+    marginRight: 16,
+  },
+  sessionTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 4,
+  },
+  sessionSubtitle: {
+    fontSize: 15,
+    color: '#8e8e93',
+    fontWeight: '400',
+    marginBottom: 8,
+    fontStyle: 'italic',
+  },
+  sessionMeta: {
+    marginTop: 4,
+  },
+  sessionMetaText: {
+    fontSize: 13,
+    color: '#8e8e93',
+    fontWeight: '400',
+  },
+  sessionPlayButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sessionPlayText: {
+    fontSize: 16,
+    color: '#ffffff',
+    fontWeight: 'bold',
+    marginLeft: 2,
+  },
+  sessionCompletedBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#34c759',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sessionCompletedText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  alternativeSessionsList: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
+  alternativeSession: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f2f2f7',
+  },
+  alternativeSessionContent: {
+    flex: 1,
+    marginRight: 16,
+  },
+  alternativeSessionTitle: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#000000',
+    marginBottom: 2,
+  },
+  alternativeSessionMeta: {
+    fontSize: 13,
+    color: '#8e8e93',
+    fontWeight: '400',
+  },
+  alternativeSessionPlayButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: '#f2f2f7',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  alternativeSessionPlayText: {
+    fontSize: 12,
+    color: '#000000',
+    fontWeight: 'bold',
+    marginLeft: 1,
+  },
+  progressPathContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
+  progressPath: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  progressPathHeader: {
+    marginBottom: 16,
+  },
+  progressPathTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 4,
+  },
+  progressPathSubtitle: {
+    fontSize: 15,
+    color: '#8e8e93',
+    fontWeight: '400',
+  },
+  progressNodes: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  progressNode: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
     borderWidth: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
   },
-
-  miniCompletedNode: {
-    backgroundColor: '#e8f5e8',
-    borderColor: theme.colors.success,
+  completedNode: {
+    backgroundColor: '#34c759',
+    borderColor: '#34c759',
   },
-
-  miniTodayNode: {
-    backgroundColor: theme.colors.surface,
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
+  currentNode: {
+    backgroundColor: '#ffffff',
+    borderWidth: 3,
   },
-
-  miniLockedNode: {
-    backgroundColor: theme.colors.background,
-    borderColor: theme.colors.disabled,
+  lockedNode: {
+    backgroundColor: '#f2f2f7',
+    borderColor: '#e0e0e0',
   },
-
-  miniNodeLevel: {
-    fontSize: theme.typography.sizes.xs,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.text.primary,
-    fontFamily: theme.typography.fontFamily,
+  progressNodeText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#ffffff',
   },
-
-  miniConnectionLine: {
-    width: 12,
+  progressLine: {
+    width: 16,
     height: 2,
-    borderRadius: 1,
     marginHorizontal: 4,
-    opacity: 0.6,
   },
-
-  miniTodayBadge: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    borderRadius: theme.borders.radius.sm,
-    borderWidth: 1,
-    borderColor: theme.colors.surface,
-  },
-
-  miniTodayText: {
-    fontSize: 6,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.surface,
-    fontFamily: theme.typography.fontFamily,
-  },
-
-  miniLockIcon: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: theme.colors.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-
-  miniLockText: {
-    fontSize: 6,
-  },
-
-  miniRoadmapLabel: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.normal,
-    color: theme.colors.text.secondary,
-    fontFamily: theme.typography.fontFamily,
+  progressPathFooter: {
+    fontSize: 13,
+    color: '#8e8e93',
+    fontWeight: '400',
     textAlign: 'center',
     fontStyle: 'italic',
   },
-  
+  motivationContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+    alignItems: 'center',
+  },
+  motivationText: {
+    fontSize: 17,
+    color: '#000000',
+    fontWeight: '500',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  streakInfo: {
+    alignItems: 'center',
+  },
+  streakNumber: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  streakLabel: {
+    fontSize: 15,
+    color: '#8e8e93',
+    fontWeight: '400',
+  },
+  bottomSpacing: {
+    height: 120,
+  },
   // Roadmap View
   roadmapContainer: {
     flex: 1,
-    paddingTop: 20, // Space for top line
-    paddingBottom: 100, // Space for bottom navigation
+    backgroundColor: '#f2f2f7',
+    paddingTop: 60,
+    paddingBottom: 100,
   },
-  
   backToToday: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
-    marginBottom: theme.spacing.md,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    marginBottom: 16,
   },
-  
   backToTodayText: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.text.primary,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 17,
+    fontWeight: '500',
+    color: '#007AFF',
   },
 }); 

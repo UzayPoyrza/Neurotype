@@ -195,18 +195,22 @@ const styles = StyleSheet.create({
   rightSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
+    width: 80,
+    position: 'relative',
   },
   heartButton: {
-    padding: 4,
-    marginRight: 8,
-    minWidth: 32,
-    minHeight: 32,
+    position: 'absolute',
+    right: 44,
+    top: -10,
+    padding: 6,
+    minWidth: 36,
+    minHeight: 36,
     justifyContent: 'center',
     alignItems: 'center',
   },
   heartIcon: {
-    fontSize: 18,
+    fontSize: 22,
   },
   durationBadge: {
     backgroundColor: '#007AFF',

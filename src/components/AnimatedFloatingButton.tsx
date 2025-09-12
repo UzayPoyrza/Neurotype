@@ -53,9 +53,12 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
   const [position, setPosition] = useState(corners[currentCorner]);
   const [isDragging, setIsDragging] = useState(false);
   
+  // Determine if button is on left or right side for proper expansion direction
+  const isLeftSide = currentCorner === 'top-left' || currentCorner === 'bottom-left';
+  
   const pan = useRef(new Animated.ValueXY()).current;
   const scale = useRef(new Animated.Value(1)).current;
-  const scaleX = useRef(new Animated.Value(1)).current;
+  const buttonWidth = useRef(new Animated.Value(buttonSize)).current;
   const textOpacity = useRef(new Animated.Value(0)).current;
   const iconScale = useRef(new Animated.Value(1)).current;
 
@@ -68,10 +71,10 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
   useEffect(() => {
     if (isPillMode) {
       Animated.parallel([
-        Animated.timing(scaleX, {
-          toValue: pillWidth / buttonSize,
+        Animated.timing(buttonWidth, {
+          toValue: pillWidth,
           duration: 300,
-          useNativeDriver: true,
+          useNativeDriver: false, // Width animation requires layout driver
         }),
         Animated.timing(textOpacity, {
           toValue: 1,
@@ -80,17 +83,17 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
           useNativeDriver: true,
         }),
         Animated.timing(iconScale, {
-          toValue: 0.8,
+          toValue: 0.9,
           duration: 300,
           useNativeDriver: true,
         }),
       ]).start();
     } else {
       Animated.parallel([
-        Animated.timing(scaleX, {
-          toValue: 1,
+        Animated.timing(buttonWidth, {
+          toValue: buttonSize,
           duration: 300,
-          useNativeDriver: true,
+          useNativeDriver: false, // Width animation requires layout driver
         }),
         Animated.timing(textOpacity, {
           toValue: 0,
@@ -197,22 +200,30 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
       ]}
       {...panResponder.panHandlers}
     >
-      <TouchableOpacity
+      <Animated.View
         style={[
           styles.floatingButton,
           {
             backgroundColor: backgroundColor,
+            width: buttonWidth,
           }
         ]}
-        onPress={onPress}
-        activeOpacity={0.8}
-        disabled={isDragging}
       >
+        <TouchableOpacity
+          style={styles.buttonContent}
+          onPress={onPress}
+          activeOpacity={0.8}
+          disabled={isDragging}
+        >
         <View style={styles.content}>
           <Animated.View
             style={[
               styles.iconContainer,
-              { transform: [{ scale: iconScale }] }
+              { 
+                transform: [{ scale: iconScale }],
+                left: isLeftSide ? 12 : undefined,
+                right: isLeftSide ? undefined : 12,
+              }
             ]}
           >
             <ChangeIcon size={20} color="#ffffff" />
@@ -223,7 +234,9 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
               styles.textContainer,
               { 
                 opacity: textOpacity,
-                transform: [{ scaleX }]
+                left: isLeftSide ? 44 : 12,
+                right: isLeftSide ? 12 : 44,
+                alignItems: isLeftSide ? 'flex-start' : 'flex-end',
               }
             ]}
           >
@@ -232,7 +245,8 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
             </Text>
           </Animated.View>
         </View>
-      </TouchableOpacity>
+        </TouchableOpacity>
+      </Animated.View>
     </Animated.View>
   );
 };
@@ -244,9 +258,8 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   floatingButton: {
-    width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: 28, // This will create a pill shape when width > height
     borderWidth: 0,
     borderColor: 'transparent',
     shadowColor: '#000',
@@ -254,6 +267,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 6,
     elevation: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buttonContent: {
+    width: '100%',
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -270,14 +289,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     position: 'absolute',
-    left: 12,
   },
   textContainer: {
     position: 'absolute',
-    left: 44,
-    right: 12,
     justifyContent: 'center',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   pillText: {
     fontSize: 14,

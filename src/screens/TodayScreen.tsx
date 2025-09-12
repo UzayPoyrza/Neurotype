@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Animated, Dimensions, TouchableOpacity, FlatList, AccessibilityInfo } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Session } from '../types';
@@ -30,8 +30,8 @@ export const TodayScreen: React.FC = () => {
   const [triggerUnlock, setTriggerUnlock] = useState(false);
   const [viewMode, setViewMode] = useState<'today' | 'roadmap'>('today');
   const [showRecommendationInfo, setShowRecommendationInfo] = useState(false);
-  const [isPillMode, setIsPillMode] = useState(false);
   const [scrollY, setScrollY] = useState(0);
+  const [isPillMode, setIsPillMode] = useState(false);
   
   // Animation refs - simplified to avoid native driver conflicts
   const heroCardScale = useRef(new Animated.Value(1)).current;
@@ -53,37 +53,41 @@ export const TodayScreen: React.FC = () => {
     setCurrentScreen('today');
   }, [setCurrentScreen]);
 
-  // Pill mode animation logic - trigger on every navigation to Today page
+  // Pill mode logic - trigger when screen comes into focus
   useFocusEffect(
-    React.useCallback(() => {
-      // Reset pill mode first
+    useCallback(() => {
+      // Reset pill mode when screen comes into focus
       setIsPillMode(false);
       
-      const timer = setTimeout(() => {
-        setIsPillMode(true);
-      }, 1500);
+      // Start timer for pill mode (only in today view)
+      if (viewMode === 'today') {
+        const timer = setTimeout(() => {
+          setIsPillMode(true);
+        }, 1500);
 
-      return () => clearTimeout(timer);
-    }, [])
+        return () => clearTimeout(timer);
+      }
+    }, [viewMode])
   );
 
-  // Auto-hide pill after 3 seconds or on scroll
+  // Auto-hide pill after 3 seconds
   useEffect(() => {
     if (isPillMode) {
-      const hideTimer = setTimeout(() => {
+      const timer = setTimeout(() => {
         setIsPillMode(false);
       }, 3000);
 
-      return () => clearTimeout(hideTimer);
+      return () => clearTimeout(timer);
     }
   }, [isPillMode]);
 
-  // Hide pill when scrolling down
+  // Hide pill when user scrolls down
   useEffect(() => {
     if (scrollY > 50 && isPillMode) {
       setIsPillMode(false);
     }
   }, [scrollY, isPillMode]);
+
   
   // Generate adaptive sessions based on module and progress
   const getTodaySessions = () => {
@@ -519,7 +523,7 @@ export const TodayScreen: React.FC = () => {
         backgroundColor={selectedModule.color}
         onPress={() => setShowModuleModal(true)}
         isPillMode={isPillMode}
-        onScroll={setScrollY}
+        onScroll={(scrollY) => setScrollY(scrollY)}
       />
     </>
   );

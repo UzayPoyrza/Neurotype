@@ -98,6 +98,11 @@ export const TodayScreen: React.FC = () => {
     }
   }, [viewMode, lastFocusTime]);
 
+  // Handle drag start - cancel pill animation
+  const handleDragStart = useCallback(() => {
+    setIsPillMode(false);
+  }, []);
+
   // Pill mode logic - trigger when screen comes into focus
   useFocusEffect(
     useCallback(() => {
@@ -605,6 +610,7 @@ export const TodayScreen: React.FC = () => {
         onPress={() => setShowModuleModal(true)}
         isPillMode={isPillMode}
         onScroll={(scrollY) => setScrollY(scrollY)}
+        onDragStart={handleDragStart}
       />
     </>
   );

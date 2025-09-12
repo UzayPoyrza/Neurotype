@@ -28,6 +28,7 @@ interface AnimatedFloatingButtonProps {
   onPress: () => void;
   isPillMode: boolean;
   onScroll?: (scrollY: number) => void;
+  onDragStart?: () => void;
 }
 
 export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
@@ -35,6 +36,7 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
   onPress,
   isPillMode,
   onScroll,
+  onDragStart,
 }) => {
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
   const buttonSize = 56;
@@ -153,6 +155,11 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: () => {
         setIsDragging(true);
+        
+        // Notify parent component that dragging has started
+        if (onDragStart) {
+          onDragStart();
+        }
         
         const currentPos = {
           x: (pan.x as any)._value,

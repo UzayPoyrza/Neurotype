@@ -42,10 +42,6 @@ export const ProfileScreen: React.FC = () => {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerTop}>
-            <SubscriptionBadge 
-              subscriptionType={subscriptionType}
-              size="small"
-            />
             <Text style={styles.title}>Profile</Text>
             <SettingsIcon 
               size={32}
@@ -54,24 +50,38 @@ export const ProfileScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Profile Section */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>👤 Your Profile</Text>
-          </View>
-          
-          <View style={styles.profileContent}>
+        {/* Profile Header Card */}
+        <View style={styles.profileHeaderCard}>
+          <View style={styles.profileHeaderContent}>
             <TouchableOpacity
               style={styles.profilePictureContainer}
               onPress={() => setModalVisible(true)}
             >
               <UserIcon 
-                size={80}
+                size={100}
                 profileIcon={profileIcon}
                 onPress={() => setModalVisible(true)}
               />
-              <Text style={styles.changePhotoText}>Tap to change</Text>
+              <View style={styles.profilePictureOverlay}>
+                <Text style={styles.changePhotoText}>✏️</Text>
+              </View>
             </TouchableOpacity>
+            
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileName}>Your Profile</Text>
+              <View style={styles.subscriptionContainer}>
+                <SubscriptionBadge 
+                  subscriptionType={subscriptionType}
+                  size="medium"
+                />
+              </View>
+              <Text style={styles.profileSubtitle}>
+                {subscriptionType === 'premium' 
+                  ? 'Premium member with full access' 
+                  : 'Basic member - upgrade for more features'
+                }
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -254,19 +264,67 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  profileHeaderCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    marginHorizontal: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+  },
+  profileHeaderContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+  },
+  profilePictureContainer: {
+    position: 'relative',
+    marginRight: 20,
+  },
+  profilePictureOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#007AFF',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#ffffff',
+  },
+  changePhotoText: {
+    fontSize: 12,
+    color: '#ffffff',
+  },
+  profileInfo: {
+    flex: 1,
+  },
+  profileName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginBottom: 8,
+  },
+  subscriptionContainer: {
+    marginBottom: 8,
+  },
+  profileSubtitle: {
+    fontSize: 15,
+    color: '#8e8e93',
+    fontWeight: '400',
+    lineHeight: 20,
+  },
   profileContent: {
     paddingHorizontal: 16,
     paddingBottom: 20,
     alignItems: 'center',
-  },
-  profilePictureContainer: {
-    alignItems: 'center',
-  },
-  changePhotoText: {
-    fontSize: 13,
-    color: '#8e8e93',
-    fontWeight: '400',
-    marginTop: 8,
   },
   shareContent: {
     paddingHorizontal: 16,

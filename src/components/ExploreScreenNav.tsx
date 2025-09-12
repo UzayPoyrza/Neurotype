@@ -46,6 +46,19 @@ export const ExploreScreenNav = forwardRef<ExploreScreenNavRef, ExploreScreenNav
 }, ref) => {
   const navigation = useNavigation();
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
+  
+  // Create a dramatically lighter version of the background color for very obvious foreground effect
+  const getElevatedColor = (color: string) => {
+    // Make it dramatically lighter to create very strong elevation effect
+    if (color.startsWith('#')) {
+      const hex = color.slice(1);
+      const r = Math.min(255, parseInt(hex.substr(0, 2), 16) + 100);
+      const g = Math.min(255, parseInt(hex.substr(2, 2), 16) + 100);
+      const b = Math.min(255, parseInt(hex.substr(4, 2), 16) + 100);
+      return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+    }
+    return color;
+  };
   const revealTranslateY = useRef(new Animated.Value(0)).current;
   const isAnimating = useRef(false);
   const lastScrollY = useRef(0);
@@ -200,7 +213,7 @@ export const ExploreScreenNav = forwardRef<ExploreScreenNavRef, ExploreScreenNav
       <Animated.View 
         style={[
           styles.revealBar,
-          { backgroundColor: globalBackgroundColor },
+          { backgroundColor: getElevatedColor(globalBackgroundColor) }, // Slightly lighter for foreground effect
           {
             transform: [{ translateY: revealTranslateY }],
           }
@@ -267,7 +280,7 @@ export const ExploreScreenNav = forwardRef<ExploreScreenNavRef, ExploreScreenNav
       </Animated.View>
 
       {/* TopShell - Always visible and in front */}
-      <Animated.View style={[styles.topShell, { backgroundColor: globalBackgroundColor }]}>
+      <Animated.View style={[styles.topShell, { backgroundColor: getElevatedColor(globalBackgroundColor) }]}>
         <View style={styles.topShellContent}>
           {/* Status bar padding only - no interactive elements */}
         </View>
@@ -316,14 +329,17 @@ const styles = StyleSheet.create({
   },
   revealBar: {
     // backgroundColor set dynamically via globalBackgroundColor
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0', // Subtle border
     height: 120, // Increased height to accommodate filter bar
     position: 'absolute',
     top: 60, // Start below TopShell
     left: 0,
     right: 0,
     zIndex: 1000, // Below TopShell
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3, // Android shadow
   },
   searchContainer: {
     flex: 1,

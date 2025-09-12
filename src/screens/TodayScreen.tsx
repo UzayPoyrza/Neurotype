@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Animated, Dimensions, TouchableOpacity, FlatList, AccessibilityInfo } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Session } from '../types';
 import { useStore, prerenderedModuleBackgrounds } from '../store/useStore';
 import { mockSessions } from '../data/mockData';
@@ -7,7 +8,7 @@ import { mentalHealthModules } from '../data/modules';
 import { theme } from '../styles/theme';
 import { ModuleRoadmap } from '../components/ModuleRoadmap';
 import { ModuleGridModal } from '../components/ModuleGridModal';
-import { DraggableFloatingButton } from '../components/DraggableFloatingButton';
+import { AnimatedFloatingButton } from '../components/AnimatedFloatingButton';
 import { SessionBottomSheet } from '../components/SessionBottomSheet';
 import { SessionProgressView } from '../components/SessionProgressView';
 import { SessionRating } from '../components/SessionRating';
@@ -29,6 +30,8 @@ export const TodayScreen: React.FC = () => {
   const [triggerUnlock, setTriggerUnlock] = useState(false);
   const [viewMode, setViewMode] = useState<'today' | 'roadmap'>('today');
   const [showRecommendationInfo, setShowRecommendationInfo] = useState(false);
+  const [isPillMode, setIsPillMode] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
   
   // Animation refs - simplified to avoid native driver conflicts
   const heroCardScale = useRef(new Animated.Value(1)).current;
@@ -45,10 +48,42 @@ export const TodayScreen: React.FC = () => {
     setTodayModuleId(selectedModuleId);
   }, [selectedModuleId, setGlobalBackgroundColor, setTodayModuleId]);
 
-  // Set screen context when component mounts
+  // Set screen context when component mounts or updates
   useEffect(() => {
     setCurrentScreen('today');
   }, [setCurrentScreen]);
+
+  // Pill mode animation logic - trigger on every navigation to Today page
+  useFocusEffect(
+    React.useCallback(() => {
+      // Reset pill mode first
+      setIsPillMode(false);
+      
+      const timer = setTimeout(() => {
+        setIsPillMode(true);
+      }, 1500);
+
+      return () => clearTimeout(timer);
+    }, [])
+  );
+
+  // Auto-hide pill after 3 seconds or on scroll
+  useEffect(() => {
+    if (isPillMode) {
+      const hideTimer = setTimeout(() => {
+        setIsPillMode(false);
+      }, 3000);
+
+      return () => clearTimeout(hideTimer);
+    }
+  }, [isPillMode]);
+
+  // Hide pill when scrolling down
+  useEffect(() => {
+    if (scrollY > 50 && isPillMode) {
+      setIsPillMode(false);
+    }
+  }, [scrollY, isPillMode]);
   
   // Generate adaptive sessions based on module and progress
   const getTodaySessions = () => {
@@ -266,7 +301,16 @@ export const TodayScreen: React.FC = () => {
         <Text style={styles.dateText}>{getCurrentDateInfo().fullDate}</Text>
       </View>
       
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={styles.scrollContent}
+        onScroll={(event) => {
+          const currentScrollY = event.nativeEvent.contentOffset.y;
+          setScrollY(currentScrollY);
+        }}
+        scrollEventThrottle={16}
+      >
 
         {/* Today's Focus Card */}
         <View style={styles.card}>
@@ -470,10 +514,12 @@ export const TodayScreen: React.FC = () => {
         onStart={handleStartSession}
       />
 
-      {/* Draggable Floating Button - Fixed to Screen */}
-      <DraggableFloatingButton
+      {/* Animated Floating Button - Fixed to Screen */}
+      <AnimatedFloatingButton
         backgroundColor={selectedModule.color}
         onPress={() => setShowModuleModal(true)}
+        isPillMode={isPillMode}
+        onScroll={setScrollY}
       />
     </>
   );

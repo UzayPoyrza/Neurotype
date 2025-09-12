@@ -33,6 +33,7 @@ export const TodayScreen: React.FC = () => {
   const [scrollY, setScrollY] = useState(0);
   const [isPillMode, setIsPillMode] = useState(false);
   const [lastFocusTime, setLastFocusTime] = useState(0);
+  const [lastScrollY, setLastScrollY] = useState(0);
   
   // Animation refs - simplified to avoid native driver conflicts
   const heroCardScale = useRef(new Animated.Value(1)).current;
@@ -54,7 +55,7 @@ export const TodayScreen: React.FC = () => {
     setCurrentScreen('today');
   }, [setCurrentScreen]);
 
-  // Robust pill trigger function
+  // Robust pill trigger function with delay
   const triggerPillAnimation = useCallback(() => {
     const currentTime = Date.now();
     
@@ -73,6 +74,24 @@ export const TodayScreen: React.FC = () => {
       }, 1500);
 
       return () => clearTimeout(timer);
+    }
+  }, [viewMode, lastFocusTime]);
+
+  // Immediate pill trigger function for scroll events
+  const triggerPillAnimationImmediate = useCallback(() => {
+    const currentTime = Date.now();
+    
+    // Prevent rapid successive triggers (debounce)
+    if (currentTime - lastFocusTime < 500) {
+      return;
+    }
+    
+    setLastFocusTime(currentTime);
+    setIsPillMode(false);
+    
+    // Trigger pill mode immediately (only in today view)
+    if (viewMode === 'today') {
+      setIsPillMode(true);
     }
   }, [viewMode, lastFocusTime]);
 
@@ -103,12 +122,13 @@ export const TodayScreen: React.FC = () => {
     }
   }, [isPillMode]);
 
-  // Hide pill when user scrolls down
+  // Hide pill when user scrolls down significantly
   useEffect(() => {
-    if (scrollY > 50 && isPillMode) {
+    if (scrollY > lastScrollY && scrollY > 100 && isPillMode) {
+      // User is scrolling down and has scrolled past 100px, hide pill
       setIsPillMode(false);
     }
-  }, [scrollY, isPillMode]);
+  }, [scrollY, lastScrollY, isPillMode]);
 
   
   // Generate adaptive sessions based on module and progress
@@ -334,6 +354,14 @@ export const TodayScreen: React.FC = () => {
         onScroll={(event) => {
           const currentScrollY = event.nativeEvent.contentOffset.y;
           setScrollY(currentScrollY);
+          
+          // Detect scroll direction and trigger pill animation on scroll up
+          if (currentScrollY < lastScrollY && currentScrollY > 50 && !isPillMode) {
+            // User is scrolling up and not at the very top, trigger pill animation immediately
+            triggerPillAnimationImmediate();
+          }
+          
+          setLastScrollY(currentScrollY);
         }}
         scrollEventThrottle={16}
       >

@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
@@ -28,11 +28,22 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
   
   const { moduleId } = route.params;
   const module = mentalHealthModules.find(m => m.id === moduleId);
+  
+  // Local background color for this screen only
+  const [localBackgroundColor, setLocalBackgroundColor] = useState('#f2f2f7');
 
   // Set screen context when component mounts
   useEffect(() => {
     setCurrentScreen('module-detail');
   }, [setCurrentScreen]);
+
+  // Set local background color based on module
+  useEffect(() => {
+    if (module) {
+      const moduleColor = prerenderedModuleBackgrounds[moduleId] || module.color;
+      setLocalBackgroundColor(moduleColor);
+    }
+  }, [module, moduleId, prerenderedModuleBackgrounds]);
 
   // Restore screen context when component unmounts
   useEffect(() => {
@@ -87,11 +98,8 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
     );
   }
 
-  // Get the specific module's background color
-  const moduleBackgroundColor = prerenderedModuleBackgrounds[moduleId] || module.color;
-
   return (
-    <View style={[styles.container, { backgroundColor: moduleBackgroundColor }]}>
+    <View style={[styles.container, { backgroundColor: localBackgroundColor }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>

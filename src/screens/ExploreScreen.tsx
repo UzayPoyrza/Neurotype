@@ -138,10 +138,7 @@ export const ExploreScreen: React.FC = () => {
 
   const handleModulePress = (moduleId: string) => {
     addRecentModule(moduleId);
-    const module = filteredModules.find(m => m.id === moduleId);
-    if (module) {
-      setGlobalBackgroundColor(module.color);
-    }
+    // Don't change global background color - let the detail screen handle its own background
     navigation.navigate('ModuleDetail', { moduleId });
   };
 

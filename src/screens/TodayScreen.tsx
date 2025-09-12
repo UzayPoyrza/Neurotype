@@ -34,6 +34,9 @@ export const TodayScreen: React.FC = () => {
   const [isPillMode, setIsPillMode] = useState(false);
   const [lastFocusTime, setLastFocusTime] = useState(0);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [scrollViewHeight, setScrollViewHeight] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
+  const [hasReachedBottom, setHasReachedBottom] = useState(false);
   
   // Animation refs - simplified to avoid native driver conflicts
   const heroCardScale = useRef(new Animated.Value(1)).current;
@@ -122,13 +125,7 @@ export const TodayScreen: React.FC = () => {
     }
   }, [isPillMode]);
 
-  // Hide pill when user scrolls down significantly
-  useEffect(() => {
-    if (scrollY > lastScrollY && scrollY > 100 && isPillMode) {
-      // User is scrolling down and has scrolled past 100px, hide pill
-      setIsPillMode(false);
-    }
-  }, [scrollY, lastScrollY, isPillMode]);
+  // Note: Scroll-down pill hiding is now handled immediately in the scroll handler
 
   
   // Generate adaptive sessions based on module and progress
@@ -355,13 +352,47 @@ export const TodayScreen: React.FC = () => {
           const currentScrollY = event.nativeEvent.contentOffset.y;
           setScrollY(currentScrollY);
           
-          // Detect scroll direction and trigger pill animation on scroll up
-          if (currentScrollY < lastScrollY && currentScrollY > 50 && !isPillMode) {
-            // User is scrolling up and not at the very top, trigger pill animation immediately
+          // Calculate if user is at or near the bottom of the content
+          const isAtBottom = contentHeight > 0 && scrollViewHeight > 0 && 
+            (currentScrollY + scrollViewHeight) >= (contentHeight - 50);
+          const isNearBottom = contentHeight > 0 && scrollViewHeight > 0 && 
+            (currentScrollY + scrollViewHeight) >= (contentHeight - 150);
+          
+          // Track if user has reached the bottom (reset more quickly)
+          if (isAtBottom && !hasReachedBottom) {
+            setHasReachedBottom(true);
+          } else if (currentScrollY < (contentHeight - scrollViewHeight - 100) && hasReachedBottom) {
+            // Reset when user scrolls 100px away from bottom
+            setHasReachedBottom(false);
+          }
+          
+          // Force pill to close when user reaches bottom
+          if (isAtBottom && isPillMode) {
+            setIsPillMode(false);
+          }
+          
+          // Allow pill to open when scrolling up, with more permissive conditions
+          if (currentScrollY < lastScrollY && 
+              currentScrollY > 50 && 
+              !isPillMode && 
+              !isAtBottom) {
+            // User is scrolling up, not at the very top, not at bottom
             triggerPillAnimationImmediate();
           }
           
+          // Detect scroll direction and hide pill immediately when scrolling down
+          if (currentScrollY > lastScrollY && currentScrollY > 50 && isPillMode) {
+            // User is scrolling down and has scrolled past 50px, hide pill immediately
+            setIsPillMode(false);
+          }
+          
           setLastScrollY(currentScrollY);
+        }}
+        onContentSizeChange={(contentWidth, contentHeight) => {
+          setContentHeight(contentHeight);
+        }}
+        onLayout={(event) => {
+          setScrollViewHeight(event.nativeEvent.layout.height);
         }}
         scrollEventThrottle={16}
       >

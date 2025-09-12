@@ -492,7 +492,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   scrollContent: {
-    paddingTop: 120, // Account for sticky header height
+    paddingTop: 160, // Account for sticky header height (further increased to prevent overlap)
   },
   moduleButton: {
     flexDirection: 'row',

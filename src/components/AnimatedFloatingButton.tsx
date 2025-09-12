@@ -63,6 +63,7 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
   const buttonWidth = useRef(new Animated.Value(buttonSize)).current;
   const textOpacity = useRef(new Animated.Value(0)).current;
   const iconScale = useRef(new Animated.Value(1)).current;
+  const buttonTranslateX = useRef(new Animated.Value(0)).current;
 
   // Initialize position only on first mount
   const [isInitialized, setIsInitialized] = useState(false);
@@ -77,11 +78,19 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
   // Animate to pill mode
   useEffect(() => {
     if (isPillMode) {
+      // Calculate how much to translate left for right-side buttons
+      const translateAmount = isLeftSide ? 0 : -(pillWidth - buttonSize);
+      
       Animated.parallel([
         Animated.timing(buttonWidth, {
           toValue: pillWidth,
           duration: 300,
           useNativeDriver: false, // Width animation requires layout driver
+        }),
+        Animated.timing(buttonTranslateX, {
+          toValue: translateAmount,
+          duration: 300,
+          useNativeDriver: true,
         }),
         Animated.timing(textOpacity, {
           toValue: 1,
@@ -102,6 +111,11 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
           duration: 300,
           useNativeDriver: false, // Width animation requires layout driver
         }),
+        Animated.timing(buttonTranslateX, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
         Animated.timing(textOpacity, {
           toValue: 0,
           duration: 150,
@@ -114,7 +128,7 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
         }),
       ]).start();
     }
-  }, [isPillMode]);
+  }, [isPillMode, isLeftSide]);
 
   const findNearestCorner = (x: number, y: number): Corner => {
     const distances = Object.entries(corners).map(([corner, pos]) => ({
@@ -216,11 +230,19 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
         style={[
           styles.floatingButton,
           {
-            backgroundColor: backgroundColor,
-            width: buttonWidth,
+            transform: [{ translateX: buttonTranslateX }],
           }
         ]}
       >
+        <Animated.View
+          style={[
+            styles.buttonBackground,
+            {
+              backgroundColor: backgroundColor,
+              width: buttonWidth,
+            }
+          ]}
+        >
         <TouchableOpacity
           style={styles.buttonContent}
           onPress={onPress}
@@ -258,6 +280,7 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
           </Animated.View>
         </View>
         </TouchableOpacity>
+        </Animated.View>
       </Animated.View>
     </Animated.View>
   );
@@ -271,7 +294,6 @@ const styles = StyleSheet.create({
   },
   floatingButton: {
     height: 56,
-    borderRadius: 28, // This will create a pill shape when width > height
     borderWidth: 0,
     borderColor: 'transparent',
     shadowColor: '#000',
@@ -279,6 +301,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 6,
     elevation: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buttonBackground: {
+    height: 56,
+    borderRadius: 28, // This will create a pill shape when width > height
     justifyContent: 'center',
     alignItems: 'center',
   },

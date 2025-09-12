@@ -40,13 +40,13 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
 }) => {
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
   const buttonSize = 56;
-  const pillWidth = 140;
+  const pillWidth = 120;
   const margin = 16;
   
-  // Corner positions
+  // Corner positions - top positions account for navigation height (120px) + margin
   const corners = {
-    'top-left': { x: margin, y: 80 },
-    'top-right': { x: screenWidth - buttonSize - margin, y: 80 },
+    'top-left': { x: margin, y: 140 },
+    'top-right': { x: screenWidth - buttonSize - margin, y: 140 },
     'bottom-left': { x: margin, y: screenHeight - buttonSize - margin - 80 },
     'bottom-right': { x: screenWidth - buttonSize - margin, y: screenHeight - buttonSize - margin - 80 },
   };
@@ -99,7 +99,7 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
           useNativeDriver: true,
         }),
         Animated.timing(iconScale, {
-          toValue: 0.9,
+          toValue: 1,
           duration: 300,
           useNativeDriver: true,
         }),
@@ -204,7 +204,7 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
         const finalY = (pan.y as any)._value;
         
         const boundedX = Math.max(margin, Math.min(screenWidth - buttonSize - margin, finalX));
-        const boundedY = Math.max(80, Math.min(screenHeight - buttonSize - 100, finalY));
+        const boundedY = Math.max(140, Math.min(screenHeight - buttonSize - 100, finalY));
         
         const nearestCorner = findNearestCorner(boundedX, boundedY);
         snapToCorner(nearestCorner);
@@ -271,11 +271,12 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
                 left: isLeftSide ? 44 : 12,
                 right: isLeftSide ? 12 : 44,
                 alignItems: isLeftSide ? 'flex-start' : 'flex-end',
+                justifyContent: 'center',
               }
             ]}
           >
-            <Text style={styles.pillText} numberOfLines={1}>
-              Change Module
+            <Text style={[styles.pillText, { marginTop: 1 }]} numberOfLines={1}>
+              Change
             </Text>
           </Animated.View>
         </View>
@@ -332,12 +333,13 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     position: 'absolute',
+    height: 56, // Match button height for proper vertical centering
     justifyContent: 'center',
     alignItems: 'center',
   },
   pillText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: '#ffffff',
   },
 });

@@ -46,19 +46,7 @@ export const ExploreScreenNav = forwardRef<ExploreScreenNavRef, ExploreScreenNav
 }, ref) => {
   const navigation = useNavigation();
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
-  
-  // Create a dramatically lighter version of the background color for very obvious foreground effect
-  const getElevatedColor = (color: string) => {
-    // Make it dramatically lighter to create very strong elevation effect
-    if (color.startsWith('#')) {
-      const hex = color.slice(1);
-      const r = Math.min(255, parseInt(hex.substr(0, 2), 16) + 100);
-      const g = Math.min(255, parseInt(hex.substr(2, 2), 16) + 100);
-      const b = Math.min(255, parseInt(hex.substr(4, 2), 16) + 100);
-      return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-    }
-    return color;
-  };
+  const [elevatedBackgroundColor, setElevatedBackgroundColor] = React.useState('#f2f2f7');
   const revealTranslateY = useRef(new Animated.Value(0)).current;
   const isAnimating = useRef(false);
   const lastScrollY = useRef(0);
@@ -199,6 +187,10 @@ export const ExploreScreenNav = forwardRef<ExploreScreenNavRef, ExploreScreenNav
     snapToNearest,
   }));
 
+  React.useEffect(() => {
+    setElevatedBackgroundColor(globalBackgroundColor);
+  }, [globalBackgroundColor]);
+
   const handleBackPress = () => {
     if (onBackPress) {
       onBackPress();
@@ -213,7 +205,7 @@ export const ExploreScreenNav = forwardRef<ExploreScreenNavRef, ExploreScreenNav
       <Animated.View 
         style={[
           styles.revealBar,
-          { backgroundColor: getElevatedColor(globalBackgroundColor) }, // Slightly lighter for foreground effect
+          { backgroundColor: elevatedBackgroundColor },
           {
             transform: [{ translateY: revealTranslateY }],
           }
@@ -280,7 +272,7 @@ export const ExploreScreenNav = forwardRef<ExploreScreenNavRef, ExploreScreenNav
       </Animated.View>
 
       {/* TopShell - Always visible and in front */}
-      <Animated.View style={[styles.topShell, { backgroundColor: getElevatedColor(globalBackgroundColor) }]}>
+      <Animated.View style={[styles.topShell, { backgroundColor: elevatedBackgroundColor }]}>
         <View style={styles.topShellContent}>
           {/* Status bar padding only - no interactive elements */}
         </View>

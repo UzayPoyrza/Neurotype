@@ -36,6 +36,7 @@ export const ExploreScreen: React.FC = () => {
   const addRecentModule = useStore(state => state.addRecentModule);
   const recentModuleIds = useStore(state => state.recentModuleIds);
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
+  const setGlobalBackgroundColor = useStore(state => state.setGlobalBackgroundColor);
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -115,10 +116,8 @@ export const ExploreScreen: React.FC = () => {
           } else if (bRecentIndex !== -1) {
             // Only b is recent
             return 1;
-          } else {
-            // Neither is recent, sort alphabetically
-            return a.title.localeCompare(b.title);
           }
+          return a.title.localeCompare(b.title);
         });
         break;
       case 'alphabetical':
@@ -139,6 +138,10 @@ export const ExploreScreen: React.FC = () => {
 
   const handleModulePress = (moduleId: string) => {
     addRecentModule(moduleId);
+    const module = filteredModules.find(m => m.id === moduleId);
+    if (module) {
+      setGlobalBackgroundColor(module.color);
+    }
     navigation.navigate('ModuleDetail', { moduleId });
   };
 

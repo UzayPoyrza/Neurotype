@@ -260,12 +260,13 @@ export const TodayScreen: React.FC = () => {
 
   const renderTodayView = () => (
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Today</Text>
-          <Text style={styles.dateText}>{getCurrentDateInfo().fullDate}</Text>
-        </View>
+      {/* Sticky Header */}
+      <View style={[styles.stickyHeader, { backgroundColor: globalBackgroundColor }]}>
+        <Text style={styles.title}>Today</Text>
+        <Text style={styles.dateText}>{getCurrentDateInfo().fullDate}</Text>
+      </View>
+      
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
         {/* Today's Focus Card */}
         <View style={styles.card}>
@@ -480,6 +481,19 @@ export const TodayScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   ...theme.health, // Use global Apple Health styles
+  stickyHeader: {
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 20,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+  },
+  scrollContent: {
+    paddingTop: 120, // Account for sticky header height
+  },
   moduleButton: {
     flexDirection: 'row',
     alignItems: 'center',

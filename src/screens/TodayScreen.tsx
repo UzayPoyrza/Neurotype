@@ -346,7 +346,7 @@ export const TodayScreen: React.FC = () => {
       {/* Sticky Header */}
       <View style={[styles.stickyHeader, { backgroundColor: globalBackgroundColor }]}>
         <Text style={styles.title}>Today</Text>
-        <Text style={styles.dateText}>{getCurrentDateInfo().fullDate}</Text>
+        <Text style={styles.dateTextRight}>{getCurrentDateInfo().fullDate}</Text>
       </View>
       
       <ScrollView 
@@ -624,15 +624,24 @@ const styles = StyleSheet.create({
   stickyHeader: {
     paddingHorizontal: 20,
     paddingTop: 60,
-    paddingBottom: 20,
+    paddingBottom: 5,
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     zIndex: 1000,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   scrollContent: {
-    paddingTop: 160, // Account for sticky header height (further increased to prevent overlap)
+    paddingTop: 120, // Account for shorter sticky header height
+  },
+  dateTextRight: {
+    fontSize: 15,
+    color: '#8e8e93',
+    fontWeight: '400',
+    marginTop: 4,
   },
   moduleButton: {
     flexDirection: 'row',

@@ -116,7 +116,6 @@ export const ProgressScreen: React.FC = () => {
       {/* Sticky Header */}
       <View style={[styles.stickyHeader, { backgroundColor: globalBackgroundColor }]}>
         <Text style={styles.title}>Progress</Text>
-        <Text style={styles.dateText}>{formatDate(today)}</Text>
       </View>
       
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -192,7 +191,7 @@ const styles = StyleSheet.create({
   stickyHeader: {
     paddingHorizontal: 20,
     paddingTop: 60,
-    paddingBottom: 20,
+    paddingBottom: 5,
     position: 'absolute',
     top: 0,
     left: 0,
@@ -200,7 +199,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   scrollContent: {
-    paddingTop: 160, // Account for sticky header height (further increased to prevent overlap)
+    paddingTop: 120, // Account for shorter sticky header height (same as Today page)
   },
   recordButton: {
     fontSize: 15,

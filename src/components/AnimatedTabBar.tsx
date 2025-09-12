@@ -88,8 +88,8 @@ export const AnimatedTabBar: React.FC<BottomTabBarProps> = ({
           });
         };
 
-        const iconColor = isFocused ? '#007AFF' : '#8e8e93';
-        const textColor = isFocused ? '#007AFF' : '#8e8e93';
+        const iconColor = isFocused ? '#007AFF' : '#5a5a5a';
+        const textColor = isFocused ? '#000000' : '#5a5a5a';
 
         return (
           <TouchableOpacity

@@ -24,6 +24,12 @@ export const ProfileScreen: React.FC = () => {
     subscriptionType
   } = useStore();
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
+  const setCurrentScreen = useStore(state => state.setCurrentScreen);
+
+  // Set screen context when component mounts
+  React.useEffect(() => {
+    setCurrentScreen('profile');
+  }, [setCurrentScreen]);
   
   const [modalVisible, setModalVisible] = useState(false);
 

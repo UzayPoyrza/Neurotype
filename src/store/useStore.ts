@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { UserProgress, FilterState, SessionDelta, Session } from '../types';
 import { initialUserProgress } from '../data/mockData';
+import { mentalHealthModules } from '../data/modules';
 
 // Helper function to create subtle background colors from module colors
 export const createSubtleBackground = (moduleColor: string): string => {
@@ -19,6 +20,12 @@ export const createSubtleBackground = (moduleColor: string): string => {
   return `rgb(${mixedR}, ${mixedG}, ${mixedB})`;
 };
 
+// Pre-calculate all module background colors for instant switching
+export const prerenderedModuleBackgrounds: Record<string, string> = {};
+mentalHealthModules.forEach(module => {
+  prerenderedModuleBackgrounds[module.id] = createSubtleBackground(module.color);
+});
+
 interface AppState {
   userProgress: UserProgress;
   filters: FilterState;
@@ -30,6 +37,8 @@ interface AppState {
   activeModuleId: string | null;
   recentModuleIds: string[];
   globalBackgroundColor: string;
+  currentScreen: 'today' | 'explore' | 'progress' | 'profile' | 'settings' | 'module-detail';
+  todayModuleId: string | null;
   addSessionDelta: (delta: SessionDelta) => void;
   setFilters: (filters: FilterState) => void;
   toggleReminder: () => void;
@@ -40,6 +49,8 @@ interface AppState {
   setActiveModuleId: (moduleId: string | null) => void;
   addRecentModule: (moduleId: string) => void;
   setGlobalBackgroundColor: (color: string) => void;
+  setCurrentScreen: (screen: 'today' | 'explore' | 'progress' | 'profile' | 'settings' | 'module-detail') => void;
+  setTodayModuleId: (moduleId: string | null) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -56,6 +67,8 @@ export const useStore = create<AppState>((set) => ({
   activeModuleId: null,
   recentModuleIds: [],
   globalBackgroundColor: '#f2f2f7', // Default iOS background
+  currentScreen: 'today',
+  todayModuleId: 'anxiety', // Default module
   
   addSessionDelta: (delta: SessionDelta) => 
     set((state) => ({
@@ -96,5 +109,11 @@ export const useStore = create<AppState>((set) => ({
     })),
     
   setGlobalBackgroundColor: (color: string) => 
-    set({ globalBackgroundColor: color })
+    set({ globalBackgroundColor: color }),
+    
+  setCurrentScreen: (screen: 'today' | 'explore' | 'progress' | 'profile' | 'settings' | 'module-detail') => 
+    set({ currentScreen: screen }),
+    
+  setTodayModuleId: (moduleId: string | null) => 
+    set({ todayModuleId: moduleId })
 })); 

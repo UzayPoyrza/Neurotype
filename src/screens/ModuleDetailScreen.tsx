@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
@@ -23,10 +23,23 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
   const route = useRoute<ModuleDetailRouteProp>();
   const navigation = useNavigation<ModuleDetailNavigationProp>();
   const setActiveSession = useStore(state => state.setActiveSession);
-  const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
+  const setCurrentScreen = useStore(state => state.setCurrentScreen);
+  const { prerenderedModuleBackgrounds } = require('../store/useStore');
   
   const { moduleId } = route.params;
   const module = mentalHealthModules.find(m => m.id === moduleId);
+
+  // Set screen context when component mounts
+  useEffect(() => {
+    setCurrentScreen('module-detail');
+  }, [setCurrentScreen]);
+
+  // Restore screen context when component unmounts
+  useEffect(() => {
+    return () => {
+      setCurrentScreen('explore');
+    };
+  }, [setCurrentScreen]);
   
   // Filter sessions based on module type
   const moduleSessions = useMemo(() => {
@@ -61,7 +74,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
 
   if (!module) {
     return (
-      <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
+      <View style={[styles.container, { backgroundColor: '#f2f2f7' }]}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Text style={styles.backButtonText}>← Back</Text>
@@ -74,8 +87,11 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
     );
   }
 
+  // Get the specific module's background color
+  const moduleBackgroundColor = prerenderedModuleBackgrounds[moduleId] || module.color;
+
   return (
-    <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
+    <View style={[styles.container, { backgroundColor: moduleBackgroundColor }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>

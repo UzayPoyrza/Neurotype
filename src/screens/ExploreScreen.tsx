@@ -36,6 +36,7 @@ export const ExploreScreen: React.FC = () => {
   const addRecentModule = useStore(state => state.addRecentModule);
   const recentModuleIds = useStore(state => state.recentModuleIds);
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
+  const setCurrentScreen = useStore(state => state.setCurrentScreen);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [selectedSort, setSelectedSort] = useState<string>('recents');
@@ -46,6 +47,11 @@ export const ExploreScreen: React.FC = () => {
   const [isShuffling, setIsShuffling] = useState(false);
   const moduleOpacity = useSharedValue(1);
   const moduleScale = useSharedValue(1);
+
+  // Set screen context when component mounts
+  useEffect(() => {
+    setCurrentScreen('explore');
+  }, [setCurrentScreen]);
 
   // Define filter categories for top nav pill filters
   const filterCategories: FilterCategory[] = [

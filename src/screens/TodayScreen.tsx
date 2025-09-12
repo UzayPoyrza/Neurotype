@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Animated, Dimensions, TouchableOpacity, FlatList, AccessibilityInfo } from 'react-native';
 import { Session } from '../types';
-import { useStore, createSubtleBackground } from '../store/useStore';
+import { useStore, prerenderedModuleBackgrounds } from '../store/useStore';
 import { mockSessions } from '../data/mockData';
 import { mentalHealthModules } from '../data/modules';
 import { theme } from '../styles/theme';
@@ -15,7 +15,7 @@ import { SessionRating } from '../components/SessionRating';
 type SessionState = 'not_started' | 'in_progress' | 'completed' | 'rating';
 
 export const TodayScreen: React.FC = () => {
-  const { setActiveSession, setGlobalBackgroundColor } = useStore();
+  const { setActiveSession, setGlobalBackgroundColor, setCurrentScreen, setTodayModuleId } = useStore();
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const userProgress = useStore(state => state.userProgress);
   
@@ -40,9 +40,15 @@ export const TodayScreen: React.FC = () => {
   
   // Update global background color when module changes
   useEffect(() => {
-    const subtleColor = createSubtleBackground(selectedModule.color);
+    const subtleColor = prerenderedModuleBackgrounds[selectedModuleId] || prerenderedModuleBackgrounds['anxiety'];
     setGlobalBackgroundColor(subtleColor);
-  }, [selectedModule.color, setGlobalBackgroundColor]);
+    setTodayModuleId(selectedModuleId);
+  }, [selectedModuleId, setGlobalBackgroundColor, setTodayModuleId]);
+
+  // Set screen context when component mounts
+  useEffect(() => {
+    setCurrentScreen('today');
+  }, [setCurrentScreen]);
   
   // Generate adaptive sessions based on module and progress
   const getTodaySessions = () => {

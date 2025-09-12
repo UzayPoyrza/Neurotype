@@ -90,6 +90,12 @@ const MeditationCalendar: React.FC = () => {
 export const ProgressScreen: React.FC = () => {
   const userProgress = useStore(state => state.userProgress);
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
+  const setCurrentScreen = useStore(state => state.setCurrentScreen);
+
+  // Set screen context when component mounts
+  React.useEffect(() => {
+    setCurrentScreen('progress');
+  }, [setCurrentScreen]);
   const { today } = getCurrentDateInfo();
 
   // Calculate stats

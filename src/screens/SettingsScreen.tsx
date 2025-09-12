@@ -15,6 +15,12 @@ export const SettingsScreen: React.FC = () => {
     setSubscriptionType,
   } = useStore();
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
+  const setCurrentScreen = useStore(state => state.setCurrentScreen);
+
+  // Set screen context when component mounts
+  React.useEffect(() => {
+    setCurrentScreen('settings');
+  }, [setCurrentScreen]);
 
   return (
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>

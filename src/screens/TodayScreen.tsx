@@ -447,6 +447,9 @@ export const TodayScreen: React.FC = () => {
                   <Text style={styles.sessionMetaText}>
                     {recommendedSession.durationMin} min • {recommendedSession.modality}
                   </Text>
+                  <View style={styles.recommendedBadge}>
+                    <Text style={styles.recommendedBadgeText}>Recommended</Text>
+                  </View>
                 </View>
               </View>
 
@@ -650,6 +653,17 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#000000',
   },
+  recommendedBadge: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  recommendedBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
   focusSubtitle: {
     fontSize: 15,
     color: '#8e8e93',
@@ -690,6 +704,9 @@ const styles = StyleSheet.create({
   },
   sessionMeta: {
     marginTop: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   sessionMetaText: {
     fontSize: 13,

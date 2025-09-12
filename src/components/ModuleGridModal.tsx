@@ -47,7 +47,7 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
     switch (category) {
       case 'disorder': return '#FF6B6B'; // Red for disorders
       case 'wellness': return '#4ECDC4'; // Teal for wellness
-      case 'skill': return '#45B7D1'; // Blue for skills
+      case 'skill': return '#9B59B6'; // Purple for skills
       default: return '#8e8e93'; // Gray fallback
     }
   };

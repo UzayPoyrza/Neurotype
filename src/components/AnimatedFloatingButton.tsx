@@ -62,10 +62,15 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
   const textOpacity = useRef(new Animated.Value(0)).current;
   const iconScale = useRef(new Animated.Value(1)).current;
 
-  // Initialize position
+  // Initialize position only on first mount
+  const [isInitialized, setIsInitialized] = useState(false);
+  
   useEffect(() => {
-    pan.setValue(corners[currentCorner]);
-  }, []);
+    if (!isInitialized) {
+      pan.setValue(corners[currentCorner]);
+      setIsInitialized(true);
+    }
+  }, [isInitialized]);
 
   // Animate to pill mode
   useEffect(() => {

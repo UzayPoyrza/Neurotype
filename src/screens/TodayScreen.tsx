@@ -32,6 +32,7 @@ export const TodayScreen: React.FC = () => {
   const [showRecommendationInfo, setShowRecommendationInfo] = useState(false);
   const [scrollY, setScrollY] = useState(0);
   const [isPillMode, setIsPillMode] = useState(false);
+  const [lastFocusTime, setLastFocusTime] = useState(0);
   
   // Animation refs - simplified to avoid native driver conflicts
   const heroCardScale = useRef(new Animated.Value(1)).current;
@@ -53,22 +54,43 @@ export const TodayScreen: React.FC = () => {
     setCurrentScreen('today');
   }, [setCurrentScreen]);
 
+  // Robust pill trigger function
+  const triggerPillAnimation = useCallback(() => {
+    const currentTime = Date.now();
+    
+    // Prevent rapid successive triggers (debounce)
+    if (currentTime - lastFocusTime < 500) {
+      return;
+    }
+    
+    setLastFocusTime(currentTime);
+    setIsPillMode(false);
+    
+    // Start timer for pill mode (only in today view)
+    if (viewMode === 'today') {
+      const timer = setTimeout(() => {
+        setIsPillMode(true);
+      }, 1500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [viewMode, lastFocusTime]);
+
   // Pill mode logic - trigger when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      // Reset pill mode when screen comes into focus
-      setIsPillMode(false);
-      
-      // Start timer for pill mode (only in today view)
-      if (viewMode === 'today') {
-        const timer = setTimeout(() => {
-          setIsPillMode(true);
-        }, 1500);
-
-        return () => clearTimeout(timer);
-      }
-    }, [viewMode])
+      triggerPillAnimation();
+    }, [triggerPillAnimation])
   );
+
+  // Fallback: Also trigger on viewMode changes (for roadmap navigation)
+  useEffect(() => {
+    if (viewMode === 'today') {
+      triggerPillAnimation();
+    } else {
+      setIsPillMode(false);
+    }
+  }, [viewMode, triggerPillAnimation]);
 
   // Auto-hide pill after 3 seconds
   useEffect(() => {

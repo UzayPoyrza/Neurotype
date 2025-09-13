@@ -27,7 +27,7 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
   onClose,
 }) => {
   const { width } = Dimensions.get('window');
-  const cardWidth = (width - 60) / 2; // 2 columns with padding
+  const cardWidth = (width - 48) / 2; // 2 columns with tighter padding
 
   const handleModuleSelect = (moduleId: string) => {
     onModuleSelect(moduleId);
@@ -43,25 +43,35 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
     }
   };
 
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'disorder': return '#FF6B6B'; // Red for disorders
+      case 'wellness': return '#4ECDC4'; // Teal for wellness
+      case 'skill': return '#9B59B6'; // Purple for skills
+      default: return '#8e8e93'; // Gray fallback
+    }
+  };
+
   return (
     <Modal
       visible={isVisible}
       animationType="slide"
-      presentationStyle="pageSheet"
+      presentationStyle="formSheet"
       onRequestClose={onClose}
     >
       <View style={styles.modalContainer}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Choose Your Journey</Text>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>Choose Your Journey</Text>
+            <Text style={styles.subtitle}>
+              Select a mental health focus area for your personalized roadmap
+            </Text>
+          </View>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Text style={styles.closeText}>✕</Text>
           </TouchableOpacity>
         </View>
-
-        <Text style={styles.subtitle}>
-          Select a mental health focus area for your personalized roadmap
-        </Text>
 
         {/* Module Grid */}
         <ScrollView 
@@ -78,8 +88,7 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
                 style={[
                   styles.moduleCard,
                   { width: cardWidth },
-                  isSelected && styles.selectedCard,
-                  { borderColor: module.color }
+                  isSelected && styles.selectedCard
                 ]}
                 onPress={() => handleModuleSelect(module.id)}
                 activeOpacity={0.8}
@@ -93,18 +102,18 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
 
                 {/* Selected Badge */}
                 {isSelected && (
-                  <View style={[styles.selectedBadge, { backgroundColor: module.color }]}>
+                  <View style={[styles.selectedBadge, { backgroundColor: '#007AFF' }]}>
                     <Text style={styles.selectedBadgeText}>✓</Text>
                   </View>
                 )}
 
                 {/* Module Info */}
                 <View style={styles.moduleContent}>
-                  <Text style={[styles.moduleTitle, isSelected && styles.selectedTitle]}>
+                  <Text style={[styles.moduleTitle, isSelected && styles.selectedTitle]} numberOfLines={2} ellipsizeMode="tail">
                     {module.title}
                   </Text>
                   
-                  <Text style={styles.moduleDescription} numberOfLines={2}>
+                  <Text style={styles.moduleDescription} numberOfLines={2} ellipsizeMode="tail">
                     {module.description}
                   </Text>
                   
@@ -113,8 +122,8 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
                       {module.meditationCount} sessions
                     </Text>
                     
-                    <View style={[styles.categoryBadge, { backgroundColor: `${module.color}20` }]}>
-                      <Text style={[styles.categoryText, { color: module.color }]}>
+                    <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(module.category) }]}>
+                      <Text style={styles.categoryText}>
                         {module.category}
                       </Text>
                     </View>
@@ -132,126 +141,154 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
 const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.health.container.backgroundColor,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingHorizontal: 20,
     paddingTop: 60,
-    paddingBottom: 20,
-    borderBottomWidth: theme.borders.width.normal,
-    borderBottomColor: theme.colors.border,
+    paddingBottom: 16,
+    borderBottomWidth: 0,
+    borderBottomColor: 'transparent',
+  },
+  headerContent: {
+    flex: 1,
+    marginRight: 16,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: theme.colors.text.primary,
-    fontFamily: theme.typography.fontFamily,
+    color: '#000000',
+    marginBottom: 4,
   },
   closeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: theme.colors.surface,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#e5e5ea',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.border,
+    borderWidth: 0,
+    borderColor: 'transparent',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   closeText: {
-    fontSize: 16,
-    color: theme.colors.text.secondary,
-    fontWeight: 'bold',
+    fontSize: 18,
+    color: '#000000',
+    fontWeight: '600',
   },
   subtitle: {
-    fontSize: 14,
-    color: theme.colors.text.secondary,
-    textAlign: 'center',
-    marginHorizontal: 20,
-    marginTop: 8,
-    marginBottom: 24,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 15,
+    color: '#8e8e93',
+    textAlign: 'left',
+    marginTop: 0,
+    marginBottom: 0,
+    fontWeight: '400',
+    lineHeight: 20,
   },
   scrollView: {
     flex: 1,
   },
   gridContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
+    paddingTop: 8,
     paddingBottom: 40,
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
   moduleCard: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
-    borderWidth: theme.borders.width.thick,
-    marginBottom: 16,
-    shadowColor: theme.colors.shadow,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    borderWidth: 0,
+    borderColor: 'transparent',
+    marginBottom: 12,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 4,
+    elevation: 2,
     overflow: 'hidden',
     position: 'relative',
+    height: 180,
+    justifyContent: 'space-between',
   },
   selectedCard: {
-    borderWidth: 3,
+    borderWidth: 2,
+    borderColor: '#007AFF',
     shadowOpacity: 0.2,
     shadowRadius: 8,
-    elevation: 8,
+    elevation: 6,
+    transform: [{ scale: 1.02 }],
   },
   colorIndicator: {
     height: 60,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
+    position: 'relative',
   },
   categoryIcon: {
-    fontSize: 24,
+    fontSize: 28,
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   selectedBadge: {
     position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    top: 6,
+    right: 6,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: theme.colors.surface,
-    zIndex: 1,
+    borderWidth: 3,
+    borderColor: '#ffffff',
+    zIndex: 2,
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    elevation: 6,
   },
   selectedBadgeText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: theme.colors.surface,
-  },
-  moduleContent: {
-    padding: 16,
-    paddingTop: 0,
-  },
-  moduleTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: theme.colors.text.primary,
-    marginBottom: 8,
+    color: '#ffffff',
+  },
+  moduleContent: {
+    padding: 12,
+    paddingTop: 0,
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  moduleTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 6,
     textAlign: 'center',
-    fontFamily: theme.typography.fontFamily,
+    lineHeight: 18,
+    height: 36,
   },
   selectedTitle: {
-    color: theme.colors.primary,
+    color: '#007AFF',
   },
   moduleDescription: {
     fontSize: 12,
-    color: theme.colors.text.secondary,
+    color: '#8e8e93',
     textAlign: 'center',
     lineHeight: 16,
-    marginBottom: 12,
-    fontFamily: theme.typography.fontFamily,
+    marginBottom: 8,
+    fontWeight: '400',
+    height: 32,
   },
   moduleFooter: {
     flexDirection: 'row',
@@ -259,20 +296,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sessionCount: {
-    fontSize: 11,
-    color: theme.colors.text.secondary,
-    fontWeight: '600',
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 12,
+    color: '#8e8e93',
+    fontWeight: '500',
   },
   categoryBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 10,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
   categoryText: {
     fontSize: 10,
     fontWeight: '600',
     textTransform: 'capitalize',
-    fontFamily: theme.typography.fontFamily,
+    color: '#ffffff',
   },
 });

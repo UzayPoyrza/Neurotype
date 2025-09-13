@@ -1,6 +1,7 @@
 import React, { useRef, useImperativeHandle, forwardRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, PanResponder } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
 import { SpotifyFilterBar, FilterCategory, FilterSelection } from './SpotifyFilterBar';
 
@@ -44,6 +45,8 @@ export const ExploreScreenNav = forwardRef<ExploreScreenNavRef, ExploreScreenNav
   isSearchFocused = false
 }, ref) => {
   const navigation = useNavigation();
+  const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
+  const [elevatedBackgroundColor, setElevatedBackgroundColor] = React.useState('#f2f2f7');
   const revealTranslateY = useRef(new Animated.Value(0)).current;
   const isAnimating = useRef(false);
   const lastScrollY = useRef(0);
@@ -184,6 +187,10 @@ export const ExploreScreenNav = forwardRef<ExploreScreenNavRef, ExploreScreenNav
     snapToNearest,
   }));
 
+  React.useEffect(() => {
+    setElevatedBackgroundColor(globalBackgroundColor);
+  }, [globalBackgroundColor]);
+
   const handleBackPress = () => {
     if (onBackPress) {
       onBackPress();
@@ -198,6 +205,7 @@ export const ExploreScreenNav = forwardRef<ExploreScreenNavRef, ExploreScreenNav
       <Animated.View 
         style={[
           styles.revealBar,
+          { backgroundColor: elevatedBackgroundColor },
           {
             transform: [{ translateY: revealTranslateY }],
           }
@@ -264,7 +272,7 @@ export const ExploreScreenNav = forwardRef<ExploreScreenNavRef, ExploreScreenNav
       </Animated.View>
 
       {/* TopShell - Always visible and in front */}
-      <Animated.View style={styles.topShell}>
+      <Animated.View style={[styles.topShell, { backgroundColor: elevatedBackgroundColor }]}>
         <View style={styles.topShellContent}>
           {/* Status bar padding only - no interactive elements */}
         </View>
@@ -291,7 +299,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   topShell: {
-    backgroundColor: '#ffffff',
+    // backgroundColor set dynamically via globalBackgroundColor
     height: 60, // Fixed height for status bar + padding
     position: 'absolute',
     top: 0,
@@ -308,19 +316,22 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: theme.borders.width.thick,
-    backgroundColor: theme.colors.primary,
+    height: 1,
+    backgroundColor: '#e0e0e0',
   },
   revealBar: {
-    backgroundColor: '#ffffff',
-    borderBottomWidth: theme.borders.width.thick,
-    borderBottomColor: theme.colors.primary,
+    // backgroundColor set dynamically via globalBackgroundColor
     height: 120, // Increased height to accommodate filter bar
     position: 'absolute',
     top: 60, // Start below TopShell
     left: 0,
     right: 0,
     zIndex: 1000, // Below TopShell
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3, // Android shadow
   },
   searchContainer: {
     flex: 1,

@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Switch, ScrollView, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { InstagramStyleScreen } from '../components/InstagramStyleScreen';
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
 
@@ -15,14 +14,25 @@ export const SettingsScreen: React.FC = () => {
     subscriptionType,
     setSubscriptionType,
   } = useStore();
+  const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
+  const setCurrentScreen = useStore(state => state.setCurrentScreen);
+
+  // Set screen context when component mounts
+  React.useEffect(() => {
+    setCurrentScreen('settings');
+  }, [setCurrentScreen]);
 
   return (
-    <InstagramStyleScreen 
-      title="Settings"
-      showBackButton={true}
-      onBackPress={() => navigation.goBack()}
-    >
-      <View style={styles.content}>
+    <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Text style={styles.backButtonText}>← Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Settings</Text>
+      </View>
+
+      <ScrollView style={[styles.scrollView, { backgroundColor: globalBackgroundColor }]} contentContainerStyle={styles.content}>
         {/* Notifications */}
         <View style={styles.settingSection}>
           <Text style={styles.sectionTitle}>Notifications</Text>
@@ -35,7 +45,7 @@ export const SettingsScreen: React.FC = () => {
             <Switch
               value={reminderEnabled}
               onValueChange={toggleReminder}
-              trackColor={{ false: '#e5e7eb', true: '#3b82f6' }}
+              trackColor={{ false: '#e0e0e0', true: '#007AFF' }}
               thumbColor={reminderEnabled ? '#ffffff' : '#ffffff'}
             />
           </View>
@@ -53,7 +63,7 @@ export const SettingsScreen: React.FC = () => {
             <Switch
               value={darkThemeEnabled}
               onValueChange={toggleDarkTheme}
-              trackColor={{ false: '#e5e7eb', true: '#3b82f6' }}
+              trackColor={{ false: '#e0e0e0', true: '#007AFF' }}
               thumbColor={darkThemeEnabled ? '#ffffff' : '#ffffff'}
             />
           </View>
@@ -99,124 +109,165 @@ export const SettingsScreen: React.FC = () => {
             </Text>
           </View>
         </View>
-      </View>
-    </InstagramStyleScreen>
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f2f2f7',
+  },
+  header: {
+    backgroundColor: '#ffffff',
+    paddingTop: 60,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#f2f2f7',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    marginBottom: 16,
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#007AFF',
+  },
+  headerTitle: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#000000',
+    textAlign: 'center',
+  },
+  scrollView: {
+    flex: 1,
+    backgroundColor: '#f2f2f7',
+  },
   content: {
-    ...theme.common.content,
+    padding: 20,
+    paddingBottom: 100,
   },
   settingSection: {
-    marginBottom: theme.spacing.xxxl,
+    marginBottom: 32,
   },
   sectionTitle: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.primary,
-    marginBottom: theme.spacing.lg,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#000000',
+    marginBottom: 16,
   },
   settingItem: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    marginHorizontal: 12,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borders.radius.lg,
-    padding: theme.spacing.lg,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.primary,
-    ...theme.shadows.small,
-    marginBottom: theme.spacing.md,
   },
   settingInfo: {
     flex: 1,
-    marginRight: theme.spacing.md,
+    marginRight: 16,
   },
   settingLabel: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.primary,
-    marginBottom: theme.spacing.xs,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 4,
   },
   settingDescription: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.secondary,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 15,
+    color: '#8e8e93',
   },
   subscriptionCard: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borders.radius.lg,
-    padding: theme.spacing.xl,
-    borderWidth: theme.borders.width.thick,
-    borderColor: theme.colors.primary,
-    ...theme.shadows.medium,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    marginHorizontal: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   subscriptionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing.md,
+    marginBottom: 12,
   },
   subscriptionTitle: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 19,
+    fontWeight: '700',
+    color: '#000000',
   },
   subscriptionStatus: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.success,
-    backgroundColor: theme.colors.background,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.borders.radius.md,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.success,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#34c759',
+    backgroundColor: '#f2f2f7',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#34c759',
   },
   subscriptionDescription: {
-    fontSize: theme.typography.sizes.md,
-    color: theme.colors.secondary,
+    fontSize: 15,
+    color: '#8e8e93',
     lineHeight: 20,
-    marginBottom: theme.spacing.lg,
-    fontFamily: theme.typography.fontFamily,
+    marginBottom: 16,
   },
   upgradeButton: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.borders.radius.md,
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.lg,
+    backgroundColor: '#007AFF',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     alignItems: 'center',
-    ...theme.shadows.small,
   },
   upgradeButtonText: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.surface,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#ffffff',
   },
   aboutCard: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borders.radius.lg,
-    padding: theme.spacing.lg,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.primary,
-    ...theme.shadows.small,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    marginHorizontal: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   aboutTitle: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.primary,
-    marginBottom: theme.spacing.sm,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 8,
   },
   aboutDescription: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.secondary,
-    lineHeight: 18,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 15,
+    color: '#8e8e93',
+    lineHeight: 20,
   },
 });

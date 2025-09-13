@@ -1,415 +1,313 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useStore } from '../store/useStore';
-import { Sparkline } from '../components/Sparkline';
 import { theme } from '../styles/theme';
-import { InstagramStyleScreen } from '../components/InstagramStyleScreen';
+import { mentalHealthModules } from '../data/modules';
+
+// Helper function to get module color by ID
+const getModuleColor = (moduleId: string): string => {
+  const module = mentalHealthModules.find(m => m.id === moduleId);
+  return module?.color || theme.colors.primary;
+};
+
+// Helper function to get current date info
+const getCurrentDateInfo = () => {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  
+  // Get week dates (Monday to Sunday)
+  const startOfWeek = new Date(today);
+  const day = startOfWeek.getDay();
+  const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+  startOfWeek.setDate(diff);
+  
+  const weekDates = [];
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(startOfWeek);
+    date.setDate(startOfWeek.getDate() + i);
+    weekDates.push(date);
+  }
+  
+  return { today, weekDates };
+};
+
+// Calendar component for meditation tracking
+const MeditationCalendar: React.FC = () => {
+  const userProgress = useStore(state => state.userProgress);
+  const { today, weekDates } = getCurrentDateInfo();
+  
+  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  
+  // Mock data for completed sessions with module info
+  // In a real app, this would come from your store
+  const getSessionForDate = (date: Date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    // Mock: assume some sessions were completed with different modules
+    const mockSessions: { [key: string]: string } = {
+      [new Date(Date.now() - 86400000 * 2).toISOString().split('T')[0]]: 'anxiety', // 2 days ago
+      [new Date(Date.now() - 86400000 * 1).toISOString().split('T')[0]]: 'mindfulness', // yesterday
+      [today.toISOString().split('T')[0]]: 'stress', // today
+    };
+    return mockSessions[dateStr];
+  };
+  
+  return (
+    <View style={styles.calendarContainer}>
+      <View style={styles.calendarHeader}>
+        {dayNames.map((day, index) => (
+          <View key={day} style={styles.dayHeader}>
+            <Text style={styles.dayHeaderText}>{day}</Text>
+            <Text style={styles.dayNumber}>{weekDates[index].getDate()}</Text>
+          </View>
+        ))}
+      </View>
+      
+      <View style={styles.calendarBody}>
+        {weekDates.map((date, index) => {
+          const completedModule = getSessionForDate(date);
+          const isToday = date.toDateString() === today.toDateString();
+          
+          return (
+            <View key={index} style={[styles.dayCell, isToday && styles.todayCell]}>
+              {completedModule && (
+                <View 
+                  style={[
+                    styles.checkMark,
+                    { backgroundColor: getModuleColor(completedModule) }
+                  ]}
+                >
+                  <Text style={styles.checkMarkText}>✓</Text>
+                </View>
+              )}
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+};
 
 export const ProgressScreen: React.FC = () => {
   const userProgress = useStore(state => state.userProgress);
+  const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
+  const setCurrentScreen = useStore(state => state.setCurrentScreen);
+
+  // Set screen context when component mounts
+  React.useEffect(() => {
+    setCurrentScreen('progress');
+  }, [setCurrentScreen]);
+  const { today } = getCurrentDateInfo();
 
   // Calculate stats
   const totalSessions = userProgress.sessionDeltas.length;
-  const recentDeltas = userProgress.sessionDeltas.slice(-7);
-  const avgDelta = recentDeltas.length > 0 
-    ? recentDeltas.reduce((sum, delta) => sum + (delta.before - delta.after), 0) / recentDeltas.length
-    : 0;
+  const currentStreak = userProgress.streak;
 
-  // Calculate weekly progress
-  const weeklySessions = userProgress.sessionDeltas.slice(-7);
-  const weeklyAvgDelta = weeklySessions.length > 0 
-    ? weeklySessions.reduce((sum, delta) => sum + (delta.before - delta.after), 0) / weeklySessions.length
-    : 0;
-
-  // Calculate monthly progress
-  const monthlySessions = userProgress.sessionDeltas.slice(-30);
-  const monthlyAvgDelta = monthlySessions.length > 0 
-    ? monthlySessions.reduce((sum, delta) => sum + (delta.before - delta.after), 0) / monthlySessions.length
-    : 0;
+  // Format date for header
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      weekday: 'short'
+    });
+  };
 
   return (
-    <InstagramStyleScreen title="Progress">
-      <View style={styles.content}>
-          {/* Form-like Header */}
-          <View style={styles.formHeader}>
-            <View style={styles.titleField}>
-              <View style={styles.infoIcon}>
-                <Text style={styles.infoText}>i</Text>
-              </View>
-              <Text style={styles.titlePlaceholder}>Progress Report</Text>
-              <View style={styles.checkButton}>
-                <Text style={styles.checkText}>✓</Text>
-              </View>
-            </View>
-            
-            <View style={styles.descriptionField}>
-              <Text style={styles.descriptionPlaceholder}>Your meditation journey analytics</Text>
-            </View>
-          </View>
-
-          {/* Overall Stats */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>
-              Overall Progress
-            </Text>
-            
-            <View style={styles.statsGrid}>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>
-                  {totalSessions}
-                </Text>
-                <Text style={styles.statLabel}>Total Sessions</Text>
-              </View>
-              
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>
-                  {userProgress.streak}
-                </Text>
-                <Text style={styles.statLabel}>Day Streak</Text>
-              </View>
-              
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>
-                  {avgDelta > 0 ? avgDelta.toFixed(1) : '0'}
-                </Text>
-                <Text style={styles.statLabel}>Avg Reduction</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Weekly Progress */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>
-              This Week
-            </Text>
-            
-            <View style={styles.weeklyStats}>
-              <View style={styles.weeklyItem}>
-                <Text style={styles.weeklyLabel}>Sessions</Text>
-                <Text style={styles.weeklyValue}>{weeklySessions.length}</Text>
-              </View>
-              
-              <View style={styles.weeklyItem}>
-                <Text style={styles.weeklyLabel}>Avg Reduction</Text>
-                <Text style={styles.weeklyValue}>
-                  {weeklyAvgDelta > 0 ? weeklyAvgDelta.toFixed(1) : '0'} pts
-                </Text>
-              </View>
-              
-              <View style={styles.weeklyItem}>
-                <Text style={styles.weeklyLabel}>Best Session</Text>
-                <Text style={styles.weeklyValue}>
-                  {weeklySessions.length > 0 
-                    ? Math.max(...weeklySessions.map(d => d.before - d.after))
-                    : '0'} pts
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Monthly Progress */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>
-              This Month
-            </Text>
-            
-            <View style={styles.monthlyStats}>
-              <View style={styles.monthlyItem}>
-                <Text style={styles.monthlyLabel}>Sessions</Text>
-                <Text style={styles.monthlyValue}>{monthlySessions.length}</Text>
-              </View>
-              
-              <View style={styles.monthlyItem}>
-                <Text style={styles.monthlyLabel}>Avg Reduction</Text>
-                <Text style={styles.monthlyValue}>
-                  {monthlyAvgDelta > 0 ? monthlyAvgDelta.toFixed(1) : '0'} pts
-                </Text>
-              </View>
-              
-              <View style={styles.monthlyItem}>
-                <Text style={styles.monthlyLabel}>Consistency</Text>
-                <Text style={styles.monthlyValue}>
-                  {monthlySessions.length > 0 
-                    ? Math.round((monthlySessions.length / 30) * 100)
-                    : '0'}%
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Trend Chart */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>
-              Anxiety Reduction Trend
-            </Text>
-            
-            {userProgress.sessionDeltas.length > 0 ? (
-              <View>
-                <Sparkline data={userProgress.sessionDeltas} width={300} height={80} />
-                <View style={styles.trendInfo}>
-                  <Text style={styles.trendLabel}>
-                    Last 7 sessions
-                  </Text>
-                  <Text style={styles.trendValue}>
-                    {avgDelta > 0 ? '↓' : '→'} {Math.abs(avgDelta).toFixed(1)} pts avg
-                  </Text>
-                </View>
-              </View>
-            ) : (
-              <Text style={styles.emptyText}>
-                Complete your first session to see your progress trend
-              </Text>
-            )}
-          </View>
-
-          {/* Session History */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>
-              Recent Sessions
-            </Text>
-            
-            {userProgress.sessionDeltas.length > 0 ? (
-              <View style={styles.sessionHistory}>
-                {userProgress.sessionDeltas.slice(-5).reverse().map((session, index) => (
-                  <View key={index} style={styles.sessionItem}>
-                    <View style={styles.sessionDate}>
-                      <Text style={styles.sessionDateText}>
-                        {new Date(session.date).toLocaleDateString('en-US', { 
-                          month: 'short', 
-                          day: 'numeric' 
-                        })}
-                      </Text>
-                    </View>
-                    <View style={styles.sessionScores}>
-                      <Text style={styles.sessionScore}>
-                        {session.before} → {session.after}
-                      </Text>
-                      <Text style={styles.sessionReduction}>
-                        -{session.before - session.after} pts
-                      </Text>
-                    </View>
-                  </View>
-                ))}
-              </View>
-            ) : (
-              <Text style={styles.emptyText}>
-                No sessions completed yet
-              </Text>
-            )}
-                  </View>
+    <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
+      {/* Sticky Header */}
+      <View style={[styles.stickyHeader, { backgroundColor: globalBackgroundColor }]}>
+        <Text style={styles.title}>Progress</Text>
       </View>
-    </InstagramStyleScreen>
+      
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+
+        {/* Streak Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>🔥 Streak</Text>
+            <Text style={styles.recordButton}>Record ✏️</Text>
+          </View>
+          
+          <View style={styles.streakContent}>
+            <Text style={styles.streakNumber}>{currentStreak}</Text>
+            <Text style={styles.streakUnit}>days</Text>
+            <Text style={styles.streakSubtext}>Keep it going!</Text>
+          </View>
+        </View>
+
+        {/* Sessions Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>📊 Sessions</Text>
+          </View>
+          
+          <View style={styles.sessionsContent}>
+            <View style={styles.sessionStat}>
+              <Text style={styles.sessionLabel}>Total</Text>
+              <Text style={styles.sessionValue}>{totalSessions}</Text>
+            </View>
+            
+            <View style={styles.sessionStat}>
+              <Text style={styles.sessionLabel}>This Week</Text>
+              <Text style={styles.sessionValue}>{Math.min(totalSessions, 7)}</Text>
+            </View>
+            
+            <View style={styles.sessionStat}>
+              <Text style={styles.sessionLabel}>This Month</Text>
+              <Text style={styles.sessionValue}>{Math.min(totalSessions, 30)}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Calendar Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>📅 This Week</Text>
+          </View>
+          
+          <MeditationCalendar />
+        </View>
+
+        {/* Feel Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>😊 Feel</Text>
+            <Text style={styles.recordButton}>Record ✏️</Text>
+          </View>
+          
+          <View style={styles.feelContent}>
+            <Text style={styles.feelPrompt}>How do you feel now?</Text>
+          </View>
+        </View>
+
+        {/* Bottom spacing */}
+        <View style={styles.bottomSpacing} />
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  content: {
-    ...theme.common.content,
+  ...theme.health, // Use global Apple Health styles
+  stickyHeader: {
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 5,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
   },
-  formHeader: {
-    marginBottom: 40,
+  scrollContent: {
+    paddingTop: 120, // Account for shorter sticky header height (same as Today page)
   },
-  titleField: {
+  recordButton: {
+    fontSize: 15,
+    color: '#8e8e93',
+    fontWeight: '400',
+  },
+  streakContent: {
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
+  streakNumber: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: '#000000',
+    lineHeight: 52,
+  },
+  streakUnit: {
+    fontSize: 17,
+    color: '#8e8e93',
+    fontWeight: '400',
+    marginTop: -4,
+  },
+  streakSubtext: {
+    fontSize: 15,
+    color: '#8e8e93',
+    fontWeight: '400',
+    marginTop: 8,
+  },
+  sessionsContent: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borders.radius.lg,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
-    borderWidth: theme.borders.width.thick,
-    borderColor: theme.colors.primary,
-    ...theme.shadows.medium,
+    paddingHorizontal: 16,
+    paddingBottom: 20,
   },
-  infoIcon: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: theme.spacing.md,
-  },
-  infoText: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.primary,
-    fontStyle: 'italic',
-  },
-  titlePlaceholder: {
+  sessionStat: {
     flex: 1,
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.secondary,
-    fontFamily: theme.typography.fontFamily,
+    alignItems: 'center',
   },
-  checkButton: {
+  sessionLabel: {
+    fontSize: 15,
+    color: '#8e8e93',
+    fontWeight: '400',
+    marginBottom: 4,
+  },
+  sessionValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  calendarContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  dayHeader: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  dayHeaderText: {
+    fontSize: 13,
+    color: '#8e8e93',
+    fontWeight: '400',
+    marginBottom: 4,
+  },
+  dayNumber: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000000',
+  },
+  calendarBody: {
+    flexDirection: 'row',
+    height: 40,
+  },
+  dayCell: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  todayCell: {
+    backgroundColor: '#f2f2f7',
+    borderRadius: 8,
+  },
+  checkMark: {
     width: 24,
     height: 24,
-    borderRadius: theme.borders.radius.sm,
-    backgroundColor: theme.colors.success,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.primary,
+    borderRadius: 12,
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
   },
-  checkText: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.primary,
+  checkMarkText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#ffffff',
   },
-  descriptionField: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borders.radius.lg,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
-    borderWidth: theme.borders.width.thick,
-    borderColor: theme.colors.primary,
-    ...theme.shadows.medium,
-    marginTop: theme.spacing.sm,
-    marginLeft: theme.spacing.xl,
+  feelContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
   },
-  descriptionPlaceholder: {
-    fontSize: theme.typography.sizes.md,
-    color: theme.colors.secondary,
-    fontFamily: theme.typography.fontFamily,
-  },
-  card: {
-    ...theme.common.card,
-    marginBottom: theme.spacing.xxl,
-  },
-  cardTitle: {
-    fontSize: theme.typography.sizes.xl,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.primary,
-    marginBottom: theme.spacing.xl,
-    fontFamily: theme.typography.fontFamily,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  statItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  statValue: {
-    fontSize: theme.typography.sizes.xxl,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.primary,
-    marginBottom: theme.spacing.sm,
-    fontFamily: theme.typography.fontFamily,
-  },
-  statLabel: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.secondary,
+  feelPrompt: {
+    fontSize: 17,
+    color: '#8e8e93',
+    fontWeight: '400',
     textAlign: 'center',
-    fontWeight: theme.typography.weights.semibold,
-    fontFamily: theme.typography.fontFamily,
   },
-  weeklyStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  weeklyItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  weeklyLabel: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.secondary,
-    marginBottom: theme.spacing.xs,
-    fontWeight: theme.typography.weights.semibold,
-    fontFamily: theme.typography.fontFamily,
-  },
-  weeklyValue: {
-    fontSize: theme.typography.sizes.xl,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
-  },
-  monthlyStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  monthlyItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  monthlyLabel: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.secondary,
-    marginBottom: theme.spacing.xs,
-    fontWeight: theme.typography.weights.semibold,
-    fontFamily: theme.typography.fontFamily,
-  },
-  monthlyValue: {
-    fontSize: theme.typography.sizes.xl,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
-  },
-  trendInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: theme.spacing.lg,
-  },
-  trendLabel: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.secondary,
-    fontWeight: theme.typography.weights.semibold,
-    fontFamily: theme.typography.fontFamily,
-  },
-  trendValue: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
-  },
-  sessionHistory: {
-    gap: theme.spacing.lg,
-  },
-  sessionItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: theme.spacing.md,
-    borderBottomWidth: theme.borders.width.normal,
-    borderBottomColor: theme.colors.disabled,
-  },
-  sessionDate: {
-    flex: 1,
-  },
-  sessionDateText: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
-  },
-  sessionScores: {
-    alignItems: 'flex-end',
-  },
-  sessionScore: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.secondary,
-    marginBottom: theme.spacing.xs,
-    fontFamily: theme.typography.fontFamily,
-    fontWeight: theme.typography.weights.semibold,
-  },
-  sessionReduction: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
-  },
-  emptyText: {
-    color: theme.colors.secondary,
-    textAlign: 'center',
-    paddingVertical: theme.spacing.xxl,
-    fontStyle: 'italic',
-    fontSize: theme.typography.sizes.sm,
-    fontFamily: theme.typography.fontFamily,
-    fontWeight: theme.typography.weights.semibold,
+  bottomSpacing: {
+    height: 120,
   },
 }); 

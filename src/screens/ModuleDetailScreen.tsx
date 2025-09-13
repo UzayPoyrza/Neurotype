@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
@@ -23,9 +23,34 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
   const route = useRoute<ModuleDetailRouteProp>();
   const navigation = useNavigation<ModuleDetailNavigationProp>();
   const setActiveSession = useStore(state => state.setActiveSession);
+  const setCurrentScreen = useStore(state => state.setCurrentScreen);
+  const { prerenderedModuleBackgrounds } = require('../store/useStore');
   
   const { moduleId } = route.params;
   const module = mentalHealthModules.find(m => m.id === moduleId);
+  
+  // Local background color for this screen only
+  const [localBackgroundColor, setLocalBackgroundColor] = useState('#f2f2f7');
+
+  // Set screen context when component mounts
+  useEffect(() => {
+    setCurrentScreen('module-detail');
+  }, [setCurrentScreen]);
+
+  // Set local background color based on module
+  useEffect(() => {
+    if (module) {
+      const moduleColor = prerenderedModuleBackgrounds[moduleId] || module.color;
+      setLocalBackgroundColor(moduleColor);
+    }
+  }, [module, moduleId, prerenderedModuleBackgrounds]);
+
+  // Restore screen context when component unmounts
+  useEffect(() => {
+    return () => {
+      setCurrentScreen('explore');
+    };
+  }, [setCurrentScreen]);
   
   // Filter sessions based on module type
   const moduleSessions = useMemo(() => {
@@ -60,7 +85,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
 
   if (!module) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: '#f2f2f7' }]}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Text style={styles.backButtonText}>← Back</Text>
@@ -74,7 +99,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: localBackgroundColor }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -91,15 +116,6 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
 
       {/* Sessions List */}
       <View style={styles.content}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>
-            Guided Meditations
-          </Text>
-          <Text style={styles.sectionSubtitle}>
-            {moduleSessions.length} sessions available
-          </Text>
-        </View>
-
         <FlatList
           data={moduleSessions}
           renderItem={({ item }) => (
@@ -116,13 +132,15 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
         />
 
         {moduleSessions.length === 0 && (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>
-              Coming Soon
-            </Text>
-            <Text style={styles.emptySubtext}>
-              Meditations for {module.title} are being prepared
-            </Text>
+          <View style={styles.emptyStateContainer}>
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>
+                Coming Soon
+              </Text>
+              <Text style={styles.emptySubtext}>
+                Meditations for {module.title} are being prepared
+              </Text>
+            </View>
           </View>
         )}
       </View>
@@ -133,33 +151,33 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#f2f2f7',
   },
   header: {
-    backgroundColor: theme.colors.surface,
+    backgroundColor: '#ffffff',
     paddingTop: 60, // Account for status bar
-    paddingBottom: theme.spacing.xl,
-    paddingHorizontal: theme.spacing.lg,
-    borderBottomWidth: theme.borders.width.thick,
-    borderBottomColor: theme.colors.primary,
-    ...theme.shadows.medium,
+    paddingBottom: 24,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   backButton: {
     alignSelf: 'flex-start',
-    backgroundColor: theme.colors.background,
-    borderWidth: theme.borders.width.thick,
-    borderColor: theme.colors.primary,
-    borderRadius: theme.borders.radius.lg,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
-    marginBottom: theme.spacing.lg,
-    ...theme.shadows.medium,
+    backgroundColor: '#f2f2f7',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    marginBottom: 20,
   },
   backButtonText: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#007AFF',
   },
   headerContent: {
     alignItems: 'center',
@@ -169,83 +187,90 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    borderWidth: theme.borders.width.thick,
-    borderColor: theme.colors.primary,
+    borderWidth: 2,
+    borderColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: theme.spacing.lg,
-    ...theme.shadows.medium,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   moduleIconText: {
-    fontSize: theme.typography.sizes.xxl,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.primary,
-    textShadowColor: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#ffffff',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
   moduleTitle: {
-    fontSize: theme.typography.sizes.xxl,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#000000',
     textAlign: 'center',
-    marginBottom: theme.spacing.sm,
+    marginBottom: 8,
   },
   moduleDescription: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.medium,
-    color: theme.colors.secondary,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 17,
+    fontWeight: '400',
+    color: '#8e8e93',
     textAlign: 'center',
   },
   content: {
     flex: 1,
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.xl,
+    paddingHorizontal: 20,
+    paddingTop: 12,
   },
   sectionHeader: {
-    marginBottom: theme.spacing.xl,
+    marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: theme.typography.sizes.xl,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
-    marginBottom: theme.spacing.sm,
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#000000',
+    marginBottom: 8,
   },
   sectionSubtitle: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.medium,
-    color: theme.colors.secondary,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 17,
+    fontWeight: '400',
+    color: '#8e8e93',
   },
   listContainer: {
-    paddingBottom: theme.spacing.xl,
+    paddingBottom: 100,
+  },
+  emptyStateContainer: {
+    position: 'absolute',
+    top: 60,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 60,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borders.radius.lg,
-    borderWidth: theme.borders.width.thick,
-    borderColor: theme.colors.primary,
-    ...theme.shadows.medium,
+    paddingVertical: 40,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   emptyText: {
-    color: theme.colors.primary,
+    color: '#000000',
     textAlign: 'center',
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.semibold,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 19,
+    fontWeight: '600',
   },
   emptySubtext: {
-    color: theme.colors.secondary,
+    color: '#8e8e93',
     textAlign: 'center',
-    marginTop: theme.spacing.md,
-    fontSize: theme.typography.sizes.md,
-    fontFamily: theme.typography.fontFamily,
-    fontWeight: theme.typography.weights.medium,
+    marginTop: 12,
+    fontSize: 17,
+    fontWeight: '400',
   },
   errorContainer: {
     flex: 1,
@@ -253,9 +278,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   errorText: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 19,
+    fontWeight: '600',
+    color: '#000000',
   },
 });

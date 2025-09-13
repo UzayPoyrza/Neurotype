@@ -35,6 +35,9 @@ export const ExploreScreen: React.FC = () => {
   const navigation = useNavigation<ExploreScreenNavigationProp>();
   const addRecentModule = useStore(state => state.addRecentModule);
   const recentModuleIds = useStore(state => state.recentModuleIds);
+  const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
+  const setGlobalBackgroundColor = useStore(state => state.setGlobalBackgroundColor);
+  const setCurrentScreen = useStore(state => state.setCurrentScreen);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [selectedSort, setSelectedSort] = useState<string>('recents');
@@ -45,6 +48,11 @@ export const ExploreScreen: React.FC = () => {
   const [isShuffling, setIsShuffling] = useState(false);
   const moduleOpacity = useSharedValue(1);
   const moduleScale = useSharedValue(1);
+
+  // Set screen context when component mounts
+  useEffect(() => {
+    setCurrentScreen('explore');
+  }, [setCurrentScreen]);
 
   // Define filter categories for top nav pill filters
   const filterCategories: FilterCategory[] = [
@@ -108,10 +116,8 @@ export const ExploreScreen: React.FC = () => {
           } else if (bRecentIndex !== -1) {
             // Only b is recent
             return 1;
-          } else {
-            // Neither is recent, sort alphabetically
-            return a.title.localeCompare(b.title);
           }
+          return a.title.localeCompare(b.title);
         });
         break;
       case 'alphabetical':
@@ -132,6 +138,7 @@ export const ExploreScreen: React.FC = () => {
 
   const handleModulePress = (moduleId: string) => {
     addRecentModule(moduleId);
+    // Don't change global background color - let the detail screen handle its own background
     navigation.navigate('ModuleDetail', { moduleId });
   };
 
@@ -236,192 +243,214 @@ export const ExploreScreen: React.FC = () => {
   );
 
   return (
-    <ExploreScreenComponent 
-      titleComponent={titleComponent}
-      searchComponent={
-        <SearchBar
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholder="Search mental health modules..."
-          onFocus={() => setIsSearchFocused(true)}
-          onBlur={() => setIsSearchFocused(false)}
-        />
-      }
-      filterCategories={filterCategories}
-      onFilterSelectionChange={handleFilterSelectionChange}
-      filterSelection={undefined}
-      isSearchFocused={isSearchFocused}
-    >
-      <View style={styles.content}>
-        {/* Sorting Section */}
-        <View style={styles.sortingSection}>
-          <TouchableOpacity 
-            style={styles.sortingButton}
-            onPress={() => setShowSortModal(true)}
-          >
-            <View style={styles.sortingHeader}>
-              <Text style={styles.sortingArrow}>↓</Text>
-              <Text style={styles.sortingTitle}>
-                {selectedSort === 'recents' ? 'Recents' : 
-                 selectedSort === 'alphabetical' ? 'Alphabetical' : 
-                 'By Category'}
+    <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
+      <ExploreScreenComponent 
+        titleComponent={titleComponent}
+        searchComponent={
+          <SearchBar
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search mental health modules..."
+            onFocus={() => setIsSearchFocused(true)}
+            onBlur={() => setIsSearchFocused(false)}
+          />
+        }
+        filterCategories={filterCategories}
+        onFilterSelectionChange={handleFilterSelectionChange}
+        filterSelection={undefined}
+        isSearchFocused={isSearchFocused}
+      >
+        <View style={styles.content}>
+          {/* Sorting Section */}
+          <View style={styles.sortingCard}>
+            <TouchableOpacity 
+              style={styles.sortingButton}
+              onPress={() => setShowSortModal(true)}
+            >
+              <View style={styles.sortingHeader}>
+                <Text style={styles.sortingTitle}>
+                  {selectedSort === 'recents' ? '📚 Recents' : 
+                   selectedSort === 'alphabetical' ? '🔤 Alphabetical' : 
+                   '📂 By Category'}
+                </Text>
+                <Text style={styles.sortingArrow}>⌄</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {/* Module Grid */}
+          <Animated.View style={[styles.moduleGrid, moduleGridAnimatedStyle]}>
+            {/* Create rows of 2 modules each */}
+            {Array.from({ length: Math.ceil(filteredModules.length / 2) }, (_, rowIndex) => (
+              <View key={rowIndex} style={styles.moduleRow}>
+                {filteredModules.slice(rowIndex * 2, rowIndex * 2 + 2).map((module) => (
+                  <View key={module.id} style={styles.moduleCardWrapper}>
+                    <TouchableOpacity
+                      style={styles.moduleCard}
+                      onPress={() => handleModulePress(module.id)}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.moduleCardHeader}>
+                        <View style={[styles.moduleIndicator, { backgroundColor: module.color }]} />
+                        <Text style={styles.moduleCategory}>{module.category.toUpperCase()}</Text>
+                      </View>
+                      
+                      <Text style={styles.moduleTitle} numberOfLines={1} ellipsizeMode="tail">
+                        {module.title}
+                      </Text>
+                      <Text style={styles.moduleDescription} numberOfLines={2}>
+                        {module.description}
+                      </Text>
+                      
+                      <View style={styles.moduleFooter}>
+                        <Text style={styles.sessionCount}>
+                          {module.meditationCount} sessions
+                        </Text>
+                        <View style={styles.moduleArrow}>
+                          <Text style={styles.moduleArrowText}>→</Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            ))}
+          </Animated.View>
+
+          {/* Empty State */}
+          {filteredModules.length === 0 && (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>
+                No modules match your search
+              </Text>
+              <Text style={styles.emptySubtext}>
+                Try adjusting your search or category filter
               </Text>
             </View>
-          </TouchableOpacity>
-        </View>
+          )}
 
-        {/* Module Grid */}
-        <Animated.View style={[styles.moduleGrid, moduleGridAnimatedStyle]}>
-          {/* Create rows of 2 modules each */}
-          {Array.from({ length: Math.ceil(filteredModules.length / 2) }, (_, rowIndex) => (
-            <View key={rowIndex} style={styles.moduleRow}>
-              {filteredModules.slice(rowIndex * 2, rowIndex * 2 + 2).map((module) => (
-                <View key={module.id} style={styles.moduleCardWrapper}>
-                  <ModuleCard
-                    module={module}
-                    onPress={handleModulePress}
-                  />
-                </View>
-              ))}
-            </View>
-          ))}
-        </Animated.View>
-
-        {/* Empty State */}
-        {filteredModules.length === 0 && (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>
-              No modules match your search
-            </Text>
-            <Text style={styles.emptySubtext}>
-              Try adjusting your search or category filter
-            </Text>
-          </View>
-        )}
-
-        {/* Sort Modal */}
-        <Modal
-          visible={modalVisible}
-          animationType="none"
-          transparent={true}
-          onRequestClose={() => setShowSortModal(false)}
-        >
-          <View style={styles.modalContainer}>
-            <Animated.View 
-              style={[styles.modalOverlay, overlayAnimatedStyle]}
-            />
-            <TouchableOpacity 
-              style={styles.overlayTouchable}
-              activeOpacity={1}
-              onPress={() => setShowSortModal(false)}
-            />
-            <Animated.View 
-              style={[styles.sortModal, modalAnimatedStyle]} 
-              {...panResponder.panHandlers}
-            >
-              <View style={styles.sortModalHeader}>
-                <View style={styles.dragHandle} />
-                <Text style={styles.sortModalTitle}>Sort by</Text>
-              </View>
-              
-              <View style={styles.sortOptions}>
-                <TouchableOpacity 
-                  style={styles.sortOption}
-                  onPress={() => {
-                    if (selectedSort !== 'recents') {
-                      setShowSortModal(false);
-                      // Trigger shuffle after modal closes
-                      setTimeout(() => {
-                        setSelectedSort('recents');
-                        triggerShuffleAnimation();
-                      }, 250); // Wait for modal to close
-                    } else {
-                      setShowSortModal(false);
-                    }
-                  }}
-                >
-                  <Text style={[
-                    styles.sortOptionText,
-                    selectedSort === 'recents' && styles.sortOptionTextActive
-                  ]}>
-                    Recents
-                  </Text>
-                  {selectedSort === 'recents' && (
-                    <Text style={styles.checkMark}>✓</Text>
-                  )}
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.sortOption}
-                  onPress={() => {
-                    if (selectedSort !== 'alphabetical') {
-                      setShowSortModal(false);
-                      // Trigger shuffle after modal closes
-                      setTimeout(() => {
-                        setSelectedSort('alphabetical');
-                        triggerShuffleAnimation();
-                      }, 250); // Wait for modal to close
-                    } else {
-                      setShowSortModal(false);
-                    }
-                  }}
-                >
-                  <Text style={[
-                    styles.sortOptionText,
-                    selectedSort === 'alphabetical' && styles.sortOptionTextActive
-                  ]}>
-                    Alphabetical
-                  </Text>
-                  {selectedSort === 'alphabetical' && (
-                    <Text style={styles.checkMark}>✓</Text>
-                  )}
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.sortOption}
-                  onPress={() => {
-                    if (selectedSort !== 'category') {
-                      setShowSortModal(false);
-                      // Trigger shuffle after modal closes
-                      setTimeout(() => {
-                        setSelectedSort('category');
-                        triggerShuffleAnimation();
-                      }, 250); // Wait for modal to close
-                    } else {
-                      setShowSortModal(false);
-                    }
-                  }}
-                >
-                  <Text style={[
-                    styles.sortOptionText,
-                    selectedSort === 'category' && styles.sortOptionTextActive
-                  ]}>
-                    By Category
-                  </Text>
-                  {selectedSort === 'category' && (
-                    <Text style={styles.checkMark}>✓</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-              
+          {/* Sort Modal */}
+          <Modal
+            visible={modalVisible}
+            animationType="none"
+            transparent={true}
+            onRequestClose={() => setShowSortModal(false)}
+          >
+            <View style={styles.modalContainer}>
+              <Animated.View 
+                style={[styles.modalOverlay, overlayAnimatedStyle]}
+              />
               <TouchableOpacity 
-                style={styles.cancelButton}
+                style={styles.overlayTouchable}
+                activeOpacity={1}
                 onPress={() => setShowSortModal(false)}
+              />
+              <Animated.View 
+                style={[styles.sortModal, modalAnimatedStyle]} 
+                {...panResponder.panHandlers}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-            </Animated.View>
-          </View>
-        </Modal>
-      </View>
-    </ExploreScreenComponent>
+                <View style={styles.sortModalHeader}>
+                  <View style={styles.dragHandle} />
+                  <Text style={styles.sortModalTitle}>Sort by</Text>
+                </View>
+                
+                <View style={styles.sortOptions}>
+                  <TouchableOpacity 
+                    style={[styles.sortOption, selectedSort === 'recents' && styles.sortOptionActive]}
+                    onPress={() => {
+                      if (selectedSort !== 'recents') {
+                        setShowSortModal(false);
+                        setTimeout(() => {
+                          setSelectedSort('recents');
+                          triggerShuffleAnimation();
+                        }, 250);
+                      } else {
+                        setShowSortModal(false);
+                      }
+                    }}
+                  >
+                    <Text style={[
+                      styles.sortOptionText,
+                      selectedSort === 'recents' && styles.sortOptionTextActive
+                    ]}>
+                      📚 Recents
+                    </Text>
+                    {selectedSort === 'recents' && (
+                      <Text style={styles.checkMark}>✓</Text>
+                    )}
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={[styles.sortOption, selectedSort === 'alphabetical' && styles.sortOptionActive]}
+                    onPress={() => {
+                      if (selectedSort !== 'alphabetical') {
+                        setShowSortModal(false);
+                        setTimeout(() => {
+                          setSelectedSort('alphabetical');
+                          triggerShuffleAnimation();
+                        }, 250);
+                      } else {
+                        setShowSortModal(false);
+                      }
+                    }}
+                  >
+                    <Text style={[
+                      styles.sortOptionText,
+                      selectedSort === 'alphabetical' && styles.sortOptionTextActive
+                    ]}>
+                      🔤 Alphabetical
+                    </Text>
+                    {selectedSort === 'alphabetical' && (
+                      <Text style={styles.checkMark}>✓</Text>
+                    )}
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={[styles.sortOption, selectedSort === 'category' && styles.sortOptionActive]}
+                    onPress={() => {
+                      if (selectedSort !== 'category') {
+                        setShowSortModal(false);
+                        setTimeout(() => {
+                          setSelectedSort('category');
+                          triggerShuffleAnimation();
+                        }, 250);
+                      } else {
+                        setShowSortModal(false);
+                      }
+                    }}
+                  >
+                    <Text style={[
+                      styles.sortOptionText,
+                      selectedSort === 'category' && styles.sortOptionTextActive
+                    ]}>
+                      📂 By Category
+                    </Text>
+                    {selectedSort === 'category' && (
+                      <Text style={styles.checkMark}>✓</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+                
+                <TouchableOpacity 
+                  style={styles.cancelButton}
+                  onPress={() => setShowSortModal(false)}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            </View>
+          </Modal>
+
+          {/* Bottom spacing */}
+          <View style={styles.bottomSpacing} />
+        </View>
+      </ExploreScreenComponent>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  content: {
-    ...theme.common.content,
-  },
+  ...theme.health, // Use global Apple Health styles
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -433,29 +462,137 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
     fontFamily: theme.typography.fontFamily,
   },
-  sortingSection: {
-    marginBottom: theme.spacing.xl,
+  sortingCard: {
+    ...theme.health.card,
+    marginBottom: 20,
   },
   sortingButton: {
-    alignSelf: 'flex-start',
+    padding: 16,
   },
   sortingHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.sm,
-  },
-  sortingArrow: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
+    justifyContent: 'space-between',
   },
   sortingTitle: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000000',
   },
+  sortingArrow: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#8e8e93',
+  },
+  moduleGrid: {
+    gap: 12,
+  },
+  moduleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  moduleCardWrapper: {
+    flex: 1,
+    marginHorizontal: 6,
+  },
+  moduleCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    height: 140, // Fixed height for consistency
+    justifyContent: 'space-between', // Distribute content evenly
+  },
+  moduleCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8, // Reduced from 12
+  },
+  moduleIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  moduleCategory: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#8e8e93',
+    letterSpacing: 0.5,
+  },
+  moduleTitle: {
+    fontSize: 16, // Slightly smaller to fit better
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 4, // Reduced from 6
+    lineHeight: 20, // Add line height for better control
+  },
+  moduleDescription: {
+    fontSize: 12, // Slightly smaller
+    color: '#8e8e93',
+    fontWeight: '400',
+    lineHeight: 16, // Tighter line height
+    marginBottom: 8, // Reduced from 12
+    flex: 1, // Take available space
+  },
+  moduleFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 'auto', // Push to bottom
+  },
+  sessionCount: {
+    fontSize: 13,
+    color: '#8e8e93',
+    fontWeight: '500',
+  },
+  moduleArrow: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#f2f2f7',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  moduleArrowText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000000',
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 60,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    marginTop: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  emptyText: {
+    color: '#000000',
+    textAlign: 'center',
+    fontSize: 17,
+    fontWeight: '600',
+  },
+  emptySubtext: {
+    color: '#8e8e93',
+    textAlign: 'center',
+    marginTop: 8,
+    fontSize: 15,
+    fontWeight: '400',
+  },
+  bottomSpacing: {
+    height: 40,
+  },
+  // Modal styles
   modalContainer: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -476,122 +613,84 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   sortModal: {
-    backgroundColor: theme.colors.surface,
-    borderTopLeftRadius: theme.borders.radius.xl,
-    borderTopRightRadius: theme.borders.radius.xl,
-    borderWidth: theme.borders.width.thick,
-    borderBottomWidth: 0,
-    borderColor: theme.colors.primary,
-    ...theme.shadows.medium,
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
     maxHeight: '50%',
-    paddingBottom: 40, // Account for safe area
+    paddingBottom: 40,
   },
   sortModalHeader: {
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.lg,
-    paddingBottom: theme.spacing.lg,
-    borderBottomWidth: theme.borders.width.normal,
-    borderBottomColor: theme.colors.primary,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f2f2f7',
   },
   dragHandle: {
-    width: 48,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: theme.colors.primary,
-    opacity: 0.15,
-    marginBottom: theme.spacing.sm,
-  },
-  cancelButton: {
-    backgroundColor: theme.colors.background,
-    borderWidth: theme.borders.width.normal,
-    borderColor: '#ff4444',
-    borderRadius: theme.borders.radius.md,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.sm,
-    marginBottom: theme.spacing.lg,
-    alignSelf: 'center',
-    ...theme.shadows.small,
-  },
-  cancelButtonText: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.semibold,
-    color: '#ff4444',
-    fontFamily: theme.typography.fontFamily,
-    textAlign: 'center',
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#c7c7cc',
+    marginBottom: 16,
   },
   sortModalTitle: {
-    fontSize: theme.typography.sizes.xl,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000000',
   },
   sortOptions: {
-    paddingHorizontal: theme.spacing.lg,
+    paddingHorizontal: 20,
+    paddingTop: 8,
   },
   sortOption: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: theme.spacing.lg,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borders.radius.md,
-    paddingHorizontal: theme.spacing.lg,
-    marginVertical: theme.spacing.xs,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.primary,
-    ...theme.shadows.small,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f2f2f7',
+  },
+  sortOptionActive: {
+    backgroundColor: '#f2f2f7',
+    borderRadius: 12,
+    marginHorizontal: -12,
+    paddingHorizontal: 12,
+    borderBottomWidth: 0,
+    marginBottom: 4,
   },
   sortOptionText: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 17,
+    fontWeight: '400',
+    color: '#000000',
   },
   sortOptionTextActive: {
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.success,
+    fontWeight: '600',
+    color: '#007AFF',
   },
   checkMark: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.success,
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#007AFF',
   },
-  moduleGrid: {
-    gap: theme.spacing.md,
-    minHeight: 600, // Ensure enough height for web scrolling
+  cancelButton: {
+    backgroundColor: '#ff3b30',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    marginTop: 16,
+    marginHorizontal: 20,
+    alignSelf: 'center',
   },
-  moduleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: theme.spacing.md,
-  },
-  moduleCardWrapper: {
-    // No additional styles needed - ModuleCard handles its own sizing
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 60,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borders.radius.lg,
-    borderWidth: theme.borders.width.thick,
-    borderColor: theme.colors.primary,
-    ...theme.shadows.medium,
-    marginTop: theme.spacing.xl,
-  },
-  emptyText: {
-    color: theme.colors.primary,
+  cancelButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#ffffff',
     textAlign: 'center',
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.semibold,
-    fontFamily: theme.typography.fontFamily,
-  },
-  emptySubtext: {
-    color: theme.colors.secondary,
-    textAlign: 'center',
-    marginTop: theme.spacing.md,
-    fontSize: theme.typography.sizes.md,
-    fontFamily: theme.typography.fontFamily,
-    fontWeight: theme.typography.weights.medium,
   },
 }); 

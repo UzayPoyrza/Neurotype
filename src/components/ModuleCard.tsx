@@ -4,6 +4,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from '
 import { LinearGradient } from 'expo-linear-gradient';
 import { MentalHealthModule } from '../data/modules';
 import { theme } from '../styles/theme';
+import { prerenderedModuleBackgrounds } from '../store/useStore';
 
 interface ModuleCardProps {
   module: MentalHealthModule;
@@ -17,6 +18,9 @@ const cardWidth = (screenWidth - (theme.spacing.lg * 2) - (cardMargin * (cardsPe
 
 export const ModuleCard: React.FC<ModuleCardProps> = ({ module, onPress }) => {
   const scale = useSharedValue(1);
+  
+  // Use the subtle background color for the module card
+  const backgroundColor = prerenderedModuleBackgrounds[module.id] || module.color;
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
@@ -41,7 +45,7 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ module, onPress }) => {
   return (
     <Animated.View style={animatedStyle}>
       <TouchableOpacity
-        style={[styles.card, styles.touchArea, { backgroundColor: module.color }]}
+        style={[styles.card, styles.touchArea, { backgroundColor }]}
         onPress={() => onPress(module.id)}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
@@ -78,9 +82,9 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ module, onPress }) => {
         </View>
       </View>
       
-      {/* White gradient overlay for better text readability */}
+      {/* Subtle gradient overlay for better text readability */}
       <LinearGradient
-        colors={['rgba(255,255,255,0.45)', 'rgba(255,255,255,0.10)']}
+        colors={['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.05)']}
         style={styles.overlay}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}

@@ -34,8 +34,8 @@ export const DraggableFloatingButton: React.FC<DraggableFloatingButtonProps> = (
   onPress,
 }) => {
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-  const buttonSize = 72; // Larger button
-  const margin = 8; // Closer to corners
+  const buttonSize = 56; // Match play button size
+  const margin = 16; // Better spacing from corners
   
   // Corner positions - fixed to screen viewport, closer to corners
   const corners = {
@@ -156,12 +156,12 @@ export const DraggableFloatingButton: React.FC<DraggableFloatingButtonProps> = (
       {...panResponder.panHandlers}
     >
       <TouchableOpacity
-        style={[styles.floatingButton, { backgroundColor: `${backgroundColor}40` }]}
+        style={[styles.floatingButton, { backgroundColor: backgroundColor }]}
         onPress={onPress}
         activeOpacity={0.8}
         disabled={isDragging}
       >
-        <ChangeIcon size={24} color="rgba(0, 0, 0, 0.8)" />
+        <ChangeIcon size={20} color="#ffffff" />
       </TouchableOpacity>
     </Animated.View>
   );
@@ -170,23 +170,22 @@ export const DraggableFloatingButton: React.FC<DraggableFloatingButtonProps> = (
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    width: 72,
-    height: 72,
+    width: 56,
+    height: 56,
     zIndex: 1000, // Very high z-index to stay above everything
   },
   floatingButton: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.2)',
-    shadowColor: theme.colors.shadow,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 0,
+    borderColor: 'transparent',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 6,
     justifyContent: 'center',
     alignItems: 'center',
-    backdropFilter: 'blur(8px)',
   },
 });

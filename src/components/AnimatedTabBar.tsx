@@ -2,12 +2,14 @@ import React, { useRef } from 'react';
 import { View, TouchableOpacity, StyleSheet, Animated, Text } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { TodayIcon, ProgressIcon, ExploreIcon, ProfileIcon } from './icons';
+import { useStore } from '../store/useStore';
 
 export const AnimatedTabBar: React.FC<BottomTabBarProps> = ({ 
   state, 
   descriptors, 
   navigation 
 }) => {
+  const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const scaleAnimations = useRef<Animated.Value[]>(
     state.routes.map(() => new Animated.Value(1))
   ).current;
@@ -51,41 +53,65 @@ export const AnimatedTabBar: React.FC<BottomTabBarProps> = ({
       case 'Profile':
         return <ProfileIcon size={iconSize} color={color} focused={focused} />;
       default:
-        return <TodayIcon size={iconSize} color={color} focused={focused} />;
+        return null;
     }
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
+        const label = options.tabBarLabel !== undefined 
+          ? options.tabBarLabel 
+          : options.title !== undefined 
+          ? options.title 
+          : route.name;
+
         const isFocused = state.index === index;
 
-        const color = isFocused ? '#000000' : '#666666';
-        const size = 24;
+        const onPress = () => {
+          const event = navigation.emit({
+            type: 'tabPress',
+            target: route.key,
+            canPreventDefault: true,
+          });
+
+          if (!isFocused && !event.defaultPrevented) {
+            handleTabPress(route, index);
+          }
+        };
+
+        const onLongPress = () => {
+          navigation.emit({
+            type: 'tabLongPress',
+            target: route.key,
+          });
+        };
+
+        const iconColor = isFocused ? '#007AFF' : '#5a5a5a';
+        const textColor = isFocused ? '#000000' : '#5a5a5a';
 
         return (
           <TouchableOpacity
             key={route.key}
+            accessibilityRole="button"
+            accessibilityState={isFocused ? { selected: true } : {}}
+            accessibilityLabel={options.tabBarAccessibilityLabel}
+            testID={options.tabBarTestID}
+            onPress={onPress}
+            onLongPress={onLongPress}
             style={styles.tab}
-            onPress={() => handleTabPress(route, index)}
-            activeOpacity={0.7}
           >
-            <Animated.View
+            <Animated.View 
               style={[
                 styles.iconContainer,
-                {
-                  transform: [{ scale: scaleAnimations[index] }],
-                },
+                { transform: [{ scale: scaleAnimations[index] }] }
               ]}
             >
-              {getIcon(route.name, isFocused, color, size)}
+              {getIcon(route.name, isFocused, iconColor, 20)}
             </Animated.View>
-            <Text style={[
-              styles.label,
-              isFocused ? styles.focusedLabel : styles.unfocusedLabel,
-            ]}>
-              {route.name}
+            <Text style={[styles.label, { color: textColor }]}>
+              {label}
             </Text>
           </TouchableOpacity>
         );
@@ -97,12 +123,11 @@ export const AnimatedTabBar: React.FC<BottomTabBarProps> = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
-    borderTopWidth: 2,
-    borderTopColor: '#000000',
-    paddingBottom: 15,
-    paddingTop: 5,
-    height: 80,
+    //borderTopWidth: 1,
+    //borderTopColor: '#e0e0e0', // Subtle border
+    paddingBottom: 20, // Increased for better spacing
+    paddingTop: 8,
+    height: 85, // Slightly taller for better proportions
     position: 'absolute',
     bottom: 0,
     left: 0,
@@ -113,23 +138,16 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4,
   },
   iconContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: -6,
+    marginBottom: 2,
   },
   label: {
     fontSize: 12,
-    marginTop: 4,
     fontWeight: '500',
-  },
-  focusedLabel: {
-    color: '#000000',
-  },
-  unfocusedLabel: {
-    color: '#666666',
+    textAlign: 'center',
   },
 }); 

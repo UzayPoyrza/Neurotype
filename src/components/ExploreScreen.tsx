@@ -2,6 +2,7 @@ import React, { useRef, useCallback, useState } from 'react';
 import { View, ScrollView, StyleSheet, LayoutChangeEvent } from 'react-native';
 import { ExploreScreenNav, ExploreScreenNavRef } from './ExploreScreenNav';
 import { useInstagramScrollDetection } from '../hooks/useInstagramScrollDetection';
+import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
 
 interface ExploreScreenProps {
@@ -37,6 +38,7 @@ export const ExploreScreen: React.FC<ExploreScreenProps> = ({
   scrollViewStyle,
   isSearchFocused = false,
 }) => {
+  const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const navRef = useRef<ExploreScreenNavRef>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const [scrollViewHeight, setScrollViewHeight] = useState(0);
@@ -69,7 +71,7 @@ export const ExploreScreen: React.FC<ExploreScreenProps> = ({
   }, []);
 
   return (
-    <View style={[styles.container, style]}>
+    <View style={[styles.container, { backgroundColor: globalBackgroundColor }, style]}>
       <ExploreScreenNav
         ref={navRef}
         title={title}
@@ -118,7 +120,7 @@ export const ExploreScreen: React.FC<ExploreScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#f2f2f7', // iOS system background
   },
   scrollView: {
     flex: 1,

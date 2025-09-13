@@ -13,7 +13,7 @@ export const TechniqueEffectivenessChart: React.FC<TechniqueEffectivenessChartPr
 }) => {
   const [showInfoBox, setShowInfoBox] = useState(false);
   const [infoButtonActive, setInfoButtonActive] = useState(false);
-  const infoButtonRef = useRef<TouchableOpacity>(null);
+  const infoButtonRef = useRef<View>(null);
 
   // Sort techniques by effectiveness (highest first, then "Haven't tried yet" at the bottom)
   const sortedTechniques = [...techniques].sort((a, b) => {

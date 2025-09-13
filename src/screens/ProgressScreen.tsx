@@ -154,10 +154,13 @@ export const ProgressScreen: React.FC = () => {
         {/* Streak Display - Top Right */}
         {userProgress.streak > 0 && (
           <View style={styles.streakWrapper}>
-            <TouchableOpacity onPress={handleStreakPress} style={styles.streakContainer}>
-              <Text style={styles.headerStreakNumber}>{userProgress.streak}</Text>
-              <Text style={styles.streakFire}>🔥</Text>
-            </TouchableOpacity>
+          <TouchableOpacity 
+            onPress={handleStreakPress} 
+            style={[styles.streakContainer, showInfoBox && styles.streakContainerActive]}
+          >
+            <Text style={[styles.headerStreakNumber, showInfoBox && styles.streakNumberActive]}>{userProgress.streak}</Text>
+            <Text style={styles.streakFire}>🔥</Text>
+          </TouchableOpacity>
             
             {/* Info Box */}
             {showInfoBox && (
@@ -281,6 +284,12 @@ const styles = StyleSheet.create({
   streakFire: {
     fontSize: 16,
   },
+  streakContainerActive: {
+    backgroundColor: '#FF8A65',
+  },
+  streakNumberActive: {
+    color: '#FFFFFF',
+  },
   
   // Streak Wrapper (for positioning info box)
   streakWrapper: {
@@ -292,7 +301,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 45,
     right: 0,
-    backgroundColor: 'rgba(28, 28, 30, 0.8)',
+    backgroundColor: '#000000',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,

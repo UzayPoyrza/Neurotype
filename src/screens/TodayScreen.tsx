@@ -374,11 +374,11 @@ export const TodayScreen: React.FC = () => {
         {/* Info Button */}
         <View style={styles.infoWrapper}>
           <TouchableOpacity 
-            style={styles.infoButton}
+            style={[styles.infoButton, showInfoBox && styles.infoButtonActive]}
             onPress={handleInfoPress}
             activeOpacity={0.7}
           >
-            <Text style={styles.infoButtonText}>i</Text>
+            <Text style={[styles.infoButtonText, showInfoBox && styles.infoButtonTextActive]}>i</Text>
           </TouchableOpacity>
           
           {/* Info Box */}
@@ -944,11 +944,17 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontFamily: 'System',
   },
+  infoButtonActive: {
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  infoButtonTextActive: {
+    color: '#007AFF',
+  },
   infoBox: {
     position: 'absolute',
     top: 50,
     right: 0,
-    backgroundColor: 'rgba(28, 28, 30, 0.8)',
+    backgroundColor: '#000000',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,

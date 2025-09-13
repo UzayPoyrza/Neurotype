@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,8 @@ import {
   StyleSheet,
   Dimensions,
   ScrollView,
+  Animated,
+  Easing,
 } from 'react-native';
 import { theme } from '../styles/theme';
 import { useStore } from '../store/useStore';
@@ -22,6 +24,13 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const userProgress = useStore(state => state.userProgress);
+  
+  // Animation refs
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const headerSlideAnim = useRef(new Animated.Value(0)).current;
+  const leftButtonScale = useRef(new Animated.Value(1)).current;
+  const rightButtonScale = useRef(new Animated.Value(1)).current;
 
   // Helper function to get module color by ID
   const getModuleColor = (moduleId: string): string => {
@@ -49,7 +58,7 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
   // Get module name by ID
   const getModuleName = (moduleId: string): string => {
     const module = mentalHealthModules.find(m => m.id === moduleId);
-    return module?.name || moduleId;
+    return module?.title || moduleId;
   };
 
   // Get all dates for current month
@@ -85,9 +94,45 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
   };
 
   const navigateMonth = (direction: 'prev' | 'next') => {
-    const newDate = new Date(currentDate);
-    newDate.setMonth(currentDate.getMonth() + (direction === 'next' ? 1 : -1));
-    setCurrentDate(newDate);
+    const slideDirection = direction === 'next' ? 1 : -1;
+    const buttonScale = direction === 'next' ? rightButtonScale : leftButtonScale;
+    
+    // Button press animation - ultra subtle
+    Animated.sequence([
+      Animated.timing(buttonScale, {
+        toValue: 0.99,
+        duration: 40,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonScale, {
+        toValue: 1,
+        duration: 40,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+    
+    // Start fade out animation - smooth and clean
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 150,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start(() => {
+      // Update the date when fade out is complete
+      const newDate = new Date(currentDate);
+      newDate.setMonth(currentDate.getMonth() + (direction === 'next' ? 1 : -1));
+      setCurrentDate(newDate);
+      
+      // Start fade in animation - smooth and clean
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 150,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
+    });
   };
 
   // Check if we're at the current month (no future navigation allowed)
@@ -233,42 +278,56 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
     <View style={styles.container}>
       {/* Header with navigation */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.navButton}
-          onPress={() => navigateMonth('prev')}
-        >
-          <Text style={styles.navButtonText}>‹</Text>
-        </TouchableOpacity>
+        <Animated.View style={{ transform: [{ scale: leftButtonScale }] }}>
+          <TouchableOpacity 
+            style={styles.navButton}
+            onPress={() => navigateMonth('prev')}
+          >
+            <Text style={styles.navButtonText}>‹</Text>
+          </TouchableOpacity>
+        </Animated.View>
         
         <Text style={styles.headerTitle}>
           {formatHeaderDate()}
         </Text>
         
-        <TouchableOpacity 
-          style={[styles.navButton, isCurrentMonth() && styles.navButtonDisabled]}
-          onPress={() => !isCurrentMonth() && navigateMonth('next')}
-          disabled={isCurrentMonth()}
-        >
-          <Text style={[styles.navButtonText, isCurrentMonth() && styles.navButtonTextDisabled]}>›</Text>
-        </TouchableOpacity>
+        <Animated.View style={{ transform: [{ scale: rightButtonScale }] }}>
+          <TouchableOpacity 
+            style={[styles.navButton, isCurrentMonth() && styles.navButtonDisabled]}
+            onPress={() => !isCurrentMonth() && navigateMonth('next')}
+            disabled={isCurrentMonth()}
+          >
+            <Text style={[styles.navButtonText, isCurrentMonth() && styles.navButtonTextDisabled]}>›</Text>
+          </TouchableOpacity>
+        </Animated.View>
       </View>
 
-      {/* Calendar or No Meditations Message */}
-      {hasMeditationsInCurrentMonth() ? renderCalendar() : renderNoMeditationsMessage()}
-      
-      {/* Meditation Legend */}
-      {renderMeditationLegend()}
-      
-      {/* Share Button - only show if there are meditations in current month */}
-      {hasMeditationsInCurrentMonth() && (
-        <TouchableOpacity 
-          style={styles.shareButton}
-          onPress={handleShareProgress}
-        >
-          <Text style={styles.shareIcon}>↗</Text>
-          <Text style={styles.shareText}>Share My Progress</Text>
-        </TouchableOpacity>
-      )}
+      {/* Calendar Content with Animation */}
+      <Animated.View
+        style={[
+          styles.contentContainer,
+          {
+            opacity: fadeAnim,
+          }
+        ]}
+      >
+        {/* Calendar or No Meditations Message */}
+        {hasMeditationsInCurrentMonth() ? renderCalendar() : renderNoMeditationsMessage()}
+        
+        {/* Meditation Legend */}
+        {renderMeditationLegend()}
+        
+        {/* Share Button - only show if there are meditations in current month */}
+        {hasMeditationsInCurrentMonth() && (
+          <TouchableOpacity 
+            style={styles.shareButton}
+            onPress={handleShareProgress}
+          >
+            <Text style={styles.shareIcon}>↗</Text>
+            <Text style={styles.shareText}>Share My Progress</Text>
+          </TouchableOpacity>
+        )}
+      </Animated.View>
     </View>
   );
 };
@@ -281,10 +340,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     padding: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+    overflow: 'hidden',
   },
   header: {
     flexDirection: 'row',
@@ -316,6 +376,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1a1a1a',
     textAlign: 'center',
+  },
+  contentContainer: {
+    overflow: 'hidden',
+    width: '100%',
+    flex: 1,
   },
   calendarContainer: {
     marginBottom: 12,

@@ -228,13 +228,14 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#ffffff',
     borderRadius: 16,
+    marginHorizontal: 20,
+    marginBottom: 12,
     padding: 16,
-    marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowRadius: 4,
+    elevation: 2,
   },
   header: {
     flexDirection: 'row',

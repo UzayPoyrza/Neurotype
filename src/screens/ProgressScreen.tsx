@@ -117,6 +117,18 @@ export const ProgressScreen: React.FC = () => {
     
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
+        {/* Interactive Calendar */}
+        <InteractiveCalendar onDateSelect={(date) => {
+          // Handle date selection - could show meditation details for that date
+          const completedMeditation = userProgress.sessionDeltas.find(
+            session => session.date === date.toISOString().split('T')[0]
+          );
+          if (completedMeditation) {
+            // Could show a modal with meditation details
+            console.log('Completed meditation on', date.toDateString(), completedMeditation);
+          }
+        }} />
+
         {/* Sessions Card */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
@@ -140,18 +152,6 @@ export const ProgressScreen: React.FC = () => {
             </View>
           </View>
         </View>
-
-        {/* Interactive Calendar */}
-        <InteractiveCalendar onDateSelect={(date) => {
-          // Handle date selection - could show meditation details for that date
-          const completedMeditation = userProgress.sessionDeltas.find(
-            session => session.date === date.toISOString().split('T')[0]
-          );
-          if (completedMeditation) {
-            // Could show a modal with meditation details
-            console.log('Completed meditation on', date.toDateString(), completedMeditation);
-          }
-        }} />
 
         {/* Feel Card */}
         <View style={styles.card}>

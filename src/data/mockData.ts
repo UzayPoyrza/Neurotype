@@ -88,7 +88,8 @@ export const mockSessions: Session[] = [
 ];
 
 export const initialUserProgress: UserProgress = {
-  streak: 3,
+  streak: 5,
+  bestStreak: 20,
   sessionDeltas: [
     { date: '2024-01-15', before: 7, after: 4 },
     { date: '2024-01-16', before: 6, after: 3 },

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
 import { mentalHealthModules } from '../data/modules';
@@ -96,6 +96,11 @@ export const ProgressScreen: React.FC = () => {
   React.useEffect(() => {
     setCurrentScreen('progress');
   }, [setCurrentScreen]);
+
+  // Handle streak info display
+  const handleStreakPress = () => {
+    alert(`Current Streak: ${userProgress.streak} days\nBest Streak: ${userProgress.bestStreak} days`);
+  };
   const { today } = getCurrentDateInfo();
 
   // Calculate stats
@@ -116,6 +121,14 @@ export const ProgressScreen: React.FC = () => {
       {/* Sticky Header */}
       <View style={[styles.stickyHeader, { backgroundColor: globalBackgroundColor }]}>
         <Text style={styles.title}>Progress</Text>
+        
+        {/* Streak Display - Top Right */}
+        {userProgress.streak > 0 && (
+          <TouchableOpacity onPress={handleStreakPress} style={styles.streakContainer}>
+            <Text style={styles.headerStreakNumber}>{userProgress.streak}</Text>
+            <Text style={styles.streakFire}>🔥</Text>
+          </TouchableOpacity>
+        )}
       </View>
       
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -197,6 +210,34 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 1000,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  
+  // Streak Display
+  streakContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF6B35',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  headerStreakNumber: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    fontFamily: 'System',
+    marginRight: 4,
+  },
+  streakFire: {
+    fontSize: 16,
   },
   scrollContent: {
     paddingTop: 120, // Account for shorter sticky header height (same as Today page)

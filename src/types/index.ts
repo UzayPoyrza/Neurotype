@@ -18,6 +18,7 @@ export interface SessionDelta {
 
 export interface UserProgress {
   streak: number;
+  bestStreak: number;
   sessionDeltas: SessionDelta[];
 }
 

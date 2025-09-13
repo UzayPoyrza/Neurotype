@@ -215,16 +215,16 @@ export const TodayScreen: React.FC = () => {
   };
 
   const handleRoadmapCardPress = () => {
-    // First scale down, then expand animation
+    // Very quick scale down, then expand animation
     Animated.sequence([
       Animated.timing(roadmapCardScale, {
         toValue: 0.95,
-        duration: 100,
+        duration: 60,
         useNativeDriver: true,
       }),
       Animated.timing(roadmapCardScale, {
         toValue: 1.05,
-        duration: 200,
+        duration: 100,
         useNativeDriver: true,
       }),
     ]).start(() => {

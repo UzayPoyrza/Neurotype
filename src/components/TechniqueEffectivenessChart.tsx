@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { TechniqueEffectiveness } from '../types';
 import { theme } from '../styles/theme';
+import { InfoBox } from './InfoBox';
 
 interface TechniqueEffectivenessChartProps {
   techniques: TechniqueEffectiveness[];
@@ -10,6 +11,10 @@ interface TechniqueEffectivenessChartProps {
 export const TechniqueEffectivenessChart: React.FC<TechniqueEffectivenessChartProps> = ({
   techniques,
 }) => {
+  const [showInfoBox, setShowInfoBox] = useState(false);
+  const [infoButtonActive, setInfoButtonActive] = useState(false);
+  const infoButtonRef = useRef<TouchableOpacity>(null);
+
   // Sort techniques by effectiveness (highest first, then "Haven't tried yet" at the bottom)
   const sortedTechniques = [...techniques].sort((a, b) => {
     if (a.effectiveness === null && b.effectiveness === null) return 0;
@@ -56,12 +61,39 @@ export const TechniqueEffectivenessChart: React.FC<TechniqueEffectivenessChartPr
     );
   };
 
+  const handleInfoPress = () => {
+    setShowInfoBox(true);
+    setInfoButtonActive(true);
+  };
+
+  const handleCloseInfoBox = () => {
+    setShowInfoBox(false);
+    setInfoButtonActive(false);
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Most Effective Techniques</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>Most Effective Techniques</Text>
+        <TouchableOpacity
+          ref={infoButtonRef}
+          style={[styles.infoButton, infoButtonActive && styles.infoButtonActive]}
+          onPress={handleInfoPress}
+        >
+          <Text style={[styles.infoButtonText, infoButtonActive && styles.infoButtonTextActive]}>i</Text>
+        </TouchableOpacity>
+      </View>
       <View style={styles.chartContainer}>
         {sortedTechniques.map((technique, index) => renderBar(technique, index))}
       </View>
+
+      <InfoBox
+        isVisible={showInfoBox}
+        onClose={handleCloseInfoBox}
+        title="How Effectiveness is Calculated"
+        content="Effectiveness is calculated based on the improvement in your mood scores before and after each meditation session. Techniques that consistently show greater improvements (larger before-to-after score differences) are rated as more effective for you personally."
+        position={{ top: 60, right: 20 }}
+      />
     </View>
   );
 };
@@ -79,11 +111,37 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   title: {
     fontSize: 18,
     fontWeight: '600',
     color: '#1a1a1a',
-    marginBottom: 16,
+    flex: 1,
+  },
+  infoButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  infoButtonActive: {
+    backgroundColor: '#007AFF',
+  },
+  infoButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666666',
+  },
+  infoButtonTextActive: {
+    color: '#ffffff',
   },
   chartContainer: {
     gap: 12,

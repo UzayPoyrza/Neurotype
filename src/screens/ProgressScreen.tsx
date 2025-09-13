@@ -5,6 +5,7 @@ import { theme } from '../styles/theme';
 import { mentalHealthModules } from '../data/modules';
 import { InteractiveCalendar } from '../components/InteractiveCalendar';
 import { TechniqueEffectivenessChart } from '../components/TechniqueEffectivenessChart';
+import { InfoBox } from '../components/InfoBox';
 
 
 
@@ -13,9 +14,10 @@ export const ProgressScreen: React.FC = () => {
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
   
-  // State for info box
-  const [showInfoBox, setShowInfoBox] = useState(false);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  // State for streak info box
+  const [showStreakInfo, setShowStreakInfo] = useState(false);
+  const [streakButtonActive, setStreakButtonActive] = useState(false);
+  const streakButtonRef = useRef<any>(null);
 
   // Set screen context when component mounts
   React.useEffect(() => {
@@ -24,33 +26,13 @@ export const ProgressScreen: React.FC = () => {
 
   // Handle streak info display
   const handleStreakPress = () => {
-    if (showInfoBox) {
-      // Hide info box
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }).start(() => setShowInfoBox(false));
-    } else {
-      // Show info box
-      setShowInfoBox(true);
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
-    }
+    setShowStreakInfo(true);
+    setStreakButtonActive(true);
   };
 
-  // Hide info box when tapping elsewhere
-  const hideInfoBox = () => {
-    if (showInfoBox) {
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }).start(() => setShowInfoBox(false));
-    }
+  const handleCloseStreakInfo = () => {
+    setShowStreakInfo(false);
+    setStreakButtonActive(false);
   };
   const today = new Date();
 
@@ -75,46 +57,17 @@ export const ProgressScreen: React.FC = () => {
         {/* Streak Display - Top Right */}
         {userProgress.streak > 0 && (
           <View style={styles.streakWrapper}>
-          <TouchableOpacity 
-            onPress={handleStreakPress} 
-            style={[styles.streakContainer, showInfoBox && styles.streakContainerActive]}
-          >
-            <Text style={[styles.headerStreakNumber, showInfoBox && styles.streakNumberActive]}>{userProgress.streak}</Text>
-            <Text style={styles.streakFire}>🔥</Text>
-          </TouchableOpacity>
-            
-            {/* Info Box */}
-            {showInfoBox && (
-              <Animated.View 
-                style={[
-                  styles.infoBox,
-                  {
-                    opacity: fadeAnim,
-                    transform: [{
-                      translateY: fadeAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [-10, 0],
-                      })
-                    }]
-                  }
-                ]}
-              >
-                <Text style={styles.infoBoxText}>
-                  Current Streak: {userProgress.streak} days{'\n'}
-                  Best Streak: {userProgress.bestStreak} days
-                </Text>
-              </Animated.View>
-            )}
+            <TouchableOpacity 
+              ref={streakButtonRef}
+              onPress={handleStreakPress} 
+              style={[styles.streakContainer, streakButtonActive && styles.streakContainerActive]}
+            >
+              <Text style={[styles.headerStreakNumber, streakButtonActive && styles.streakNumberActive]}>{userProgress.streak}</Text>
+              <Text style={styles.streakFire}>🔥</Text>
+            </TouchableOpacity>
           </View>
         )}
       </View>
-    
-      {/* Invisible overlay for tap detection when info box is open */}
-      {showInfoBox && (
-        <TouchableWithoutFeedback onPress={hideInfoBox}>
-          <View style={styles.tapOverlay} />
-        </TouchableWithoutFeedback>
-      )}
     
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
@@ -172,6 +125,15 @@ export const ProgressScreen: React.FC = () => {
         {/* Bottom spacing */}
         <View style={styles.bottomSpacing} />
         </ScrollView>
+
+      {/* Streak Info Box */}
+      <InfoBox
+        isVisible={showStreakInfo}
+        onClose={handleCloseStreakInfo}
+        title="Streak Information"
+        content={`Current Streak: ${userProgress.streak} days\nBest Streak: ${userProgress.bestStreak} days`}
+        position={{ top: 80, right: 20 }}
+      />
     </View>
   );
 };
@@ -226,39 +188,6 @@ const styles = StyleSheet.create({
   // Streak Wrapper (for positioning info box)
   streakWrapper: {
     position: 'relative',
-  },
-  
-  // Info Box
-  infoBox: {
-    position: 'absolute',
-    top: 45,
-    right: 0,
-    backgroundColor: '#000000',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    minWidth: 200,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-    zIndex: 1001,
-  },
-  infoBoxText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 20,
-    textAlign: 'center',
-  },
-  tapOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 999,
   },
   scrollContent: {
     paddingTop: 120, // Account for shorter sticky header height (same as Today page)

@@ -1,24 +1,24 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, Animated, TouchableOpacity, Dimensions } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Session } from '../types';
 import { MentalHealthModule } from '../data/modules';
 import { mockSessions } from '../data/mockData';
 import { theme } from '../styles/theme';
+import { useStore } from '../store/useStore';
 
-interface RoadmapNode {
+interface MeditationHistoryItem {
   id: string;
   session: Session;
-  level: number;
-  status: 'locked' | 'available' | 'completed';
+  completedDate: Date;
+  status: 'completed' | 'available' | 'suggested';
   isToday?: boolean;
-  isUnlocking?: boolean;
   isRecommended?: boolean;
 }
 
-interface TodayNode {
+interface TodaySection {
   id: string;
   sessions: Session[];
-  level: number;
   status: 'available' | 'completed';
   isToday: true;
   recommendedSessionId: string;
@@ -30,6 +30,7 @@ interface ModuleRoadmapProps {
   triggerUnlockAnimation?: boolean;
   onUnlockComplete?: () => void;
   onSessionSelect?: (session: Session) => void;
+  onBackPress?: () => void;
 }
 
 export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
@@ -38,14 +39,17 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   triggerUnlockAnimation = false,
   onUnlockComplete,
   onSessionSelect,
+  onBackPress,
 }) => {
+  const navigation = useNavigation();
+  const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const scrollViewRef = useRef<ScrollView>(null);
   const pulseAnim = useRef(new Animated.Value(0)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
 
-  // Generate roadmap based on module
-  const generateModuleRoadmap = (): (RoadmapNode | TodayNode)[] => {
-    const nodes: (RoadmapNode | TodayNode)[] = [];
+  // Generate meditation history based on module
+  const generateMeditationHistory = (): (MeditationHistoryItem | TodaySection)[] => {
+    const items: (MeditationHistoryItem | TodaySection)[] = [];
     
     // Filter sessions relevant to this module
     const getModuleSessions = () => {
@@ -69,68 +73,61 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
     };
 
     const moduleSessions = getModuleSessions();
-    const totalLevels = Math.min(8, module.meditationCount); // Max 8 levels
+    const completedCount = 3; // Simulate 3 completed meditations
     
-    // Create progression roadmap
-    for (let level = 1; level <= totalLevels; level++) {
-      const sessionIndex = (level - 1) % moduleSessions.length;
-      const session = moduleSessions[sessionIndex];
+    // Add completed meditations
+    for (let i = 0; i < completedCount; i++) {
+      const session = moduleSessions[i % moduleSessions.length];
+      const completedDate = new Date();
+      completedDate.setDate(completedDate.getDate() - (completedCount - i));
       
-      let status: 'locked' | 'available' | 'completed';
-      let isToday = false;
-      let isUnlocking = false;
-      
-      if (level <= 2) {
-        status = 'completed'; // First 2 levels completed
-      } else if (level === 3) {
-        status = todayCompleted ? 'completed' : 'available';
-        isToday = !todayCompleted;
-      } else if (level === 4 && todayCompleted) {
-        status = 'available';
-        isToday = true;
-        isUnlocking = triggerUnlockAnimation;
-      } else {
-        status = 'locked';
-      }
-      
-      // Special handling for today's node - show multiple sessions
-      if (isToday) {
-        const todaySessions = moduleSessions.slice(0, 3); // Get 3 sessions for today
-        const recommendedSession = todaySessions[0]; // First one is recommended
-        
-        nodes.push({
-          id: `${module.id}-today-${level}`,
-          sessions: todaySessions.map((s, idx) => ({
-            ...s,
-            id: `${s.id}-today-${idx}`,
-            title: idx === 0 ? `${s.title} (Recommended)` : s.title,
-          })),
-          level,
-          status: status as 'available' | 'completed',
-          isToday: true,
-          recommendedSessionId: recommendedSession.id,
-        } as TodayNode);
-      } else {
-        nodes.push({
-          id: `${module.id}-level-${level}`,
-          session: {
-            ...session,
-            id: `${session.id}-${level}`,
-            title: `${session.title} - Level ${level}`,
-          },
-          level,
-          status,
-          isToday,
-          isUnlocking,
-        } as RoadmapNode);
-      }
+      items.push({
+        id: `${module.id}-completed-${i}`,
+        session: {
+          ...session,
+          id: `${session.id}-completed-${i}`,
+        },
+        completedDate,
+        status: 'completed',
+      } as MeditationHistoryItem);
     }
     
-    return nodes;
+    // Add Today's section
+    const todaySessions = moduleSessions.slice(0, 3);
+    const recommendedSession = todaySessions[0];
+    
+    items.push({
+      id: `${module.id}-today`,
+      sessions: todaySessions.map((s, idx) => ({
+        ...s,
+        id: `${s.id}-today-${idx}`,
+        title: idx === 0 ? `${s.title} (Recommended)` : s.title,
+      })),
+      status: todayCompleted ? 'completed' : 'available',
+      isToday: true,
+      recommendedSessionId: recommendedSession.id,
+    } as TodaySection);
+    
+    // Add suggested meditations for exploration
+    for (let i = completedCount + 3; i < Math.min(completedCount + 6, moduleSessions.length); i++) {
+      const session = moduleSessions[i % moduleSessions.length];
+      
+      items.push({
+        id: `${module.id}-suggested-${i}`,
+        session: {
+          ...session,
+          id: `${session.id}-suggested-${i}`,
+        },
+        completedDate: new Date(),
+        status: 'suggested',
+      } as MeditationHistoryItem);
+    }
+    
+    return items;
   };
 
-  const roadmapNodes = generateModuleRoadmap();
-  const todayIndex = roadmapNodes.findIndex(node => node.isToday);
+  const meditationHistory = generateMeditationHistory();
+  const todayIndex = meditationHistory.findIndex(item => item.isToday);
 
   useEffect(() => {
     // Pulse animation for today's node
@@ -190,527 +187,528 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
     return () => clearTimeout(timer);
   }, [todayIndex]);
 
-  const renderTodaySection = (node: TodayNode, index: number) => {
-    const isAvailable = node.status === 'available';
-    const isCompleted = node.status === 'completed';
 
+  const renderMeditationItem = (item: MeditationHistoryItem | TodaySection, index: number) => {
+    if (item.isToday && 'sessions' in item) {
+      return renderTodaySection(item as TodaySection, index);
+    }
+    return renderHistoryItem(item as MeditationHistoryItem, index);
+  };
+
+  const renderHistoryItem = (item: MeditationHistoryItem, index: number) => {
+    const isCompleted = item.status === 'completed';
+    const isSuggested = item.status === 'suggested';
+    const isAvailable = item.status === 'available';
+    
+    const formatDate = (date: Date) => {
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      if (date.toDateString() === today.toDateString()) {
+        return 'Today';
+      } else if (date.toDateString() === yesterday.toDateString()) {
+        return 'Yesterday';
+      } else {
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }
+    };
+    
     return (
-      <View key={node.id} style={styles.todaySection}>
-        {/* Connection Line */}
-        {index > 0 && (
-          <View style={[styles.connectionLine, { backgroundColor: module.color }]} />
-        )}
-        
-        {/* Today Header */}
-        <View style={styles.todayHeaderContainer}>
-          <View style={[styles.todayLevelBadge, { backgroundColor: module.color }]}>
-            <Text style={styles.todayLevelText}>{node.level}</Text>
-          </View>
-          <Text style={styles.todayHeaderText}>TODAY'S FOCUS</Text>
+      <TouchableOpacity
+        onPress={() => onSessionSelect?.(item.session)}
+        disabled={isSuggested}
+        activeOpacity={0.7}
+        style={[
+          styles.meditationHistoryCard,
+          isCompleted && styles.meditationHistoryCardCompleted,
+          isSuggested && styles.meditationHistoryCardSuggested,
+          isAvailable && styles.meditationHistoryCardAvailable,
+        ]}
+      >
+        {/* Status Indicator */}
+        <View style={[
+          styles.meditationStatusIndicator,
+          { backgroundColor: isCompleted ? '#34C759' : isAvailable ? module.color : '#8E8E93' }
+        ]}>
+          <Text style={styles.meditationStatusIcon}>
+            {isCompleted ? '✓' : isAvailable ? '▶' : '✨'}
+          </Text>
         </View>
 
-        {/* Swipable Today Nodes */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.todayNodesScroll}
-          contentContainerStyle={styles.todayNodesContainer}
-          snapToInterval={176} // 160 + 16 margin
-          decelerationRate="fast"
-          bounces={false}
-        >
-          {node.sessions.map((session, idx) => {
-            const isRecommended = session.id.includes(node.recommendedSessionId);
+        {/* Meditation Content */}
+        <View style={styles.meditationContent}>
+          <Text style={[
+            styles.meditationTitle,
+            isSuggested && styles.meditationTitleSuggested,
+          ]} numberOfLines={2}>
+            {item.session.title}
+          </Text>
+          
+          <View style={styles.meditationMeta}>
+            <Text style={[
+              styles.meditationDuration,
+              isSuggested && styles.meditationMetaSuggested,
+            ]}>
+              {item.session.durationMin} min • {item.session.modality}
+            </Text>
             
-            return (
-              <View key={session.id} style={styles.todayNodeWrapper}>
-                <TouchableOpacity
-                  onPress={() => onSessionSelect?.(session)}
-                  activeOpacity={0.9}
-                >
-                  <Animated.View style={[
-                    styles.todayNode,
-                    isCompleted && styles.completedTodayNode,
-                    isAvailable && styles.availableTodayNode,
-                    isRecommended && styles.recommendedTodayNode,
-                    { borderColor: module.color },
-                    {
-                      shadowColor: module.color,
-                      shadowOpacity: isAvailable ? (isRecommended ? 0.4 : 0.2) : 0.1,
-                      shadowRadius: isAvailable ? (isRecommended ? 12 : 8) : 4,
-                      transform: [{
-                        scale: pulseAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: isRecommended ? [1, 1.03] : [1, 1.01],
-                        }),
-                      }],
-                    }
-                  ]}>
-                    {/* Recommended Badge */}
-                    {isRecommended && (
-                      <View style={[styles.recommendedBadge, { backgroundColor: module.color }]}>
-                        <Text style={styles.recommendedText}>★</Text>
-                      </View>
-                    )}
+            {isCompleted && (
+              <Text style={styles.meditationDate}>
+                {formatDate(item.completedDate)}
+              </Text>
+            )}
+            
+            {isSuggested && (
+              <Text style={styles.meditationSuggestedLabel}>
+                Explore
+              </Text>
+            )}
+          </View>
+        </View>
 
-                    {/* Session Content */}
-                    <View style={styles.todayNodeContent}>
-                      <Text style={[
-                        styles.todaySessionTitle,
-                        isRecommended && { color: module.color },
-                      ]} numberOfLines={2}>
-                        {session.title.replace(' (Recommended)', '')}
-                      </Text>
-                      
-                      <Text style={styles.todaySessionDuration}>
-                        {session.durationMin} min
-                      </Text>
-                      
-                      <Text style={styles.todaySessionModality}>
-                        {session.modality}
-                      </Text>
-
-                      {isRecommended && (
-                        <Text style={[styles.recommendedLabel, { color: module.color }]}>
-                          RECOMMENDED
-                        </Text>
-                      )}
-                    </View>
-
-                    {/* Play Icon */}
-                    <View style={[styles.todayPlayIcon, { backgroundColor: module.color }]}>
-                      <Text style={styles.playIconText}>▶</Text>
-                    </View>
-                  </Animated.View>
-                </TouchableOpacity>
-              </View>
-            );
-          })}
-        </ScrollView>
-      </View>
+        {/* Action Icon */}
+        <View style={styles.meditationAction}>
+          {isCompleted && (
+            <Text style={styles.meditationCompletedIcon}>🎉</Text>
+          )}
+          
+          {isAvailable && (
+            <View style={[styles.meditationPlayButton, { backgroundColor: module.color }]}>
+              <Text style={styles.meditationPlayIcon}>▶</Text>
+            </View>
+          )}
+          
+          {isSuggested && (
+            <Text style={styles.meditationExploreIcon}>🔍</Text>
+          )}
+        </View>
+      </TouchableOpacity>
     );
   };
 
-  const renderRegularNode = (node: RoadmapNode, index: number) => {
-    const isAvailable = node.status === 'available';
-    const isCompleted = node.status === 'completed';
-    const isLocked = node.status === 'locked';
-    
-    const nodeStyle = [
-      styles.roadmapNode,
-      isCompleted && styles.completedNode,
-      isAvailable && styles.availableNode,
-      isLocked && styles.lockedNode,
-      { borderColor: module.color },
-    ];
-
-    const animatedStyle = {
-      shadowColor: module.color,
-      shadowOpacity: isAvailable ? glowAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: [0.2, 0.5],
-      }) : 0.1,
-      shadowRadius: isAvailable ? glowAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: [4, 10],
-      }) : 4,
-    };
+  const renderTodaySection = (section: TodaySection, index: number) => {
+    const isCompleted = section.status === 'completed';
 
     return (
-      <View key={node.id} style={styles.nodeContainer}>
-        {/* Connection Line */}
-        {index > 0 && (
-          <View style={[styles.connectionLine, { backgroundColor: module.color }]} />
-        )}
-        
-        {/* Node */}
-        <TouchableOpacity
-          onPress={() => onSessionSelect?.(node.session)}
-          disabled={isLocked}
-          activeOpacity={0.8}
-        >
-          <Animated.View style={[nodeStyle, animatedStyle]}>
-            {/* Level Badge */}
-            <View style={[styles.levelBadge, { backgroundColor: module.color }]}>
-              <Text style={styles.levelText}>{node.level}</Text>
-            </View>
+      <View style={styles.todaySection}>
+        {/* Today Header */}
+        <View style={styles.todaySectionHeader}>
+          <View style={[styles.todaySectionIcon, { backgroundColor: module.color }]}>
+            <Text style={styles.todaySectionIconText}>🌟</Text>
+          </View>
+          <View style={styles.todaySectionHeaderText}>
+            <Text style={styles.todaySectionTitle}>Today's Focus</Text>
+            <Text style={styles.todaySectionSubtitle}>Choose your next meditation</Text>
+          </View>
+        </View>
 
-            {/* Status Icon */}
-            {isCompleted && (
-              <View style={styles.completedIcon}>
-                <Text style={styles.completedText}>✓</Text>
-              </View>
-            )}
+        {/* Today Sessions */}
+        <View style={styles.todaySessions}>
+          {section.sessions.map((session, idx) => {
+            const isRecommended = session.id.includes(section.recommendedSessionId);
             
-            {isLocked && (
-              <View style={styles.lockedIcon}>
-                <Text style={styles.lockText}>🔒</Text>
-              </View>
-            )}
-            
-            {isAvailable && (
-              <View style={[styles.availableIcon, { backgroundColor: module.color }]}>
-                <Text style={styles.availableText}>▶</Text>
-              </View>
-            )}
+            return (
+              <TouchableOpacity
+                key={session.id}
+                onPress={() => onSessionSelect?.(session)}
+                activeOpacity={0.7}
+                style={[
+                  styles.todaySessionCard,
+                  isRecommended && styles.todaySessionCardRecommended,
+                ]}
+              >
+                {/* Recommended Badge */}
+                {isRecommended && (
+                  <View style={[styles.recommendedBadge, { backgroundColor: module.color }]}>
+                    <Text style={styles.recommendedBadgeText}>★</Text>
+                  </View>
+                )}
 
-            {/* Session Info */}
-            <Text style={[
-              styles.sessionTitle,
-              isLocked && styles.lockedTitle,
-            ]} numberOfLines={2}>
-              {node.session.title}
-            </Text>
-            
-            <Text style={[
-              styles.sessionDuration,
-              isLocked && styles.lockedDuration,
-            ]}>
-              {node.session.durationMin}min
-            </Text>
-          </Animated.View>
-        </TouchableOpacity>
+                {/* Session Content */}
+                <View style={styles.todaySessionContent}>
+                  <Text style={[
+                    styles.todaySessionTitle,
+                    isRecommended && { color: module.color }
+                  ]} numberOfLines={2}>
+                    {session.title.replace(' (Recommended)', '')}
+                  </Text>
+                  
+                  <Text style={styles.todaySessionMeta}>
+                    {session.durationMin} min • {session.modality}
+                  </Text>
+                  
+                  {isRecommended && (
+                    <Text style={[styles.recommendedLabel, { color: module.color }]}>
+                      Recommended for you
+                    </Text>
+                  )}
+                </View>
+
+                {/* Play Button */}
+                <View style={[styles.todayPlayButton, { backgroundColor: module.color }]}>
+                  <Text style={styles.todayPlayIcon}>▶</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
     );
-  };
-
-  const renderNode = (node: RoadmapNode | TodayNode, index: number) => {
-    if (node.isToday && 'sessions' in node) {
-      return renderTodaySection(node as TodayNode, index);
-    }
-    return renderRegularNode(node as RoadmapNode, index);
   };
 
   return (
-    <View style={styles.container}>
-      {/* Module Header */}
-      <View style={[styles.moduleHeader, { backgroundColor: `${module.color}15` }]}>
-        <View style={[styles.moduleIndicator, { backgroundColor: module.color }]} />
-        <View style={styles.moduleInfo}>
-          <Text style={styles.moduleTitle}>{module.title} Roadmap</Text>
-          <Text style={styles.moduleDescription}>{module.description}</Text>
-        </View>
-        <View style={styles.progressIndicator}>
-          <Text style={styles.progressText}>
-            {roadmapNodes.filter(n => n.status === 'completed').length} / {roadmapNodes.length}
-          </Text>
-        </View>
+    <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
+      {/* Navigation Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={onBackPress || (() => navigation.goBack())} style={styles.backButton}>
+          <Text style={styles.backButtonText}>← Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{module.title} Journey</Text>
       </View>
 
-      {/* Roadmap */}
+      {/* Meditation History */}
       <ScrollView
         ref={scrollViewRef}
-        style={styles.roadmapScroll}
-        contentContainerStyle={styles.roadmapContent}
+        style={[styles.meditationHistoryScroll, { backgroundColor: globalBackgroundColor }]}
+        contentContainerStyle={styles.meditationHistoryContent}
         showsVerticalScrollIndicator={false}
         bounces={true}
       >
-        {roadmapNodes.map(renderNode)}
+        <View style={styles.meditationHistoryList}>
+          {meditationHistory.map((item, index) => (
+            <View key={item.id} style={styles.meditationHistoryItem}>
+              {renderMeditationItem(item, index)}
+              {index < meditationHistory.length - 1 && (
+                <View style={styles.meditationHistorySeparator} />
+              )}
+            </View>
+          ))}
+        </View>
       </ScrollView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  // Container & Layout
   container: {
     flex: 1,
   },
-  moduleHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  
+  // Navigation Header
+  header: {
+    backgroundColor: '#FFFFFF',
+    paddingTop: 60,
+    paddingBottom: 20,
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderRadius: theme.borderRadius.lg,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.border,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  moduleIndicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 12,
-  },
-  moduleInfo: {
-    flex: 1,
-  },
-  moduleTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: theme.colors.text.primary,
-    fontFamily: theme.typography.fontFamily,
-  },
-  moduleDescription: {
-    fontSize: 12,
-    color: theme.colors.text.secondary,
-    marginTop: 2,
-    fontFamily: theme.typography.fontFamily,
-  },
-  progressIndicator: {
-    backgroundColor: theme.colors.background,
+  backButton: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#f2f2f7',
     borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  progressText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: theme.colors.text.primary,
-    fontFamily: theme.typography.fontFamily,
-  },
-  roadmapScroll: {
-    flex: 1,
-  },
-  roadmapContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    alignItems: 'center',
-  },
-  nodeContainer: {
-    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     marginBottom: 16,
   },
-  connectionLine: {
-    width: 4,
-    height: 30,
-    borderRadius: 2,
-    marginBottom: 8,
-    opacity: 0.6,
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#007AFF',
+    fontFamily: 'System',
   },
-  roadmapNode: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 3,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 4,
-    padding: 12,
-    position: 'relative',
+  headerTitle: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#000000',
+    textAlign: 'center',
+    fontFamily: 'System',
   },
-  completedNode: {
-    backgroundColor: '#e8f5e8',
+  
+  
+  // Meditation History Scroll & Content
+  meditationHistoryScroll: {
+    flex: 1,
   },
-  availableNode: {
-    backgroundColor: theme.colors.surface,
+  meditationHistoryContent: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 40,
   },
-  lockedNode: {
-    backgroundColor: '#f5f5f5',
-    opacity: 0.6,
+  meditationHistoryList: {
+    gap: 16,
   },
-  // Today Section Styles
-  todaySection: {
-    marginVertical: 32,
+  meditationHistoryItem: {
     width: '100%',
   },
-  todayHeaderContainer: {
+  meditationHistorySeparator: {
+    height: 1,
+    backgroundColor: '#E5E5E7',
+    marginVertical: 8,
+  },
+  
+  // Meditation History Cards
+  meditationHistoryCard: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
+    borderWidth: 2,
+    borderColor: '#F2F2F7',
   },
-  todayLevelBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+  meditationHistoryCardCompleted: {
+    borderColor: '#34C759',
+    backgroundColor: '#F0F9F0',
+  },
+  meditationHistoryCardSuggested: {
+    borderColor: '#8E8E93',
+    backgroundColor: '#F8F9FA',
+  },
+  meditationHistoryCardAvailable: {
+    borderColor: '#007AFF',
+    backgroundColor: '#F8F9FF',
+  },
+  
+  // Status Indicators
+  meditationStatusIndicator: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: theme.colors.surface,
-    marginRight: 8,
+    marginRight: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  todayLevelText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: theme.colors.surface,
+  meditationStatusIcon: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    fontFamily: 'System',
   },
-  todayHeaderText: {
+  
+  // Meditation Content
+  meditationContent: {
+    flex: 1,
+    marginRight: 16,
+  },
+  meditationTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1D1D1F',
+    marginBottom: 8,
+    lineHeight: 22,
+    fontFamily: 'System',
+  },
+  meditationTitleSuggested: {
+    color: '#8E8E93',
+  },
+  meditationMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  meditationDuration: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: theme.colors.primary,
-    letterSpacing: 0.5,
-    fontFamily: theme.typography.fontFamily,
+    color: '#8E8E93',
+    fontFamily: 'System',
+    marginRight: 16,
   },
-  todayNodesScroll: {
-    height: 220,
+  meditationMetaSuggested: {
+    color: '#C7C7CC',
   },
-  todayNodesContainer: {
-    paddingHorizontal: 20,
+  meditationDate: {
+    fontSize: 12,
+    color: '#34C759',
+    fontWeight: '500',
+    fontFamily: 'System',
   },
-  todayNodeWrapper: {
-    marginHorizontal: 8,
+  meditationSuggestedLabel: {
+    fontSize: 12,
+    color: '#8E8E93',
+    fontWeight: '500',
+    fontFamily: 'System',
   },
-  todayNode: {
-    width: 160,
-    height: 200,
+  
+  // Action Icons
+  meditationAction: {
+    alignItems: 'center',
+  },
+  meditationCompletedIcon: {
+    fontSize: 24,
+  },
+  meditationPlayButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  meditationPlayIcon: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontFamily: 'System',
+    marginLeft: 1,
+  },
+  meditationExploreIcon: {
+    fontSize: 20,
+    color: '#8E8E93',
+  },
+  
+  // Today Section
+  todaySection: {
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    backgroundColor: theme.colors.surface,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 4,
     borderWidth: 2,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 6,
+    borderColor: '#007AFF',
+  },
+  todaySectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  todaySectionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  todaySectionIconText: {
+    fontSize: 20,
+  },
+  todaySectionHeaderText: {
+    flex: 1,
+  },
+  todaySectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1D1D1F',
+    marginBottom: 4,
+    fontFamily: 'System',
+  },
+  todaySectionSubtitle: {
+    fontSize: 14,
+    color: '#8E8E93',
+    fontFamily: 'System',
+  },
+  
+  // Today Sessions
+  todaySessions: {
+    gap: 12,
+  },
+  todaySessionCard: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
     padding: 16,
-    justifyContent: 'space-between',
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#F2F2F7',
+    position: 'relative',
   },
-  completedTodayNode: {
-    backgroundColor: '#e8f5e8',
-  },
-  availableTodayNode: {
-    backgroundColor: theme.colors.surface,
-  },
-  recommendedTodayNode: {
-    borderWidth: 3,
-    backgroundColor: '#fff8f0',
+  todaySessionCardRecommended: {
+    backgroundColor: '#F8F9FF',
+    borderColor: '#007AFF',
   },
   recommendedBadge: {
     position: 'absolute',
-    top: -6,
-    right: -6,
+    top: -8,
+    right: 12,
     width: 20,
     height: 20,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: theme.colors.surface,
+    borderColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  recommendedText: {
+  recommendedBadgeText: {
     fontSize: 10,
-    color: theme.colors.surface,
-    fontWeight: 'bold',
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontFamily: 'System',
   },
-  todayNodeContent: {
+  todaySessionContent: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    marginRight: 12,
   },
   todaySessionTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
-    color: theme.colors.text.primary,
-    textAlign: 'center',
-    lineHeight: 16,
-    marginBottom: 8,
-    fontFamily: theme.typography.fontFamily,
-  },
-  todaySessionDuration: {
-    fontSize: 11,
-    color: theme.colors.text.secondary,
-    fontWeight: '500',
+    color: '#1D1D1F',
     marginBottom: 4,
-    fontFamily: theme.typography.fontFamily,
+    lineHeight: 20,
+    fontFamily: 'System',
   },
-  todaySessionModality: {
-    fontSize: 10,
-    color: theme.colors.text.secondary,
-    textTransform: 'capitalize',
-    marginBottom: 8,
-    fontFamily: theme.typography.fontFamily,
+  todaySessionMeta: {
+    fontSize: 13,
+    color: '#8E8E93',
+    marginBottom: 6,
+    fontFamily: 'System',
   },
   recommendedLabel: {
-    fontSize: 8,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 11,
+    fontWeight: '600',
+    fontFamily: 'System',
   },
-  todayPlayIcon: {
+  todayPlayButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  playIconText: {
+  todayPlayIcon: {
     fontSize: 14,
-    color: theme.colors.surface,
-    fontWeight: 'bold',
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontFamily: 'System',
     marginLeft: 1,
-  },
-  levelBadge: {
-    position: 'absolute',
-    top: -8,
-    left: -8,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: theme.colors.surface,
-  },
-  levelText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: theme.colors.surface,
-  },
-  completedIcon: {
-    position: 'absolute',
-    top: -8,
-    right: -8,
-    backgroundColor: theme.colors.success,
-    borderRadius: 15,
-    width: 30,
-    height: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: theme.colors.surface,
-  },
-  completedText: {
-    color: theme.colors.surface,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  lockedIcon: {
-    position: 'absolute',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  lockText: {
-    fontSize: 24,
-    opacity: 0.5,
-  },
-  availableIcon: {
-    position: 'absolute',
-    top: -8,
-    right: -8,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: theme.colors.surface,
-  },
-  availableText: {
-    color: theme.colors.surface,
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  sessionTitle: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: theme.colors.text.primary,
-    textAlign: 'center',
-    lineHeight: 13,
-    marginBottom: 4,
-    fontFamily: theme.typography.fontFamily,
-  },
-  lockedTitle: {
-    color: theme.colors.disabledText,
-  },
-  sessionDuration: {
-    fontSize: 9,
-    color: theme.colors.text.secondary,
-    fontWeight: '500',
-    fontFamily: theme.typography.fontFamily,
-  },
-  lockedDuration: {
-    color: theme.colors.disabledText,
   },
 });

@@ -32,7 +32,7 @@ export const SettingsScreen: React.FC = () => {
         <Text style={styles.headerTitle}>Settings</Text>
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+      <ScrollView style={[styles.scrollView, { backgroundColor: globalBackgroundColor }]} contentContainerStyle={styles.content}>
         {/* Notifications */}
         <View style={styles.settingSection}>
           <Text style={styles.sectionTitle}>Notifications</Text>

@@ -567,21 +567,14 @@ export const TodayScreen: React.FC = () => {
   );
 
   const renderRoadmapView = () => (
-    <View style={[styles.roadmapContainer, { backgroundColor: globalBackgroundColor }]}>
-      <TouchableOpacity 
-        style={styles.backToToday}
-        onPress={() => setViewMode('today')}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.backToTodayText}>← Back to Today</Text>
-      </TouchableOpacity>
-      
+    <View style={styles.roadmapContainer}>
       <ModuleRoadmap
         module={selectedModule}
         todayCompleted={todayCompleted}
         triggerUnlockAnimation={triggerUnlock}
         onUnlockComplete={handleUnlockComplete}
         onSessionSelect={handleSessionSelect}
+        onBackPress={() => setViewMode('today')}
       />
     </View>
   );
@@ -890,18 +883,5 @@ const styles = StyleSheet.create({
   // Roadmap View
   roadmapContainer: {
     flex: 1,
-    backgroundColor: '#f2f2f7',
-    paddingTop: 60,
-    paddingBottom: 100,
-  },
-  backToToday: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    marginBottom: 16,
-  },
-  backToTodayText: {
-    fontSize: 17,
-    fontWeight: '500',
-    color: '#007AFF',
   },
 }); 

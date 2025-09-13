@@ -1,12 +1,11 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Animated, Dimensions, TouchableOpacity, FlatList, AccessibilityInfo } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Session } from '../types';
 import { useStore, prerenderedModuleBackgrounds } from '../store/useStore';
 import { mockSessions } from '../data/mockData';
 import { mentalHealthModules } from '../data/modules';
 import { theme } from '../styles/theme';
-import { ModuleRoadmap } from '../components/ModuleRoadmap';
 import { ModuleGridModal } from '../components/ModuleGridModal';
 import { AnimatedFloatingButton } from '../components/AnimatedFloatingButton';
 import { SessionBottomSheet } from '../components/SessionBottomSheet';
@@ -16,6 +15,7 @@ import { SessionRating } from '../components/SessionRating';
 type SessionState = 'not_started' | 'in_progress' | 'completed' | 'rating';
 
 export const TodayScreen: React.FC = () => {
+  const navigation = useNavigation();
   const { setActiveSession, setGlobalBackgroundColor, setCurrentScreen, setTodayModuleId } = useStore();
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const userProgress = useStore(state => state.userProgress);
@@ -28,7 +28,6 @@ export const TodayScreen: React.FC = () => {
   const [showModuleModal, setShowModuleModal] = useState(false);
   const [todayCompleted, setTodayCompleted] = useState(false);
   const [triggerUnlock, setTriggerUnlock] = useState(false);
-  const [viewMode, setViewMode] = useState<'today' | 'roadmap'>('today');
   const [showRecommendationInfo, setShowRecommendationInfo] = useState(false);
   const [scrollY, setScrollY] = useState(0);
   const [isPillMode, setIsPillMode] = useState(false);
@@ -70,15 +69,13 @@ export const TodayScreen: React.FC = () => {
     setLastFocusTime(currentTime);
     setIsPillMode(false);
     
-    // Start timer for pill mode (only in today view)
-    if (viewMode === 'today') {
-      const timer = setTimeout(() => {
-        setIsPillMode(true);
-      }, 1500);
+    // Start timer for pill mode
+    const timer = setTimeout(() => {
+      setIsPillMode(true);
+    }, 1500);
 
-      return () => clearTimeout(timer);
-    }
-  }, [viewMode, lastFocusTime]);
+    return () => clearTimeout(timer);
+  }, [lastFocusTime]);
 
   // Immediate pill trigger function for scroll events
   const triggerPillAnimationImmediate = useCallback(() => {
@@ -92,11 +89,9 @@ export const TodayScreen: React.FC = () => {
     setLastFocusTime(currentTime);
     setIsPillMode(false);
     
-    // Trigger pill mode immediately (only in today view)
-    if (viewMode === 'today') {
-      setIsPillMode(true);
-    }
-  }, [viewMode, lastFocusTime]);
+    // Trigger pill mode immediately
+    setIsPillMode(true);
+  }, [lastFocusTime]);
 
   // Handle drag start - cancel pill animation
   const handleDragStart = useCallback(() => {
@@ -110,14 +105,10 @@ export const TodayScreen: React.FC = () => {
     }, [triggerPillAnimation])
   );
 
-  // Fallback: Also trigger on viewMode changes (for roadmap navigation)
+  // Trigger pill animation on focus
   useEffect(() => {
-    if (viewMode === 'today') {
-      triggerPillAnimation();
-    } else {
-      setIsPillMode(false);
-    }
-  }, [viewMode, triggerPillAnimation]);
+    triggerPillAnimation();
+  }, [triggerPillAnimation]);
 
   // Auto-hide pill after 3 seconds
   useEffect(() => {
@@ -237,7 +228,7 @@ export const TodayScreen: React.FC = () => {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      setViewMode('roadmap');
+      navigation.navigate('Roadmap' as never);
       // Reset scale after navigation
       roadmapCardScale.setValue(1);
     });
@@ -566,22 +557,9 @@ export const TodayScreen: React.FC = () => {
     </View>
   );
 
-  const renderRoadmapView = () => (
-    <View style={styles.roadmapContainer}>
-      <ModuleRoadmap
-        module={selectedModule}
-        todayCompleted={todayCompleted}
-        triggerUnlockAnimation={triggerUnlock}
-        onUnlockComplete={handleUnlockComplete}
-        onSessionSelect={handleSessionSelect}
-        onBackPress={() => setViewMode('today')}
-      />
-    </View>
-  );
-
   return (
     <>
-      {viewMode === 'today' ? renderTodayView() : renderRoadmapView()}
+      {renderTodayView()}
 
       {/* Module Grid Modal */}
       <ModuleGridModal
@@ -879,9 +857,5 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 120,
-  },
-  // Roadmap View
-  roadmapContainer: {
-    flex: 1,
   },
 }); 

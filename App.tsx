@@ -8,6 +8,7 @@ import { TodayIcon, ProgressIcon, ExploreIcon, ProfileIcon } from './src/compone
 import { AnimatedTabBar } from './src/components/AnimatedTabBar';
 
 import { TodayScreen } from './src/screens/TodayScreen';
+import { RoadmapScreen } from './src/screens/RoadmapScreen';
 import { ProgressScreen } from './src/screens/ProgressScreen';
 import { ExploreScreen } from './src/screens/ExploreScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
@@ -20,10 +21,52 @@ import { RegisterScreen } from './src/screens/RegisterScreen';
 import { useStore } from './src/store/useStore';
 
 const Tab = createBottomTabNavigator();
+const TodayStack = createStackNavigator();
 const ExploreStack = createStackNavigator();
 const ProfileStack = createStackNavigator();
 
-
+// Today Stack Navigator
+const TodayStackNavigator = () => {
+  return (
+    <TodayStack.Navigator
+      screenOptions={{
+        headerShown: false,
+        gestureEnabled: true,
+        gestureDirection: 'horizontal',
+        // Use the same optimized iOS-style transition as Settings
+        cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+        gestureResponseDistance: 60, // Extra large response area
+        gestureVelocityImpact: 0.005, // Minimal velocity needed
+        transitionSpec: {
+          open: {
+            animation: 'timing',
+            config: {
+              duration: 250,
+            },
+          },
+          close: {
+            animation: 'timing',
+            config: {
+              duration: 80, // Ultra-fast close like Settings
+              easing: Easing.out(Easing.cubic),
+            },
+          },
+        },
+      }}
+    >
+      <TodayStack.Screen name="TodayMain" component={TodayScreen} />
+      <TodayStack.Screen 
+        name="Roadmap" 
+        component={RoadmapScreen}
+        options={{
+          gestureEnabled: true,
+          gestureDirection: 'horizontal',
+          cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+        }}
+      />
+    </TodayStack.Navigator>
+  );
+};
 
 // Explore Stack Navigator
 const ExploreStackNavigator = () => {
@@ -177,7 +220,7 @@ export default function App() {
             tabBarShowLabel: false,
           }}
         >
-        <Tab.Screen name="Today" component={TodayScreen} />
+        <Tab.Screen name="Today" component={TodayStackNavigator} />
         <Tab.Screen name="Progress" component={ProgressScreen} />
         <Tab.Screen name="Explore" component={ExploreStackNavigator} />
         <Tab.Screen name="Profile" component={ProfileStackNavigator} />

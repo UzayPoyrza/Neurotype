@@ -8,6 +8,10 @@ export interface Session {
   durationMin: number;
   modality: Modality;
   goal: Goal;
+  description?: string;
+  whyItWorks?: string;
+  adaptiveReason?: string;
+  isRecommended?: boolean;
 }
 
 export interface SessionDelta {

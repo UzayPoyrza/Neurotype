@@ -24,6 +24,7 @@ export { DraggableFloatingButton } from './DraggableFloatingButton';
 export { SessionBottomSheet } from './SessionBottomSheet';
 export { SessionProgressView } from './SessionProgressView';
 export { SessionRating } from './SessionRating';
+export { MeditationDetailModal } from './MeditationDetailModal';
 export { InteractiveCalendar } from './InteractiveCalendar';
 export { TechniqueEffectivenessChart } from './TechniqueEffectivenessChart';
 export { InfoBox } from './InfoBox';

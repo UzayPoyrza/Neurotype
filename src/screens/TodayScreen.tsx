@@ -12,6 +12,7 @@ import { SessionBottomSheet } from '../components/SessionBottomSheet';
 import { SessionProgressView } from '../components/SessionProgressView';
 import { SessionRating } from '../components/SessionRating';
 import { InfoBox } from '../components/InfoBox';
+import { MeditationDetailModal } from '../components/MeditationDetailModal';
 
 type SessionState = 'not_started' | 'in_progress' | 'completed' | 'rating';
 
@@ -27,6 +28,7 @@ export const TodayScreen: React.FC = () => {
   const [sessionState, setSessionState] = useState<SessionState>('not_started');
   const [showBottomSheet, setShowBottomSheet] = useState(false);
   const [showModuleModal, setShowModuleModal] = useState(false);
+  const [showMeditationModal, setShowMeditationModal] = useState(false);
   const [todayCompleted, setTodayCompleted] = useState(false);
   const [triggerUnlock, setTriggerUnlock] = useState(false);
   const [showRecommendationInfo, setShowRecommendationInfo] = useState(false);
@@ -163,15 +165,24 @@ export const TodayScreen: React.FC = () => {
 
   const handleSessionSelect = (session: Session) => {
     setSelectedSession(session);
-    setShowBottomSheet(true);
+    setShowMeditationModal(true);
   };
 
   const handleStartSession = () => {
-    setShowBottomSheet(false);
+    setShowMeditationModal(false);
     setSessionState('in_progress');
     if (selectedSession) {
       setActiveSession(selectedSession);
     }
+  };
+
+  const handleCloseMeditationModal = () => {
+    setShowMeditationModal(false);
+  };
+
+  const handleTutorial = () => {
+    // TODO: Implement tutorial functionality
+    console.log('Tutorial requested for:', selectedSession?.title);
   };
 
   const handleSessionFinish = () => {
@@ -625,6 +636,15 @@ export const TodayScreen: React.FC = () => {
         isVisible={showBottomSheet}
         onClose={() => setShowBottomSheet(false)}
         onStart={handleStartSession}
+      />
+
+      {/* Meditation Detail Modal */}
+      <MeditationDetailModal
+        session={selectedSession}
+        isVisible={showMeditationModal}
+        onClose={handleCloseMeditationModal}
+        onStart={handleStartSession}
+        onTutorial={handleTutorial}
       />
 
       {/* Animated Floating Button - Fixed to Screen */}

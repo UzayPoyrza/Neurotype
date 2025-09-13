@@ -18,10 +18,17 @@ export interface SessionDelta {
   moduleId?: string;
 }
 
+export interface TechniqueEffectiveness {
+  techniqueId: string;
+  techniqueName: string;
+  effectiveness: number | null; // null means "Haven't tried yet", 0-100 means percentage
+}
+
 export interface UserProgress {
   streak: number;
   bestStreak: number;
   sessionDeltas: SessionDelta[];
+  techniqueEffectiveness: TechniqueEffectiveness[];
 }
 
 export interface FilterState {

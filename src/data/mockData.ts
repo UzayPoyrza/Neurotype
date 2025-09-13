@@ -114,5 +114,16 @@ export const initialUserProgress: UserProgress = {
     { date: '2025-08-25', before: 6, after: 3, sessionId: '19', moduleId: 'anxiety' },
     { date: '2025-08-28', before: 7, after: 4, sessionId: '20', moduleId: 'focus' },
     { date: '2025-08-30', before: 5, after: 2, sessionId: '21', moduleId: 'sleep' },
+  ],
+  techniqueEffectiveness: [
+    { techniqueId: 'breathing', techniqueName: 'Breathing Exercises', effectiveness: 85 },
+    { techniqueId: 'body_scan', techniqueName: 'Body Scan', effectiveness: 78 },
+    { techniqueId: 'loving_kindness', techniqueName: 'Loving Kindness', effectiveness: 72 },
+    { techniqueId: 'mindfulness', techniqueName: 'Mindfulness Meditation', effectiveness: 65 },
+    { techniqueId: 'progressive_relaxation', techniqueName: 'Progressive Relaxation', effectiveness: 58 },
+    { techniqueId: 'visualization', techniqueName: 'Guided Visualization', effectiveness: 45 },
+    { techniqueId: 'mantra', techniqueName: 'Mantra Meditation', effectiveness: null },
+    { techniqueId: 'walking', techniqueName: 'Walking Meditation', effectiveness: null },
+    { techniqueId: 'yoga', techniqueName: 'Yoga Nidra', effectiveness: null },
   ]
 }; 

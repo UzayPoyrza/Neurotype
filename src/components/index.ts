@@ -25,6 +25,7 @@ export { SessionBottomSheet } from './SessionBottomSheet';
 export { SessionProgressView } from './SessionProgressView';
 export { SessionRating } from './SessionRating';
 export { InteractiveCalendar } from './InteractiveCalendar';
+export { TechniqueEffectivenessChart } from './TechniqueEffectivenessChart';
 
 // Icons
 export * from './icons'; 

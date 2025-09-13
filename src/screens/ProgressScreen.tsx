@@ -4,6 +4,7 @@ import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
 import { mentalHealthModules } from '../data/modules';
 import { InteractiveCalendar } from '../components/InteractiveCalendar';
+import { TechniqueEffectivenessChart } from '../components/TechniqueEffectivenessChart';
 
 
 
@@ -128,6 +129,9 @@ export const ProgressScreen: React.FC = () => {
             console.log('Completed meditation on', date.toDateString(), completedMeditation);
           }
         }} />
+
+        {/* Most Effective Techniques Chart */}
+        <TechniqueEffectivenessChart techniques={userProgress.techniqueEffectiveness} />
 
         {/* Sessions Card */}
         <View style={styles.card}>

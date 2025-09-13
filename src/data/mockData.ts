@@ -91,12 +91,16 @@ export const initialUserProgress: UserProgress = {
   streak: 5,
   bestStreak: 20,
   sessionDeltas: [
-    { date: '2024-01-15', before: 7, after: 4 },
-    { date: '2024-01-16', before: 6, after: 3 },
-    { date: '2024-01-17', before: 8, after: 5 },
-    { date: '2024-01-18', before: 5, after: 2 },
-    { date: '2024-01-19', before: 7, after: 4 },
-    { date: '2024-01-20', before: 6, after: 3 },
-    { date: '2024-01-21', before: 8, after: 5 }
+    { date: '2024-01-15', before: 7, after: 4, sessionId: '1', moduleId: 'anxiety' },
+    { date: '2024-01-16', before: 6, after: 3, sessionId: '2', moduleId: 'focus' },
+    { date: '2024-01-17', before: 8, after: 5, sessionId: '3', moduleId: 'sleep' },
+    { date: '2024-01-18', before: 5, after: 2, sessionId: '4', moduleId: 'anxiety' },
+    { date: '2024-01-19', before: 7, after: 4, sessionId: '5', moduleId: 'focus' },
+    { date: '2024-01-20', before: 6, after: 3, sessionId: '6', moduleId: 'sleep' },
+    { date: '2024-01-21', before: 8, after: 5, sessionId: '7', moduleId: 'focus' },
+    // Add some recent dates for testing
+    { date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], before: 6, after: 3, sessionId: '8', moduleId: 'anxiety' },
+    { date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], before: 5, after: 2, sessionId: '9', moduleId: 'focus' },
+    { date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], before: 7, after: 4, sessionId: '10', moduleId: 'sleep' },
   ]
 }; 

@@ -24,6 +24,7 @@ export { DraggableFloatingButton } from './DraggableFloatingButton';
 export { SessionBottomSheet } from './SessionBottomSheet';
 export { SessionProgressView } from './SessionProgressView';
 export { SessionRating } from './SessionRating';
+export { InteractiveCalendar } from './InteractiveCalendar';
 
 // Icons
 export * from './icons'; 

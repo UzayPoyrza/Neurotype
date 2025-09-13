@@ -14,6 +14,8 @@ export interface SessionDelta {
   date: string;
   before: number;
   after: number;
+  sessionId?: string;
+  moduleId?: string;
 }
 
 export interface UserProgress {

@@ -3,89 +3,9 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Touchab
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
 import { mentalHealthModules } from '../data/modules';
+import { InteractiveCalendar } from '../components/InteractiveCalendar';
 
-// Helper function to get module color by ID
-const getModuleColor = (moduleId: string): string => {
-  const module = mentalHealthModules.find(m => m.id === moduleId);
-  return module?.color || theme.colors.primary;
-};
 
-// Helper function to get current date info
-const getCurrentDateInfo = () => {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  
-  // Get week dates (Monday to Sunday)
-  const startOfWeek = new Date(today);
-  const day = startOfWeek.getDay();
-  const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
-  startOfWeek.setDate(diff);
-  
-  const weekDates = [];
-  for (let i = 0; i < 7; i++) {
-    const date = new Date(startOfWeek);
-    date.setDate(startOfWeek.getDate() + i);
-    weekDates.push(date);
-  }
-  
-  return { today, weekDates };
-};
-
-// Calendar component for meditation tracking
-const MeditationCalendar: React.FC = () => {
-  const userProgress = useStore(state => state.userProgress);
-  const { today, weekDates } = getCurrentDateInfo();
-  
-  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  
-  // Mock data for completed sessions with module info
-  // In a real app, this would come from your store
-  const getSessionForDate = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
-    // Mock: assume some sessions were completed with different modules
-    const mockSessions: { [key: string]: string } = {
-      [new Date(Date.now() - 86400000 * 2).toISOString().split('T')[0]]: 'anxiety', // 2 days ago
-      [new Date(Date.now() - 86400000 * 1).toISOString().split('T')[0]]: 'mindfulness', // yesterday
-      [today.toISOString().split('T')[0]]: 'stress', // today
-    };
-    return mockSessions[dateStr];
-  };
-  
-  return (
-    <View style={styles.calendarContainer}>
-      <View style={styles.calendarHeader}>
-        {dayNames.map((day, index) => (
-          <View key={day} style={styles.dayHeader}>
-            <Text style={styles.dayHeaderText}>{day}</Text>
-            <Text style={styles.dayNumber}>{weekDates[index].getDate()}</Text>
-          </View>
-        ))}
-      </View>
-      
-      <View style={styles.calendarBody}>
-        {weekDates.map((date, index) => {
-          const completedModule = getSessionForDate(date);
-          const isToday = date.toDateString() === today.toDateString();
-          
-          return (
-            <View key={index} style={[styles.dayCell, isToday && styles.todayCell]}>
-              {completedModule && (
-                <View 
-                  style={[
-                    styles.checkMark,
-                    { backgroundColor: getModuleColor(completedModule) }
-                  ]}
-                >
-                  <Text style={styles.checkMarkText}>✓</Text>
-                </View>
-              )}
-            </View>
-          );
-        })}
-      </View>
-    </View>
-  );
-};
 
 export const ProgressScreen: React.FC = () => {
   const userProgress = useStore(state => state.userProgress);
@@ -131,7 +51,7 @@ export const ProgressScreen: React.FC = () => {
       }).start(() => setShowInfoBox(false));
     }
   };
-  const { today } = getCurrentDateInfo();
+  const today = new Date();
 
   // Calculate stats
   const totalSessions = userProgress.sessionDeltas.length;
@@ -221,14 +141,17 @@ export const ProgressScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Calendar Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>📅 This Week</Text>
-          </View>
-          
-          <MeditationCalendar />
-        </View>
+        {/* Interactive Calendar */}
+        <InteractiveCalendar onDateSelect={(date) => {
+          // Handle date selection - could show meditation details for that date
+          const completedMeditation = userProgress.sessionDeltas.find(
+            session => session.date === date.toISOString().split('T')[0]
+          );
+          if (completedMeditation) {
+            // Could show a modal with meditation details
+            console.log('Completed meditation on', date.toDateString(), completedMeditation);
+          }
+        }} />
 
         {/* Feel Card */}
         <View style={styles.card}>
@@ -360,54 +283,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#000000',
-  },
-  calendarContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 20,
-  },
-  calendarHeader: {
-    flexDirection: 'row',
-    marginBottom: 12,
-  },
-  dayHeader: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  dayHeaderText: {
-    fontSize: 13,
-    color: '#8e8e93',
-    fontWeight: '400',
-    marginBottom: 4,
-  },
-  dayNumber: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#000000',
-  },
-  calendarBody: {
-    flexDirection: 'row',
-    height: 40,
-  },
-  dayCell: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  todayCell: {
-    backgroundColor: '#f2f2f7',
-    borderRadius: 8,
-  },
-  checkMark: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkMarkText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#ffffff',
   },
   feelContent: {
     paddingHorizontal: 16,

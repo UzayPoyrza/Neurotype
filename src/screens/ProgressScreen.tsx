@@ -319,29 +319,6 @@ const styles = StyleSheet.create({
     color: '#8e8e93',
     fontWeight: '400',
   },
-  streakContent: {
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 20,
-  },
-  streakNumber: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: '#000000',
-    lineHeight: 52,
-  },
-  streakUnit: {
-    fontSize: 17,
-    color: '#8e8e93',
-    fontWeight: '400',
-    marginTop: -4,
-  },
-  streakSubtext: {
-    fontSize: 15,
-    color: '#8e8e93',
-    fontWeight: '400',
-    marginTop: 8,
-  },
   sessionsContent: {
     flexDirection: 'row',
     paddingHorizontal: 16,

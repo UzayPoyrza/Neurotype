@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, TouchableWithoutFeedback } from 'react-native';
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
 import { mentalHealthModules } from '../data/modules';
@@ -91,6 +91,10 @@ export const ProgressScreen: React.FC = () => {
   const userProgress = useStore(state => state.userProgress);
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
+  
+  // State for info box
+  const [showInfoBox, setShowInfoBox] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   // Set screen context when component mounts
   React.useEffect(() => {
@@ -99,7 +103,33 @@ export const ProgressScreen: React.FC = () => {
 
   // Handle streak info display
   const handleStreakPress = () => {
-    alert(`Current Streak: ${userProgress.streak} days\nBest Streak: ${userProgress.bestStreak} days`);
+    if (showInfoBox) {
+      // Hide info box
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => setShowInfoBox(false));
+    } else {
+      // Show info box
+      setShowInfoBox(true);
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  };
+
+  // Hide info box when tapping elsewhere
+  const hideInfoBox = () => {
+    if (showInfoBox) {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => setShowInfoBox(false));
+    }
   };
   const { today } = getCurrentDateInfo();
 
@@ -124,14 +154,40 @@ export const ProgressScreen: React.FC = () => {
         
         {/* Streak Display - Top Right */}
         {userProgress.streak > 0 && (
-          <TouchableOpacity onPress={handleStreakPress} style={styles.streakContainer}>
-            <Text style={styles.headerStreakNumber}>{userProgress.streak}</Text>
-            <Text style={styles.streakFire}>🔥</Text>
-          </TouchableOpacity>
+          <View style={styles.streakWrapper}>
+            <TouchableOpacity onPress={handleStreakPress} style={styles.streakContainer}>
+              <Text style={styles.headerStreakNumber}>{userProgress.streak}</Text>
+              <Text style={styles.streakFire}>🔥</Text>
+            </TouchableOpacity>
+            
+            {/* Info Box */}
+            {showInfoBox && (
+              <Animated.View 
+                style={[
+                  styles.infoBox,
+                  {
+                    opacity: fadeAnim,
+                    transform: [{
+                      translateY: fadeAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [-10, 0],
+                      })
+                    }]
+                  }
+                ]}
+              >
+                <Text style={styles.infoBoxText}>
+                  Current Streak: {userProgress.streak} days{'\n'}
+                  Best Streak: {userProgress.bestStreak} days
+                </Text>
+              </Animated.View>
+            )}
+          </View>
         )}
       </View>
-      
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+    
+      <TouchableWithoutFeedback onPress={hideInfoBox}>
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
         {/* Streak Card */}
         <View style={styles.card}>
@@ -194,7 +250,8 @@ export const ProgressScreen: React.FC = () => {
 
         {/* Bottom spacing */}
         <View style={styles.bottomSpacing} />
-      </ScrollView>
+        </ScrollView>
+      </TouchableWithoutFeedback>
     </View>
   );
 };
@@ -238,6 +295,36 @@ const styles = StyleSheet.create({
   },
   streakFire: {
     fontSize: 16,
+  },
+  
+  // Streak Wrapper (for positioning info box)
+  streakWrapper: {
+    position: 'relative',
+  },
+  
+  // Info Box
+  infoBox: {
+    position: 'absolute',
+    top: 45,
+    right: 0,
+    backgroundColor: '#1C1C1E',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    minWidth: 200,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 1001,
+  },
+  infoBoxText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 20,
+    textAlign: 'center',
   },
   scrollContent: {
     paddingTop: 120, // Account for shorter sticky header height (same as Today page)

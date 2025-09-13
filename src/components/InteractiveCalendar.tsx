@@ -79,6 +79,13 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
     setCurrentDate(newDate);
   };
 
+  // Check if we're at the current month (no future navigation allowed)
+  const isCurrentMonth = () => {
+    const today = new Date();
+    return currentDate.getFullYear() === today.getFullYear() && 
+           currentDate.getMonth() === today.getMonth();
+  };
+
   const handleDatePress = (date: Date) => {
     onDateSelect?.(date);
   };
@@ -206,10 +213,11 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
         </Text>
         
         <TouchableOpacity 
-          style={styles.navButton}
-          onPress={() => navigateMonth('next')}
+          style={[styles.navButton, isCurrentMonth() && styles.navButtonDisabled]}
+          onPress={() => !isCurrentMonth() && navigateMonth('next')}
+          disabled={isCurrentMonth()}
         >
-          <Text style={styles.navButtonText}>›</Text>
+          <Text style={[styles.navButtonText, isCurrentMonth() && styles.navButtonTextDisabled]}>›</Text>
         </TouchableOpacity>
       </View>
 
@@ -263,6 +271,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#ffffff',
   },
+  navButtonDisabled: {
+    backgroundColor: '#f0f0f0',
+  },
+  navButtonTextDisabled: {
+    color: '#cccccc',
+  },
   headerTitle: {
     fontSize: 20,
     fontWeight: '600',
@@ -270,7 +284,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   calendarContainer: {
-    marginBottom: 20,
+    marginBottom: 12,
   },
   dayHeaders: {
     flexDirection: 'row',
@@ -330,8 +344,8 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   legendContainer: {
-    marginBottom: 20,
-    paddingTop: 16,
+    marginBottom: 16,
+    paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
   },
@@ -339,7 +353,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#1a1a1a',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   legendItems: {
     flexDirection: 'row',
@@ -349,7 +363,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginRight: 16,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   legendDot: {
     width: 12,

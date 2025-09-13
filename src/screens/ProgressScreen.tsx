@@ -188,8 +188,14 @@ export const ProgressScreen: React.FC = () => {
         )}
       </View>
     
-      <TouchableWithoutFeedback onPress={hideInfoBox}>
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      {/* Invisible overlay for tap detection when info box is open */}
+      {showInfoBox && (
+        <TouchableWithoutFeedback onPress={hideInfoBox}>
+          <View style={styles.tapOverlay} />
+        </TouchableWithoutFeedback>
+      )}
+    
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
         {/* Sessions Card */}
         <View style={styles.card}>
@@ -239,7 +245,6 @@ export const ProgressScreen: React.FC = () => {
         {/* Bottom spacing */}
         <View style={styles.bottomSpacing} />
         </ScrollView>
-      </TouchableWithoutFeedback>
     </View>
   );
 };
@@ -319,6 +324,14 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 20,
     textAlign: 'center',
+  },
+  tapOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 999,
   },
   scrollContent: {
     paddingTop: 120, // Account for shorter sticky header height (same as Today page)

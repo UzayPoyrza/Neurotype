@@ -53,6 +53,7 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
     const dates: (Date | null)[] = [];
     
     // Add empty cells for days before the first day of the month
+    // getDay() returns 0 for Sunday, 1 for Monday, etc.
     const firstDayOfWeek = firstDay.getDay();
     for (let i = 0; i < firstDayOfWeek; i++) {
       dates.push(null);
@@ -61,6 +62,12 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
     // Add all days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       dates.push(new Date(year, month, day));
+    }
+    
+    // Fill remaining cells to complete the grid (6 rows = 42 cells)
+    const remainingCells = 42 - dates.length;
+    for (let i = 0; i < remainingCells; i++) {
+      dates.push(null);
     }
     
     return dates;
@@ -113,7 +120,7 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
         <View style={styles.calendarGrid}>
           {dates.map((date, index) => {
             if (!date) {
-              return <View key={index} style={styles.emptyCell} />;
+              return <View key={`empty-${index}`} style={styles.emptyCell} />;
             }
             
             const completedMeditation = getCompletedMeditation(date);
@@ -280,9 +287,10 @@ const styles = StyleSheet.create({
   calendarGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
   dateCell: {
-    width: (width - 64) / 7, // Account for padding and margins
+    width: '14.28%', // 1/7 of the width
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
@@ -290,7 +298,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   emptyCell: {
-    width: (width - 64) / 7,
+    width: '14.28%', // 1/7 of the width
     height: 40,
     marginBottom: 4,
   },

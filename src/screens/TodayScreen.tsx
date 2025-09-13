@@ -44,6 +44,7 @@ export const TodayScreen: React.FC = () => {
   const unlockAnimation = useRef(new Animated.Value(0)).current;
   const roadmapCardScale = useRef(new Animated.Value(1)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const moduleButtonFade = useRef(new Animated.Value(1)).current;
   
   const selectedModule = mentalHealthModules.find(m => m.id === selectedModuleId) || mentalHealthModules[0];
   
@@ -273,6 +274,25 @@ export const TodayScreen: React.FC = () => {
     }
   };
 
+  // Handle module button press with fade animation
+  const handleModuleButtonPress = () => {
+    // Quick fade out, then fade back in
+    Animated.sequence([
+      Animated.timing(moduleButtonFade, {
+        toValue: 0.3,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(moduleButtonFade, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setShowModuleModal(true);
+    });
+  };
+
   // Subtle motivational messages based on progress
   const getMotivationalMessage = () => {
     const streak = userProgress?.streak || 0;
@@ -472,10 +492,13 @@ export const TodayScreen: React.FC = () => {
             <Text style={styles.cardTitle}>🧘‍♀️ Today's Focus</Text>
             <TouchableOpacity 
               style={styles.moduleButton}
-              onPress={() => setShowModuleModal(true)}
+              onPress={handleModuleButtonPress}
+              activeOpacity={1}
             >
-              <View style={[styles.moduleIndicator, { backgroundColor: selectedModule.color }]} />
-              <Text style={styles.moduleButtonText}>{selectedModule.title}</Text>
+              <Animated.View style={{ opacity: moduleButtonFade, flexDirection: 'row', alignItems: 'center' }}>
+                <View style={[styles.moduleIndicator, { backgroundColor: selectedModule.color }]} />
+                <Text style={styles.moduleButtonText}>{selectedModule.title}</Text>
+              </Animated.View>
             </TouchableOpacity>
           </View>
           

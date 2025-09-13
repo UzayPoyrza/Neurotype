@@ -11,6 +11,7 @@ import { AnimatedFloatingButton } from '../components/AnimatedFloatingButton';
 import { SessionBottomSheet } from '../components/SessionBottomSheet';
 import { SessionProgressView } from '../components/SessionProgressView';
 import { SessionRating } from '../components/SessionRating';
+import { InfoBox } from '../components/InfoBox';
 
 type SessionState = 'not_started' | 'in_progress' | 'completed' | 'rating';
 
@@ -37,6 +38,7 @@ export const TodayScreen: React.FC = () => {
   const [contentHeight, setContentHeight] = useState(0);
   const [hasReachedBottom, setHasReachedBottom] = useState(false);
   const [showInfoBox, setShowInfoBox] = useState(false);
+  const [infoButtonActive, setInfoButtonActive] = useState(false);
   
   // Animation refs - simplified to avoid native driver conflicts
   const heroCardScale = useRef(new Animated.Value(1)).current;
@@ -245,33 +247,13 @@ export const TodayScreen: React.FC = () => {
 
   // Handle info box display
   const handleInfoPress = () => {
-    if (showInfoBox) {
-      // Hide info box
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }).start(() => setShowInfoBox(false));
-    } else {
-      // Show info box
-      setShowInfoBox(true);
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
-    }
+    setShowInfoBox(true);
+    setInfoButtonActive(true);
   };
 
-  // Hide info box when tapping elsewhere
-  const hideInfoBox = () => {
-    if (showInfoBox) {
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }).start(() => setShowInfoBox(false));
-    }
+  const handleCloseInfoBox = () => {
+    setShowInfoBox(false);
+    setInfoButtonActive(false);
   };
 
   // Handle module button press with fade animation
@@ -394,44 +376,15 @@ export const TodayScreen: React.FC = () => {
         {/* Info Button */}
         <View style={styles.infoWrapper}>
           <TouchableOpacity 
-            style={[styles.infoButton, showInfoBox && styles.infoButtonActive]}
+            style={[styles.infoButton, infoButtonActive && styles.infoButtonActive]}
             onPress={handleInfoPress}
             activeOpacity={0.7}
           >
-            <Text style={[styles.infoButtonText, showInfoBox && styles.infoButtonTextActive]}>i</Text>
+            <Text style={[styles.infoButtonText, infoButtonActive && styles.infoButtonTextActive]}>i</Text>
           </TouchableOpacity>
           
-          {/* Info Box */}
-          {showInfoBox && (
-            <Animated.View 
-              style={[
-                styles.infoBox,
-                {
-                  opacity: fadeAnim,
-                  transform: [{
-                    translateY: fadeAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [-10, 0],
-                    })
-                  }]
-                }
-              ]}
-            >
-              <Text style={styles.infoBoxText}>
-                Our Today page uses evidence-based approaches to mental wellness. Each session is designed using proven techniques from cognitive behavioral therapy, mindfulness research, and neuroscience.{'\n\n'}
-                Personalized recommendations adapt to your progress and preferences, helping you build sustainable mental health habits.
-              </Text>
-            </Animated.View>
-          )}
         </View>
       </View>
-      
-      {/* Invisible overlay for tap detection when info box is open */}
-      {showInfoBox && (
-        <TouchableWithoutFeedback onPress={hideInfoBox}>
-          <View style={styles.tapOverlay} />
-        </TouchableWithoutFeedback>
-      )}
       
       <ScrollView 
         style={styles.scrollView} 
@@ -681,6 +634,15 @@ export const TodayScreen: React.FC = () => {
         isPillMode={isPillMode}
         onScroll={(scrollY) => setScrollY(scrollY)}
         onDragStart={handleDragStart}
+      />
+
+      {/* Info Box */}
+      <InfoBox
+        isVisible={showInfoBox}
+        onClose={handleCloseInfoBox}
+        title="About Today"
+        content="Our Today page uses evidence-based approaches to mental wellness. Each session is designed using proven techniques from cognitive behavioral therapy, mindfulness research, and neuroscience.\n\nPersonalized recommendations adapt to your progress and preferences, helping you build sustainable mental health habits."
+        position={{ top: 80, right: 20 }}
       />
     </>
   );
@@ -977,37 +939,5 @@ const styles = StyleSheet.create({
   },
   infoButtonTextActive: {
     color: '#007AFF',
-  },
-  infoBox: {
-    position: 'absolute',
-    top: 50,
-    right: 0,
-    backgroundColor: '#000000',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    minWidth: 280,
-    maxWidth: 320,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-    zIndex: 1001,
-  },
-  infoBoxText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 20,
-    textAlign: 'left',
-  },
-  tapOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 999,
   },
 }); 

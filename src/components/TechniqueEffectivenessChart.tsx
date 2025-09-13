@@ -92,7 +92,7 @@ export const TechniqueEffectivenessChart: React.FC<TechniqueEffectivenessChartPr
         onClose={handleCloseInfoBox}
         title="How Effectiveness is Calculated"
         content="Effectiveness is calculated based on the improvement in your mood scores before and after each meditation session. Techniques that consistently show greater improvements (larger before-to-after score differences) are rated as more effective for you personally."
-        position={{ top: 60, right: 20 }}
+        position={{ top: 40, right: 16 }}
       />
     </View>
   );

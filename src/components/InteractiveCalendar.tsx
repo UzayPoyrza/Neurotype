@@ -192,9 +192,16 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
   };
 
   const renderMeditationLegend = () => {
-    // Get unique modules from completed meditations
+    // Get unique modules from completed meditations in the CURRENT MONTH only
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    
     const completedModules = userProgress.sessionDeltas
-      .filter(session => session.moduleId)
+      .filter(session => {
+        if (!session.moduleId) return false;
+        const sessionDate = new Date(session.date);
+        return sessionDate.getFullYear() === year && sessionDate.getMonth() === month;
+      })
       .map(session => session.moduleId!)
       .filter((value, index, self) => self.indexOf(value) === index);
     
@@ -252,14 +259,16 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
       {/* Meditation Legend */}
       {renderMeditationLegend()}
       
-      {/* Share Button */}
-      <TouchableOpacity 
-        style={styles.shareButton}
-        onPress={handleShareProgress}
-      >
-        <Text style={styles.shareIcon}>↗</Text>
-        <Text style={styles.shareText}>Share My Progress</Text>
-      </TouchableOpacity>
+      {/* Share Button - only show if there are meditations in current month */}
+      {hasMeditationsInCurrentMonth() && (
+        <TouchableOpacity 
+          style={styles.shareButton}
+          onPress={handleShareProgress}
+        >
+          <Text style={styles.shareIcon}>↗</Text>
+          <Text style={styles.shareText}>Share My Progress</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };

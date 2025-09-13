@@ -35,6 +35,17 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
     return userProgress.sessionDeltas.find(session => session.date === dateStr);
   };
 
+  // Check if there are any meditations in the current month
+  const hasMeditationsInCurrentMonth = () => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    
+    return userProgress.sessionDeltas.some(session => {
+      const sessionDate = new Date(session.date);
+      return sessionDate.getFullYear() === year && sessionDate.getMonth() === month;
+    });
+  };
+
   // Get module name by ID
   const getModuleName = (moduleId: string): string => {
     const module = mentalHealthModules.find(m => m.id === moduleId);
@@ -166,6 +177,20 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
     );
   };
 
+  const renderNoMeditationsMessage = () => {
+    return (
+      <View style={styles.noMeditationsContainer}>
+        <View style={styles.noMeditationsBox}>
+          <Text style={styles.noMeditationsIcon}>🧘‍♀️</Text>
+          <Text style={styles.noMeditationsTitle}>No Meditations This Month</Text>
+          <Text style={styles.noMeditationsText}>
+            Start your mindfulness journey by completing your first meditation session.
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
   const renderMeditationLegend = () => {
     // Get unique modules from completed meditations
     const completedModules = userProgress.sessionDeltas
@@ -221,8 +246,8 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
         </TouchableOpacity>
       </View>
 
-      {/* Calendar */}
-      {renderCalendar()}
+      {/* Calendar or No Meditations Message */}
+      {hasMeditationsInCurrentMonth() ? renderCalendar() : renderNoMeditationsMessage()}
       
       {/* Meditation Legend */}
       {renderMeditationLegend()}
@@ -285,6 +310,7 @@ const styles = StyleSheet.create({
   },
   calendarContainer: {
     marginBottom: 12,
+    height: 280, // Fixed height: day headers (32px) + 6 rows (240px) + margins (8px)
   },
   dayHeaders: {
     flexDirection: 'row',
@@ -402,5 +428,34 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#1a1a1a',
+  },
+  noMeditationsContainer: {
+    marginBottom: 12,
+    height: 280, // Match the full calendar height including day headers
+  },
+  noMeditationsBox: {
+    backgroundColor: '#f8f8f8',
+    borderRadius: 12,
+    padding: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '100%',
+  },
+  noMeditationsIcon: {
+    fontSize: 32,
+    marginBottom: 12,
+  },
+  noMeditationsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  noMeditationsText: {
+    fontSize: 14,
+    color: '#666666',
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });

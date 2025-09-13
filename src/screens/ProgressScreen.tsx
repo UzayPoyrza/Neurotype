@@ -135,7 +135,6 @@ export const ProgressScreen: React.FC = () => {
 
   // Calculate stats
   const totalSessions = userProgress.sessionDeltas.length;
-  const currentStreak = userProgress.streak;
 
   // Format date for header
   const formatDate = (date: Date) => {
@@ -188,20 +187,6 @@ export const ProgressScreen: React.FC = () => {
     
       <TouchableWithoutFeedback onPress={hideInfoBox}>
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-
-        {/* Streak Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>🔥 Streak</Text>
-            <Text style={styles.recordButton}>Record ✏️</Text>
-          </View>
-          
-          <View style={styles.streakContent}>
-            <Text style={styles.streakNumber}>{currentStreak}</Text>
-            <Text style={styles.streakUnit}>days</Text>
-            <Text style={styles.streakSubtext}>Keep it going!</Text>
-          </View>
-        </View>
 
         {/* Sessions Card */}
         <View style={styles.card}>
@@ -307,7 +292,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 45,
     right: 0,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: 'rgba(28, 28, 30, 0.8)',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,

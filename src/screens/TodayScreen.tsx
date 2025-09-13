@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Animated, Dimensions, TouchableOpacity, FlatList, AccessibilityInfo } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Animated, Dimensions, TouchableOpacity, FlatList, AccessibilityInfo, TouchableWithoutFeedback } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Session } from '../types';
 import { useStore, prerenderedModuleBackgrounds } from '../store/useStore';
@@ -36,12 +36,14 @@ export const TodayScreen: React.FC = () => {
   const [scrollViewHeight, setScrollViewHeight] = useState(0);
   const [contentHeight, setContentHeight] = useState(0);
   const [hasReachedBottom, setHasReachedBottom] = useState(false);
+  const [showInfoBox, setShowInfoBox] = useState(false);
   
   // Animation refs - simplified to avoid native driver conflicts
   const heroCardScale = useRef(new Animated.Value(1)).current;
   const completionAnimation = useRef(new Animated.Value(0)).current;
   const unlockAnimation = useRef(new Animated.Value(0)).current;
   const roadmapCardScale = useRef(new Animated.Value(1)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
   
   const selectedModule = mentalHealthModules.find(m => m.id === selectedModuleId) || mentalHealthModules[0];
   
@@ -240,6 +242,37 @@ export const TodayScreen: React.FC = () => {
     setSessionState('not_started');
   };
 
+  // Handle info box display
+  const handleInfoPress = () => {
+    if (showInfoBox) {
+      // Hide info box
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => setShowInfoBox(false));
+    } else {
+      // Show info box
+      setShowInfoBox(true);
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  };
+
+  // Hide info box when tapping elsewhere
+  const hideInfoBox = () => {
+    if (showInfoBox) {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => setShowInfoBox(false));
+    }
+  };
+
   // Subtle motivational messages based on progress
   const getMotivationalMessage = () => {
     const streak = userProgress?.streak || 0;
@@ -337,10 +370,44 @@ export const TodayScreen: React.FC = () => {
       {/* Sticky Header */}
       <View style={[styles.stickyHeader, { backgroundColor: globalBackgroundColor }]}>
         <Text style={styles.title}>Today</Text>
-        <Text style={styles.dateTextRight}>{getCurrentDateInfo().fullDate}</Text>
+        
+        {/* Info Button */}
+        <View style={styles.infoWrapper}>
+          <TouchableOpacity 
+            style={styles.infoButton}
+            onPress={handleInfoPress}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.infoButtonText}>i</Text>
+          </TouchableOpacity>
+          
+          {/* Info Box */}
+          {showInfoBox && (
+            <Animated.View 
+              style={[
+                styles.infoBox,
+                {
+                  opacity: fadeAnim,
+                  transform: [{
+                    translateY: fadeAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [-10, 0],
+                    })
+                  }]
+                }
+              ]}
+            >
+              <Text style={styles.infoBoxText}>
+                Our Today page uses evidence-based approaches to mental wellness. Each session is designed using proven techniques from cognitive behavioral therapy, mindfulness research, and neuroscience.{'\n\n'}
+                Personalized recommendations adapt to your progress and preferences, helping you build sustainable mental health habits.
+              </Text>
+            </Animated.View>
+          )}
+        </View>
       </View>
       
-      <ScrollView 
+      <TouchableWithoutFeedback onPress={hideInfoBox}>
+        <ScrollView 
         style={styles.scrollView} 
         showsVerticalScrollIndicator={false} 
         contentContainerStyle={styles.scrollContent}
@@ -553,7 +620,8 @@ export const TodayScreen: React.FC = () => {
 
         {/* Bottom spacing */}
         <View style={styles.bottomSpacing} />
-      </ScrollView>
+        </ScrollView>
+      </TouchableWithoutFeedback>
     </View>
   );
 
@@ -607,12 +675,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: 120, // Account for shorter sticky header height
-  },
-  dateTextRight: {
-    fontSize: 15,
-    color: '#8e8e93',
-    fontWeight: '400',
-    marginTop: 4,
   },
   moduleButton: {
     flexDirection: 'row',
@@ -857,5 +919,53 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 120,
+  },
+  
+  // Info Button & Box
+  infoWrapper: {
+    position: 'relative',
+  },
+  infoButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  infoButtonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000000',
+    fontFamily: 'System',
+  },
+  infoBox: {
+    position: 'absolute',
+    top: 50,
+    right: 0,
+    backgroundColor: 'rgba(28, 28, 30, 0.8)',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    minWidth: 280,
+    maxWidth: 320,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 1001,
+  },
+  infoBoxText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 20,
+    textAlign: 'left',
   },
 }); 

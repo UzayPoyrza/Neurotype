@@ -641,7 +641,7 @@ export const TodayScreen: React.FC = () => {
         isVisible={showInfoBox}
         onClose={handleCloseInfoBox}
         title="About Today"
-        content="Our Today page uses evidence-based approaches to mental wellness. Each session is designed using proven techniques from cognitive behavioral therapy, mindfulness research, and neuroscience. \n\nPersonalized recommendations adapt to your progress and preferences, helping you build sustainable mental health habits."
+        content="Our Today page uses evidence-based approaches to mental wellness. Each session is designed using proven techniques from cognitive behavioral therapy, mindfulness research, and neuroscience. Personalized recommendations adapt to your progress and preferences, helping you build sustainable mental health habits."
         position={{ top: 105, right: 20 }}
       />
     </>

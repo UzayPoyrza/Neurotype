@@ -14,8 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "statusBarHidden": false,
-      "statusBarStyle": "dark"
+      "bundleIdentifier": "com.anonymous.Neurotype"
     },
     "android": {
       "adaptiveIcon": {
@@ -26,6 +25,9 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }

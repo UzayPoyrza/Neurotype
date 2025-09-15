@@ -7,9 +7,9 @@ import {
   Animated, 
   Dimensions, 
   Modal, 
-  ScrollView,
-  SafeAreaView 
+  ScrollView
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Session } from '../types';
 import { theme } from '../styles/theme';
 

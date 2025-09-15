@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Animated, Dimensions, TouchableOpacity, FlatList, AccessibilityInfo } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Animated, Dimensions, TouchableOpacity, FlatList, AccessibilityInfo, TouchableWithoutFeedback } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Session } from '../types';
 import { useStore, prerenderedModuleBackgrounds } from '../store/useStore';
@@ -11,6 +11,8 @@ import { AnimatedFloatingButton } from '../components/AnimatedFloatingButton';
 import { SessionBottomSheet } from '../components/SessionBottomSheet';
 import { SessionProgressView } from '../components/SessionProgressView';
 import { SessionRating } from '../components/SessionRating';
+import { InfoBox } from '../components/InfoBox';
+import { MeditationDetailModal } from '../components/MeditationDetailModal';
 
 type SessionState = 'not_started' | 'in_progress' | 'completed' | 'rating';
 
@@ -26,6 +28,7 @@ export const TodayScreen: React.FC = () => {
   const [sessionState, setSessionState] = useState<SessionState>('not_started');
   const [showBottomSheet, setShowBottomSheet] = useState(false);
   const [showModuleModal, setShowModuleModal] = useState(false);
+  const [showMeditationModal, setShowMeditationModal] = useState(false);
   const [todayCompleted, setTodayCompleted] = useState(false);
   const [triggerUnlock, setTriggerUnlock] = useState(false);
   const [showRecommendationInfo, setShowRecommendationInfo] = useState(false);
@@ -36,12 +39,16 @@ export const TodayScreen: React.FC = () => {
   const [scrollViewHeight, setScrollViewHeight] = useState(0);
   const [contentHeight, setContentHeight] = useState(0);
   const [hasReachedBottom, setHasReachedBottom] = useState(false);
+  const [showInfoBox, setShowInfoBox] = useState(false);
+  const [infoButtonActive, setInfoButtonActive] = useState(false);
   
   // Animation refs - simplified to avoid native driver conflicts
   const heroCardScale = useRef(new Animated.Value(1)).current;
   const completionAnimation = useRef(new Animated.Value(0)).current;
   const unlockAnimation = useRef(new Animated.Value(0)).current;
   const roadmapCardScale = useRef(new Animated.Value(1)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const moduleButtonFade = useRef(new Animated.Value(1)).current;
   
   const selectedModule = mentalHealthModules.find(m => m.id === selectedModuleId) || mentalHealthModules[0];
   
@@ -158,15 +165,24 @@ export const TodayScreen: React.FC = () => {
 
   const handleSessionSelect = (session: Session) => {
     setSelectedSession(session);
-    setShowBottomSheet(true);
+    setShowMeditationModal(true);
   };
 
   const handleStartSession = () => {
-    setShowBottomSheet(false);
+    setShowMeditationModal(false);
     setSessionState('in_progress');
     if (selectedSession) {
       setActiveSession(selectedSession);
     }
+  };
+
+  const handleCloseMeditationModal = () => {
+    setShowMeditationModal(false);
+  };
+
+  const handleTutorial = () => {
+    // TODO: Implement tutorial functionality
+    console.log('Tutorial requested for:', selectedSession?.title);
   };
 
   const handleSessionFinish = () => {
@@ -238,6 +254,36 @@ export const TodayScreen: React.FC = () => {
     setSelectedSession(null);
     setShowBottomSheet(false);
     setSessionState('not_started');
+  };
+
+  // Handle info box display
+  const handleInfoPress = () => {
+    setShowInfoBox(true);
+    setInfoButtonActive(true);
+  };
+
+  const handleCloseInfoBox = () => {
+    setShowInfoBox(false);
+    setInfoButtonActive(false);
+  };
+
+  // Handle module button press with fade animation
+  const handleModuleButtonPress = () => {
+    // Quick fade out, then fade back in
+    Animated.sequence([
+      Animated.timing(moduleButtonFade, {
+        toValue: 0.3,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(moduleButtonFade, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setShowModuleModal(true);
+    });
   };
 
   // Subtle motivational messages based on progress
@@ -337,7 +383,18 @@ export const TodayScreen: React.FC = () => {
       {/* Sticky Header */}
       <View style={[styles.stickyHeader, { backgroundColor: globalBackgroundColor }]}>
         <Text style={styles.title}>Today</Text>
-        <Text style={styles.dateTextRight}>{getCurrentDateInfo().fullDate}</Text>
+        
+        {/* Info Button */}
+        <View style={styles.infoWrapper}>
+          <TouchableOpacity 
+            style={[styles.infoButton, infoButtonActive && styles.infoButtonActive]}
+            onPress={handleInfoPress}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.infoButtonText, infoButtonActive && styles.infoButtonTextActive]}>i</Text>
+          </TouchableOpacity>
+          
+        </View>
       </View>
       
       <ScrollView 
@@ -399,10 +456,13 @@ export const TodayScreen: React.FC = () => {
             <Text style={styles.cardTitle}>🧘‍♀️ Today's Focus</Text>
             <TouchableOpacity 
               style={styles.moduleButton}
-              onPress={() => setShowModuleModal(true)}
+              onPress={handleModuleButtonPress}
+              activeOpacity={1}
             >
-              <View style={[styles.moduleIndicator, { backgroundColor: selectedModule.color }]} />
-              <Text style={styles.moduleButtonText}>{selectedModule.title}</Text>
+              <Animated.View style={{ opacity: moduleButtonFade, flexDirection: 'row', alignItems: 'center' }}>
+                <View style={[styles.moduleIndicator, { backgroundColor: selectedModule.color }]} />
+                <Text style={styles.moduleButtonText}>{selectedModule.title}</Text>
+              </Animated.View>
             </TouchableOpacity>
           </View>
           
@@ -553,7 +613,7 @@ export const TodayScreen: React.FC = () => {
 
         {/* Bottom spacing */}
         <View style={styles.bottomSpacing} />
-      </ScrollView>
+        </ScrollView>
     </View>
   );
 
@@ -578,6 +638,15 @@ export const TodayScreen: React.FC = () => {
         onStart={handleStartSession}
       />
 
+      {/* Meditation Detail Modal */}
+      <MeditationDetailModal
+        session={selectedSession}
+        isVisible={showMeditationModal}
+        onClose={handleCloseMeditationModal}
+        onStart={handleStartSession}
+        onTutorial={handleTutorial}
+      />
+
       {/* Animated Floating Button - Fixed to Screen */}
       <AnimatedFloatingButton
         backgroundColor={selectedModule.color}
@@ -585,6 +654,15 @@ export const TodayScreen: React.FC = () => {
         isPillMode={isPillMode}
         onScroll={(scrollY) => setScrollY(scrollY)}
         onDragStart={handleDragStart}
+      />
+
+      {/* Info Box */}
+      <InfoBox
+        isVisible={showInfoBox}
+        onClose={handleCloseInfoBox}
+        title="About Today"
+        content="Our Today page uses evidence-based approaches to mental wellness. Each session is designed using proven techniques from cognitive behavioral therapy, mindfulness research, and neuroscience. Personalized recommendations adapt to your progress and preferences, helping you build sustainable mental health habits."
+        position={{ top: 105, right: 20 }}
       />
     </>
   );
@@ -607,12 +685,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: 120, // Account for shorter sticky header height
-  },
-  dateTextRight: {
-    fontSize: 15,
-    color: '#8e8e93',
-    fontWeight: '400',
-    marginTop: 4,
   },
   moduleButton: {
     flexDirection: 'row',
@@ -857,5 +929,35 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 120,
+  },
+  
+  // Info Button & Box
+  infoWrapper: {
+    position: 'relative',
+  },
+  infoButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  infoButtonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000000',
+    fontFamily: 'System',
+  },
+  infoButtonActive: {
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  infoButtonTextActive: {
+    color: '#007AFF',
   },
 }); 

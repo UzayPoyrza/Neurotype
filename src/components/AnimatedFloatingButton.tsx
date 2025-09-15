@@ -64,6 +64,7 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
   const textOpacity = useRef(new Animated.Value(0)).current;
   const iconScale = useRef(new Animated.Value(1)).current;
   const buttonTranslateX = useRef(new Animated.Value(0)).current;
+//  const buttonTranslateXJS = useRef(new Animated.Value(0)).current; // JS-only version for pill animation
 
   // Initialize position only on first mount
   const [isInitialized, setIsInitialized] = useState(false);
@@ -90,7 +91,7 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
         Animated.timing(buttonTranslateX, {
           toValue: translateAmount,
           duration: 300,
-          useNativeDriver: true,
+          useNativeDriver: false, // Match the width animation driver for perfect sync
         }),
         Animated.timing(textOpacity, {
           toValue: 1,
@@ -114,7 +115,7 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
         Animated.timing(buttonTranslateX, {
           toValue: 0,
           duration: 300,
-          useNativeDriver: true,
+          useNativeDriver: false, // Match the width animation driver for perfect sync
         }),
         Animated.timing(textOpacity, {
           toValue: 0,

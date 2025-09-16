@@ -590,7 +590,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   bottomSpacing: {
-    height: 40,
+    height: 0,
   },
   // Modal styles
   modalContainer: {

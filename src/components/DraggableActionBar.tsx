@@ -24,6 +24,7 @@ interface DraggableActionBarProps {
   secondaryColor?: string;
   themeColor?: string;
   onScroll?: (scrollY: number) => void;
+  tabTransitionProgress?: Animated.Value;
 }
 
 export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
@@ -33,6 +34,7 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
   secondaryColor = '#4ECDC4',
   themeColor = '#6B73FF',
   onScroll,
+  tabTransitionProgress,
 }, ref) => {
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
   const buttonSize = 56;
@@ -74,7 +76,7 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
       Animated.timing(leftButtonTranslateX, {
         toValue: 0,
         duration: 200,
-        useNativeDriver: false,
+        useNativeDriver: true,
       }),
       Animated.timing(leftTextOpacity, {
         toValue: 0,
@@ -95,7 +97,7 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
       Animated.timing(rightButtonTranslateX, {
         toValue: 0,
         duration: 200,
-        useNativeDriver: false,
+        useNativeDriver: true,
       }),
       Animated.timing(rightTextOpacity, {
         toValue: 0,
@@ -126,7 +128,7 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
       Animated.timing(leftButtonTranslateX, {
         toValue: 0,
         duration: 300,
-        useNativeDriver: false,
+        useNativeDriver: true,
       }),
       Animated.timing(leftTextOpacity, {
         toValue: 1,
@@ -148,7 +150,7 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
       Animated.timing(rightButtonTranslateX, {
         toValue: -(pillWidth - buttonSize),
         duration: 300,
-        useNativeDriver: false,
+        useNativeDriver: true,
       }),
       Animated.timing(rightTextOpacity, {
         toValue: 1,

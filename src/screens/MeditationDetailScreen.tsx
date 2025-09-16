@@ -10,7 +10,6 @@ import {
   StatusBar,
   TouchableWithoutFeedback,
 } from 'react-native';
-import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -44,45 +43,36 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const [activeTab, setActiveTab] = useState<TabType>('summary');
   const [historySortOrder, setHistorySortOrder] = useState<'latest' | 'earliest'>('latest');
   const [showSortOptions, setShowSortOptions] = useState(false);
-  const indicatorAnimation = useRef(new Animated.Value(0)).current;
-  const draggableActionBarRef = useRef<any>(null);
+  const scrollX = useRef(new Animated.Value(0)).current;
+  const horizontalScrollRef = useRef<ScrollView>(null);
+  const screenWidth = Dimensions.get('window').width;
   
   const session = mockSessions.find(s => s.id === sessionId);
   
   const handleTabChange = (tab: TabType) => {
     const tabIndex = tab === 'summary' ? 0 : tab === 'history' ? 1 : 2;
-    const screenWidth = Dimensions.get('window').width;
-    const tabWidth = (screenWidth - 32) / 3; // 32 for padding, 3 tabs
     
-    Animated.timing(indicatorAnimation, {
-      toValue: tabIndex,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
+    // Scroll to the appropriate page
+    horizontalScrollRef.current?.scrollTo({
+      x: tabIndex * screenWidth,
+      animated: true,
+    });
     
     setActiveTab(tab);
   };
 
-  const handleSwipeGesture = (event: any) => {
-    if (event.nativeEvent.state === State.END) {
-      const { translationX } = event.nativeEvent;
-      const threshold = 50; // Minimum swipe distance
-      
-      if (translationX > threshold) {
-        // Swipe right - go to previous tab
-        if (activeTab === 'history') {
-          handleTabChange('summary');
-        } else if (activeTab === 'howto') {
-          handleTabChange('history');
-        }
-      } else if (translationX < -threshold) {
-        // Swipe left - go to next tab
-        if (activeTab === 'summary') {
-          handleTabChange('history');
-        } else if (activeTab === 'history') {
-          handleTabChange('howto');
-        }
-      }
+  const handleScroll = (event: any) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    
+    // Update scrollX animated value for tab indicator
+    scrollX.setValue(offsetX);
+    
+    const tabIndex = Math.round(offsetX / screenWidth);
+    
+    // Update active tab based on scroll position
+    const newTab = tabIndex === 0 ? 'summary' : tabIndex === 1 ? 'history' : 'howto';
+    if (newTab !== activeTab) {
+      setActiveTab(newTab);
     }
   };
 
@@ -193,199 +183,191 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
     </View>
   );
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'summary':
-        return (
-          <View style={styles.tabContent}>
-            {renderBenefitsExplanation()}
-          </View>
-        );
-      
-      case 'history':
-        // Check if this is "Gentle Stretching Flow" to show placeholder data
-        const showPlaceholderData = session.title === 'Gentle Stretching Flow';
-        
-        // Placeholder session data with proper date objects for sorting
-        const sessionHistory = showPlaceholderData ? [
-          { id: '1', duration: 15, date: 'Dec 15, 2024', time: '2:30 PM', dateObj: new Date('2024-12-15') },
-          { id: '2', duration: 12, date: 'Dec 12, 2024', time: '7:15 AM', dateObj: new Date('2024-12-12') },
-          { id: '3', duration: 18, date: 'Dec 10, 2024', time: '6:45 PM', dateObj: new Date('2024-12-10') },
-          { id: '4', duration: 15, date: 'Dec 8, 2024', time: '8:00 AM', dateObj: new Date('2024-12-08') },
-          { id: '5', duration: 20, date: 'Dec 5, 2024', time: '9:30 PM', dateObj: new Date('2024-12-05') },
-        ].sort((a, b) => {
-          return historySortOrder === 'latest' 
-            ? b.dateObj.getTime() - a.dateObj.getTime()
-            : a.dateObj.getTime() - b.dateObj.getTime();
-        }) : [];
-        
-        return (
-          <View style={styles.tabContent}>
-            <TouchableWithoutFeedback onPress={() => setShowSortOptions(false)}>
-              <View style={styles.historySection}>
-                {sessionHistory.length > 0 ? (
-                  <>
-                    {/* Filter Dropdown */}
-                    <View style={styles.historyFilterContainer}>
+  const renderSummaryPage = () => (
+    <ScrollView style={styles.pageContainer} contentContainerStyle={styles.pageContent}>
+      {renderBenefitsExplanation()}
+    </ScrollView>
+  );
+
+  const renderHistoryPage = () => {
+    // Check if this is "Gentle Stretching Flow" to show placeholder data
+    const showPlaceholderData = session?.title === 'Gentle Stretching Flow';
+    
+    // Placeholder session data with proper date objects for sorting
+    const sessionHistory = showPlaceholderData ? [
+      { id: '1', duration: 15, date: 'Dec 15, 2024', time: '2:30 PM', dateObj: new Date('2024-12-15') },
+      { id: '2', duration: 12, date: 'Dec 12, 2024', time: '7:15 AM', dateObj: new Date('2024-12-12') },
+      { id: '3', duration: 18, date: 'Dec 10, 2024', time: '6:45 PM', dateObj: new Date('2024-12-10') },
+      { id: '4', duration: 15, date: 'Dec 8, 2024', time: '8:00 AM', dateObj: new Date('2024-12-08') },
+      { id: '5', duration: 20, date: 'Dec 5, 2024', time: '9:30 PM', dateObj: new Date('2024-12-05') },
+    ].sort((a, b) => {
+      return historySortOrder === 'latest' 
+        ? b.dateObj.getTime() - a.dateObj.getTime()
+        : a.dateObj.getTime() - b.dateObj.getTime();
+    }) : [];
+    
+    return (
+      <ScrollView style={styles.pageContainer} contentContainerStyle={styles.pageContent}>
+        <TouchableWithoutFeedback onPress={() => setShowSortOptions(false)}>
+          <View style={styles.historySection}>
+            {sessionHistory.length > 0 ? (
+              <>
+                {/* Filter Dropdown */}
+                <View style={styles.historyFilterContainer}>
+                <TouchableOpacity 
+                  style={styles.historyFilterButton}
+                  onPress={() => setShowSortOptions(!showSortOptions)}
+                >
+                  <View style={styles.historyFilterTextContainer}>
+                    <Text style={styles.historyFilterButtonText}>
+                      {historySortOrder === 'latest' ? (
+                        <>
+                          <Text style={styles.historyFilterBoldText}>Latest</Text>
+                          <Text style={styles.historyFilterArrowText}> → </Text>
+                          <Text style={styles.historyFilterLightText}>First</Text>
+                        </>
+                      ) : (
+                        <>
+                          <Text style={styles.historyFilterBoldText}>Earliest</Text>
+                          <Text style={styles.historyFilterArrowText}> → </Text>
+                          <Text style={styles.historyFilterLightText}>First</Text>
+                        </>
+                      )}
+                    </Text>
+                  </View>
+                  <Text style={styles.historyFilterArrow}>
+                    {showSortOptions ? '▲' : '▼'}
+                  </Text>
+                </TouchableOpacity>
+                
+                {showSortOptions && (
+                  <View style={styles.historyFilterDropdown}>
                     <TouchableOpacity 
-                      style={styles.historyFilterButton}
-                      onPress={() => setShowSortOptions(!showSortOptions)}
+                      style={styles.historyFilterOption}
+                      onPress={() => {
+                        setHistorySortOrder('latest');
+                        setShowSortOptions(false);
+                      }}
                     >
-                      <View style={styles.historyFilterTextContainer}>
-                        <Text style={styles.historyFilterButtonText}>
-                          {historySortOrder === 'latest' ? (
-                            <>
-                              <Text style={styles.historyFilterBoldText}>Latest</Text>
-                              <Text style={styles.historyFilterArrowText}> → </Text>
-                              <Text style={styles.historyFilterLightText}>First</Text>
-                            </>
-                          ) : (
-                            <>
-                              <Text style={styles.historyFilterBoldText}>Earliest</Text>
-                              <Text style={styles.historyFilterArrowText}> → </Text>
-                              <Text style={styles.historyFilterLightText}>First</Text>
-                            </>
-                          )}
-                        </Text>
-                      </View>
-                      <Text style={styles.historyFilterArrow}>
-                        {showSortOptions ? '▲' : '▼'}
+                      <Text style={[
+                        styles.historyFilterOptionText,
+                        historySortOrder === 'latest' && styles.historyFilterOptionTextActive
+                      ]}>
+                        <Text style={styles.historyFilterBoldText}>Latest</Text>
+                        <Text style={styles.historyFilterArrowText}> → </Text>
+                        <Text style={styles.historyFilterLightText}>First</Text>
                       </Text>
                     </TouchableOpacity>
-                    
-                    {showSortOptions && (
-                      <View style={styles.historyFilterDropdown}>
-                        <TouchableOpacity 
-                          style={styles.historyFilterOption}
-                          onPress={() => {
-                            setHistorySortOrder('latest');
-                            setShowSortOptions(false);
-                          }}
-                        >
-                          <Text style={[
-                            styles.historyFilterOptionText,
-                            historySortOrder === 'latest' && styles.historyFilterOptionTextActive
-                          ]}>
-                            <Text style={styles.historyFilterBoldText}>Latest</Text>
-                            <Text style={styles.historyFilterArrowText}> → </Text>
-                            <Text style={styles.historyFilterLightText}>First</Text>
-                          </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity 
-                          style={styles.historyFilterOption}
-                          onPress={() => {
-                            setHistorySortOrder('earliest');
-                            setShowSortOptions(false);
-                          }}
-                        >
-                          <Text style={[
-                            styles.historyFilterOptionText,
-                            historySortOrder === 'earliest' && styles.historyFilterOptionTextActive
-                          ]}>
-                            <Text style={styles.historyFilterBoldText}>Earliest</Text>
-                            <Text style={styles.historyFilterArrowText}> → </Text>
-                            <Text style={styles.historyFilterLightText}>First</Text>
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-                    )}
+                    <TouchableOpacity 
+                      style={styles.historyFilterOption}
+                      onPress={() => {
+                        setHistorySortOrder('earliest');
+                        setShowSortOptions(false);
+                      }}
+                    >
+                      <Text style={[
+                        styles.historyFilterOptionText,
+                        historySortOrder === 'earliest' && styles.historyFilterOptionTextActive
+                      ]}>
+                        <Text style={styles.historyFilterBoldText}>Earliest</Text>
+                        <Text style={styles.historyFilterArrowText}> → </Text>
+                        <Text style={styles.historyFilterLightText}>First</Text>
+                      </Text>
+                    </TouchableOpacity>
                   </View>
-                  
-                  <View style={styles.historyListContainer}>
-                  {sessionHistory.map((sessionItem, index) => (
-                    <View key={sessionItem.id} style={styles.historyCard}>
-                      <View style={styles.historyCardContent}>
-                        <View style={styles.historyItemLeft}>
-                          <View style={styles.historyDurationContainer}>
-                            <Text style={styles.historyDurationNumber}>{sessionItem.duration}</Text>
-                            <Text style={styles.historyDurationUnit}>min</Text>
-                          </View>
-                          <Text style={styles.historyItemDate}>{sessionItem.date}</Text>
-                        </View>
-                        <View style={styles.historyItemRight}>
-                          <Text style={styles.historyItemTime}>{sessionItem.time}</Text>
-                          <View style={styles.historyStatusDot} />
-                        </View>
+                )}
+              </View>
+              
+              <View style={styles.historyListContainer}>
+              {sessionHistory.map((sessionItem, index) => (
+                <View key={sessionItem.id} style={styles.historyCard}>
+                  <View style={styles.historyCardContent}>
+                    <View style={styles.historyItemLeft}>
+                      <View style={styles.historyDurationContainer}>
+                        <Text style={styles.historyDurationNumber}>{sessionItem.duration}</Text>
+                        <Text style={styles.historyDurationUnit}>min</Text>
                       </View>
+                      <Text style={styles.historyItemDate}>{sessionItem.date}</Text>
                     </View>
-                  ))}
+                    <View style={styles.historyItemRight}>
+                      <Text style={styles.historyItemTime}>{sessionItem.time}</Text>
+                      <View style={styles.historyStatusDot} />
+                    </View>
                   </View>
-                </>
-              ) : (
-                <View style={styles.historyEmptyState}>
-                  <Text style={styles.historyEmptyIcon}>📊</Text>
-                  <Text style={styles.historyEmptyText}>No sessions completed</Text>
-                  <Text style={styles.historyEmptySubtext}>Start your first meditation to see your progress here</Text>
                 </View>
-              )}
+              ))}
               </View>
-            </TouchableWithoutFeedback>
-          </View>
-        );
-      
-      case 'howto':
-        return (
-          <View style={styles.tabContent}>
-            <View style={styles.howToSection}>
-              {/* Instructions */}
-              <View style={styles.instructionsContainer}>
-                <View style={styles.instructionItem}>
-                  <View style={styles.instructionNumber}>
-                    <Text style={styles.instructionNumberText}>1</Text>
-                  </View>
-                  <Text style={styles.instructionText}>Find a quiet, comfortable space</Text>
-                </View>
-                
-                <View style={styles.instructionItem}>
-                  <View style={styles.instructionNumber}>
-                    <Text style={styles.instructionNumberText}>2</Text>
-                  </View>
-                  <Text style={styles.instructionText}>Sit or lie down in a relaxed position</Text>
-                </View>
-                
-                <View style={styles.instructionItem}>
-                  <View style={styles.instructionNumber}>
-                    <Text style={styles.instructionNumberText}>3</Text>
-                  </View>
-                  <Text style={styles.instructionText}>Close your eyes and take a few deep breaths</Text>
-                </View>
-                
-                <View style={styles.instructionItem}>
-                  <View style={styles.instructionNumber}>
-                    <Text style={styles.instructionNumberText}>4</Text>
-                  </View>
-                  <Text style={styles.instructionText}>Focus on your breathing and let go of distractions</Text>
-                </View>
-                
-                <View style={styles.instructionItem}>
-                  <View style={styles.instructionNumber}>
-                    <Text style={styles.instructionNumberText}>5</Text>
-                  </View>
-                  <Text style={styles.instructionText}>Follow the guided meditation instructions</Text>
-                </View>
-                
-                <View style={styles.instructionItem}>
-                  <View style={styles.instructionNumber}>
-                    <Text style={styles.instructionNumberText}>6</Text>
-                  </View>
-                  <Text style={styles.instructionText}>When finished, slowly open your eyes</Text>
-                </View>
-                
-                <View style={styles.instructionItem}>
-                  <View style={styles.instructionNumber}>
-                    <Text style={styles.instructionNumberText}>7</Text>
-                  </View>
-                  <Text style={styles.instructionText}>Take a moment to notice how you feel</Text>
-                </View>
-              </View>
+            </>
+          ) : (
+            <View style={styles.historyEmptyState}>
+              <Text style={styles.historyEmptyIcon}>📊</Text>
+              <Text style={styles.historyEmptyText}>No sessions completed</Text>
+              <Text style={styles.historyEmptySubtext}>Start your first meditation to see your progress here</Text>
             </View>
+          )}
           </View>
-        );
-      
-      default:
-        return null;
-    }
+        </TouchableWithoutFeedback>
+      </ScrollView>
+    );
   };
+
+  const renderHowToPage = () => (
+    <ScrollView style={styles.pageContainer} contentContainerStyle={styles.pageContent}>
+      <View style={styles.howToSection}>
+        {/* Instructions */}
+        <View style={styles.instructionsContainer}>
+          <View style={styles.instructionItem}>
+            <View style={styles.instructionNumber}>
+              <Text style={styles.instructionNumberText}>1</Text>
+            </View>
+            <Text style={styles.instructionText}>Find a quiet, comfortable space</Text>
+          </View>
+          
+          <View style={styles.instructionItem}>
+            <View style={styles.instructionNumber}>
+              <Text style={styles.instructionNumberText}>2</Text>
+            </View>
+            <Text style={styles.instructionText}>Sit or lie down in a relaxed position</Text>
+          </View>
+          
+          <View style={styles.instructionItem}>
+            <View style={styles.instructionNumber}>
+              <Text style={styles.instructionNumberText}>3</Text>
+            </View>
+            <Text style={styles.instructionText}>Close your eyes and take a few deep breaths</Text>
+          </View>
+          
+          <View style={styles.instructionItem}>
+            <View style={styles.instructionNumber}>
+              <Text style={styles.instructionNumberText}>4</Text>
+            </View>
+            <Text style={styles.instructionText}>Focus on your breathing and let go of distractions</Text>
+          </View>
+          
+          <View style={styles.instructionItem}>
+            <View style={styles.instructionNumber}>
+              <Text style={styles.instructionNumberText}>5</Text>
+            </View>
+            <Text style={styles.instructionText}>Follow the guided meditation instructions</Text>
+          </View>
+          
+          <View style={styles.instructionItem}>
+            <View style={styles.instructionNumber}>
+              <Text style={styles.instructionNumberText}>6</Text>
+            </View>
+            <Text style={styles.instructionText}>When finished, slowly open your eyes</Text>
+          </View>
+          
+          <View style={styles.instructionItem}>
+            <View style={styles.instructionNumber}>
+              <Text style={styles.instructionNumberText}>7</Text>
+            </View>
+            <Text style={styles.instructionText}>Take a moment to notice how you feel</Text>
+          </View>
+        </View>
+      </View>
+    </ScrollView>
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
@@ -447,13 +429,14 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
                 styles.tabIndicator,
                 {
                   transform: [{
-                    translateX: indicatorAnimation.interpolate({
-                      inputRange: [0, 1, 2],
+                    translateX: scrollX.interpolate({
+                      inputRange: [0, screenWidth, screenWidth * 2],
                       outputRange: [
-                        ((Dimensions.get('window').width - 32) / 3) / 2 - 45, // Center of first tab minus adjusted offset
-                        ((Dimensions.get('window').width - 32) / 3) + ((Dimensions.get('window').width - 32) / 3) / 2 - 45, // Center of second tab minus adjusted offset
-                        ((Dimensions.get('window').width - 32) / 3) * 2 + ((Dimensions.get('window').width - 32) / 3) / 2 - 45, // Center of third tab minus adjusted offset
+                        ((screenWidth - 32) / 3) / 2 - 45, // Center of first tab minus adjusted offset
+                        ((screenWidth - 32) / 3) + ((screenWidth - 32) / 3) / 2 - 45, // Center of second tab minus adjusted offset
+                        ((screenWidth - 32) / 3) * 2 + ((screenWidth - 32) / 3) / 2 - 45, // Center of third tab minus adjusted offset
                       ],
+                      extrapolate: 'clamp',
                     })
                   }]
                 }
@@ -462,36 +445,39 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           </View>
         </View>
 
-        <PanGestureHandler onHandlerStateChange={handleSwipeGesture}>
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            onScroll={(event) => {
-              const scrollY = event.nativeEvent.contentOffset.y;
-              // Pass scroll event to DraggableActionBar
-              if (draggableActionBarRef.current) {
-                draggableActionBarRef.current.handleScroll(scrollY);
-              }
-            }}
-            scrollEventThrottle={16}
-          >
-            {/* Hero Visual Section - Hide on History tab */}
-            {activeTab !== 'history' && renderVisualSection()}
-            
-            {/* Meditation Info - Hide on History tab only, hide tags on How to tab */}
-            {activeTab !== 'history' && renderMeditationInfo(activeTab !== 'howto')}
-            
-            {/* Tab Content */}
-            {renderTabContent()}
-            
-          </ScrollView>
-        </PanGestureHandler>
+        {/* Horizontal ScrollView for pages */}
+        <ScrollView
+          ref={horizontalScrollRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          style={styles.horizontalScrollView}
+        >
+          {/* Summary Page */}
+          <View style={[styles.page, { width: screenWidth }]}>
+            {renderVisualSection()}
+            {renderMeditationInfo(true)}
+            {renderSummaryPage()}
+          </View>
+          
+          {/* History Page */}
+          <View style={[styles.page, { width: screenWidth }]}>
+            {renderHistoryPage()}
+          </View>
+          
+          {/* How To Page */}
+          <View style={[styles.page, { width: screenWidth }]}>
+            {renderVisualSection()}
+            {renderMeditationInfo(false)}
+            {renderHowToPage()}
+          </View>
+        </ScrollView>
       </SafeAreaView>
 
       {/* Draggable Action Bar */}
       <DraggableActionBar
-        ref={draggableActionBarRef}
         primaryAction={{
           title: "Start",
           icon: "▶",
@@ -504,6 +490,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         }}
         themeColor={getGoalColor(session.goal)}
         secondaryColor="#007AFF"
+        tabTransitionProgress={scrollX}
       />
     </View>
   );
@@ -583,10 +570,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '400',
   },
-  scrollView: {
+  horizontalScrollView: {
     flex: 1,
   },
-  scrollContent: {
+  page: {
+    flex: 1,
+  },
+  pageContainer: {
+    flex: 1,
+  },
+  pageContent: {
     paddingBottom: 100,
   },
   visualSection: {

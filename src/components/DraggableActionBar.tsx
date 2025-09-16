@@ -52,7 +52,6 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
   const leftButtonWidth = useRef(new Animated.Value(buttonSize)).current;
   const leftTextOpacity = useRef(new Animated.Value(0)).current;
   const leftIconScale = useRef(new Animated.Value(1.1)).current;
-  const leftButtonTranslateX = useRef(new Animated.Value(0)).current;
 
   // Right button animations - start in circle mode
   const rightButtonWidth = useRef(new Animated.Value(buttonSize)).current;
@@ -73,11 +72,6 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
         duration: 200,
         useNativeDriver: false,
       }),
-      Animated.timing(leftButtonTranslateX, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
       Animated.timing(leftTextOpacity, {
         toValue: 0,
         duration: 150,
@@ -97,7 +91,7 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
       Animated.timing(rightButtonTranslateX, {
         toValue: 0,
         duration: 200,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
       Animated.timing(rightTextOpacity, {
         toValue: 0,
@@ -125,11 +119,6 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
         duration: 300,
         useNativeDriver: false,
       }),
-      Animated.timing(leftButtonTranslateX, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
       Animated.timing(leftTextOpacity, {
         toValue: 1,
         duration: 200,
@@ -150,7 +139,7 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
       Animated.timing(rightButtonTranslateX, {
         toValue: -(pillWidth - buttonSize),
         duration: 300,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
       Animated.timing(rightTextOpacity, {
         toValue: 1,
@@ -236,9 +225,6 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
         <Animated.View
           style={[
             styles.floatingButton,
-            {
-              transform: [{ translateX: leftButtonTranslateX }],
-            }
           ]}
         >
           <Animated.View
@@ -261,7 +247,6 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
                     styles.iconContainer,
                     { 
                       transform: [{ scale: leftIconScale }],
-                      left: 12,
                     }
                   ]}
                 >
@@ -275,7 +260,6 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
                     styles.textContainer,
                     { 
                       opacity: leftTextOpacity,
-                      left: 44,
                       alignItems: 'flex-start',
                     }
                   ]}
@@ -302,7 +286,7 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
       >
         <Animated.View
           style={[
-            styles.floatingButton,
+            styles.floatingButtonRight,
             {
               transform: [{ translateX: rightButtonTranslateX }],
             }
@@ -310,7 +294,7 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
         >
           <Animated.View
             style={[
-              styles.buttonBackground,
+              styles.buttonBackgroundRight,
               {
                 backgroundColor: themeColor,
                 width: rightButtonWidth,
@@ -325,10 +309,9 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
               <View style={styles.content}>
                 <Animated.View
                   style={[
-                    styles.iconContainer,
+                    styles.iconContainerRight,
                     { 
                       transform: [{ scale: rightIconScale }],
-                      right: 12,
                     }
                   ]}
                 >
@@ -339,10 +322,9 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
                 
                 <Animated.View
                   style={[
-                    styles.textContainer,
+                    styles.textContainerRight,
                     { 
                       opacity: rightTextOpacity,
-                      right: 44,
                       alignItems: 'flex-end',
                     }
                   ]}
@@ -394,6 +376,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  buttonBackgroundRight: {
+    height: 56,
+    borderRadius: 28, // This will create a pill shape when width > height
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  floatingButtonRight: {
+    height: 56,
+    borderWidth: 0,
+    borderColor: 'transparent',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   buttonContent: {
     width: '100%',
     height: '100%',
@@ -413,12 +413,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     position: 'absolute',
+    left: 12,
+  },
+  iconContainerRight: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'absolute',
+    right: 12,
   },
   textContainer: {
     position: 'absolute',
     height: 56, // Match button height for proper vertical centering
     justifyContent: 'center',
     alignItems: 'center',
+    left: 44,
+  },
+  textContainerRight: {
+    position: 'absolute',
+    height: 56, // Match button height for proper vertical centering
+    justifyContent: 'center',
+    alignItems: 'center',
+    right: 44,
   },
   pillText: {
     fontSize: 16,

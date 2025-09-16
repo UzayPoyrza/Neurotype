@@ -820,7 +820,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   historyListContainer: {
-    gap: 6,
+    gap: 4,
   },
   historyCard: {
     backgroundColor: theme.colors.surface,
@@ -1019,7 +1019,7 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
   },
   instructionsContainer: {
-    gap: 8,
+    gap: 4,
     marginTop: -20,
   },
   instructionItem: {

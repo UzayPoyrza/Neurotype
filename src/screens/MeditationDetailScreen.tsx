@@ -515,7 +515,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           {/* History Page */}
           <ScrollView 
             style={[styles.page, { width: screenWidth }]} 
-            contentContainerStyle={styles.pageContent}
+            contentContainerStyle={styles.historyPageContent}
             onScroll={handleVerticalScroll}
             scrollEventThrottle={16}
           >
@@ -525,7 +525,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           {/* How To Page */}
           <ScrollView 
             style={[styles.page, { width: screenWidth }]} 
-            contentContainerStyle={styles.pageContent}
+            contentContainerStyle={styles.howToPageContent}
             onScroll={handleVerticalScroll}
             scrollEventThrottle={16}
           >
@@ -642,6 +642,12 @@ const styles = StyleSheet.create({
   },
   pageContent: {
     paddingBottom: 100,
+  },
+  howToPageContent: {
+    paddingBottom: 130, // Extra padding for How-to page
+  },
+  historyPageContent: {
+    paddingBottom: 130, // Extra padding for History page
   },
   pageSpacer: {
     height: 20, // Small spacer to account for sticky header

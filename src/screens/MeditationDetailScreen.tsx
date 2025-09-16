@@ -10,6 +10,7 @@ import {
   StatusBar,
   TouchableWithoutFeedback,
 } from 'react-native';
+import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -57,6 +58,29 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
     }).start();
     
     setActiveTab(tab);
+  };
+
+  const handleSwipeGesture = (event: any) => {
+    if (event.nativeEvent.state === State.END) {
+      const { translationX } = event.nativeEvent;
+      const threshold = 50; // Minimum swipe distance
+      
+      if (translationX > threshold) {
+        // Swipe right - go to previous tab
+        if (activeTab === 'history') {
+          handleTabChange('summary');
+        } else if (activeTab === 'howto') {
+          handleTabChange('history');
+        }
+      } else if (translationX < -threshold) {
+        // Swipe left - go to next tab
+        if (activeTab === 'summary') {
+          handleTabChange('history');
+        } else if (activeTab === 'history') {
+          handleTabChange('howto');
+        }
+      }
+    }
   };
   
   if (!session) {
@@ -437,21 +461,23 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         </View>
       </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Hero Visual Section - Hide on History tab */}
-        {activeTab !== 'history' && renderVisualSection()}
-        
-        {/* Meditation Info - Hide on History tab only, hide tags on How to tab */}
-        {activeTab !== 'history' && renderMeditationInfo(activeTab !== 'howto')}
-        
-        {/* Tab Content */}
-        {renderTabContent()}
-        
-      </ScrollView>
+      <PanGestureHandler onHandlerStateChange={handleSwipeGesture}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Hero Visual Section - Hide on History tab */}
+          {activeTab !== 'history' && renderVisualSection()}
+          
+          {/* Meditation Info - Hide on History tab only, hide tags on How to tab */}
+          {activeTab !== 'history' && renderMeditationInfo(activeTab !== 'howto')}
+          
+          {/* Tab Content */}
+          {renderTabContent()}
+          
+        </ScrollView>
+      </PanGestureHandler>
     </View>
   );
 };

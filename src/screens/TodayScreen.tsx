@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Animated, Dimensions, TouchableOpacity, FlatList, AccessibilityInfo, TouchableWithoutFeedback } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { Session } from '../types';
 import { useStore, prerenderedModuleBackgrounds } from '../store/useStore';
 import { mockSessions } from '../data/mockData';
@@ -16,8 +17,17 @@ import { MeditationDetailModal } from '../components/MeditationDetailModal';
 
 type SessionState = 'not_started' | 'in_progress' | 'completed' | 'rating';
 
+type TodayStackParamList = {
+  TodayMain: undefined;
+  Roadmap: undefined;
+  MeditationDetail: { sessionId: string };
+  Player: undefined;
+};
+
+type TodayScreenNavigationProp = StackNavigationProp<TodayStackParamList, 'TodayMain'>;
+
 export const TodayScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<TodayScreenNavigationProp>();
   const { setActiveSession, setGlobalBackgroundColor, setCurrentScreen, setTodayModuleId } = useStore();
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const userProgress = useStore(state => state.userProgress);
@@ -165,7 +175,12 @@ export const TodayScreen: React.FC = () => {
 
   const handleSessionSelect = (session: Session) => {
     setSelectedSession(session);
-    setShowMeditationModal(true);
+    
+    // Remove the -today suffix to get the original session ID
+    const originalSessionId = session.id.replace('-today', '');
+    
+    // Navigate to the new meditation detail screen
+    navigation.navigate('MeditationDetail', { sessionId: originalSessionId });
   };
 
   const handleStartSession = () => {

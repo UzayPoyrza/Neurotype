@@ -45,20 +45,20 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
   const leftButtonPos = { x: margin, y: screenHeight - buttonSize - margin - 80 };
   const rightButtonPos = { x: screenWidth - buttonSize - margin, y: screenHeight - buttonSize - margin - 80 };
 
-  // Button state - both start in pill mode
-  const [isCircleMode, setIsCircleMode] = useState(false);
+  // Button state - start in circle mode, then animate to pill mode
+  const [isCircleMode, setIsCircleMode] = useState(true);
   
-  // Left button animations
-  const leftButtonWidth = useRef(new Animated.Value(pillWidth)).current;
-  const leftTextOpacity = useRef(new Animated.Value(1)).current;
-  const leftIconScale = useRef(new Animated.Value(1)).current;
+  // Left button animations - start in circle mode
+  const leftButtonWidth = useRef(new Animated.Value(buttonSize)).current;
+  const leftTextOpacity = useRef(new Animated.Value(0)).current;
+  const leftIconScale = useRef(new Animated.Value(1.1)).current;
   const leftButtonTranslateX = useRef(new Animated.Value(0)).current;
 
-  // Right button animations
-  const rightButtonWidth = useRef(new Animated.Value(pillWidth)).current;
-  const rightTextOpacity = useRef(new Animated.Value(1)).current;
-  const rightIconScale = useRef(new Animated.Value(1)).current;
-  const rightButtonTranslateX = useRef(new Animated.Value(-(pillWidth - buttonSize))).current;
+  // Right button animations - start in circle mode
+  const rightButtonWidth = useRef(new Animated.Value(buttonSize)).current;
+  const rightTextOpacity = useRef(new Animated.Value(0)).current;
+  const rightIconScale = useRef(new Animated.Value(1.1)).current;
+  const rightButtonTranslateX = useRef(new Animated.Value(0)).current;
 
   // Animate to circle mode when scrolling
   const animateToCircleMode = () => {
@@ -193,6 +193,16 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
   useImperativeHandle(ref, () => ({
     handleScroll,
   }));
+
+  // Animate from circle to pill mode on mount
+  useEffect(() => {
+    // Delay the animation slightly to ensure smooth transition
+    const timer = setTimeout(() => {
+      animateToPillMode();
+    }, 500); // 500ms delay after mount
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // Cleanup timeout on unmount
   useEffect(() => {

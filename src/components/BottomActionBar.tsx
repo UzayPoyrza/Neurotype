@@ -123,28 +123,29 @@ export const BottomActionBar: React.FC<BottomActionBarProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.actionBar}>
-        {/* Secondary Action (Tutorial) - Outline Style */}
+        {/* Secondary Action (Tutorial) - Blue Style */}
         <Animated.View style={{ transform: [{ scale: secondaryScale }] }}>
           <TouchableOpacity
             style={[
               styles.secondaryButton,
-              { borderColor: '#6B7280' }
+              { borderColor: '#007AFF' }
             ]}
             onPress={handleSecondaryPress}
             activeOpacity={0.8}
           >
             <View style={styles.buttonContent}>
               {secondaryAction.icon && (
-                <Text style={[styles.icon, { color: '#6B7280' }]}>
+                <Text style={[styles.icon, { color: '#ffffff' }]}>
                   {secondaryAction.icon}
                 </Text>
               )}
-              <Text style={[styles.secondaryText, { color: '#6B7280' }]}>
+              <Text style={[styles.secondaryText, { color: '#ffffff' }]}>
                 {secondaryAction.title}
               </Text>
             </View>
           </TouchableOpacity>
         </Animated.View>
+
 
         {/* Primary Action (Start) - Solid Style */}
         <Animated.View style={{ transform: [{ scale: primaryScale }] }}>
@@ -176,10 +177,10 @@ export const BottomActionBar: React.FC<BottomActionBarProps> = ({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 80, // Position right above the tab bar
+    bottom: 85, // Position right above the tab bar
     left: 0,
     right: 0,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingBottom: 0,
     paddingTop: 16,
     backgroundColor: 'transparent',
@@ -188,7 +189,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
     borderRadius: 12,
-    paddingVertical: 4,
+    paddingVertical: 2,
     paddingHorizontal: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -6 },
@@ -197,26 +198,29 @@ const styles = StyleSheet.create({
     elevation: 16,
     borderWidth: 1,
     borderColor: 'rgba(0, 0, 0, 0.15)',
-    gap: 8,
+    justifyContent: 'space-between',
+    alignItems: 'center',
     overflow: 'hidden',
   },
   secondaryButton: {
-    flex: 0.4,
-    paddingVertical: 16,
+    paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
     borderWidth: 1.5,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#007AFF',
     alignItems: 'center',
     justifyContent: 'center',
+    flex: 0.45,
   },
   primaryButton: {
-    flex: 0.6,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
+    flex: 0.5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,

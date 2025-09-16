@@ -489,7 +489,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         }}
         secondaryAction={{
           title: "Tutorial",
-          icon: "📚",
+          icon: "📖",
           onPress: handleTutorialPress,
         }}
         themeColor={getGoalColor(session.goal)}

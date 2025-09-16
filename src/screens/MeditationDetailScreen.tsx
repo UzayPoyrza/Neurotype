@@ -38,6 +38,8 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   
   const [activeTab, setActiveTab] = useState<TabType>('summary');
+  const [historySortOrder, setHistorySortOrder] = useState<'latest' | 'earliest'>('latest');
+  const [showSortOptions, setShowSortOptions] = useState(false);
   const indicatorAnimation = useRef(new Animated.Value(0)).current;
   
   const session = mockSessions.find(s => s.id === sessionId);
@@ -181,20 +183,91 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         // Check if this is "Gentle Stretching Flow" to show placeholder data
         const showPlaceholderData = session.title === 'Gentle Stretching Flow';
         
-        // Placeholder session data
+        // Placeholder session data with proper date objects for sorting
         const sessionHistory = showPlaceholderData ? [
-          { id: '1', duration: 15, date: 'Dec 15, 2024', time: '2:30 PM' },
-          { id: '2', duration: 12, date: 'Dec 12, 2024', time: '7:15 AM' },
-          { id: '3', duration: 18, date: 'Dec 10, 2024', time: '6:45 PM' },
-          { id: '4', duration: 15, date: 'Dec 8, 2024', time: '8:00 AM' },
-          { id: '5', duration: 20, date: 'Dec 5, 2024', time: '9:30 PM' },
-        ] : [];
+          { id: '1', duration: 15, date: 'Dec 15, 2024', time: '2:30 PM', dateObj: new Date('2024-12-15') },
+          { id: '2', duration: 12, date: 'Dec 12, 2024', time: '7:15 AM', dateObj: new Date('2024-12-12') },
+          { id: '3', duration: 18, date: 'Dec 10, 2024', time: '6:45 PM', dateObj: new Date('2024-12-10') },
+          { id: '4', duration: 15, date: 'Dec 8, 2024', time: '8:00 AM', dateObj: new Date('2024-12-08') },
+          { id: '5', duration: 20, date: 'Dec 5, 2024', time: '9:30 PM', dateObj: new Date('2024-12-05') },
+        ].sort((a, b) => {
+          return historySortOrder === 'latest' 
+            ? b.dateObj.getTime() - a.dateObj.getTime()
+            : a.dateObj.getTime() - b.dateObj.getTime();
+        }) : [];
         
         return (
           <View style={styles.tabContent}>
             <View style={styles.historySection}>
               {sessionHistory.length > 0 ? (
-                <View style={styles.historyListContainer}>
+                <>
+                  {/* Filter Dropdown */}
+                  <View style={styles.historyFilterContainer}>
+                    <TouchableOpacity 
+                      style={styles.historyFilterButton}
+                      onPress={() => setShowSortOptions(!showSortOptions)}
+                    >
+                      <View style={styles.historyFilterTextContainer}>
+                        <Text style={styles.historyFilterButtonText}>
+                          {historySortOrder === 'latest' ? (
+                            <>
+                              <Text style={styles.historyFilterBoldText}>Latest</Text>
+                              <Text style={styles.historyFilterArrowText}> → </Text>
+                              <Text style={styles.historyFilterLightText}>First</Text>
+                            </>
+                          ) : (
+                            <>
+                              <Text style={styles.historyFilterBoldText}>Earliest</Text>
+                              <Text style={styles.historyFilterArrowText}> → </Text>
+                              <Text style={styles.historyFilterLightText}>First</Text>
+                            </>
+                          )}
+                        </Text>
+                      </View>
+                      <Text style={styles.historyFilterArrow}>
+                        {showSortOptions ? '▲' : '▼'}
+                      </Text>
+                    </TouchableOpacity>
+                    
+                    {showSortOptions && (
+                      <View style={styles.historyFilterDropdown}>
+                        <TouchableOpacity 
+                          style={styles.historyFilterOption}
+                          onPress={() => {
+                            setHistorySortOrder('latest');
+                            setShowSortOptions(false);
+                          }}
+                        >
+                          <Text style={[
+                            styles.historyFilterOptionText,
+                            historySortOrder === 'latest' && styles.historyFilterOptionTextActive
+                          ]}>
+                            <Text style={styles.historyFilterBoldText}>Latest</Text>
+                            <Text style={styles.historyFilterArrowText}> → </Text>
+                            <Text style={styles.historyFilterLightText}>First</Text>
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                          style={styles.historyFilterOption}
+                          onPress={() => {
+                            setHistorySortOrder('earliest');
+                            setShowSortOptions(false);
+                          }}
+                        >
+                          <Text style={[
+                            styles.historyFilterOptionText,
+                            historySortOrder === 'earliest' && styles.historyFilterOptionTextActive
+                          ]}>
+                            <Text style={styles.historyFilterBoldText}>Earliest</Text>
+                            <Text style={styles.historyFilterArrowText}> → </Text>
+                            <Text style={styles.historyFilterLightText}>First</Text>
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                  
+                  <View style={styles.historyListContainer}>
                   {sessionHistory.map((sessionItem, index) => (
                     <View key={sessionItem.id} style={styles.historyCard}>
                       <View style={styles.historyCardContent}>
@@ -212,7 +285,8 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
                       </View>
                     </View>
                   ))}
-                </View>
+                  </View>
+                </>
               ) : (
                 <View style={styles.historyEmptyState}>
                   <Text style={styles.historyEmptyIcon}>📊</Text>
@@ -796,6 +870,68 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: '#34C759',
+  },
+  historyFilterContainer: {
+    marginBottom: 16,
+    position: 'relative',
+  },
+  historyFilterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.surface,
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    ...theme.shadows.small,
+  },
+  historyFilterTextContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  historyFilterButtonText: {
+    fontSize: 15,
+    color: theme.colors.text.primary,
+  },
+  historyFilterBoldText: {
+    fontWeight: '700',
+  },
+  historyFilterLightText: {
+    fontWeight: '400',
+  },
+  historyFilterArrowText: {
+    fontWeight: '500',
+  },
+  historyFilterArrow: {
+    fontSize: 12,
+    color: theme.colors.text.secondary,
+    marginLeft: 8,
+  },
+  historyFilterDropdown: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 8,
+    marginTop: 4,
+    ...theme.shadows.medium,
+    zIndex: 1000,
+  },
+  historyFilterOption: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  historyFilterOptionText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: theme.colors.text.primary,
+  },
+  historyFilterOptionTextActive: {
+    color: '#007AFF',
+    fontWeight: '600',
   },
   howToSection: {
     paddingHorizontal: 20,

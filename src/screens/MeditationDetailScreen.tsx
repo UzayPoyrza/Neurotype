@@ -20,7 +20,7 @@ import { theme } from '../styles/theme';
 import { useStore } from '../store/useStore';
 import { ShareIcon } from '../components/icons';
 import { PrimaryButton } from '../components/PrimaryButton';
-import { FloatingButton } from '../components/FloatingButton';
+import { BottomActionBar } from '../components/BottomActionBar';
 
 type MeditationDetailStackParamList = {
   MeditationDetail: {
@@ -479,20 +479,20 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         </PanGestureHandler>
       </SafeAreaView>
 
-      {/* Floating Buttons - Outside SafeAreaView */}
-      <FloatingButton
-        title="Do Tutorial"
-        icon="📚"
-        onPress={handleTutorialPress}
-        position="bottom-left"
-        backgroundColor="#4ECDC4"
-      />
-      <FloatingButton
-        title="Start"
-        icon="▶"
-        onPress={handleStartPress}
-        position="bottom-right"
-        backgroundColor="#FF6B6B"
+      {/* Bottom Action Bar */}
+      <BottomActionBar
+        primaryAction={{
+          title: "Start Meditation",
+          icon: "▶",
+          onPress: handleStartPress,
+        }}
+        secondaryAction={{
+          title: "Tutorial",
+          icon: "📚",
+          onPress: handleTutorialPress,
+        }}
+        primaryColor="#6B73FF"
+        secondaryColor="#8B9DC3"
       />
     </View>
   );

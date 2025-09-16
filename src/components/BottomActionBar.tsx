@@ -128,18 +128,18 @@ export const BottomActionBar: React.FC<BottomActionBarProps> = ({
           <TouchableOpacity
             style={[
               styles.secondaryButton,
-              { borderColor: 'rgba(255, 255, 255, 0.3)' }
+              { borderColor: '#6B7280' }
             ]}
             onPress={handleSecondaryPress}
             activeOpacity={0.8}
           >
             <View style={styles.buttonContent}>
               {secondaryAction.icon && (
-                <Text style={[styles.icon, { color: 'rgba(255, 255, 255, 0.7)' }]}>
+                <Text style={[styles.icon, { color: '#6B7280' }]}>
                   {secondaryAction.icon}
                 </Text>
               )}
-              <Text style={[styles.secondaryText, { color: 'rgba(255, 255, 255, 0.7)' }]}>
+              <Text style={[styles.secondaryText, { color: '#6B7280' }]}>
                 {secondaryAction.title}
               </Text>
             </View>
@@ -202,18 +202,18 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     flex: 0.3,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     borderRadius: 8,
-    borderWidth: 1,
+    borderWidth: 1.5,
     backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },
   primaryButton: {
     flex: 0.7,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',

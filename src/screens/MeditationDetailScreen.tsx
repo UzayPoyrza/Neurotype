@@ -93,11 +93,9 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
       <View style={styles.meditationVisual}>
         <View style={styles.visualContainer}>
           <Text style={styles.visualIcon}>{getModalityIcon(session.modality)}</Text>
-          <View style={styles.visualOverlay}>
-            <TouchableOpacity style={styles.playButton}>
-              <Text style={styles.playIcon}>▶</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={styles.playButton}>
+            <Text style={styles.playIcon}>▶</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </View>
@@ -531,16 +529,16 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   visualSection: {
-    height: 180,
+    height: 200,
     backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 0,
   },
   meditationVisual: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
+    width: '100%',
+    height: '100%',
+    borderRadius: 0,
     backgroundColor: theme.colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
@@ -570,9 +568,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   playButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
@@ -583,9 +584,9 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   playIcon: {
-    fontSize: 20,
+    fontSize: 14,
     color: '#ffffff',
-    marginLeft: 3,
+    marginLeft: 2,
   },
   meditationInfo: {
     paddingHorizontal: 20,

@@ -21,6 +21,8 @@ interface BottomActionBarProps {
   };
   primaryColor?: string;
   secondaryColor?: string;
+  themeColor?: string;
+  globalBackgroundColor?: string;
 }
 
 export const BottomActionBar: React.FC<BottomActionBarProps> = ({
@@ -28,9 +30,59 @@ export const BottomActionBar: React.FC<BottomActionBarProps> = ({
   secondaryAction,
   primaryColor = '#FF6B6B',
   secondaryColor = '#4ECDC4',
+  themeColor = '#6B73FF',
+  globalBackgroundColor = '#f2f2f7',
 }) => {
   const primaryScale = useRef(new Animated.Value(1)).current;
   const secondaryScale = useRef(new Animated.Value(1)).current;
+
+  // Convert any color format to rgba with opacity for glass effect
+  const colorToRgba = (color: string, opacity: number) => {
+    console.log('Converting color:', color);
+    
+    // If it's already rgba, just update the opacity
+    if (color.startsWith('rgba(')) {
+      const rgbaMatch = color.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*[\d.]+\)/);
+      if (rgbaMatch) {
+        const [, r, g, b] = rgbaMatch;
+        console.log('Already rgba, updating opacity:', r, g, b, opacity);
+        return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+      }
+    }
+    
+    // If it's rgb, convert to rgba
+    if (color.startsWith('rgb(')) {
+      const rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+      if (rgbMatch) {
+        const [, r, g, b] = rgbMatch;
+        console.log('Converting rgb to rgba:', r, g, b, opacity);
+        return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+      }
+    }
+    
+    // If it's hex, convert to rgba
+    if (color.startsWith('#')) {
+      let cleanHex = color.replace('#', '');
+      
+      // If it's a 3-character hex, expand it
+      if (cleanHex.length === 3) {
+        cleanHex = cleanHex.split('').map(char => char + char).join('');
+      }
+      
+      if (cleanHex.length === 6) {
+        const r = parseInt(cleanHex.slice(0, 2), 16);
+        const g = parseInt(cleanHex.slice(2, 4), 16);
+        const b = parseInt(cleanHex.slice(4, 6), 16);
+        console.log('Converting hex to rgba:', r, g, b, opacity);
+        return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+      }
+    }
+    
+    // Fallback for unknown formats
+    console.log('Unknown color format, using fallback:', color);
+    return `rgba(242, 242, 247, ${opacity})`;
+  };
+
 
   const handlePrimaryPress = () => {
     // Squeeze animation
@@ -76,18 +128,18 @@ export const BottomActionBar: React.FC<BottomActionBarProps> = ({
           <TouchableOpacity
             style={[
               styles.secondaryButton,
-              { borderColor: secondaryColor }
+              { borderColor: 'rgba(255, 255, 255, 0.3)' }
             ]}
             onPress={handleSecondaryPress}
             activeOpacity={0.8}
           >
             <View style={styles.buttonContent}>
               {secondaryAction.icon && (
-                <Text style={[styles.icon, { color: secondaryColor }]}>
+                <Text style={[styles.icon, { color: 'rgba(255, 255, 255, 0.7)' }]}>
                   {secondaryAction.icon}
                 </Text>
               )}
-              <Text style={[styles.secondaryText, { color: secondaryColor }]}>
+              <Text style={[styles.secondaryText, { color: 'rgba(255, 255, 255, 0.7)' }]}>
                 {secondaryAction.title}
               </Text>
             </View>
@@ -99,7 +151,7 @@ export const BottomActionBar: React.FC<BottomActionBarProps> = ({
           <TouchableOpacity
             style={[
               styles.primaryButton,
-              { backgroundColor: primaryColor }
+              { backgroundColor: themeColor }
             ]}
             onPress={handlePrimaryPress}
             activeOpacity={0.8}
@@ -135,38 +187,39 @@ const styles = StyleSheet.create({
   actionBar: {
     flexDirection: 'row',
     backgroundColor: '#ffffff',
-    borderRadius: 20,
-    paddingVertical: 4,
-    paddingHorizontal: 6,
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 16,
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.05)',
-    gap: 6,
+    borderColor: 'rgba(0, 0, 0, 0.15)',
+    gap: 16,
+    overflow: 'hidden',
   },
   secondaryButton: {
     flex: 0.3,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-    borderWidth: 1.5,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
     backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },
   primaryButton: {
     flex: 0.7,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 3,
   },

@@ -129,6 +129,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
       anxiety: '#FF6B6B',
       focus: '#4ECDC4', 
       sleep: '#45B7D1',
+      stress: '#9B59B6',
     };
     return colors[goal] || theme.colors.primary;
   };
@@ -491,8 +492,8 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           icon: "📚",
           onPress: handleTutorialPress,
         }}
-        primaryColor="#6B73FF"
-        secondaryColor="#8B9DC3"
+        themeColor={getGoalColor(session.goal)}
+        globalBackgroundColor={globalBackgroundColor}
       />
     </View>
   );

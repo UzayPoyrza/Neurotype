@@ -19,6 +19,8 @@ import { mockSessions } from '../data/mockData';
 import { theme } from '../styles/theme';
 import { useStore } from '../store/useStore';
 import { ShareIcon } from '../components/icons';
+import { PrimaryButton } from '../components/PrimaryButton';
+import { FloatingButton } from '../components/FloatingButton';
 
 type MeditationDetailStackParamList = {
   MeditationDetail: {
@@ -81,6 +83,25 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         }
       }
     }
+  };
+
+  const handleTutorialPress = () => {
+    // Navigate to tutorial or show tutorial modal
+    console.log('Tutorial pressed for:', session?.title);
+    // You can implement tutorial functionality here
+  };
+
+  const handleStatsPress = () => {
+    // Navigate to stats or show stats modal
+    console.log('Stats pressed for:', session?.title);
+    // You can implement stats functionality here
+  };
+
+  const handleStartPress = () => {
+    // Start the meditation session
+    console.log('Start pressed for:', session?.title);
+    // You can implement start functionality here
+    // For example: navigation.navigate('Player', { sessionId: session.id });
   };
   
   if (!session) {
@@ -368,93 +389,111 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       
-      {/* Sticky Header */}
-      <View style={styles.stickyHeader}>
-        <View style={styles.headerContent}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.backButtonText}>←</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{session.title}</Text>
-          <View style={styles.headerActions}>
-            <ShareIcon 
-              onPress={() => {
-                // Handle share functionality
-                console.log('Share meditation:', session.title);
-              }}
+      <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+        {/* Sticky Header */}
+        <View style={styles.stickyHeader}>
+          <View style={styles.headerContent}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Text style={styles.backButtonText}>←</Text>
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>{session.title}</Text>
+            <View style={styles.headerActions}>
+              <ShareIcon 
+                onPress={() => {
+                  // Handle share functionality
+                  console.log('Share meditation:', session.title);
+                }}
+              />
+            </View>
+          </View>
+          
+          {/* Tabs in Header */}
+          <View style={styles.tabsContainer}>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'summary' && styles.activeTab]}
+              onPress={() => handleTabChange('summary')}
+            >
+              <Text style={[styles.tabText, activeTab === 'summary' && styles.activeTabText]}>
+                Summary
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'history' && styles.activeTab]}
+              onPress={() => handleTabChange('history')}
+            >
+              <Text style={[styles.tabText, activeTab === 'history' && styles.activeTabText]}>
+                History
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'howto' && styles.activeTab]}
+              onPress={() => handleTabChange('howto')}
+            >
+              <Text style={[styles.tabText, activeTab === 'howto' && styles.activeTabText]}>
+                How to
+              </Text>
+            </TouchableOpacity>
+            
+            {/* Animated Indicator */}
+            <Animated.View 
+              style={[
+                styles.tabIndicator,
+                {
+                  transform: [{
+                    translateX: indicatorAnimation.interpolate({
+                      inputRange: [0, 1, 2],
+                      outputRange: [
+                        ((Dimensions.get('window').width - 32) / 3) / 2 - 45, // Center of first tab minus adjusted offset
+                        ((Dimensions.get('window').width - 32) / 3) + ((Dimensions.get('window').width - 32) / 3) / 2 - 45, // Center of second tab minus adjusted offset
+                        ((Dimensions.get('window').width - 32) / 3) * 2 + ((Dimensions.get('window').width - 32) / 3) / 2 - 45, // Center of third tab minus adjusted offset
+                      ],
+                    })
+                  }]
+                }
+              ]} 
             />
           </View>
         </View>
-        
-        {/* Tabs in Header */}
-        <View style={styles.tabsContainer}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'summary' && styles.activeTab]}
-            onPress={() => handleTabChange('summary')}
-          >
-            <Text style={[styles.tabText, activeTab === 'summary' && styles.activeTabText]}>
-              Summary
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'history' && styles.activeTab]}
-            onPress={() => handleTabChange('history')}
-          >
-            <Text style={[styles.tabText, activeTab === 'history' && styles.activeTabText]}>
-              History
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'howto' && styles.activeTab]}
-            onPress={() => handleTabChange('howto')}
-          >
-            <Text style={[styles.tabText, activeTab === 'howto' && styles.activeTabText]}>
-              How to
-            </Text>
-          </TouchableOpacity>
-          
-          {/* Animated Indicator */}
-          <Animated.View 
-            style={[
-              styles.tabIndicator,
-              {
-                transform: [{
-                  translateX: indicatorAnimation.interpolate({
-                    inputRange: [0, 1, 2],
-                    outputRange: [
-                      ((Dimensions.get('window').width - 32) / 3) / 2 - 45, // Center of first tab minus adjusted offset
-                      ((Dimensions.get('window').width - 32) / 3) + ((Dimensions.get('window').width - 32) / 3) / 2 - 45, // Center of second tab minus adjusted offset
-                      ((Dimensions.get('window').width - 32) / 3) * 2 + ((Dimensions.get('window').width - 32) / 3) / 2 - 45, // Center of third tab minus adjusted offset
-                    ],
-                  })
-                }]
-              }
-            ]} 
-          />
-        </View>
-      </View>
 
-      <PanGestureHandler onHandlerStateChange={handleSwipeGesture}>
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Hero Visual Section - Hide on History tab */}
-          {activeTab !== 'history' && renderVisualSection()}
-          
-          {/* Meditation Info - Hide on History tab only, hide tags on How to tab */}
-          {activeTab !== 'history' && renderMeditationInfo(activeTab !== 'howto')}
-          
-          {/* Tab Content */}
-          {renderTabContent()}
-          
-        </ScrollView>
-      </PanGestureHandler>
+        <PanGestureHandler onHandlerStateChange={handleSwipeGesture}>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Hero Visual Section - Hide on History tab */}
+            {activeTab !== 'history' && renderVisualSection()}
+            
+            {/* Meditation Info - Hide on History tab only, hide tags on How to tab */}
+            {activeTab !== 'history' && renderMeditationInfo(activeTab !== 'howto')}
+            
+            {/* Tab Content */}
+            {renderTabContent()}
+            
+          </ScrollView>
+        </PanGestureHandler>
+      </SafeAreaView>
+
+      {/* Floating Buttons - Outside SafeAreaView */}
+      <FloatingButton
+        title="Tutorial"
+        icon="📚"
+        onPress={handleTutorialPress}
+        position="bottom-left"
+        backgroundColor={theme.colors.secondary}
+      />
+      <FloatingButton
+        title="Stats"
+        icon="📊"
+        onPress={handleStatsPress}
+        position="bottom-right"
+        backgroundColor={theme.colors.primary}
+      />
     </View>
   );
 };
@@ -463,6 +502,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.health.container.backgroundColor,
+  },
+  safeArea: {
+    flex: 1,
   },
   errorContainer: {
     flex: 1,
@@ -479,7 +521,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(0, 0, 0, 0.1)',
     zIndex: 100,
-    paddingTop: 44, // Reduced from default SafeAreaView padding
+    paddingTop: 44, // Status bar height
   },
   headerContent: {
     flexDirection: 'row',
@@ -781,13 +823,6 @@ const styles = StyleSheet.create({
     color: theme.colors.text.primary,
     marginBottom: 16,
   },
-  historyCard: {
-    backgroundColor: theme.colors.surface,
-    padding: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    ...theme.shadows.medium,
-  },
   historyIcon: {
     fontSize: 32,
     marginBottom: 12,
@@ -862,7 +897,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   historyItemRight: {
-    alignItems: 'flex-end',
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -987,11 +1021,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: theme.colors.text.primary,
     flex: 1,
-  },
-  startButtonContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    backgroundColor: 'transparent',
   },
   startButton: {
     paddingVertical: 14,

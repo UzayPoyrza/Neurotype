@@ -917,7 +917,7 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: theme.colors.surface,
     borderRadius: 8,
-    marginTop: 4,
+    marginTop: 0,
     ...theme.shadows.medium,
     zIndex: 1000,
   },

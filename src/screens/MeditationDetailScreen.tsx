@@ -178,14 +178,44 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         );
       
       case 'history':
+        // Check if this is "Gentle Stretching Flow" to show placeholder data
+        const showPlaceholderData = session.title === 'Gentle Stretching Flow';
+        
+        // Placeholder session data
+        const sessionHistory = showPlaceholderData ? [
+          { id: '1', duration: 15, date: 'Dec 15, 2024', time: '2:30 PM' },
+          { id: '2', duration: 12, date: 'Dec 12, 2024', time: '7:15 AM' },
+          { id: '3', duration: 18, date: 'Dec 10, 2024', time: '6:45 PM' },
+          { id: '4', duration: 15, date: 'Dec 8, 2024', time: '8:00 AM' },
+          { id: '5', duration: 20, date: 'Dec 5, 2024', time: '9:30 PM' },
+        ] : [];
+        
         return (
           <View style={styles.tabContent}>
             <View style={styles.historySection}>
-              <View style={styles.historyEmptyState}>
-                <Text style={styles.historyEmptyIcon}>📊</Text>
-                <Text style={styles.historyEmptyText}>No sessions completed</Text>
-                <Text style={styles.historyEmptySubtext}>Start your first meditation to see your progress here</Text>
-              </View>
+              {sessionHistory.length > 0 ? (
+                <View style={styles.historyListContainer}>
+                  {sessionHistory.map((sessionItem, index) => (
+                    <View key={sessionItem.id} style={styles.historyCard}>
+                      <View style={styles.historyCardContent}>
+                        <View style={styles.historyItemLeft}>
+                          <Text style={styles.historyItemDuration}>{sessionItem.duration} min</Text>
+                          <Text style={styles.historyItemDate}>{sessionItem.date}</Text>
+                        </View>
+                        <View style={styles.historyItemRight}>
+                          <Text style={styles.historyItemTime}>{sessionItem.time}</Text>
+                        </View>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <View style={styles.historyEmptyState}>
+                  <Text style={styles.historyEmptyIcon}>📊</Text>
+                  <Text style={styles.historyEmptyText}>No sessions completed</Text>
+                  <Text style={styles.historyEmptySubtext}>Start your first meditation to see your progress here</Text>
+                </View>
+              )}
             </View>
           </View>
         );
@@ -707,6 +737,40 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  historyListContainer: {
+    gap: 12,
+  },
+  historyCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: 12,
+    ...theme.shadows.small,
+  },
+  historyCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+  },
+  historyItemLeft: {
+    flex: 1,
+  },
+  historyItemDuration: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+    marginBottom: 2,
+  },
+  historyItemDate: {
+    fontSize: 15,
+    color: theme.colors.text.secondary,
+  },
+  historyItemRight: {
+    alignItems: 'flex-end',
+  },
+  historyItemTime: {
+    fontSize: 15,
+    color: theme.colors.text.secondary,
   },
   howToSection: {
     paddingHorizontal: 20,

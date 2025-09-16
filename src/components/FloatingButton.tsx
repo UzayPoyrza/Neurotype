@@ -57,11 +57,11 @@ export const FloatingButton: React.FC<FloatingButtonProps> = ({
       case 'top-right':
         return { top: topMargin, right: margin };
       case 'bottom-left':
-        return { bottom: margin + 120, left: margin }; // 120 for tab bar + safe area
+        return { bottom: margin + 80, left: margin }; // Lowered position
       case 'bottom-right':
-        return { bottom: margin + 120, right: margin }; // 120 for tab bar + safe area
+        return { bottom: margin + 80, right: margin }; // Lowered position
       default:
-        return { bottom: margin + 120, right: margin };
+        return { bottom: margin + 80, right: margin };
     }
   };
 
@@ -103,17 +103,17 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   button: {
-    borderRadius: 25,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    minWidth: 100,
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    minWidth: 120,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
     borderWidth: 2,
     borderColor: '#000000',
   },
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   text: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     fontFamily: 'System',
   },

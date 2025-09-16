@@ -481,18 +481,18 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
 
       {/* Floating Buttons - Outside SafeAreaView */}
       <FloatingButton
-        title="Tutorial"
+        title="Do Tutorial"
         icon="📚"
         onPress={handleTutorialPress}
         position="bottom-left"
-        backgroundColor={theme.colors.secondary}
+        backgroundColor="#4ECDC4"
       />
       <FloatingButton
-        title="Stats"
-        icon="📊"
-        onPress={handleStatsPress}
+        title="Start"
+        icon="▶"
+        onPress={handleStartPress}
         position="bottom-right"
-        backgroundColor={theme.colors.primary}
+        backgroundColor="#FF6B6B"
       />
     </View>
   );

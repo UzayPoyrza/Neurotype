@@ -38,8 +38,23 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   
   const [activeTab, setActiveTab] = useState<TabType>('summary');
+  const indicatorAnimation = useRef(new Animated.Value(0)).current;
   
   const session = mockSessions.find(s => s.id === sessionId);
+  
+  const handleTabChange = (tab: TabType) => {
+    const tabIndex = tab === 'summary' ? 0 : tab === 'history' ? 1 : 2;
+    const screenWidth = Dimensions.get('window').width;
+    const tabWidth = (screenWidth - 32) / 3; // 32 for padding, 3 tabs
+    
+    Animated.timing(indicatorAnimation, {
+      toValue: tabIndex,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+    
+    setActiveTab(tab);
+  };
   
   if (!session) {
     return (
@@ -223,33 +238,49 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         <View style={styles.tabsContainer}>
           <TouchableOpacity
             style={[styles.tab, activeTab === 'summary' && styles.activeTab]}
-            onPress={() => setActiveTab('summary')}
+            onPress={() => handleTabChange('summary')}
           >
             <Text style={[styles.tabText, activeTab === 'summary' && styles.activeTabText]}>
               Summary
             </Text>
-            {activeTab === 'summary' && <View style={styles.tabIndicator} />}
           </TouchableOpacity>
           
           <TouchableOpacity
             style={[styles.tab, activeTab === 'history' && styles.activeTab]}
-            onPress={() => setActiveTab('history')}
+            onPress={() => handleTabChange('history')}
           >
             <Text style={[styles.tabText, activeTab === 'history' && styles.activeTabText]}>
               History
             </Text>
-            {activeTab === 'history' && <View style={styles.tabIndicator} />}
           </TouchableOpacity>
           
           <TouchableOpacity
             style={[styles.tab, activeTab === 'howto' && styles.activeTab]}
-            onPress={() => setActiveTab('howto')}
+            onPress={() => handleTabChange('howto')}
           >
             <Text style={[styles.tabText, activeTab === 'howto' && styles.activeTabText]}>
               How to
             </Text>
-            {activeTab === 'howto' && <View style={styles.tabIndicator} />}
           </TouchableOpacity>
+          
+          {/* Animated Indicator */}
+          <Animated.View 
+            style={[
+              styles.tabIndicator,
+              {
+                transform: [{
+                  translateX: indicatorAnimation.interpolate({
+                    inputRange: [0, 1, 2],
+                    outputRange: [
+                      ((Dimensions.get('window').width - 32) / 3) / 2 - 45, // Center of first tab minus adjusted offset
+                      ((Dimensions.get('window').width - 32) / 3) + ((Dimensions.get('window').width - 32) / 3) / 2 - 45, // Center of second tab minus adjusted offset
+                      ((Dimensions.get('window').width - 32) / 3) * 2 + ((Dimensions.get('window').width - 32) / 3) / 2 - 45, // Center of third tab minus adjusted offset
+                    ],
+                  })
+                }]
+              }
+            ]} 
+          />
         </View>
       </View>
 
@@ -517,8 +548,7 @@ const styles = StyleSheet.create({
   tabIndicator: {
     position: 'absolute',
     bottom: 0,
-    left: '50%',
-    marginLeft: -60,
+    left: 0,
     width: 120,
     height: 2,
     backgroundColor: '#007AFF',

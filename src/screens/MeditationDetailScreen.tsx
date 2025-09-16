@@ -432,11 +432,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   meditationTitle: {
-    fontSize: 24,
+    fontSize: 21,
     fontWeight: '700',
     color: theme.colors.text.primary,
     marginBottom: 12,
-    textAlign: 'center',
+    textAlign: 'left',
   },
   tagsContainer: {
     flexDirection: 'row',

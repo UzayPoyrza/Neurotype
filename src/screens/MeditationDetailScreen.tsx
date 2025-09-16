@@ -370,11 +370,11 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   visualSection: {
-    height: 280,
+    height: 180,
     backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 32,
+    paddingVertical: 16,
   },
   meditationVisual: {
     width: 160,

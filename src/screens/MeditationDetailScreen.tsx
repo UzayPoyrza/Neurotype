@@ -518,11 +518,16 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   stickyHeader: {
-    backgroundColor: theme.health.container.backgroundColor,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(0, 0, 0, 0.1)',
     zIndex: 100,
     paddingTop: 44, // Status bar height
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
   },
   headerContent: {
     flexDirection: 'row',

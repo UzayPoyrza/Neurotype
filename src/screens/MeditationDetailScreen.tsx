@@ -85,21 +85,23 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
     </View>
   );
 
-  const renderMeditationInfo = () => (
+  const renderMeditationInfo = (showTags = true) => (
     <View style={styles.meditationInfo}>
       <Text style={styles.meditationTitle}>{session.title}</Text>
       
-      <View style={styles.tagsContainer}>
-        <View style={[styles.tag, { backgroundColor: getGoalColor(session.goal) }]}>
-          <Text style={styles.tagText}>{session.goal}</Text>
+      {showTags && (
+        <View style={styles.tagsContainer}>
+          <View style={[styles.tag, { backgroundColor: getGoalColor(session.goal) }]}>
+            <Text style={styles.tagText}>{session.goal}</Text>
+          </View>
+          <View style={styles.tag}>
+            <Text style={styles.tagText}>{session.modality}</Text>
+          </View>
+          <View style={styles.tag}>
+            <Text style={styles.tagText}>{session.durationMin} min</Text>
+          </View>
         </View>
-        <View style={styles.tag}>
-          <Text style={styles.tagText}>{session.modality}</Text>
-        </View>
-        <View style={styles.tag}>
-          <Text style={styles.tagText}>{session.durationMin} min</Text>
-        </View>
-      </View>
+      )}
     </View>
   );
 
@@ -165,11 +167,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           <View style={styles.tabContent}>
             <View style={styles.historySection}>
               <Text style={styles.historyTitle}>Session History</Text>
-              <View style={styles.historyCard}>
-                <Text style={styles.historyIcon}>📈</Text>
-                <Text style={styles.historyText}>No sessions completed yet</Text>
-                <Text style={styles.historySubtext}>Your progress will appear here after your first session</Text>
-              </View>
+              <Text style={styles.historyText}>No sessions completed</Text>
             </View>
           </View>
         );
@@ -178,27 +176,15 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         return (
           <View style={styles.tabContent}>
             <View style={styles.howToSection}>
-              <Text style={styles.howToTitle}>How to Practice</Text>
-              <View style={styles.howToCard}>
-                <Text style={styles.howToText}>
-                  {session.description}
-                </Text>
-              </View>
-              
-              <View style={styles.tipsSection}>
-                <Text style={styles.tipsTitle}>Pro Tips</Text>
-                <View style={styles.tipItem}>
-                  <Text style={styles.tipIcon}>💡</Text>
-                  <Text style={styles.tipText}>Find a quiet space free from distractions</Text>
-                </View>
-                <View style={styles.tipItem}>
-                  <Text style={styles.tipIcon}>⏰</Text>
-                  <Text style={styles.tipText}>Practice at the same time each day for best results</Text>
-                </View>
-                <View style={styles.tipItem}>
-                  <Text style={styles.tipIcon}>🎧</Text>
-                  <Text style={styles.tipText}>Use headphones for immersive audio experience</Text>
-                </View>
+              {/* Numbered instructions */}
+              <View style={styles.instructionsContainer}>
+                <Text style={styles.instructionText}>1. Find a quiet, comfortable space</Text>
+                <Text style={styles.instructionText}>2. Sit or lie down in a relaxed position</Text>
+                <Text style={styles.instructionText}>3. Close your eyes and take a few deep breaths</Text>
+                <Text style={styles.instructionText}>4. Focus on your breathing and let go of distractions</Text>
+                <Text style={styles.instructionText}>5. Follow the guided meditation instructions</Text>
+                <Text style={styles.instructionText}>6. When finished, slowly open your eyes</Text>
+                <Text style={styles.instructionText}>7. Take a moment to notice how you feel</Text>
               </View>
             </View>
           </View>
@@ -272,11 +258,11 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Hero Visual Section */}
-        {renderVisualSection()}
+        {/* Hero Visual Section - Hide on History tab */}
+        {activeTab !== 'history' && renderVisualSection()}
         
-        {/* Meditation Info */}
-        {renderMeditationInfo()}
+        {/* Meditation Info - Hide on History tab only, hide tags on How to tab */}
+        {activeTab !== 'history' && renderMeditationInfo(activeTab !== 'howto')}
         
         {/* Tab Content */}
         {renderTabContent()}
@@ -709,5 +695,26 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     color: '#ffffff',
+  },
+  videoContainer: {
+    backgroundColor: theme.colors.surface,
+    padding: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 20,
+    ...theme.shadows.medium,
+  },
+  videoPlaceholder: {
+    fontSize: 18,
+    color: theme.colors.text.secondary,
+  },
+  instructionsContainer: {
+    gap: 12,
+  },
+  instructionText: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: theme.colors.text.primary,
+    marginBottom: 8,
   },
 });

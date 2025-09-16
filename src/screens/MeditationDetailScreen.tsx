@@ -194,15 +194,56 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         return (
           <View style={styles.tabContent}>
             <View style={styles.howToSection}>
-              {/* Numbered instructions */}
+              {/* Instructions */}
               <View style={styles.instructionsContainer}>
-                <Text style={styles.instructionText}>1. Find a quiet, comfortable space</Text>
-                <Text style={styles.instructionText}>2. Sit or lie down in a relaxed position</Text>
-                <Text style={styles.instructionText}>3. Close your eyes and take a few deep breaths</Text>
-                <Text style={styles.instructionText}>4. Focus on your breathing and let go of distractions</Text>
-                <Text style={styles.instructionText}>5. Follow the guided meditation instructions</Text>
-                <Text style={styles.instructionText}>6. When finished, slowly open your eyes</Text>
-                <Text style={styles.instructionText}>7. Take a moment to notice how you feel</Text>
+                <View style={styles.instructionItem}>
+                  <View style={styles.instructionNumber}>
+                    <Text style={styles.instructionNumberText}>1</Text>
+                  </View>
+                  <Text style={styles.instructionText}>Find a quiet, comfortable space</Text>
+                </View>
+                
+                <View style={styles.instructionItem}>
+                  <View style={styles.instructionNumber}>
+                    <Text style={styles.instructionNumberText}>2</Text>
+                  </View>
+                  <Text style={styles.instructionText}>Sit or lie down in a relaxed position</Text>
+                </View>
+                
+                <View style={styles.instructionItem}>
+                  <View style={styles.instructionNumber}>
+                    <Text style={styles.instructionNumberText}>3</Text>
+                  </View>
+                  <Text style={styles.instructionText}>Close your eyes and take a few deep breaths</Text>
+                </View>
+                
+                <View style={styles.instructionItem}>
+                  <View style={styles.instructionNumber}>
+                    <Text style={styles.instructionNumberText}>4</Text>
+                  </View>
+                  <Text style={styles.instructionText}>Focus on your breathing and let go of distractions</Text>
+                </View>
+                
+                <View style={styles.instructionItem}>
+                  <View style={styles.instructionNumber}>
+                    <Text style={styles.instructionNumberText}>5</Text>
+                  </View>
+                  <Text style={styles.instructionText}>Follow the guided meditation instructions</Text>
+                </View>
+                
+                <View style={styles.instructionItem}>
+                  <View style={styles.instructionNumber}>
+                    <Text style={styles.instructionNumberText}>6</Text>
+                  </View>
+                  <Text style={styles.instructionText}>When finished, slowly open your eyes</Text>
+                </View>
+                
+                <View style={styles.instructionItem}>
+                  <View style={styles.instructionNumber}>
+                    <Text style={styles.instructionNumberText}>7</Text>
+                  </View>
+                  <Text style={styles.instructionText}>Take a moment to notice how you feel</Text>
+                </View>
               </View>
             </View>
           </View>
@@ -301,20 +342,6 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         {/* Tab Content */}
         {renderTabContent()}
         
-        {/* Start Button - Hide on History tab */}
-        {activeTab !== 'history' && (
-          <View style={styles.startButtonContainer}>
-            <TouchableOpacity 
-              style={[styles.startButton, { backgroundColor: getGoalColor(session.goal) }]}
-              onPress={() => {
-                // Navigate to player screen to start the meditation
-                navigation.navigate('Player');
-              }}
-            >
-              <Text style={styles.startButtonText}>Start Meditation</Text>
-            </TouchableOpacity>
-          </View>
-        )}
       </ScrollView>
     </View>
   );
@@ -683,7 +710,7 @@ const styles = StyleSheet.create({
   },
   howToSection: {
     paddingHorizontal: 20,
-    paddingVertical: 24,
+    paddingVertical: 0,
   },
   howToTitle: {
     fontSize: 22,
@@ -764,12 +791,35 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
   },
   instructionsContainer: {
-    gap: 12,
+    gap: 8,
+    marginTop: -20,
+  },
+  instructionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    padding: 16,
+    borderRadius: 12,
+    ...theme.shadows.small,
+  },
+  instructionNumber: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#007AFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  instructionNumberText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
   },
   instructionText: {
     fontSize: 16,
-    lineHeight: 24,
+    lineHeight: 22,
     color: theme.colors.text.primary,
-    marginBottom: 8,
+    flex: 1,
   },
 });

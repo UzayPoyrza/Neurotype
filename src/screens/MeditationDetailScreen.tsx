@@ -8,6 +8,7 @@ import {
   Animated,
   Dimensions,
   StatusBar,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -198,11 +199,12 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         
         return (
           <View style={styles.tabContent}>
-            <View style={styles.historySection}>
-              {sessionHistory.length > 0 ? (
-                <>
-                  {/* Filter Dropdown */}
-                  <View style={styles.historyFilterContainer}>
+            <TouchableWithoutFeedback onPress={() => setShowSortOptions(false)}>
+              <View style={styles.historySection}>
+                {sessionHistory.length > 0 ? (
+                  <>
+                    {/* Filter Dropdown */}
+                    <View style={styles.historyFilterContainer}>
                     <TouchableOpacity 
                       style={styles.historyFilterButton}
                       onPress={() => setShowSortOptions(!showSortOptions)}
@@ -294,7 +296,8 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
                   <Text style={styles.historyEmptySubtext}>Start your first meditation to see your progress here</Text>
                 </View>
               )}
-            </View>
+              </View>
+            </TouchableWithoutFeedback>
           </View>
         );
       

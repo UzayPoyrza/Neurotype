@@ -16,6 +16,7 @@ import { Session } from '../types';
 import { mockSessions } from '../data/mockData';
 import { theme } from '../styles/theme';
 import { useStore } from '../store/useStore';
+import { ShareIcon } from '../components/icons';
 
 type MeditationDetailStackParamList = {
   MeditationDetail: {
@@ -223,9 +224,12 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{session.title}</Text>
           <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.headerActionButton}>
-              <Text style={styles.headerActionText}>↗</Text>
-            </TouchableOpacity>
+            <ShareIcon 
+              onPress={() => {
+                // Handle share functionality
+                console.log('Share meditation:', session.title);
+              }}
+            />
             <TouchableOpacity style={styles.headerActionButton}>
               <Text style={styles.headerActionText}>⋯</Text>
             </TouchableOpacity>

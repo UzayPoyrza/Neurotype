@@ -61,7 +61,10 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
 
   // Animate to circle mode when scrolling
   const animateToCircleMode = () => {
-    if (isCircleMode) return; // Already in circle mode
+    if (isCircleMode) {
+      // Already in circle mode, but ensure the animation is at the correct state
+      return;
+    }
     
     setIsCircleMode(true);
     
@@ -175,7 +178,7 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
     // Set timeout to return to pill mode after scroll stops
     scrollTimeoutRef.current = setTimeout(() => {
       animateToPillMode();
-    }, 50); // 50ms delay after scroll stops
+    }, 200); // 200ms delay after scroll stops to allow for small scrolls
   };
 
   // Expose handleScroll method to parent component

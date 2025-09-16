@@ -72,7 +72,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
     
     // Trigger button animation to circle mode during horizontal scrolling
     if (draggableActionBarRef.current) {
-      draggableActionBarRef.current.handleScroll(1); // Pass any value to trigger circle mode
+      draggableActionBarRef.current.handleScroll(Math.abs(offsetX)); // Pass actual scroll amount
     }
     
     const tabIndex = Math.round(offsetX / screenWidth);

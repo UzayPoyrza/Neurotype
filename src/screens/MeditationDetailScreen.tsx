@@ -10,6 +10,7 @@ import {
   StatusBar,
   TouchableWithoutFeedback,
 } from 'react-native';
+import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -73,6 +74,37 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
     const newTab = tabIndex === 0 ? 'summary' : tabIndex === 1 ? 'history' : 'howto';
     if (newTab !== activeTab) {
       setActiveTab(newTab);
+    }
+  };
+
+  const handleScrollEnd = (event: any) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const maxScrollX = screenWidth * 2; // Maximum scroll position (How-to page)
+    
+    // Check if we're at the left edge (Summary page) and scrolled beyond it
+    if (offsetX < -30) {
+      // Navigate back to Today page
+      navigation.goBack();
+      return;
+    }
+    
+    // Check if we're at the right edge (How-to page) and scrolled beyond it
+    if (offsetX > maxScrollX + 30) {
+      // Snap back to the How-to page
+      horizontalScrollRef.current?.scrollTo({
+        x: maxScrollX,
+        animated: true,
+      });
+    }
+  };
+
+  const handleMomentumScrollEnd = (event: any) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    
+    // Check if we're at the left edge (Summary page) and scrolled beyond it
+    if (offsetX < -30) {
+      // Navigate back to Today page
+      navigation.goBack();
     }
   };
 
@@ -452,8 +484,11 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           pagingEnabled
           showsHorizontalScrollIndicator={false}
           onScroll={handleScroll}
+          onScrollEndDrag={handleScrollEnd}
+          onMomentumScrollEnd={handleMomentumScrollEnd}
           scrollEventThrottle={16}
           style={styles.horizontalScrollView}
+          bounces={false}
         >
           {/* Summary Page */}
           <ScrollView style={[styles.page, { width: screenWidth }]} contentContainerStyle={styles.pageContent}>

@@ -15,6 +15,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { Session } from '../types';
 import { mockSessions } from '../data/mockData';
 import { theme } from '../styles/theme';
+import { useStore } from '../store/useStore';
 
 type MeditationDetailStackParamList = {
   MeditationDetail: {
@@ -33,6 +34,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const navigation = useNavigation<MeditationDetailNavigationProp>();
   const route = useRoute<MeditationDetailRouteProp>();
   const { sessionId } = route.params;
+  const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   
   const [activeTab, setActiveTab] = useState<TabType>('summary');
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -220,8 +222,8 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+    <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       
       {/* Animated Header */}
       <Animated.View 
@@ -325,16 +327,16 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: theme.health.container.backgroundColor,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#000000',
+    backgroundColor: theme.health.container.backgroundColor,
   },
   errorText: {
-    color: '#ffffff',
+    color: theme.colors.text.primary,
     fontSize: 18,
   },
   header: {
@@ -343,7 +345,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 100,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(242, 242, 247, 0.95)',
     backdropFilter: 'blur(10px)',
   },
   headerContent: {
@@ -357,17 +359,17 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   backButtonText: {
-    color: '#ffffff',
+    color: theme.colors.text.primary,
     fontSize: 20,
     fontWeight: '600',
   },
   headerTitle: {
-    color: '#ffffff',
+    color: theme.colors.text.primary,
     fontSize: 18,
     fontWeight: '600',
     flex: 1,
@@ -382,12 +384,12 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerActionText: {
-    color: '#ffffff',
+    color: theme.colors.text.primary,
     fontSize: 18,
     fontWeight: '600',
   },
@@ -399,7 +401,7 @@ const styles = StyleSheet.create({
   },
   visualSection: {
     height: 300,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: theme.colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -407,10 +409,11 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 100,
-    backgroundColor: '#2a2a2a',
+    backgroundColor: theme.health.container.backgroundColor,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
+    ...theme.shadows.medium,
   },
   visualContainer: {
     width: '100%',
@@ -434,24 +437,25 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: theme.colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
+    ...theme.shadows.small,
   },
   playIcon: {
     fontSize: 24,
-    color: '#000000',
+    color: theme.colors.text.onPrimary,
     marginLeft: 4,
   },
   meditationInfo: {
     paddingHorizontal: 20,
     paddingVertical: 24,
-    backgroundColor: '#000000',
+    backgroundColor: 'transparent',
   },
   meditationTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: theme.colors.text.primary,
     marginBottom: 16,
   },
   tagsContainer: {
@@ -463,29 +467,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: '#333333',
+    backgroundColor: theme.colors.surface,
+    ...theme.shadows.small,
   },
   tagText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#ffffff',
+    color: theme.colors.text.primary,
     textTransform: 'capitalize',
   },
   benefitsSection: {
     paddingHorizontal: 20,
     paddingVertical: 24,
-    backgroundColor: '#000000',
+    backgroundColor: 'transparent',
   },
   benefitsTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: theme.colors.text.primary,
     marginBottom: 12,
   },
   benefitsDescription: {
     fontSize: 16,
     lineHeight: 24,
-    color: '#cccccc',
+    color: theme.colors.text.secondary,
     marginBottom: 24,
   },
   uniqueBenefits: {
@@ -494,15 +499,16 @@ const styles = StyleSheet.create({
   uniqueBenefitsTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#ffffff',
+    color: theme.colors.text.primary,
     marginBottom: 12,
   },
   benefitItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: theme.colors.surface,
     padding: 16,
     borderRadius: 12,
+    ...theme.shadows.small,
   },
   benefitIcon: {
     fontSize: 20,
@@ -510,14 +516,14 @@ const styles = StyleSheet.create({
   },
   benefitText: {
     fontSize: 16,
-    color: '#ffffff',
+    color: theme.colors.text.primary,
     flex: 1,
   },
   tabsContainer: {
     flexDirection: 'row',
-    backgroundColor: '#000000',
+    backgroundColor: theme.colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#333333',
+    borderBottomColor: theme.colors.border,
   },
   tab: {
     flex: 1,
@@ -531,10 +537,10 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#666666',
+    color: theme.colors.text.secondary,
   },
   activeTabText: {
-    color: '#4ECDC4',
+    color: theme.colors.primary,
     fontWeight: '600',
   },
   tabIndicator: {
@@ -544,11 +550,11 @@ const styles = StyleSheet.create({
     marginLeft: -15,
     width: 30,
     height: 3,
-    backgroundColor: '#4ECDC4',
+    backgroundColor: theme.colors.primary,
     borderRadius: 2,
   },
   tabContent: {
-    backgroundColor: '#000000',
+    backgroundColor: 'transparent',
     minHeight: 400,
   },
   dataSection: {
@@ -556,10 +562,11 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   dataCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: theme.colors.surface,
     padding: 24,
     borderRadius: 12,
     alignItems: 'center',
+    ...theme.shadows.medium,
   },
   dataIcon: {
     fontSize: 32,
@@ -568,12 +575,12 @@ const styles = StyleSheet.create({
   dataText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#ffffff',
+    color: theme.colors.text.primary,
     marginBottom: 4,
   },
   dataSubtext: {
     fontSize: 14,
-    color: '#666666',
+    color: theme.colors.text.secondary,
     textAlign: 'center',
   },
   recordTypeSection: {
@@ -583,7 +590,7 @@ const styles = StyleSheet.create({
   recordTypeTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#ffffff',
+    color: theme.colors.text.primary,
     marginBottom: 16,
   },
   recordTypeButtons: {
@@ -595,21 +602,22 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 20,
-    backgroundColor: '#333333',
+    backgroundColor: theme.colors.surface,
     alignItems: 'center',
+    ...theme.shadows.small,
   },
   recordTypeButtonActive: {
-    backgroundColor: '#4ECDC4',
+    backgroundColor: theme.colors.primary,
   },
   recordTypeButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#ffffff',
+    color: theme.colors.text.primary,
   },
   recordTypeButtonTextActive: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000000',
+    color: theme.colors.text.onPrimary,
   },
   historySection: {
     paddingHorizontal: 20,
@@ -618,14 +626,15 @@ const styles = StyleSheet.create({
   historyTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: theme.colors.text.primary,
     marginBottom: 16,
   },
   historyCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: theme.colors.surface,
     padding: 24,
     borderRadius: 12,
     alignItems: 'center',
+    ...theme.shadows.medium,
   },
   historyIcon: {
     fontSize: 32,
@@ -634,12 +643,12 @@ const styles = StyleSheet.create({
   historyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#ffffff',
+    color: theme.colors.text.primary,
     marginBottom: 4,
   },
   historySubtext: {
     fontSize: 14,
-    color: '#666666',
+    color: theme.colors.text.secondary,
     textAlign: 'center',
   },
   howToSection: {
@@ -649,19 +658,20 @@ const styles = StyleSheet.create({
   howToTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: theme.colors.text.primary,
     marginBottom: 16,
   },
   howToCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: theme.colors.surface,
     padding: 20,
     borderRadius: 12,
     marginBottom: 24,
+    ...theme.shadows.medium,
   },
   howToText: {
     fontSize: 16,
     lineHeight: 24,
-    color: '#ffffff',
+    color: theme.colors.text.primary,
   },
   tipsSection: {
     gap: 12,
@@ -669,15 +679,16 @@ const styles = StyleSheet.create({
   tipsTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#ffffff',
+    color: theme.colors.text.primary,
     marginBottom: 12,
   },
   tipItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: theme.colors.surface,
     padding: 16,
     borderRadius: 12,
+    ...theme.shadows.small,
   },
   tipIcon: {
     fontSize: 20,
@@ -685,13 +696,13 @@ const styles = StyleSheet.create({
   },
   tipText: {
     fontSize: 16,
-    color: '#ffffff',
+    color: theme.colors.text.primary,
     flex: 1,
   },
   startButtonContainer: {
     paddingHorizontal: 20,
     paddingVertical: 24,
-    backgroundColor: '#000000',
+    backgroundColor: 'transparent',
   },
   startButton: {
     paddingVertical: 16,
@@ -699,10 +710,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    ...theme.shadows.medium,
   },
   startButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#ffffff',
+    color: theme.colors.text.onPrimary,
   },
 });

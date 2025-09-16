@@ -46,6 +46,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const [showSortOptions, setShowSortOptions] = useState(false);
   const scrollX = useRef(new Animated.Value(0)).current;
   const horizontalScrollRef = useRef<ScrollView>(null);
+  const draggableActionBarRef = useRef<any>(null);
   const screenWidth = Dimensions.get('window').width;
   
   const session = mockSessions.find(s => s.id === sessionId);
@@ -105,6 +106,15 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
     if (offsetX < -30) {
       // Navigate back to Today page
       navigation.goBack();
+    }
+  };
+
+  const handleVerticalScroll = (event: any) => {
+    const scrollY = event.nativeEvent.contentOffset.y;
+    
+    // Pass scroll event to DraggableActionBar
+    if (draggableActionBarRef.current) {
+      draggableActionBarRef.current.handleScroll(scrollY);
     }
   };
 
@@ -491,19 +501,34 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           bounces={false}
         >
           {/* Summary Page */}
-          <ScrollView style={[styles.page, { width: screenWidth }]} contentContainerStyle={styles.pageContent}>
+          <ScrollView 
+            style={[styles.page, { width: screenWidth }]} 
+            contentContainerStyle={styles.pageContent}
+            onScroll={handleVerticalScroll}
+            scrollEventThrottle={16}
+          >
             {renderVisualSection()}
             {renderMeditationInfo(true)}
             {renderSummaryPage()}
           </ScrollView>
           
           {/* History Page */}
-          <ScrollView style={[styles.page, { width: screenWidth }]} contentContainerStyle={styles.pageContent}>
+          <ScrollView 
+            style={[styles.page, { width: screenWidth }]} 
+            contentContainerStyle={styles.pageContent}
+            onScroll={handleVerticalScroll}
+            scrollEventThrottle={16}
+          >
             {renderHistoryPage()}
           </ScrollView>
           
           {/* How To Page */}
-          <ScrollView style={[styles.page, { width: screenWidth }]} contentContainerStyle={styles.pageContent}>
+          <ScrollView 
+            style={[styles.page, { width: screenWidth }]} 
+            contentContainerStyle={styles.pageContent}
+            onScroll={handleVerticalScroll}
+            scrollEventThrottle={16}
+          >
             {renderVisualSection()}
             {renderMeditationInfo(false)}
             {renderHowToPage()}
@@ -513,6 +538,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
 
       {/* Draggable Action Bar */}
       <DraggableActionBar
+        ref={draggableActionBarRef}
         primaryAction={{
           title: "Start",
           icon: "▶",

@@ -199,11 +199,15 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
                     <View key={sessionItem.id} style={styles.historyCard}>
                       <View style={styles.historyCardContent}>
                         <View style={styles.historyItemLeft}>
-                          <Text style={styles.historyItemDuration}>{sessionItem.duration} min</Text>
+                          <View style={styles.historyDurationContainer}>
+                            <Text style={styles.historyDurationNumber}>{sessionItem.duration}</Text>
+                            <Text style={styles.historyDurationUnit}>min</Text>
+                          </View>
                           <Text style={styles.historyItemDate}>{sessionItem.date}</Text>
                         </View>
                         <View style={styles.historyItemRight}>
                           <Text style={styles.historyItemTime}>{sessionItem.time}</Text>
+                          <View style={styles.historyStatusDot} />
                         </View>
                       </View>
                     </View>
@@ -739,7 +743,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   historyListContainer: {
-    gap: 12,
+    gap: 6,
   },
   historyCard: {
     backgroundColor: theme.colors.surface,
@@ -750,27 +754,48 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    padding: 12,
   },
   historyItemLeft: {
     flex: 1,
   },
-  historyItemDuration: {
-    fontSize: 17,
-    fontWeight: '600',
+  historyDurationContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 3,
+  },
+  historyDurationNumber: {
+    fontSize: 24,
+    fontWeight: '700',
     color: theme.colors.text.primary,
-    marginBottom: 2,
+    marginRight: 4,
+  },
+  historyDurationUnit: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: theme.colors.text.secondary,
   },
   historyItemDate: {
     fontSize: 15,
     color: theme.colors.text.secondary,
+    fontWeight: '500',
   },
   historyItemRight: {
     alignItems: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   historyItemTime: {
     fontSize: 15,
     color: theme.colors.text.secondary,
+    fontWeight: '500',
+    marginRight: 8,
+  },
+  historyStatusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#34C759',
   },
   howToSection: {
     paddingHorizontal: 20,

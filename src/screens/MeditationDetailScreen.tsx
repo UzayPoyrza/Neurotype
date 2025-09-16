@@ -230,9 +230,6 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
                 console.log('Share meditation:', session.title);
               }}
             />
-            <TouchableOpacity style={styles.headerActionButton}>
-              <Text style={styles.headerActionText}>⋯</Text>
-            </TouchableOpacity>
           </View>
         </View>
         
@@ -332,15 +329,15 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   backButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
   backButtonText: {
     color: '#007AFF',
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: '400',
   },
   headerTitle: {
@@ -356,9 +353,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   headerActionButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },

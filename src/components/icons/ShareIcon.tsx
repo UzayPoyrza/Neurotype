@@ -8,10 +8,10 @@ interface ShareIconProps {
 }
 
 export const ShareIcon: React.FC<ShareIconProps> = ({ 
-  size = 32,
+  size = 40,
   onPress 
 }) => {
-  const iconSize = size * 0.5;
+  const iconSize = size * 0.6;
   
   return (
     <TouchableOpacity
@@ -48,8 +48,8 @@ export const ShareIcon: React.FC<ShareIconProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    width: 32,
-    height: 32,
+    width: 40,
+    height: 40,
     justifyContent: 'center',
     alignItems: 'center',
   },

@@ -213,7 +213,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       
       {/* Sticky Header */}
-      <SafeAreaView style={styles.stickyHeader}>
+      <View style={styles.stickyHeader}>
         <View style={styles.headerContent}>
           <TouchableOpacity 
             style={styles.backButton}
@@ -264,7 +264,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
             {activeTab === 'howto' && <View style={styles.tabIndicator} />}
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
 
       <ScrollView
         style={styles.scrollView}
@@ -317,6 +317,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(0, 0, 0, 0.1)',
     zIndex: 100,
+    paddingTop: 44, // Reduced from default SafeAreaView padding
   },
   headerContent: {
     flexDirection: 'row',
@@ -510,7 +511,7 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 8,
     alignItems: 'center',
     position: 'relative',
   },

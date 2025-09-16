@@ -184,9 +184,9 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   );
 
   const renderSummaryPage = () => (
-    <ScrollView style={styles.pageContainer} contentContainerStyle={styles.pageContent}>
+    <View style={styles.pageContainer}>
       {renderBenefitsExplanation()}
-    </ScrollView>
+    </View>
   );
 
   const renderHistoryPage = () => {
@@ -312,7 +312,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   };
 
   const renderHowToPage = () => (
-    <ScrollView style={styles.pageContainer} contentContainerStyle={styles.pageContent}>
+    <View style={styles.pageContainer}>
       <View style={styles.howToSection}>
         {/* Instructions */}
         <View style={styles.instructionsContainer}>
@@ -366,7 +366,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           </View>
         </View>
       </View>
-    </ScrollView>
+    </View>
   );
 
   return (
@@ -456,23 +456,23 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           style={styles.horizontalScrollView}
         >
           {/* Summary Page */}
-          <View style={[styles.page, { width: screenWidth }]}>
+          <ScrollView style={[styles.page, { width: screenWidth }]} contentContainerStyle={styles.pageContent}>
             {renderVisualSection()}
             {renderMeditationInfo(true)}
             {renderSummaryPage()}
-          </View>
+          </ScrollView>
           
           {/* History Page */}
-          <View style={[styles.page, { width: screenWidth }]}>
+          <ScrollView style={[styles.page, { width: screenWidth }]} contentContainerStyle={styles.pageContent}>
             {renderHistoryPage()}
-          </View>
+          </ScrollView>
           
           {/* How To Page */}
-          <View style={[styles.page, { width: screenWidth }]}>
+          <ScrollView style={[styles.page, { width: screenWidth }]} contentContainerStyle={styles.pageContent}>
             {renderVisualSection()}
             {renderMeditationInfo(false)}
             {renderHowToPage()}
-          </View>
+          </ScrollView>
         </ScrollView>
       </SafeAreaView>
 
@@ -581,6 +581,9 @@ const styles = StyleSheet.create({
   },
   pageContent: {
     paddingBottom: 100,
+  },
+  pageSpacer: {
+    height: 20, // Small spacer to account for sticky header
   },
   visualSection: {
     height: 200,

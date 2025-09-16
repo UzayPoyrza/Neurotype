@@ -47,6 +47,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const scrollX = useRef(new Animated.Value(0)).current;
   const horizontalScrollRef = useRef<ScrollView>(null);
   const draggableActionBarRef = useRef<any>(null);
+  const horizontalScrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const screenWidth = Dimensions.get('window').width;
   
   const session = mockSessions.find(s => s.id === sessionId);
@@ -68,6 +69,11 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
     
     // Update scrollX animated value for tab indicator
     scrollX.setValue(offsetX);
+    
+    // Trigger button animation to circle mode during horizontal scrolling
+    if (draggableActionBarRef.current) {
+      draggableActionBarRef.current.handleScroll(1); // Pass any value to trigger circle mode
+    }
     
     const tabIndex = Math.round(offsetX / screenWidth);
     

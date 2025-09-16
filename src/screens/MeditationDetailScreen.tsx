@@ -37,7 +37,6 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   
   const [activeTab, setActiveTab] = useState<TabType>('summary');
-  const scrollY = useRef(new Animated.Value(0)).current;
   
   const session = mockSessions.find(s => s.id === sessionId);
   
@@ -69,18 +68,6 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
     };
     return colors[goal] || theme.colors.primary;
   };
-
-  const headerOpacity = scrollY.interpolate({
-    inputRange: [0, 100],
-    outputRange: [0, 1],
-    extrapolate: 'clamp',
-  });
-
-  const headerTranslateY = scrollY.interpolate({
-    inputRange: [0, 100],
-    outputRange: [-50, 0],
-    extrapolate: 'clamp',
-  });
 
   const renderVisualSection = () => (
     <View style={styles.visualSection}>
@@ -225,53 +212,27 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       
-      {/* Animated Header */}
-      <Animated.View 
-        style={[
-          styles.header,
-          {
-            opacity: headerOpacity,
-            transform: [{ translateY: headerTranslateY }],
-          },
-        ]}
-      >
-        <SafeAreaView>
-          <View style={styles.headerContent}>
-            <TouchableOpacity 
-              style={styles.backButton}
-              onPress={() => navigation.goBack()}
-            >
-              <Text style={styles.backButtonText}>←</Text>
+      {/* Sticky Header */}
+      <SafeAreaView style={styles.stickyHeader}>
+        <View style={styles.headerContent}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.backButtonText}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{session.title}</Text>
+          <View style={styles.headerActions}>
+            <TouchableOpacity style={styles.headerActionButton}>
+              <Text style={styles.headerActionText}>↗</Text>
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>{session.title}</Text>
-            <View style={styles.headerActions}>
-              <TouchableOpacity style={styles.headerActionButton}>
-                <Text style={styles.headerActionText}>↗</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.headerActionButton}>
-                <Text style={styles.headerActionText}>⋯</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity style={styles.headerActionButton}>
+              <Text style={styles.headerActionText}>⋯</Text>
+            </TouchableOpacity>
           </View>
-        </SafeAreaView>
-      </Animated.View>
-
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
-        )}
-        scrollEventThrottle={16}
-      >
-        {/* Hero Visual Section */}
-        {renderVisualSection()}
+        </View>
         
-        {/* Meditation Info */}
-        {renderMeditationInfo()}
-        
-        {/* Tabs */}
+        {/* Tabs in Header */}
         <View style={styles.tabsContainer}>
           <TouchableOpacity
             style={[styles.tab, activeTab === 'summary' && styles.activeTab]}
@@ -303,6 +264,18 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
             {activeTab === 'howto' && <View style={styles.tabIndicator} />}
           </TouchableOpacity>
         </View>
+      </SafeAreaView>
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Hero Visual Section */}
+        {renderVisualSection()}
+        
+        {/* Meditation Info */}
+        {renderMeditationInfo()}
         
         {/* Tab Content */}
         {renderTabContent()}
@@ -339,59 +312,55 @@ const styles = StyleSheet.create({
     color: theme.colors.text.primary,
     fontSize: 18,
   },
-  header: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
+  stickyHeader: {
+    backgroundColor: theme.health.container.backgroundColor,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
     zIndex: 100,
-    backgroundColor: 'rgba(242, 242, 247, 0.95)',
-    backdropFilter: 'blur(10px)',
   },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    minHeight: 44,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   backButtonText: {
-    color: theme.colors.text.primary,
-    fontSize: 20,
-    fontWeight: '600',
+    color: '#007AFF',
+    fontSize: 18,
+    fontWeight: '400',
   },
   headerTitle: {
     color: theme.colors.text.primary,
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     flex: 1,
     textAlign: 'center',
-    marginHorizontal: 20,
+    marginHorizontal: 16,
   },
   headerActions: {
     flexDirection: 'row',
     gap: 8,
   },
   headerActionButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerActionText: {
-    color: theme.colors.text.primary,
-    fontSize: 18,
-    fontWeight: '600',
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '400',
   },
   scrollView: {
     flex: 1,
@@ -400,20 +369,25 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   visualSection: {
-    height: 300,
+    height: 280,
+    backgroundColor: 'transparent',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  meditationVisual: {
+    width: 160,
+    height: 160,
+    borderRadius: 80,
     backgroundColor: theme.colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  meditationVisual: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: theme.health.container.backgroundColor,
-    justifyContent: 'center',
-    alignItems: 'center',
     position: 'relative',
-    ...theme.shadows.medium,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   visualContainer: {
     width: '100%',
@@ -434,29 +408,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   playButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: theme.colors.primary,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
-    ...theme.shadows.small,
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
   playIcon: {
-    fontSize: 24,
-    color: theme.colors.text.onPrimary,
-    marginLeft: 4,
+    fontSize: 20,
+    color: '#ffffff',
+    marginLeft: 3,
   },
   meditationInfo: {
     paddingHorizontal: 20,
-    paddingVertical: 24,
+    paddingVertical: 20,
     backgroundColor: 'transparent',
   },
   meditationTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: 24,
+    fontWeight: '700',
     color: theme.colors.text.primary,
-    marginBottom: 16,
+    marginBottom: 12,
+    textAlign: 'center',
   },
   tagsContainer: {
     flexDirection: 'row',
@@ -464,16 +443,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tag: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: theme.colors.surface,
-    ...theme.shadows.small,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#E5E5EA',
   },
   tagText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
-    color: theme.colors.text.primary,
+    color: '#1C1C1E',
     textTransform: 'capitalize',
   },
   benefitsSection: {
@@ -482,22 +460,22 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   benefitsTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '600',
     color: theme.colors.text.primary,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   benefitsDescription: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 15,
+    lineHeight: 22,
     color: theme.colors.text.secondary,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   uniqueBenefits: {
     gap: 16,
   },
   uniqueBenefitsTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: theme.colors.text.primary,
     marginBottom: 12,
@@ -506,28 +484,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.colors.surface,
-    padding: 16,
-    borderRadius: 12,
-    ...theme.shadows.small,
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   benefitIcon: {
-    fontSize: 20,
-    marginRight: 12,
+    fontSize: 18,
+    marginRight: 10,
   },
   benefitText: {
-    fontSize: 16,
+    fontSize: 15,
     color: theme.colors.text.primary,
     flex: 1,
+    lineHeight: 20,
   },
   tabsContainer: {
     flexDirection: 'row',
-    backgroundColor: theme.colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    backgroundColor: 'transparent',
+    paddingHorizontal: 16,
   },
   tab: {
     flex: 1,
-    paddingVertical: 16,
+    paddingVertical: 12,
     alignItems: 'center',
     position: 'relative',
   },
@@ -535,23 +518,23 @@ const styles = StyleSheet.create({
     // Active tab styling handled by text color
   },
   tabText: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 15,
+    fontWeight: '400',
     color: theme.colors.text.secondary,
   },
   activeTabText: {
-    color: theme.colors.primary,
+    color: '#007AFF',
     fontWeight: '600',
   },
   tabIndicator: {
     position: 'absolute',
     bottom: 0,
     left: '50%',
-    marginLeft: -15,
-    width: 30,
-    height: 3,
-    backgroundColor: theme.colors.primary,
-    borderRadius: 2,
+    marginLeft: -12,
+    width: 24,
+    height: 2,
+    backgroundColor: '#007AFF',
+    borderRadius: 1,
   },
   tabContent: {
     backgroundColor: 'transparent',
@@ -563,35 +546,40 @@ const styles = StyleSheet.create({
   },
   dataCard: {
     backgroundColor: theme.colors.surface,
-    padding: 24,
-    borderRadius: 12,
+    padding: 20,
+    borderRadius: 10,
     alignItems: 'center',
-    ...theme.shadows.medium,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   dataIcon: {
-    fontSize: 32,
-    marginBottom: 12,
+    fontSize: 28,
+    marginBottom: 8,
   },
   dataText: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: theme.colors.text.primary,
     marginBottom: 4,
   },
   dataSubtext: {
-    fontSize: 14,
+    fontSize: 13,
     color: theme.colors.text.secondary,
     textAlign: 'center',
+    lineHeight: 18,
   },
   recordTypeSection: {
     paddingHorizontal: 20,
     paddingBottom: 24,
   },
   recordTypeTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: theme.colors.text.primary,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   recordTypeButtons: {
     flexDirection: 'row',
@@ -599,25 +587,24 @@ const styles = StyleSheet.create({
   },
   recordTypeButton: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: theme.colors.surface,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    backgroundColor: '#E5E5EA',
     alignItems: 'center',
-    ...theme.shadows.small,
   },
   recordTypeButtonActive: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#007AFF',
   },
   recordTypeButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
-    color: theme.colors.text.primary,
+    color: '#1C1C1E',
   },
   recordTypeButtonTextActive: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    color: theme.colors.text.onPrimary,
+    color: '#ffffff',
   },
   historySection: {
     paddingHorizontal: 20,
@@ -701,20 +688,24 @@ const styles = StyleSheet.create({
   },
   startButtonContainer: {
     paddingHorizontal: 20,
-    paddingVertical: 24,
+    paddingVertical: 20,
     backgroundColor: 'transparent',
   },
   startButton: {
-    paddingVertical: 16,
+    paddingVertical: 14,
     paddingHorizontal: 24,
-    borderRadius: 12,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    ...theme.shadows.medium,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   startButtonText: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
-    color: theme.colors.text.onPrimary,
+    color: '#ffffff',
   },
 });

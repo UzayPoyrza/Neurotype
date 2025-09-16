@@ -20,7 +20,7 @@ import { theme } from '../styles/theme';
 import { useStore } from '../store/useStore';
 import { ShareIcon } from '../components/icons';
 import { PrimaryButton } from '../components/PrimaryButton';
-import { BottomActionBar } from '../components/BottomActionBar';
+import { DraggableActionBar } from '../components/DraggableActionBar';
 
 type MeditationDetailStackParamList = {
   MeditationDetail: {
@@ -45,6 +45,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const [historySortOrder, setHistorySortOrder] = useState<'latest' | 'earliest'>('latest');
   const [showSortOptions, setShowSortOptions] = useState(false);
   const indicatorAnimation = useRef(new Animated.Value(0)).current;
+  const draggableActionBarRef = useRef<any>(null);
   
   const session = mockSessions.find(s => s.id === sessionId);
   
@@ -466,6 +467,14 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
             style={styles.scrollView}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
+            onScroll={(event) => {
+              const scrollY = event.nativeEvent.contentOffset.y;
+              // Pass scroll event to DraggableActionBar
+              if (draggableActionBarRef.current) {
+                draggableActionBarRef.current.handleScroll(scrollY);
+              }
+            }}
+            scrollEventThrottle={16}
           >
             {/* Hero Visual Section - Hide on History tab */}
             {activeTab !== 'history' && renderVisualSection()}
@@ -480,10 +489,11 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         </PanGestureHandler>
       </SafeAreaView>
 
-      {/* Bottom Action Bar */}
-      <BottomActionBar
+      {/* Draggable Action Bar */}
+      <DraggableActionBar
+        ref={draggableActionBarRef}
         primaryAction={{
-          title: "Start Meditation",
+          title: "Start",
           icon: "▶",
           onPress: handleStartPress,
         }}
@@ -493,7 +503,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           onPress: handleTutorialPress,
         }}
         themeColor={getGoalColor(session.goal)}
-        globalBackgroundColor={globalBackgroundColor}
+        secondaryColor="#007AFF"
       />
     </View>
   );

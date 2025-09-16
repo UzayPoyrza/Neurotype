@@ -21,6 +21,7 @@ export { SpotifyFilterBar } from './SpotifyFilterBar';
 export { ModuleRoadmap } from './ModuleRoadmap';
 export { ModuleGridModal } from './ModuleGridModal';
 export { DraggableFloatingButton } from './DraggableFloatingButton';
+export { DraggableActionBar } from './DraggableActionBar';
 export { SessionBottomSheet } from './SessionBottomSheet';
 export { SessionProgressView } from './SessionProgressView';
 export { SessionRating } from './SessionRating';

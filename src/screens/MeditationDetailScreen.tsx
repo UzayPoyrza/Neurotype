@@ -176,29 +176,6 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         return (
           <View style={styles.tabContent}>
             {renderBenefitsExplanation()}
-            
-            <View style={styles.dataSection}>
-              <View style={styles.dataCard}>
-                <Text style={styles.dataIcon}>📊</Text>
-                <Text style={styles.dataText}>No data yet</Text>
-                <Text style={styles.dataSubtext}>Start your first session to see progress</Text>
-              </View>
-            </View>
-
-            <View style={styles.recordTypeSection}>
-              <Text style={styles.recordTypeTitle}>Personal Records</Text>
-              <View style={styles.recordTypeButtons}>
-                <TouchableOpacity style={[styles.recordTypeButton, styles.recordTypeButtonActive]}>
-                  <Text style={styles.recordTypeButtonTextActive}>Best Session</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.recordTypeButton}>
-                  <Text style={styles.recordTypeButtonText}>Longest Streak</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.recordTypeButton}>
-                  <Text style={styles.recordTypeButtonText}>Total Time</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
           </View>
         );
       

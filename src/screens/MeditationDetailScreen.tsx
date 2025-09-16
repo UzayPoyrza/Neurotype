@@ -181,8 +181,11 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         return (
           <View style={styles.tabContent}>
             <View style={styles.historySection}>
-              <Text style={styles.historyTitle}>Session History</Text>
-              <Text style={styles.historyText}>No sessions completed</Text>
+              <View style={styles.historyEmptyState}>
+                <Text style={styles.historyEmptyIcon}>📊</Text>
+                <Text style={styles.historyEmptyText}>No sessions completed</Text>
+                <Text style={styles.historyEmptySubtext}>Start your first meditation to see your progress here</Text>
+              </View>
             </View>
           </View>
         );
@@ -298,18 +301,20 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         {/* Tab Content */}
         {renderTabContent()}
         
-        {/* Start Button */}
-        <View style={styles.startButtonContainer}>
-          <TouchableOpacity 
-            style={[styles.startButton, { backgroundColor: getGoalColor(session.goal) }]}
-            onPress={() => {
-              // Navigate to player screen to start the meditation
-              navigation.navigate('Player');
-            }}
-          >
-            <Text style={styles.startButtonText}>Start Meditation</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Start Button - Hide on History tab */}
+        {activeTab !== 'history' && (
+          <View style={styles.startButtonContainer}>
+            <TouchableOpacity 
+              style={[styles.startButton, { backgroundColor: getGoalColor(session.goal) }]}
+              onPress={() => {
+                // Navigate to player screen to start the meditation
+                navigation.navigate('Player');
+              }}
+            >
+              <Text style={styles.startButtonText}>Start Meditation</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -655,6 +660,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.colors.text.secondary,
     textAlign: 'center',
+  },
+  historyEmptyState: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  historyEmptyIcon: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  historyEmptyText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+    marginBottom: 8,
+  },
+  historyEmptySubtext: {
+    fontSize: 14,
+    color: theme.colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   howToSection: {
     paddingHorizontal: 20,

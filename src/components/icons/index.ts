@@ -3,4 +3,5 @@ export { ProgressIcon } from './ProgressIcon';
 export { ExploreIcon } from './ExploreIcon';
 export { ProfileIcon } from './ProfileIcon';
 export { UserIcon } from './UserIcon';
-export { SettingsIcon } from './SettingsIcon'; 
+export { SettingsIcon } from './SettingsIcon';
+export { ShareIcon } from './ShareIcon'; 

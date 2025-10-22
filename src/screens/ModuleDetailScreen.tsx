@@ -12,6 +12,7 @@ import { Session } from '../types';
 type ExploreStackParamList = {
   ExploreMain: undefined;
   ModuleDetail: { moduleId: string };
+  MeditationDetail: { sessionId: string };
 };
 
 type ModuleDetailRouteProp = RouteProp<ExploreStackParamList, 'ModuleDetail'>;
@@ -22,7 +23,6 @@ interface ModuleDetailScreenProps {}
 export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
   const route = useRoute<ModuleDetailRouteProp>();
   const navigation = useNavigation<ModuleDetailNavigationProp>();
-  const setActiveSession = useStore(state => state.setActiveSession);
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
   const { prerenderedModuleBackgrounds } = require('../store/useStore');
   
@@ -80,7 +80,8 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
   }, [moduleId, module]);
 
   const handleSessionStart = (session: Session) => {
-    setActiveSession(session);
+    // Navigate to MeditationDetail screen instead of setting active session
+    navigation.navigate('MeditationDetail', { sessionId: session.id });
   };
 
   if (!module) {

@@ -150,6 +150,30 @@ const ExploreStackNavigator = () => {
           },
         }}
       />
+      <ExploreStack.Screen 
+        name="MeditationDetail" 
+        component={MeditationDetailScreen}
+        options={{
+          headerShown: false,
+          gestureEnabled: true,
+          gestureDirection: 'horizontal',
+          cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+          transitionSpec: {
+            open: {
+              animation: 'timing',
+              config: {
+                duration: 250,
+              },
+            },
+            close: {
+              animation: 'timing',
+              config: {
+                duration: 200,
+              },
+            },
+          },
+        }}
+      />
     </ExploreStack.Navigator>
   );
 };

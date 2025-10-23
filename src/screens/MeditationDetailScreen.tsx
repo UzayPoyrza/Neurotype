@@ -40,6 +40,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const route = useRoute<MeditationDetailRouteProp>();
   const { sessionId } = route.params;
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
+  const setActiveSession = useStore(state => state.setActiveSession);
   
   const [activeTab, setActiveTab] = useState<TabType>('summary');
   const [historySortOrder, setHistorySortOrder] = useState<'latest' | 'earliest'>('latest');
@@ -125,9 +126,10 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   };
 
   const handleTutorialPress = () => {
-    // Navigate to tutorial or show tutorial modal
-    console.log('Tutorial pressed for:', session?.title);
-    // You can implement tutorial functionality here
+    // Start tutorial mode for the meditation session
+    if (session) {
+      setActiveSession(session);
+    }
   };
 
   const handleStatsPress = () => {
@@ -138,9 +140,9 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
 
   const handleStartPress = () => {
     // Start the meditation session
-    console.log('Start pressed for:', session?.title);
-    // You can implement start functionality here
-    // For example: navigation.navigate('Player', { sessionId: session.id });
+    if (session) {
+      setActiveSession(session);
+    }
   };
   
   if (!session) {

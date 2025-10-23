@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
-    paddingHorizontal: 32, // Match progress bar padding
+    marginLeft: 0, // Align with progress bar left edge
   },
   sessionTitle: {
     fontSize: 24,
@@ -381,7 +381,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'rgba(255, 255, 255, 0.7)',
     marginBottom: 20,
-    paddingHorizontal: 32, // Match progress bar padding
+    marginLeft: 0, // Align with title
     textAlign: 'left',
   },
   progressSection: {

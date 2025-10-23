@@ -13,6 +13,7 @@ import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
 import { Slider0to10 } from '../components/Slider0to10';
 import { meditationAudioData, emotionalFeedbackData, sessionProgressData, mockAudioPlayer } from '../data/meditationMockData';
+import { PlayIcon, PauseIcon, SkipForwardIcon, SkipBackwardIcon, HeartIcon, HeartOutlineIcon, BackIcon, MoreIcon } from '../components/icons/PlayerIcons';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -181,6 +182,18 @@ export const MeditationPlayerScreen: React.FC = () => {
     console.log('Options pressed');
   };
 
+  const handleSkipForward = () => {
+    const newTime = Math.min(currentTime + 10, totalDuration);
+    setCurrentTime(newTime);
+    audioPlayerRef.current.seekTo(newTime);
+  };
+
+  const handleSkipBackward = () => {
+    const newTime = Math.max(currentTime - 10, 0);
+    setCurrentTime(newTime);
+    audioPlayerRef.current.seekTo(newTime);
+  };
+
   if (!activeSession) return null;
 
   const progressWidth = progressAnim.interpolate({
@@ -199,7 +212,7 @@ export const MeditationPlayerScreen: React.FC = () => {
       {/* Top Bar */}
       <View style={styles.topBar}>
         <TouchableOpacity style={styles.topBarButton} onPress={handleBack}>
-          <Text style={styles.topBarButtonText}>←</Text>
+          <BackIcon size={20} color="#ffffff" />
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.tutorialButton} onPress={handleTutorialToggle}>
@@ -209,7 +222,7 @@ export const MeditationPlayerScreen: React.FC = () => {
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.topBarButton} onPress={handleOptions}>
-          <Text style={styles.topBarButtonText}>⋯</Text>
+          <MoreIcon size={20} color="#ffffff" />
         </TouchableOpacity>
       </View>
 
@@ -219,21 +232,17 @@ export const MeditationPlayerScreen: React.FC = () => {
         <View style={styles.titleSection}>
           <Text style={styles.sessionTitle}>{activeSession.title}</Text>
           <TouchableOpacity style={styles.heartButton} onPress={handleLike}>
-            <Text style={[styles.heartIcon, isLiked && styles.heartIconLiked]}>
-              {isLiked ? '❤️' : '🤍'}
-            </Text>
+            {isLiked ? (
+              <HeartIcon size={20} color="#ff6b6b" />
+            ) : (
+              <HeartOutlineIcon size={20} color="#ffffff" />
+            )}
           </TouchableOpacity>
         </View>
 
         {/* Artist/Creator */}
         <Text style={styles.artistName}>Prashanti Paz</Text>
 
-        {/* Current Meditation Segment */}
-        {currentSegment && playerState === 'playing' && (
-          <View style={styles.segmentContainer}>
-            <Text style={styles.segmentText}>{currentSegment}</Text>
-          </View>
-        )}
 
         {/* Progress Bar */}
         <View style={styles.progressSection}>
@@ -249,28 +258,22 @@ export const MeditationPlayerScreen: React.FC = () => {
 
         {/* Player Controls */}
         <View style={styles.playerControls}>
-          <TouchableOpacity style={styles.controlButton}>
-            <Text style={styles.controlIcon}>♪</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.controlButton}>
-            <Text style={styles.controlIcon}>⏮</Text>
+          <TouchableOpacity style={styles.controlButton} onPress={handleSkipBackward}>
+            <SkipBackwardIcon size={18} color="#ffffff" />
           </TouchableOpacity>
           
           <Animated.View style={{ transform: [{ scale: playButtonScale }] }}>
             <TouchableOpacity style={styles.playButton} onPress={handlePlayPause}>
-              <Text style={styles.playIcon}>
-                {playerState === 'playing' ? '⏸' : '▶'}
-              </Text>
+              {playerState === 'playing' ? (
+                <PauseIcon size={24} color="#1a1a1a" />
+              ) : (
+                <PlayIcon size={24} color="#1a1a1a" />
+              )}
             </TouchableOpacity>
           </Animated.View>
           
-          <TouchableOpacity style={styles.controlButton}>
-            <Text style={styles.controlIcon}>⏭</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.controlButton}>
-            <Text style={styles.controlIcon}>🔁</Text>
+          <TouchableOpacity style={styles.controlButton} onPress={handleSkipForward}>
+            <SkipForwardIcon size={18} color="#ffffff" />
           </TouchableOpacity>
         </View>
       </View>
@@ -372,30 +375,10 @@ const styles = StyleSheet.create({
   heartButton: {
     padding: 4,
   },
-  heartIcon: {
-    fontSize: 20,
-  },
-  heartIconLiked: {
-    // Heart icon styling when liked
-  },
   artistName: {
     fontSize: 16,
     color: 'rgba(255, 255, 255, 0.7)',
     marginBottom: 20,
-  },
-  segmentContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 30,
-    maxWidth: '90%',
-  },
-  segmentText: {
-    color: '#ffffff',
-    fontSize: 16,
-    lineHeight: 24,
-    textAlign: 'center',
-    fontStyle: 'italic',
   },
   progressSection: {
     width: '100%',
@@ -445,10 +428,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  controlIcon: {
-    color: '#ffffff',
-    fontSize: 18,
-  },
   playButton: {
     width: 64,
     height: 64,
@@ -461,11 +440,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 12,
     elevation: 12,
-  },
-  playIcon: {
-    color: '#1a1a1a',
-    fontSize: 24,
-    marginLeft: 2,
   },
   bottomSection: {
     paddingHorizontal: 32,

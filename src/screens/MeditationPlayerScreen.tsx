@@ -241,7 +241,9 @@ export const MeditationPlayerScreen: React.FC = () => {
         </View>
 
         {/* Artist/Creator */}
-        <Text style={styles.artistName}>Prashanti Paz</Text>
+        <View style={styles.artistContainer}>
+          <Text style={styles.artistName}>Prashanti Paz</Text>
+        </View>
 
 
         {/* Progress Bar */}
@@ -377,11 +379,14 @@ const styles = StyleSheet.create({
   heartButton: {
     padding: 4,
   },
+  artistContainer: {
+    width: '100%',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+  },
   artistName: {
     fontSize: 16,
     color: 'rgba(255, 255, 255, 0.7)',
-    marginBottom: 20,
-    marginLeft: 0, // Align with title
     textAlign: 'left',
   },
   progressSection: {

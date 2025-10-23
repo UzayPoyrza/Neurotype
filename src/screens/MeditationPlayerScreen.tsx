@@ -233,9 +233,9 @@ export const MeditationPlayerScreen: React.FC = () => {
           <Text style={styles.sessionTitle}>{activeSession.title}</Text>
           <TouchableOpacity style={styles.heartButton} onPress={handleLike}>
             {isLiked ? (
-              <HeartIcon size={20} color="#ff6b6b" />
+              <HeartIcon size={24} color="#ff6b6b" />
             ) : (
-              <HeartOutlineIcon size={20} color="#ffffff" />
+              <HeartOutlineIcon size={24} color="#ffffff" />
             )}
           </TouchableOpacity>
         </View>
@@ -365,12 +365,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
+    paddingHorizontal: 32, // Match progress bar padding
   },
   sessionTitle: {
     fontSize: 24,
     fontWeight: '600',
     color: '#ffffff',
     marginRight: 12,
+    flex: 1,
   },
   heartButton: {
     padding: 4,
@@ -379,6 +381,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'rgba(255, 255, 255, 0.7)',
     marginBottom: 20,
+    paddingHorizontal: 32, // Match progress bar padding
+    textAlign: 'left',
   },
   progressSection: {
     width: '100%',

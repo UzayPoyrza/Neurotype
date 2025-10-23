@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
   },
   progressContainer: {
     position: 'relative',
-    height: 4,
+    height: 8,
     marginBottom: 12,
   },
   progressTrack: {
@@ -403,17 +403,17 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 2,
+    height: 6,
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 1,
+    borderRadius: 3,
   },
   progressFill: {
     position: 'absolute',
     top: 0,
     left: 0,
-    height: 4,
+    height: 8,
     backgroundColor: '#ffffff',
-    borderRadius: 2,
+    borderRadius: 4,
   },
   timeContainer: {
     flexDirection: 'row',

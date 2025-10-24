@@ -385,32 +385,42 @@ export const MeditationPlayerScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Bottom Section */}
+      {/* Bottom Section - Fixed Height */}
       <View style={styles.bottomSection}>
-        {playerState === 'playing' && (
-          <View style={styles.emotionalFeedbackSection}>
-            <Text style={styles.emotionalFeedbackTitle}>How do you feel?</Text>
-            <View style={styles.emotionalSliderContainer}>
-              <Slider0to10
-                value={emotionalRating}
-                onValueChange={setEmotionalRating}
-                label=""
-                showLabels={false}
-              />
-            </View>
+        {/* Emotional Feedback Section - Always rendered, shown/hidden with opacity */}
+        <Animated.View style={[
+          styles.emotionalFeedbackSection,
+          { 
+            opacity: playerState === 'playing' ? 1 : 0,
+            pointerEvents: playerState === 'playing' ? 'auto' : 'none'
+          }
+        ]}>
+          <Text style={styles.emotionalFeedbackTitle}>How do you feel?</Text>
+          <View style={styles.emotionalSliderContainer}>
+            <Slider0to10
+              value={emotionalRating}
+              onValueChange={setEmotionalRating}
+              label=""
+              showLabels={false}
+            />
           </View>
-        )}
+        </Animated.View>
 
-        {(playerState === 'paused' || playerState === 'finished') && (
-          <View style={styles.actionButtonsSection}>
-            <TouchableOpacity style={styles.finishButton} onPress={handleFinish}>
-              <Text style={styles.finishButtonText}>Finish</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.discardButton} onPress={handleDiscard}>
-              <Text style={styles.discardButtonText}>Discard session</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        {/* Action Buttons Section - Always rendered, shown/hidden with opacity */}
+        <Animated.View style={[
+          styles.actionButtonsSection,
+          { 
+            opacity: (playerState === 'paused' || playerState === 'finished') ? 1 : 0,
+            pointerEvents: (playerState === 'paused' || playerState === 'finished') ? 'auto' : 'none'
+          }
+        ]}>
+          <TouchableOpacity style={styles.finishButton} onPress={handleFinish}>
+            <Text style={styles.finishButtonText}>Finish</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.discardButton} onPress={handleDiscard}>
+            <Text style={styles.discardButtonText}>Discard session</Text>
+          </TouchableOpacity>
+        </Animated.View>
       </View>
       </SafeAreaView>
     </GestureHandlerRootView>
@@ -468,8 +478,9 @@ const styles = StyleSheet.create({
   mainContent: {
     flex: 1,
     paddingHorizontal: 32,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'stretch',
+    paddingTop: 240, // Increased padding to push content further down
   },
   titleSection: {
     alignItems: 'flex-start',
@@ -554,6 +565,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 24,
     alignSelf: 'center',
+    marginBottom: 50, // Add space between player controls and bottom buttons
   },
   controlButton: {
     width: 40,
@@ -578,8 +590,14 @@ const styles = StyleSheet.create({
   bottomSection: {
     paddingHorizontal: 32,
     paddingBottom: 40,
+    minHeight: 200, // Use minHeight instead of fixed height
+    position: 'relative',
   },
   emotionalFeedbackSection: {
+    position: 'absolute',
+    top: 10, // Move down to create space from player controls
+    left: 32, // Match the paddingHorizontal
+    right: 32, // Match the paddingHorizontal
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderRadius: 20,
     padding: 24,
@@ -599,6 +617,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   actionButtonsSection: {
+    position: 'absolute',
+    top: 50, // Move down to create space from player controls
+    left: 32, // Match the paddingHorizontal
+    right: 32, // Match the paddingHorizontal
     alignItems: 'center',
     gap: 12,
   },

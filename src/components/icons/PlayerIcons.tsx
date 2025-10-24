@@ -24,7 +24,7 @@ export const PauseIcon: React.FC<IconProps> = ({ size = 24, color = '#ffffff' })
   </Svg>
 );
 
-export const SkipForward10Icon: React.FC<IconProps> = ({ size = 32, color = '#ffffff' }) => (
+export const SkipForward10Icon: React.FC<IconProps> = ({ size = 40, color = '#ffffff' }) => (
   <Svg width={size} height={size} viewBox="0 0 64 64" fill="none" stroke={color} strokeWidth="3">
     <Path
       d="M23.93,41.41V23a.09.09,0,0,0-.16-.07s-2.58,3.69-4.17,4.78"
@@ -48,7 +48,7 @@ export const SkipForward10Icon: React.FC<IconProps> = ({ size = 32, color = '#ff
   </Svg>
 );
 
-export const SkipBackward10Icon: React.FC<IconProps> = ({ size = 32, color = '#ffffff' }) => (
+export const SkipBackward10Icon: React.FC<IconProps> = ({ size = 40, color = '#ffffff' }) => (
   <Svg width={size} height={size} viewBox="0 0 64 64" fill="none" stroke={color} strokeWidth="3">
     <Polyline
       points="9.57 15.41 12.17 24.05 20.81 21.44"

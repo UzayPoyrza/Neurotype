@@ -362,12 +362,6 @@ export const MeditationPlayerScreen: React.FC = () => {
           <View style={styles.timeContainer}>
             <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
             <Text style={styles.timeText}>-{formatTime(totalDuration - currentTime)}</Text>
-            {!audioLoaded && playerState === 'playing' && (
-              <View style={styles.loadingOverlay}>
-                <ActivityIndicator size="small" color="#ffffff" />
-                <Text style={styles.loadingText}>Loading audio...</Text>
-              </View>
-            )}
           </View>
         </View>
 
@@ -568,24 +562,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '500',
-  },
-  loadingOverlay: {
-    position: 'absolute',
-    top: -30,
-    left: '50%',
-    transform: [{ translateX: -50 }],
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  loadingText: {
-    color: 'rgba(255, 255, 255, 0.9)',
-    fontSize: 12,
-    fontWeight: '400',
   },
   playerControls: {
     flexDirection: 'row',

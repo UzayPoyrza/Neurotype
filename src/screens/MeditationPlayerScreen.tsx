@@ -223,9 +223,9 @@ export const MeditationPlayerScreen: React.FC = () => {
         
         <TouchableOpacity style={styles.heartButtonTop} onPress={handleLike}>
           {isLiked ? (
-            <HeartIcon size={24} color="#ff6b6b" />
+            <HeartIcon size={32} color="#ff6b6b" />
           ) : (
-            <HeartOutlineIcon size={24} color="#ffffff" />
+            <HeartOutlineIcon size={32} color="#ffffff" />
           )}
         </TouchableOpacity>
         
@@ -352,6 +352,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    minWidth: 120,
+    alignItems: 'center',
   },
   tutorialButtonText: {
     color: '#ffffff',

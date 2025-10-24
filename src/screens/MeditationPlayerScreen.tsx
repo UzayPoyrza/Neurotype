@@ -11,6 +11,7 @@ import {
   Vibration,
   ActivityIndicator,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { 
   GestureHandlerRootView,
   Gesture,
@@ -29,6 +30,7 @@ import { theme } from '../styles/theme';
 import { Slider0to10 } from '../components/Slider0to10';
 import { meditationAudioData, emotionalFeedbackData, sessionProgressData, mockAudioPlayer } from '../data/meditationMockData';
 import { PlayIcon, PauseIcon, SkipForward10Icon, SkipBackward10Icon, HeartIcon, HeartOutlineIcon, BackIcon, MoreIcon } from '../components/icons/PlayerIcons';
+import { createMeditationPlayerBackground, getPrerenderedGradient } from '../utils/gradientBackgrounds';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -66,10 +68,21 @@ export const MeditationPlayerScreen: React.FC = () => {
   const emotionalProgressFillWidth = useSharedValue(0);
   const [actualEmotionalBarWidth, setActualEmotionalBarWidth] = useState(0);
   const [currentEmotionalLabel, setCurrentEmotionalLabel] = useState('');
-  const [progressBarColor, setProgressBarColor] = useState('#ffd700'); // Start with gold (middle)
+  const [progressBarColor, setProgressBarColor] = useState('#ffffff'); // Start with white
+  const [isProgressBarVisible, setIsProgressBarVisible] = useState(true);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const hasUserInteractedValue = useSharedValue(false);
+  const progressBarWidthAnim = useRef(new Animated.Value(0)).current;
+  
+  // Gradient background colors
+  const [gradientColors, setGradientColors] = useState({ top: '#1a1a1a', bottom: '#1a1a1a', base: '#1a1a1a' });
 
   useEffect(() => {
     if (activeSession) {
+      // Update gradient colors based on session goal
+      const newGradientColors = createMeditationPlayerBackground(activeSession.goal, 0);
+      setGradientColors(newGradientColors);
+      
       const audioData = meditationAudioData[activeSession.id as keyof typeof meditationAudioData];
       if (audioData) {
         setTotalDuration(audioData.duration);
@@ -81,11 +94,13 @@ export const MeditationPlayerScreen: React.FC = () => {
         thumbPosition.value = 0;
         progressFillWidth.value = 0;
         
-        // Initialize emotional feedback position (start at "okay" - middle)
+        // Initialize emotional feedback position (start at center)
         // Will be set properly once actualEmotionalBarWidth is measured
-        emotionalThumbPosition.value = 0;
-        emotionalProgressFillWidth.value = 0;
+        emotionalThumbPosition.value = 0; // Will be updated when width is measured
         setEmotionalRating(3); // Start at "okay"
+        setHasUserInteracted(false); // Reset interaction state
+        hasUserInteractedValue.value = false; // Reset shared value
+        setProgressBarColor('#ffffff'); // Reset to white
         
         // Load audio in background and start playing when ready
         audioPlayerRef.current.loadAudio(audioData.backgroundAudio).then(() => {
@@ -102,23 +117,35 @@ export const MeditationPlayerScreen: React.FC = () => {
         thumbPosition.value = 0;
         progressFillWidth.value = 0;
         
-        // Initialize emotional feedback position (start at "okay" - middle)
+        // Initialize emotional feedback position (start at center)
         // Will be set properly once actualEmotionalBarWidth is measured
-        emotionalThumbPosition.value = 0;
-        emotionalProgressFillWidth.value = 0;
+        emotionalThumbPosition.value = 0; // Will be updated when width is measured
         setEmotionalRating(3); // Start at "okay"
+        setHasUserInteracted(false); // Reset interaction state
+        hasUserInteractedValue.value = false; // Reset shared value
+        setProgressBarColor('#ffffff'); // Reset to white
       }
     }
   }, [activeSession, thumbPosition]);
 
+  // Update gradient colors based on session progress
+  useEffect(() => {
+    if (activeSession && totalDuration > 0) {
+      const progress = currentTime / totalDuration;
+      const newGradientColors = createMeditationPlayerBackground(activeSession.goal, progress);
+      setGradientColors(newGradientColors);
+    }
+  }, [currentTime, totalDuration, activeSession]);
+
   // Initialize emotional position once width is measured
   useEffect(() => {
     if (actualEmotionalBarWidth > 0) {
-      const initialPosition = (actualEmotionalBarWidth * 2) / 4; // "Okay" position
-      emotionalThumbPosition.value = initialPosition;
-      emotionalProgressFillWidth.value = initialPosition;
+      // Position thumb at center of the bar
+      const centerPosition = actualEmotionalBarWidth / 2;
+      emotionalThumbPosition.value = centerPosition;
+      // Progress fill is calculated dynamically in the animated style
     }
-  }, [actualEmotionalBarWidth, emotionalThumbPosition, emotionalProgressFillWidth]);
+  }, [actualEmotionalBarWidth, emotionalThumbPosition]);
 
   useEffect(() => {
     if (playerState === 'playing' && currentTime < totalDuration) {
@@ -329,7 +356,7 @@ export const MeditationPlayerScreen: React.FC = () => {
 
   // Helper function to get emotional label based on position
   const getEmotionalLabel = (position: number) => {
-    const progress = actualEmotionalBarWidth > 0 ? position / actualEmotionalBarWidth : 0;
+    const progress = actualEmotionalBarWidth > 0 ? position / actualEmotionalBarWidth : 0.5;
     if (progress < 0.2) return 'Bad';
     if (progress < 0.4) return 'Meh';
     if (progress < 0.6) return 'Okay';
@@ -359,40 +386,77 @@ export const MeditationPlayerScreen: React.FC = () => {
 
   // Helper function to update emotional label and color (called from worklet)
   const updateEmotionalLabel = (position: number) => {
-    const label = getEmotionalLabel(position);
-    setCurrentEmotionalLabel(label);
-    
-    // Update color smoothly
-    const newColor = emotionalColors[getEmotionalColorIndex(label)];
-    setProgressBarColor(newColor);
+    try {
+      const label = getEmotionalLabel(position);
+      setCurrentEmotionalLabel(label);
+      
+      // Only update color after user has started interacting
+      if (hasUserInteracted) {
+        const newColor = emotionalColors[getEmotionalColorIndex(label)];
+        setProgressBarColor(newColor);
+      }
+    } catch (error) {
+      console.log('Error in updateEmotionalLabel:', error);
+    }
   };
 
   // Emotional feedback gesture handler
   const emotionalGestureHandler = Gesture.Pan()
     .onStart(() => {
-      emotionalIsDragging.value = true;
-      emotionalStartPosition.value = emotionalThumbPosition.value;
-      emotionalThumbScale.value = withSpring(1.2, {
-        damping: 15,
-        stiffness: 200,
-      });
+      try {
+        // Safety check: only proceed if bar width is measured
+        if (actualEmotionalBarWidth <= 0) {
+          console.log('Emotional bar width not measured yet, ignoring gesture');
+          return;
+        }
+        
+        emotionalIsDragging.value = true;
+        emotionalStartPosition.value = emotionalThumbPosition.value;
+        emotionalThumbScale.value = withSpring(1.2, {
+          damping: 15,
+          stiffness: 200,
+        });
+        
+        // Mark that user has started interacting
+        setHasUserInteracted(true);
+        hasUserInteractedValue.value = true;
+        
+        // Show progress bar (always visible now)
+        if (!isProgressBarVisible) {
+          setIsProgressBarVisible(true);
+        }
+        
+        // Progress fill will be calculated dynamically in the animated style
+      } catch (error) {
+        console.log('Error in gesture onStart:', error);
+      }
     })
     .onUpdate((event) => {
-      // Calculate new position with strict clamping using actual measured width
-      const rawPosition = emotionalStartPosition.value + event.translationX;
-      
-      // Strict bounds: 0 to actualEmotionalBarWidth
-      const newPosition = Math.max(0, Math.min(actualEmotionalBarWidth, rawPosition));
-      
-      // Update position
-      emotionalThumbPosition.value = newPosition;
-      emotionalProgressFillWidth.value = newPosition;
-      
-      // Calculate rating (0-4 scale for 5 levels: bad, meh, okay, good, great)
-      const progress = actualEmotionalBarWidth > 0 ? newPosition / actualEmotionalBarWidth : 0;
-      const newRating = Math.round(progress * 4) + 1; // 1-5 scale
-      runOnJS(updateEmotionalRating)(newRating);
-      runOnJS(updateEmotionalLabel)(newPosition);
+      try {
+        // Safety check: only proceed if bar width is measured
+        if (actualEmotionalBarWidth <= 0) {
+          console.log('Emotional bar width not measured in onUpdate, ignoring');
+          return;
+        }
+        
+        // Calculate new position with strict clamping using actual measured width
+        const rawPosition = emotionalStartPosition.value + event.translationX;
+        
+        // Simple bounds: 0 to actualEmotionalBarWidth (left to right coordinate system)
+        const newPosition = Math.max(0, Math.min(actualEmotionalBarWidth, rawPosition));
+        
+        // Update position
+        emotionalThumbPosition.value = newPosition;
+        // Progress fill is now calculated dynamically in the animated style
+        
+        // Calculate rating (0-4 scale for 5 levels: bad, meh, okay, good, great)
+        const progress = newPosition / actualEmotionalBarWidth;
+        const newRating = Math.round(progress * 4) + 1; // 1-5 scale
+        runOnJS(updateEmotionalRating)(newRating);
+        runOnJS(updateEmotionalLabel)(newPosition);
+      } catch (error) {
+        console.log('Error in gesture onUpdate:', error);
+      }
     })
     .onEnd(() => {
       emotionalIsDragging.value = false;
@@ -417,8 +481,12 @@ export const MeditationPlayerScreen: React.FC = () => {
 
   // Animated styles for emotional progress fill
   const emotionalProgressFillAnimatedStyle = useAnimatedStyle(() => {
+    const thumbPosition = emotionalThumbPosition.value;
+    
+    // Progress fill starts from the beginning of the bar (left edge) and extends to thumb position
     return {
-      width: emotionalProgressFillWidth.value,
+      width: Math.max(20, thumbPosition), // Minimum width for visibility
+      left: 0,
     };
   });
 
@@ -435,8 +503,13 @@ export const MeditationPlayerScreen: React.FC = () => {
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
-      {/* Background with meditation theme */}
-      <View style={styles.backgroundOverlay} />
+      {/* Dynamic gradient background based on module */}
+      <LinearGradient
+        colors={[gradientColors.top, gradientColors.bottom]}
+        style={styles.backgroundGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+      />
       
       {/* Top Bar */}
       <View style={styles.topBar}>
@@ -540,12 +613,35 @@ export const MeditationPlayerScreen: React.FC = () => {
                 setActualEmotionalBarWidth(width);
               }}
             >
-              <View style={styles.emotionalProgressTrack} />
+              <View 
+                style={[
+                  styles.emotionalProgressTrack,
+                  {
+                    width: '100%',
+                    opacity: 1,
+                  }
+                ]} 
+              />
+              {/* Static progress fill for testing */}
+              <View 
+                style={[
+                  styles.emotionalProgressFill, 
+                  { 
+                    width: 100, // Fixed width for testing
+                    left: 0,
+                    backgroundColor: '#ff0000', // Red for testing
+                    opacity: 1,
+                  }
+                ]} 
+              />
               <Reanimated.View 
                 style={[
                   styles.emotionalProgressFill, 
                   emotionalProgressFillAnimatedStyle,
-                  { backgroundColor: progressBarColor }
+                  { 
+                    backgroundColor: progressBarColor,
+                    opacity: 1, // Always visible for testing
+                  }
                 ]} 
               />
               <GestureDetector gesture={emotionalGestureHandler}>
@@ -593,13 +689,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#1a1a1a',
   },
-  backgroundOverlay: {
+  backgroundGradient: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(139, 69, 19, 0.4)', // Warm brown overlay for meditation ambiance
   },
   topBar: {
     flexDirection: 'row',
@@ -806,9 +901,8 @@ const styles = StyleSheet.create({
   emotionalProgressFill: {
     position: 'absolute',
     top: 0,
-    left: 0,
     height: 6,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#00ff00', // Bright green for debugging
     borderRadius: 3,
     marginTop: 7,
   },
@@ -819,7 +913,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: '#ffffff',
     top: 0,
-    left: -10,
+    left: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,

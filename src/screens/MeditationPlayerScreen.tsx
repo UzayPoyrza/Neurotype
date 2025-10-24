@@ -221,6 +221,14 @@ export const MeditationPlayerScreen: React.FC = () => {
           </Text>
         </TouchableOpacity>
         
+        <TouchableOpacity style={styles.heartButtonTop} onPress={handleLike}>
+          {isLiked ? (
+            <HeartIcon size={24} color="#ff6b6b" />
+          ) : (
+            <HeartOutlineIcon size={24} color="#ffffff" />
+          )}
+        </TouchableOpacity>
+        
         <TouchableOpacity style={styles.topBarButton} onPress={handleOptions}>
           <MoreIcon size={20} color="#ffffff" />
         </TouchableOpacity>
@@ -231,13 +239,6 @@ export const MeditationPlayerScreen: React.FC = () => {
         {/* Session Title */}
         <View style={styles.titleSection}>
           <Text style={styles.sessionTitle}>{activeSession.title}</Text>
-          <TouchableOpacity style={styles.heartButton} onPress={handleLike}>
-            {isLiked ? (
-              <HeartIcon size={24} color="#ff6b6b" />
-            ) : (
-              <HeartOutlineIcon size={24} color="#ffffff" />
-            )}
-          </TouchableOpacity>
         </View>
 
         {/* Artist/Creator */}
@@ -267,9 +268,9 @@ export const MeditationPlayerScreen: React.FC = () => {
           <Animated.View style={{ transform: [{ scale: playButtonScale }] }}>
             <TouchableOpacity style={styles.playButton} onPress={handlePlayPause}>
               {playerState === 'playing' ? (
-                <PauseIcon size={24} color="#1a1a1a" />
+                <PauseIcon size={36} color="#1a1a1a" />
               ) : (
-                <PlayIcon size={24} color="#1a1a1a" />
+                <PlayIcon size={36} color="#1a1a1a" />
               )}
             </TouchableOpacity>
           </Animated.View>
@@ -361,11 +362,10 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 32,
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'stretch',
   },
   titleSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 8,
     marginLeft: 0, // Align with progress bar left edge
   },
@@ -373,11 +373,9 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '600',
     color: '#ffffff',
-    marginRight: 12,
-    flex: 1,
   },
-  heartButton: {
-    padding: 4,
+  heartButtonTop: {
+    padding: 8,
   },
   artistContainer: {
     width: '100%',
@@ -429,6 +427,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 24,
+    alignSelf: 'center',
   },
   controlButton: {
     width: 40,

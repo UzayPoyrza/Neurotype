@@ -9,7 +9,7 @@ interface IconProps {
 export const PlayIcon: React.FC<IconProps> = ({ size = 24, color = '#ffffff' }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path
-      d="M8 5v14l11-7z"
+      d="M4 2v20l16-10z"
       fill={color}
     />
   </Svg>
@@ -18,7 +18,7 @@ export const PlayIcon: React.FC<IconProps> = ({ size = 24, color = '#ffffff' }) 
 export const PauseIcon: React.FC<IconProps> = ({ size = 24, color = '#ffffff' }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path
-      d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"
+      d="M4 2h6v20H4V2zm10 0h6v20h-6V2z"
       fill={color}
     />
   </Svg>

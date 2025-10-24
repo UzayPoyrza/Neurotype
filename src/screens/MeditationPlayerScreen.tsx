@@ -57,6 +57,14 @@ export const MeditationPlayerScreen: React.FC = () => {
   const progressBarWidth = screenWidth - 64;
   const startPosition = useSharedValue(0);
   const progressFillWidth = useSharedValue(0);
+  
+  // Emotional feedback progress bar values
+  const emotionalThumbPosition = useSharedValue(0);
+  const emotionalThumbScale = useSharedValue(1);
+  const emotionalIsDragging = useSharedValue(false);
+  const emotionalStartPosition = useSharedValue(0);
+  const emotionalProgressFillWidth = useSharedValue(0);
+  const emotionalBarWidth = screenWidth - 96; // Slightly smaller for the emotional bar
 
   useEffect(() => {
     if (activeSession) {
@@ -70,6 +78,12 @@ export const MeditationPlayerScreen: React.FC = () => {
         // Initialize thumb position and progress fill
         thumbPosition.value = 0;
         progressFillWidth.value = 0;
+        
+        // Initialize emotional feedback position (start at "okay" - middle)
+        const initialEmotionalPosition = (emotionalBarWidth * 2) / 4; // Position for "okay" (3rd of 5 positions)
+        emotionalThumbPosition.value = initialEmotionalPosition;
+        emotionalProgressFillWidth.value = initialEmotionalPosition;
+        setEmotionalRating(3); // Start at "okay"
         
         // Load audio in background and start playing when ready
         audioPlayerRef.current.loadAudio(audioData.backgroundAudio).then(() => {
@@ -85,6 +99,12 @@ export const MeditationPlayerScreen: React.FC = () => {
         // Initialize thumb position and progress fill
         thumbPosition.value = 0;
         progressFillWidth.value = 0;
+        
+        // Initialize emotional feedback position (start at "okay" - middle)
+        const initialEmotionalPosition = (emotionalBarWidth * 2) / 4; // Position for "okay" (3rd of 5 positions)
+        emotionalThumbPosition.value = initialEmotionalPosition;
+        emotionalProgressFillWidth.value = initialEmotionalPosition;
+        setEmotionalRating(3); // Start at "okay"
       }
     }
   }, [activeSession, thumbPosition]);
@@ -296,6 +316,59 @@ export const MeditationPlayerScreen: React.FC = () => {
     };
   });
 
+  // Helper function to update emotional rating (called from worklet)
+  const updateEmotionalRating = (newRating: number) => {
+    setEmotionalRating(newRating);
+  };
+
+  // Emotional feedback gesture handler
+  const emotionalGestureHandler = Gesture.Pan()
+    .onStart(() => {
+      emotionalIsDragging.value = true;
+      emotionalStartPosition.value = emotionalThumbPosition.value;
+      emotionalThumbScale.value = withSpring(1.2, {
+        damping: 15,
+        stiffness: 200,
+      });
+    })
+    .onUpdate((event) => {
+      const newPosition = Math.max(0, Math.min(emotionalBarWidth, emotionalStartPosition.value + event.translationX));
+      emotionalThumbPosition.value = newPosition;
+      emotionalProgressFillWidth.value = newPosition;
+      
+      // Calculate rating (0-4 scale for 5 levels: bad, meh, okay, good, great)
+      const progress = newPosition / emotionalBarWidth;
+      const newRating = Math.round(progress * 4) + 1; // 1-5 scale
+      runOnJS(updateEmotionalRating)(newRating);
+    })
+    .onEnd(() => {
+      emotionalIsDragging.value = false;
+      emotionalThumbScale.value = withSpring(1, {
+        damping: 15,
+        stiffness: 200,
+      });
+    })
+    .minDistance(0)
+    .activeOffsetX([-10, 10])
+    .failOffsetY([-20, 20]);
+
+  // Animated styles for emotional thumb
+  const emotionalThumbAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { translateX: emotionalThumbPosition.value },
+        { scale: emotionalThumbScale.value }
+      ],
+    };
+  });
+
+  // Animated styles for emotional progress fill
+  const emotionalProgressFillAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      width: emotionalProgressFillWidth.value,
+    };
+  });
+
   if (!activeSession) return null;
 
   const progressWidth = progressAnim.interpolate({
@@ -400,13 +473,24 @@ export const MeditationPlayerScreen: React.FC = () => {
           }
         ]}>
           <Text style={styles.emotionalFeedbackTitle}>How do you feel?</Text>
-          <View style={styles.emotionalSliderContainer}>
-            <Slider0to10
-              value={emotionalRating}
-              onValueChange={setEmotionalRating}
-              label=""
-              showLabels={false}
-            />
+          <View style={styles.emotionalProgressContainer}>
+            {/* Progress Bar */}
+            <View style={styles.emotionalProgressBar}>
+              <View style={styles.emotionalProgressTrack} />
+              <Reanimated.View style={[styles.emotionalProgressFill, emotionalProgressFillAnimatedStyle]} />
+              <GestureDetector gesture={emotionalGestureHandler}>
+                <Reanimated.View style={[styles.emotionalProgressThumb, emotionalThumbAnimatedStyle]} />
+              </GestureDetector>
+            </View>
+            
+            {/* Labels */}
+            <View style={styles.emotionalLabels}>
+              <Text style={styles.emotionalLabel}>Bad</Text>
+              <Text style={styles.emotionalLabel}>Meh</Text>
+              <Text style={styles.emotionalLabel}>Okay</Text>
+              <Text style={styles.emotionalLabel}>Good</Text>
+              <Text style={styles.emotionalLabel}>Great</Text>
+            </View>
           </View>
         </Animated.View>
 
@@ -616,9 +700,61 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
   },
-  emotionalSliderContainer: {
+  emotionalProgressContainer: {
     width: '100%',
     paddingHorizontal: 8,
+  },
+  emotionalProgressBar: {
+    position: 'relative',
+    height: 20,
+    marginBottom: 16,
+    justifyContent: 'center',
+  },
+  emotionalProgressTrack: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 3,
+    marginTop: 7,
+  },
+  emotionalProgressFill: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    height: 6,
+    backgroundColor: '#ffffff',
+    borderRadius: 3,
+    marginTop: 7,
+  },
+  emotionalProgressThumb: {
+    position: 'absolute',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#ffffff',
+    top: 0,
+    left: -10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
+  },
+  emotionalLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 10,
+  },
+  emotionalLabel: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 12,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   actionButtonsSection: {
     position: 'absolute',

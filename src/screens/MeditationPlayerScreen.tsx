@@ -101,7 +101,7 @@ export const MeditationPlayerScreen: React.FC = () => {
         setCurrentEmotionalLabel('Okay'); // Set initial label
         setHasUserInteracted(false); // Reset interaction state
         hasUserInteractedValue.value = false; // Reset shared value
-        setProgressBarColor('#ffd700'); // Set to "Okay" color (yellow)
+        setProgressBarColor(interpolateColor(0.5)); // Set to interpolated center color
         
         // Load audio in background and start playing when ready
         audioPlayerRef.current.loadAudio(audioData.backgroundAudio).then(() => {
@@ -125,7 +125,7 @@ export const MeditationPlayerScreen: React.FC = () => {
         setCurrentEmotionalLabel('Okay'); // Set initial label
         setHasUserInteracted(false); // Reset interaction state
         hasUserInteractedValue.value = false; // Reset shared value
-        setProgressBarColor('#ffd700'); // Set to "Okay" color (yellow)
+        setProgressBarColor(interpolateColor(0.5)); // Set to interpolated center color
       }
     }
   }, [activeSession, thumbPosition]);
@@ -148,7 +148,7 @@ export const MeditationPlayerScreen: React.FC = () => {
       emotionalThumbPosition.value = centerPosition;
       // Set the initial label and color based on center position
       setCurrentEmotionalLabel('Okay');
-      setProgressBarColor('#ffd700'); // Yellow for "Okay" state
+      setProgressBarColor(interpolateColor(0.5)); // Use interpolated center color
       // Progress fill is calculated dynamically in the animated style
     }
   }, [actualEmotionalBarWidth, emotionalThumbPosition]);
@@ -382,12 +382,68 @@ export const MeditationPlayerScreen: React.FC = () => {
     }
   };
 
-  // Color palette for smooth transitions
-  const emotionalColors = ['#ff4757', '#ffa502', '#ffd700', '#2ed573', '#1e90ff'];
+  // Color palette for smooth transitions - using more colors for smoother interpolation
+  const emotionalColors = [
+    '#ff4757', // Bad - Red
+    '#ff6b35', // Bad-Meh transition - Orange-red
+    '#ffa502', // Meh - Orange
+    '#ffb347', // Meh-Okay transition - Light orange
+    '#ffd700', // Okay - Yellow
+    '#9acd32', // Okay-Good transition - Yellow-green
+    '#2ed573', // Good - Green
+    '#20b2aa', // Good-Great transition - Teal
+    '#1e90ff'  // Great - Blue
+  ];
 
   // Helper function to update emotional rating (called from worklet)
   const updateEmotionalRating = (newRating: number) => {
     setEmotionalRating(newRating);
+  };
+
+  // Helper function to interpolate between colors for smooth transitions
+  const interpolateColor = (progress: number) => {
+    // Clamp progress between 0 and 1
+    const clampedProgress = Math.max(0, Math.min(1, progress));
+    
+    // Scale to our color array length (9 colors = 8 intervals)
+    const scaledProgress = clampedProgress * (emotionalColors.length - 1);
+    
+    // Get the two colors to interpolate between
+    const lowerIndex = Math.floor(scaledProgress);
+    const upperIndex = Math.min(lowerIndex + 1, emotionalColors.length - 1);
+    const t = scaledProgress - lowerIndex;
+    
+    // If we're at the exact color, return it
+    if (t === 0) {
+      return emotionalColors[lowerIndex];
+    }
+    
+    // Simple linear interpolation between hex colors
+    const color1 = emotionalColors[lowerIndex];
+    const color2 = emotionalColors[upperIndex];
+    
+    // Convert hex to RGB
+    const hexToRgb = (hex: string) => {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+      } : null;
+    };
+    
+    const rgb1 = hexToRgb(color1);
+    const rgb2 = hexToRgb(color2);
+    
+    if (!rgb1 || !rgb2) return color1;
+    
+    // Interpolate each component
+    const r = Math.round(rgb1.r + (rgb2.r - rgb1.r) * t);
+    const g = Math.round(rgb1.g + (rgb2.g - rgb1.g) * t);
+    const b = Math.round(rgb1.b + (rgb2.b - rgb1.b) * t);
+    
+    // Convert back to hex
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
   };
 
   // Helper function to update emotional label and color (called from worklet)
@@ -396,8 +452,9 @@ export const MeditationPlayerScreen: React.FC = () => {
       const label = getEmotionalLabel(position);
       setCurrentEmotionalLabel(label);
       
-      // Always update color based on emotional state
-      const newColor = emotionalColors[getEmotionalColorIndex(label)];
+      // Calculate smooth color based on position
+      const progress = actualEmotionalBarWidth > 0 ? position / actualEmotionalBarWidth : 0.5;
+      const newColor = interpolateColor(progress);
       setProgressBarColor(newColor);
     } catch (error) {
       console.log('Error in updateEmotionalLabel:', error);
@@ -490,9 +547,10 @@ export const MeditationPlayerScreen: React.FC = () => {
   const emotionalProgressFillAnimatedStyle = useAnimatedStyle(() => {
     const thumbPosition = emotionalThumbPosition.value;
     
-    // Progress fill starts from the beginning of the bar (left edge) and extends to thumb position
+    // Progress fill starts from the beginning of the bar (left edge) and extends to the end of the bar
+    // This creates a full bar fill effect
     return {
-      width: Math.max(20, thumbPosition), // Minimum width for visibility
+      width: '100%', // Fill the entire bar
       left: 0,
     };
   });

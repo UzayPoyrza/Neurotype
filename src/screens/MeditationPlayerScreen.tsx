@@ -65,7 +65,8 @@ export const MeditationPlayerScreen: React.FC = () => {
   const emotionalStartPosition = useSharedValue(0);
   const emotionalProgressFillWidth = useSharedValue(0);
   const [actualEmotionalBarWidth, setActualEmotionalBarWidth] = useState(0);
-  const [currentEmotionalLabel, setCurrentEmotionalLabel] = useState('Okay');
+  const [currentEmotionalLabel, setCurrentEmotionalLabel] = useState('');
+  const [progressBarColor, setProgressBarColor] = useState('#ffd700'); // Start with gold (middle)
 
   useEffect(() => {
     if (activeSession) {
@@ -336,15 +337,34 @@ export const MeditationPlayerScreen: React.FC = () => {
     return 'Great';
   };
 
+  // Helper function to get color index for animation
+  const getEmotionalColorIndex = (label: string) => {
+    switch (label) {
+      case 'Bad': return 0;
+      case 'Meh': return 1;
+      case 'Okay': return 2;
+      case 'Good': return 3;
+      case 'Great': return 4;
+      default: return 2; // Default to middle (Okay)
+    }
+  };
+
+  // Color palette for smooth transitions
+  const emotionalColors = ['#ff4757', '#ffa502', '#ffd700', '#2ed573', '#1e90ff'];
+
   // Helper function to update emotional rating (called from worklet)
   const updateEmotionalRating = (newRating: number) => {
     setEmotionalRating(newRating);
   };
 
-  // Helper function to update emotional label (called from worklet)
+  // Helper function to update emotional label and color (called from worklet)
   const updateEmotionalLabel = (position: number) => {
     const label = getEmotionalLabel(position);
     setCurrentEmotionalLabel(label);
+    
+    // Update color smoothly
+    const newColor = emotionalColors[getEmotionalColorIndex(label)];
+    setProgressBarColor(newColor);
   };
 
   // Emotional feedback gesture handler
@@ -521,9 +541,21 @@ export const MeditationPlayerScreen: React.FC = () => {
               }}
             >
               <View style={styles.emotionalProgressTrack} />
-              <Reanimated.View style={[styles.emotionalProgressFill, emotionalProgressFillAnimatedStyle]} />
+              <Reanimated.View 
+                style={[
+                  styles.emotionalProgressFill, 
+                  emotionalProgressFillAnimatedStyle,
+                  { backgroundColor: progressBarColor }
+                ]} 
+              />
               <GestureDetector gesture={emotionalGestureHandler}>
-                <Reanimated.View style={[styles.emotionalProgressThumb, emotionalThumbAnimatedStyle]} />
+                <Reanimated.View 
+                  style={[
+                    styles.emotionalProgressThumb, 
+                    emotionalThumbAnimatedStyle,
+                    { backgroundColor: progressBarColor }
+                  ]} 
+                />
               </GestureDetector>
             </View>
             

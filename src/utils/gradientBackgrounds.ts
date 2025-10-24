@@ -37,6 +37,16 @@ const darkenColor = (color: string, factor: number = 0.3): string => {
   );
 };
 
+// Create a much darker version for better text contrast
+const darkenColorForBackground = (color: string, factor: number = 0.6): string => {
+  const rgb = hexToRgb(color);
+  return rgbToHex(
+    Math.round(rgb.r * (1 - factor)),
+    Math.round(rgb.g * (1 - factor)),
+    Math.round(rgb.b * (1 - factor))
+  );
+};
+
 // Create a lighter version of a color
 const lightenColor = (color: string, factor: number = 0.2): string => {
   const rgb = hexToRgb(color);
@@ -50,7 +60,7 @@ const lightenColor = (color: string, factor: number = 0.2): string => {
 // Create subtle variations within a module based on session progress
 export const createModuleVariation = (moduleColor: string, progress: number): string => {
   // Progress is 0-1, we want subtle variations
-  const variationFactor = (progress - 0.5) * 0.1; // -0.05 to 0.05
+  const variationFactor = (progress - 0.5) * 0.05; // -0.025 to 0.025 (reduced for darker backgrounds)
   
   if (variationFactor > 0) {
     // Slightly lighter as progress increases
@@ -63,8 +73,11 @@ export const createModuleVariation = (moduleColor: string, progress: number): st
 
 // Create Spotify-style gradient colors (darker bottom, lighter top)
 export const createSpotifyGradient = (baseColor: string): { top: string; bottom: string } => {
-  const topColor = lightenColor(baseColor, 0.15); // Lighter at top
-  const bottomColor = darkenColor(baseColor, 0.25); // Darker at bottom
+  // Start with a much darker base for better text contrast
+  const darkBase = darkenColorForBackground(baseColor, 0.5);
+  
+  const topColor = lightenColor(darkBase, 0.1); // Slightly lighter at top
+  const bottomColor = darkenColor(darkBase, 0.2); // Even darker at bottom
   
   return { top: topColor, bottom: bottomColor };
 };

@@ -361,17 +361,13 @@ export const MeditationPlayerScreen: React.FC = () => {
           </View>
           <View style={styles.timeContainer}>
             <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
-            <View style={styles.loadingContainer}>
-              {!audioLoaded && playerState === 'playing' ? (
-                <>
-                  <ActivityIndicator size="small" color="#ffffff" />
-                  <Text style={styles.loadingText}>Loading audio...</Text>
-                </>
-              ) : (
-                <View style={styles.loadingPlaceholder} />
-              )}
-            </View>
             <Text style={styles.timeText}>-{formatTime(totalDuration - currentTime)}</Text>
+            {!audioLoaded && playerState === 'playing' && (
+              <View style={styles.loadingOverlay}>
+                <ActivityIndicator size="small" color="#ffffff" />
+                <Text style={styles.loadingText}>Loading audio...</Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -573,21 +569,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  loadingContainer: {
+  loadingOverlay: {
+    position: 'absolute',
+    top: -30,
+    left: '50%',
+    transform: [{ translateX: -50 }],
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginVertical: 4,
-    minHeight: 20, // Fixed height to prevent layout shifts
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
   loadingText: {
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: 'rgba(255, 255, 255, 0.9)',
     fontSize: 12,
     fontWeight: '400',
-  },
-  loadingPlaceholder: {
-    height: 20, // Same height as loading text to maintain layout
-    width: 1, // Minimal width
   },
   playerControls: {
     flexDirection: 'row',

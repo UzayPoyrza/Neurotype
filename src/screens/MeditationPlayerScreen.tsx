@@ -676,12 +676,15 @@ export const MeditationPlayerScreen: React.FC = () => {
         ]}>
           <Text style={styles.emotionalFeedbackTitle}>How do you feel?</Text>
           <View style={styles.emotionalProgressContainer}>
-            {/* Dynamic Indicator - only show when user has interacted */}
-            {hasUserInteracted && currentEmotionalLabel && (
-              <View style={styles.emotionalIndicator}>
-                <Text style={styles.emotionalIndicatorText}>{currentEmotionalLabel}</Text>
-              </View>
-            )}
+            {/* Dynamic Indicator - always rendered but only visible when user has interacted */}
+            <View style={styles.emotionalIndicator}>
+              <Text style={[
+                styles.emotionalIndicatorText,
+                { opacity: hasUserInteracted && currentEmotionalLabel ? 1 : 0 }
+              ]}>
+                {currentEmotionalLabel || 'Okay'}
+              </Text>
+            </View>
             
             {/* Progress Bar */}
             <View 

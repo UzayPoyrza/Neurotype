@@ -63,22 +63,23 @@ export const MeditationPlayerScreen: React.FC = () => {
       if (audioData) {
         setTotalDuration(audioData.duration);
         setCurrentTime(0);
-        setPlayerState('ready');
+        setPlayerState('playing'); // Start immediately
         setCurrentSegment(audioData.segments[0]?.text || '');
         
         // Initialize thumb position and progress fill
         thumbPosition.value = 0;
         progressFillWidth.value = 0;
         
-        // Load audio
+        // Load audio in background and start playing when ready
         audioPlayerRef.current.loadAudio(audioData.backgroundAudio).then(() => {
           setAudioLoaded(true);
+          audioPlayerRef.current.play();
         });
       } else {
         // Fallback to duration in minutes
         setTotalDuration(activeSession.durationMin * 60);
         setCurrentTime(0);
-        setPlayerState('ready');
+        setPlayerState('playing'); // Auto-start even without audio data
         
         // Initialize thumb position and progress fill
         thumbPosition.value = 0;

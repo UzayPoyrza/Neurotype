@@ -68,12 +68,12 @@ export const MeditationPlayerScreen: React.FC = () => {
   const emotionalProgressFillWidth = useSharedValue(0);
   const [actualEmotionalBarWidth, setActualEmotionalBarWidth] = useState(0);
   const [currentEmotionalLabel, setCurrentEmotionalLabel] = useState('');
-  const [progressBarColor, setProgressBarColor] = useState('rgba(255, 255, 255, 0.8)'); // Start with high opacity white
+  const [progressBarColor, setProgressBarColor] = useState('rgba(255, 255, 255, 0.2)'); // Start with low opacity white
   const [isProgressBarVisible, setIsProgressBarVisible] = useState(true);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const hasUserInteractedValue = useSharedValue(false);
   const progressBarWidthAnim = useRef(new Animated.Value(0)).current;
-  const previousColorRef = useRef('rgba(255, 255, 255, 0.8)');
+  const previousColorRef = useRef('rgba(255, 255, 255, 0.2)');
   
   // Gradient background colors
   const [gradientColors, setGradientColors] = useState({ top: '#1a1a1a', bottom: '#1a1a1a', base: '#1a1a1a' });
@@ -102,7 +102,7 @@ export const MeditationPlayerScreen: React.FC = () => {
         setCurrentEmotionalLabel(''); // No initial label - only show when interacted
         setHasUserInteracted(false); // Reset interaction state
         hasUserInteractedValue.value = false; // Reset shared value
-        setProgressBarColor('rgba(255, 255, 255, 0.8)'); // Start with high opacity white (neutral)
+        setProgressBarColor('rgba(255, 255, 255, 0.2)'); // Start with low opacity white (neutral)
         
         // Load audio in background and start playing when ready
         audioPlayerRef.current.loadAudio(audioData.backgroundAudio).then(() => {
@@ -126,7 +126,7 @@ export const MeditationPlayerScreen: React.FC = () => {
         setCurrentEmotionalLabel(''); // No initial label - only show when interacted
         setHasUserInteracted(false); // Reset interaction state
         hasUserInteractedValue.value = false; // Reset shared value
-        setProgressBarColor('rgba(255, 255, 255, 0.8)'); // Start with high opacity white (neutral)
+        setProgressBarColor('rgba(255, 255, 255, 0.2)'); // Start with low opacity white (neutral)
       }
     }
   }, [activeSession, thumbPosition]);
@@ -705,7 +705,7 @@ export const MeditationPlayerScreen: React.FC = () => {
                   styles.emotionalProgressFill, 
                   emotionalProgressFillAnimatedStyle,
                   { 
-                    backgroundColor: progressBarColor,
+                    backgroundColor: hasUserInteracted ? progressBarColor : 'rgba(255, 255, 255, 0.2)',
                     opacity: 1,
                   }
                 ]} 

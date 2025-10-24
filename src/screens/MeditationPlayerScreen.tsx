@@ -55,6 +55,7 @@ export const MeditationPlayerScreen: React.FC = () => {
   const isDragging = useSharedValue(false);
   const progressBarWidth = screenWidth - 64;
   const startPosition = useSharedValue(0);
+  const progressFillWidth = useSharedValue(0);
 
   useEffect(() => {
     if (activeSession) {
@@ -65,8 +66,9 @@ export const MeditationPlayerScreen: React.FC = () => {
         setPlayerState('ready');
         setCurrentSegment(audioData.segments[0]?.text || '');
         
-        // Initialize thumb position
+        // Initialize thumb position and progress fill
         thumbPosition.value = 0;
+        progressFillWidth.value = 0;
         
         // Load audio
         audioPlayerRef.current.loadAudio(audioData.backgroundAudio).then(() => {
@@ -78,8 +80,9 @@ export const MeditationPlayerScreen: React.FC = () => {
         setCurrentTime(0);
         setPlayerState('ready');
         
-        // Initialize thumb position
+        // Initialize thumb position and progress fill
         thumbPosition.value = 0;
+        progressFillWidth.value = 0;
       }
     }
   }, [activeSession, thumbPosition]);
@@ -142,11 +145,12 @@ export const MeditationPlayerScreen: React.FC = () => {
         useNativeDriver: false,
       }).start();
       
-      // Update thumb position when not dragging
+      // Update thumb position and progress fill when not dragging
       const newThumbPosition = progress * progressBarWidth;
       thumbPosition.value = newThumbPosition;
+      progressFillWidth.value = newThumbPosition;
     }
-  }, [currentTime, totalDuration, progressAnim, thumbPosition, isDragging, progressBarWidth]);
+  }, [currentTime, totalDuration, progressAnim, thumbPosition, isDragging, progressBarWidth, progressFillWidth]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -254,6 +258,9 @@ export const MeditationPlayerScreen: React.FC = () => {
       const newPosition = Math.max(0, Math.min(progressBarWidth, startPosition.value + event.translationX));
       thumbPosition.value = newPosition;
       
+      // Update progress fill to follow thumb 1:1
+      progressFillWidth.value = newPosition;
+      
       // Calculate and update time in real-time
       const progress = newPosition / progressBarWidth;
       const newTime = Math.round(progress * totalDuration);
@@ -277,6 +284,13 @@ export const MeditationPlayerScreen: React.FC = () => {
         { translateX: thumbPosition.value },
         { scale: thumbScale.value }
       ],
+    };
+  });
+
+  // Animated styles for the progress fill
+  const progressFillAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      width: progressFillWidth.value,
     };
   });
 
@@ -338,7 +352,7 @@ export const MeditationPlayerScreen: React.FC = () => {
         <View style={styles.progressSection}>
           <View style={styles.progressContainer}>
             <View style={styles.progressTrack} />
-            <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
+            <Reanimated.View style={[styles.progressFill, progressFillAnimatedStyle]} />
             <GestureDetector gesture={panGesture}>
               <Reanimated.View style={[styles.progressThumb, thumbAnimatedStyle]} />
             </GestureDetector>

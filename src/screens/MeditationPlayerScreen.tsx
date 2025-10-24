@@ -98,9 +98,10 @@ export const MeditationPlayerScreen: React.FC = () => {
         // Will be set properly once actualEmotionalBarWidth is measured
         emotionalThumbPosition.value = 0; // Will be updated when width is measured
         setEmotionalRating(3); // Start at "okay"
+        setCurrentEmotionalLabel('Okay'); // Set initial label
         setHasUserInteracted(false); // Reset interaction state
         hasUserInteractedValue.value = false; // Reset shared value
-        setProgressBarColor('#ffffff'); // Reset to white
+        setProgressBarColor('#ffd700'); // Set to "Okay" color (yellow)
         
         // Load audio in background and start playing when ready
         audioPlayerRef.current.loadAudio(audioData.backgroundAudio).then(() => {
@@ -121,9 +122,10 @@ export const MeditationPlayerScreen: React.FC = () => {
         // Will be set properly once actualEmotionalBarWidth is measured
         emotionalThumbPosition.value = 0; // Will be updated when width is measured
         setEmotionalRating(3); // Start at "okay"
+        setCurrentEmotionalLabel('Okay'); // Set initial label
         setHasUserInteracted(false); // Reset interaction state
         hasUserInteractedValue.value = false; // Reset shared value
-        setProgressBarColor('#ffffff'); // Reset to white
+        setProgressBarColor('#ffd700'); // Set to "Okay" color (yellow)
       }
     }
   }, [activeSession, thumbPosition]);
@@ -140,9 +142,12 @@ export const MeditationPlayerScreen: React.FC = () => {
   // Initialize emotional position once width is measured
   useEffect(() => {
     if (actualEmotionalBarWidth > 0) {
-      // Position thumb at center of the bar
+      // Position thumb at center of the bar (for "Okay" state)
       const centerPosition = actualEmotionalBarWidth / 2;
       emotionalThumbPosition.value = centerPosition;
+      // Set the initial label and color based on center position
+      setCurrentEmotionalLabel('Okay');
+      setProgressBarColor('#ffd700'); // Yellow for "Okay" state
       // Progress fill is calculated dynamically in the animated style
     }
   }, [actualEmotionalBarWidth, emotionalThumbPosition]);
@@ -390,11 +395,9 @@ export const MeditationPlayerScreen: React.FC = () => {
       const label = getEmotionalLabel(position);
       setCurrentEmotionalLabel(label);
       
-      // Only update color after user has started interacting
-      if (hasUserInteracted) {
-        const newColor = emotionalColors[getEmotionalColorIndex(label)];
-        setProgressBarColor(newColor);
-      }
+      // Always update color based on emotional state
+      const newColor = emotionalColors[getEmotionalColorIndex(label)];
+      setProgressBarColor(newColor);
     } catch (error) {
       console.log('Error in updateEmotionalLabel:', error);
     }
@@ -622,25 +625,13 @@ export const MeditationPlayerScreen: React.FC = () => {
                   }
                 ]} 
               />
-              {/* Static progress fill for testing */}
-              <View 
-                style={[
-                  styles.emotionalProgressFill, 
-                  { 
-                    width: 100, // Fixed width for testing
-                    left: 0,
-                    backgroundColor: '#ff0000', // Red for testing
-                    opacity: 1,
-                  }
-                ]} 
-              />
               <Reanimated.View 
                 style={[
                   styles.emotionalProgressFill, 
                   emotionalProgressFillAnimatedStyle,
                   { 
                     backgroundColor: progressBarColor,
-                    opacity: 1, // Always visible for testing
+                    opacity: 1,
                   }
                 ]} 
               />

@@ -1,5 +1,5 @@
 import React from 'react';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Text } from 'react-native-svg';
 
 interface IconProps {
   size?: number;
@@ -24,20 +24,46 @@ export const PauseIcon: React.FC<IconProps> = ({ size = 24, color = '#ffffff' })
   </Svg>
 );
 
-export const SkipForwardIcon: React.FC<IconProps> = ({ size = 24, color = '#ffffff' }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+export const SkipForward10Icon: React.FC<IconProps> = ({ size = 24, color = '#ffffff' }) => (
+  <Svg width={size} height={size} viewBox="0 0 64 64" fill="none" stroke={color} strokeWidth="3">
     <Path
-      d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"
-      fill={color}
+      d="M12.14,23.94a21.91,21.91,0,1,1-.91,13.25"
+      strokeLinecap="round"
+    />
+    <Path
+      d="M26.93,41.41V23a.09.09,0,0,0-.16-.07s-2.58,3.69-4.17,4.78"
+      strokeLinecap="round"
+    />
+    <Path
+      d="M9.57 15.41 12.17 24.05 20.81 21.44"
+      strokeLinecap="round"
+    />
+    <Path
+      d="M32.19 22.52h11.41v18.89h-11.41z"
+      strokeLinecap="round"
+      fill="none"
     />
   </Svg>
 );
 
-export const SkipBackwardIcon: React.FC<IconProps> = ({ size = 24, color = '#ffffff' }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+export const SkipBackward10Icon: React.FC<IconProps> = ({ size = 24, color = '#ffffff' }) => (
+  <Svg width={size} height={size} viewBox="0 0 64 64" fill="none" stroke={color} strokeWidth="3">
     <Path
-      d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"
-      fill={color}
+      d="M51.86,23.94a21.91,21.91,0,1,0,.91,13.25"
+      strokeLinecap="round"
+    />
+    <Path
+      d="M37.07,41.41V23a.09.09,0,0,1,.16-.07s2.58,3.69,4.17,4.78"
+      strokeLinecap="round"
+    />
+    <Path
+      d="M54.43 15.41 51.83 24.05 43.19 21.44"
+      strokeLinecap="round"
+    />
+    <Path
+      d="M20.4 22.52h11.41v18.89h-11.41z"
+      strokeLinecap="round"
+      fill="none"
     />
   </Svg>
 );

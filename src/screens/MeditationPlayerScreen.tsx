@@ -13,7 +13,7 @@ import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
 import { Slider0to10 } from '../components/Slider0to10';
 import { meditationAudioData, emotionalFeedbackData, sessionProgressData, mockAudioPlayer } from '../data/meditationMockData';
-import { PlayIcon, PauseIcon, SkipForwardIcon, SkipBackwardIcon, HeartIcon, HeartOutlineIcon, BackIcon, MoreIcon } from '../components/icons/PlayerIcons';
+import { PlayIcon, PauseIcon, SkipForward10Icon, SkipBackward10Icon, HeartIcon, HeartOutlineIcon, BackIcon, MoreIcon } from '../components/icons/PlayerIcons';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -261,7 +261,7 @@ export const MeditationPlayerScreen: React.FC = () => {
         {/* Player Controls */}
         <View style={styles.playerControls}>
           <TouchableOpacity style={styles.controlButton} onPress={handleSkipBackward}>
-            <SkipBackwardIcon size={18} color="#ffffff" />
+            <SkipBackward10Icon size={20} color="#ffffff" />
           </TouchableOpacity>
           
           <Animated.View style={{ transform: [{ scale: playButtonScale }] }}>
@@ -275,7 +275,7 @@ export const MeditationPlayerScreen: React.FC = () => {
           </Animated.View>
           
           <TouchableOpacity style={styles.controlButton} onPress={handleSkipForward}>
-            <SkipForwardIcon size={18} color="#ffffff" />
+            <SkipForward10Icon size={20} color="#ffffff" />
           </TouchableOpacity>
         </View>
       </View>

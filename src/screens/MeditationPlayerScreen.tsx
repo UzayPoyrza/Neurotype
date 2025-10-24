@@ -68,11 +68,12 @@ export const MeditationPlayerScreen: React.FC = () => {
   const emotionalProgressFillWidth = useSharedValue(0);
   const [actualEmotionalBarWidth, setActualEmotionalBarWidth] = useState(0);
   const [currentEmotionalLabel, setCurrentEmotionalLabel] = useState('');
-  const [progressBarColor, setProgressBarColor] = useState('#ffffff'); // Start with white
+  const [progressBarColor, setProgressBarColor] = useState('rgba(255, 255, 255, 0.8)'); // Start with high opacity white
   const [isProgressBarVisible, setIsProgressBarVisible] = useState(true);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const hasUserInteractedValue = useSharedValue(false);
   const progressBarWidthAnim = useRef(new Animated.Value(0)).current;
+  const previousColorRef = useRef('rgba(255, 255, 255, 0.8)');
   
   // Gradient background colors
   const [gradientColors, setGradientColors] = useState({ top: '#1a1a1a', bottom: '#1a1a1a', base: '#1a1a1a' });
@@ -98,10 +99,10 @@ export const MeditationPlayerScreen: React.FC = () => {
         // Will be set properly once actualEmotionalBarWidth is measured
         emotionalThumbPosition.value = 0; // Will be updated when width is measured
         setEmotionalRating(3); // Start at "okay"
-        setCurrentEmotionalLabel('Okay'); // Set initial label
+        setCurrentEmotionalLabel(''); // No initial label - only show when interacted
         setHasUserInteracted(false); // Reset interaction state
         hasUserInteractedValue.value = false; // Reset shared value
-        setProgressBarColor(interpolateColor(0.5)); // Set to interpolated center color
+        setProgressBarColor('rgba(255, 255, 255, 0.8)'); // Start with high opacity white (neutral)
         
         // Load audio in background and start playing when ready
         audioPlayerRef.current.loadAudio(audioData.backgroundAudio).then(() => {
@@ -122,10 +123,10 @@ export const MeditationPlayerScreen: React.FC = () => {
         // Will be set properly once actualEmotionalBarWidth is measured
         emotionalThumbPosition.value = 0; // Will be updated when width is measured
         setEmotionalRating(3); // Start at "okay"
-        setCurrentEmotionalLabel('Okay'); // Set initial label
+        setCurrentEmotionalLabel(''); // No initial label - only show when interacted
         setHasUserInteracted(false); // Reset interaction state
         hasUserInteractedValue.value = false; // Reset shared value
-        setProgressBarColor(interpolateColor(0.5)); // Set to interpolated center color
+        setProgressBarColor('rgba(255, 255, 255, 0.8)'); // Start with high opacity white (neutral)
       }
     }
   }, [activeSession, thumbPosition]);
@@ -146,9 +147,9 @@ export const MeditationPlayerScreen: React.FC = () => {
       // No need to adjust for thumb radius here since center is always within bounds
       const centerPosition = actualEmotionalBarWidth / 2;
       emotionalThumbPosition.value = centerPosition;
-      // Set the initial label and color based on center position
-      setCurrentEmotionalLabel('Okay');
-      setProgressBarColor(interpolateColor(0.5)); // Use interpolated center color
+      // Don't set initial label - only show when user interacts
+      // Keep white color as neutral default
+      setProgressBarColor('#ffffff');
       // Progress fill is calculated dynamically in the animated style
     }
   }, [actualEmotionalBarWidth, emotionalThumbPosition]);
@@ -452,10 +453,21 @@ export const MeditationPlayerScreen: React.FC = () => {
       const label = getEmotionalLabel(position);
       setCurrentEmotionalLabel(label);
       
+      // Also set interaction state here as a backup
+      if (!hasUserInteracted) {
+        setHasUserInteracted(true);
+        hasUserInteractedValue.value = true;
+      }
+      
       // Calculate smooth color based on position
       const progress = actualEmotionalBarWidth > 0 ? position / actualEmotionalBarWidth : 0.5;
       const newColor = interpolateColor(progress);
-      setProgressBarColor(newColor);
+      
+      // Only update color if it actually changed to avoid unnecessary re-renders
+      if (newColor !== previousColorRef.current) {
+        setProgressBarColor(newColor);
+        previousColorRef.current = newColor;
+      }
     } catch (error) {
       console.log('Error in updateEmotionalLabel:', error);
     }
@@ -547,8 +559,7 @@ export const MeditationPlayerScreen: React.FC = () => {
   const emotionalProgressFillAnimatedStyle = useAnimatedStyle(() => {
     const thumbPosition = emotionalThumbPosition.value;
     
-    // Progress fill starts from the beginning of the bar (left edge) and extends to the end of the bar
-    // This creates a full bar fill effect
+    // Always show progress fill, but with different opacity based on interaction
     return {
       width: '100%', // Fill the entire bar
       left: 0,
@@ -665,10 +676,12 @@ export const MeditationPlayerScreen: React.FC = () => {
         ]}>
           <Text style={styles.emotionalFeedbackTitle}>How do you feel?</Text>
           <View style={styles.emotionalProgressContainer}>
-            {/* Dynamic Indicator */}
-            <View style={styles.emotionalIndicator}>
-              <Text style={styles.emotionalIndicatorText}>{currentEmotionalLabel}</Text>
-            </View>
+            {/* Dynamic Indicator - only show when user has interacted */}
+            {hasUserInteracted && currentEmotionalLabel && (
+              <View style={styles.emotionalIndicator}>
+                <Text style={styles.emotionalIndicatorText}>{currentEmotionalLabel}</Text>
+              </View>
+            )}
             
             {/* Progress Bar */}
             <View 

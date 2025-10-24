@@ -261,7 +261,7 @@ export const MeditationPlayerScreen: React.FC = () => {
         {/* Player Controls */}
         <View style={styles.playerControls}>
           <TouchableOpacity style={styles.controlButton} onPress={handleSkipBackward}>
-            <SkipBackward10Icon size={20} color="#ffffff" />
+            <SkipBackward10Icon size={48} color="#ffffff" />
           </TouchableOpacity>
           
           <Animated.View style={{ transform: [{ scale: playButtonScale }] }}>
@@ -275,7 +275,7 @@ export const MeditationPlayerScreen: React.FC = () => {
           </Animated.View>
           
           <TouchableOpacity style={styles.controlButton} onPress={handleSkipForward}>
-            <SkipForward10Icon size={20} color="#ffffff" />
+            <SkipForward10Icon size={48} color="#ffffff" />
           </TouchableOpacity>
         </View>
       </View>

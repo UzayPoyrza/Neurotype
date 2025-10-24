@@ -1,5 +1,5 @@
 import React from 'react';
-import Svg, { Path, Text } from 'react-native-svg';
+import Svg, { Path, Rect, Text, Polyline, G} from 'react-native-svg';
 
 interface IconProps {
   size?: number;
@@ -24,46 +24,50 @@ export const PauseIcon: React.FC<IconProps> = ({ size = 24, color = '#ffffff' })
   </Svg>
 );
 
-export const SkipForward10Icon: React.FC<IconProps> = ({ size = 24, color = '#ffffff' }) => (
+export const SkipForward10Icon: React.FC<IconProps> = ({ size = 32, color = '#ffffff' }) => (
   <Svg width={size} height={size} viewBox="0 0 64 64" fill="none" stroke={color} strokeWidth="3">
     <Path
-      d="M12.14,23.94a21.91,21.91,0,1,1-.91,13.25"
+      d="M23.93,41.41V23a.09.09,0,0,0-.16-.07s-2.58,3.69-4.17,4.78"
+      strokeLinecap="round"
+    />
+    <Rect
+      x="29.19"
+      y="22.52"
+      width="11.41"
+      height="18.89"
+      rx="5.7"
+    />
+    <Polyline
+      points="54.43 15.41 51.83 24.05 43.19 21.44"
+      strokeLinecap="round"
+    />
+    <Path
+      d="M51.86,23.94a21.91,21.91,0,1,0,.91,13.25"
+      strokeLinecap="round"
+    />
+  </Svg>
+);
+
+export const SkipBackward10Icon: React.FC<IconProps> = ({ size = 32, color = '#ffffff' }) => (
+  <Svg width={size} height={size} viewBox="0 0 64 64" fill="none" stroke={color} strokeWidth="3">
+    <Polyline
+      points="9.57 15.41 12.17 24.05 20.81 21.44"
       strokeLinecap="round"
     />
     <Path
       d="M26.93,41.41V23a.09.09,0,0,0-.16-.07s-2.58,3.69-4.17,4.78"
       strokeLinecap="round"
     />
-    <Path
-      d="M9.57 15.41 12.17 24.05 20.81 21.44"
-      strokeLinecap="round"
+    <Rect
+      x="32.19"
+      y="22.52"
+      width="11.41"
+      height="18.89"
+      rx="5.7"
     />
     <Path
-      d="M32.19 22.52h11.41v18.89h-11.41z"
+      d="M12.14,23.94a21.91,21.91,0,1,1-.91,13.25"
       strokeLinecap="round"
-      fill="none"
-    />
-  </Svg>
-);
-
-export const SkipBackward10Icon: React.FC<IconProps> = ({ size = 24, color = '#ffffff' }) => (
-  <Svg width={size} height={size} viewBox="0 0 64 64" fill="none" stroke={color} strokeWidth="3">
-    <Path
-      d="M51.86,23.94a21.91,21.91,0,1,0,.91,13.25"
-      strokeLinecap="round"
-    />
-    <Path
-      d="M37.07,41.41V23a.09.09,0,0,1,.16-.07s2.58,3.69,4.17,4.78"
-      strokeLinecap="round"
-    />
-    <Path
-      d="M54.43 15.41 51.83 24.05 43.19 21.44"
-      strokeLinecap="round"
-    />
-    <Path
-      d="M20.4 22.52h11.41v18.89h-11.41z"
-      strokeLinecap="round"
-      fill="none"
     />
   </Svg>
 );

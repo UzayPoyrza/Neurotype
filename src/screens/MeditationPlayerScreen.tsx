@@ -9,6 +9,7 @@ import {
   StatusBar,
   SafeAreaView,
   Vibration,
+  ActivityIndicator,
 } from 'react-native';
 import { 
   GestureHandlerRootView,
@@ -360,6 +361,12 @@ export const MeditationPlayerScreen: React.FC = () => {
           </View>
           <View style={styles.timeContainer}>
             <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
+            {!audioLoaded && playerState === 'playing' && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#ffffff" />
+                <Text style={styles.loadingText}>Loading audio...</Text>
+              </View>
+            )}
             <Text style={styles.timeText}>-{formatTime(totalDuration - currentTime)}</Text>
           </View>
         </View>
@@ -372,7 +379,9 @@ export const MeditationPlayerScreen: React.FC = () => {
           
           <Animated.View style={{ transform: [{ scale: playButtonScale }] }}>
             <TouchableOpacity style={styles.playButton} onPress={handlePlayPause}>
-              {playerState === 'playing' ? (
+              {!audioLoaded && playerState === 'playing' ? (
+                <ActivityIndicator size="small" color="#1a1a1a" />
+              ) : playerState === 'playing' ? (
                 <PauseIcon size={36} color="#1a1a1a" />
               ) : (
                 <PlayIcon size={36} color="#1a1a1a" />
@@ -559,6 +568,17 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '500',
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginVertical: 4,
+  },
+  loadingText: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 12,
+    fontWeight: '400',
   },
   playerControls: {
     flexDirection: 'row',

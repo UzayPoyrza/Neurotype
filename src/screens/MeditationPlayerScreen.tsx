@@ -65,6 +65,7 @@ export const MeditationPlayerScreen: React.FC = () => {
   const emotionalStartPosition = useSharedValue(0);
   const emotionalProgressFillWidth = useSharedValue(0);
   const emotionalBarWidth = screenWidth - 96; // Slightly smaller for the emotional bar
+  const [currentEmotionalLabel, setCurrentEmotionalLabel] = useState('Okay');
 
   useEffect(() => {
     if (activeSession) {
@@ -316,9 +317,25 @@ export const MeditationPlayerScreen: React.FC = () => {
     };
   });
 
+  // Helper function to get emotional label based on position
+  const getEmotionalLabel = (position: number) => {
+    const progress = position / emotionalBarWidth;
+    if (progress < 0.2) return 'Bad';
+    if (progress < 0.4) return 'Meh';
+    if (progress < 0.6) return 'Okay';
+    if (progress < 0.8) return 'Good';
+    return 'Great';
+  };
+
   // Helper function to update emotional rating (called from worklet)
   const updateEmotionalRating = (newRating: number) => {
     setEmotionalRating(newRating);
+  };
+
+  // Helper function to update emotional label (called from worklet)
+  const updateEmotionalLabel = (position: number) => {
+    const label = getEmotionalLabel(position);
+    setCurrentEmotionalLabel(label);
   };
 
   // Emotional feedback gesture handler
@@ -340,6 +357,7 @@ export const MeditationPlayerScreen: React.FC = () => {
       const progress = newPosition / emotionalBarWidth;
       const newRating = Math.round(progress * 4) + 1; // 1-5 scale
       runOnJS(updateEmotionalRating)(newRating);
+      runOnJS(updateEmotionalLabel)(newPosition);
     })
     .onEnd(() => {
       emotionalIsDragging.value = false;
@@ -474,6 +492,11 @@ export const MeditationPlayerScreen: React.FC = () => {
         ]}>
           <Text style={styles.emotionalFeedbackTitle}>How do you feel?</Text>
           <View style={styles.emotionalProgressContainer}>
+            {/* Dynamic Indicator */}
+            <View style={styles.emotionalIndicator}>
+              <Text style={styles.emotionalIndicatorText}>{currentEmotionalLabel}</Text>
+            </View>
+            
             {/* Progress Bar */}
             <View style={styles.emotionalProgressBar}>
               <View style={styles.emotionalProgressTrack} />
@@ -483,13 +506,10 @@ export const MeditationPlayerScreen: React.FC = () => {
               </GestureDetector>
             </View>
             
-            {/* Labels */}
-            <View style={styles.emotionalLabels}>
-              <Text style={styles.emotionalLabel}>Bad</Text>
-              <Text style={styles.emotionalLabel}>Meh</Text>
-              <Text style={styles.emotionalLabel}>Okay</Text>
-              <Text style={styles.emotionalLabel}>Good</Text>
-              <Text style={styles.emotionalLabel}>Great</Text>
+            {/* End Labels */}
+            <View style={styles.emotionalEndLabels}>
+              <Text style={styles.emotionalEndLabel}>Bad</Text>
+              <Text style={styles.emotionalEndLabel}>Great</Text>
             </View>
           </View>
         </Animated.View>
@@ -704,6 +724,16 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingHorizontal: 8,
   },
+  emotionalIndicator: {
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  emotionalIndicatorText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
   emotionalProgressBar: {
     position: 'relative',
     height: 20,
@@ -745,12 +775,12 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'rgba(255, 255, 255, 0.8)',
   },
-  emotionalLabels: {
+  emotionalEndLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 10,
   },
-  emotionalLabel: {
+  emotionalEndLabel: {
     color: 'rgba(255, 255, 255, 0.7)',
     fontSize: 12,
     fontWeight: '500',

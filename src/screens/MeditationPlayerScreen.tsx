@@ -64,7 +64,7 @@ export const MeditationPlayerScreen: React.FC = () => {
   const emotionalIsDragging = useSharedValue(false);
   const emotionalStartPosition = useSharedValue(0);
   const emotionalProgressFillWidth = useSharedValue(0);
-  const emotionalBarWidth = screenWidth - 96; // Slightly smaller for the emotional bar
+  const [actualEmotionalBarWidth, setActualEmotionalBarWidth] = useState(0);
   const [currentEmotionalLabel, setCurrentEmotionalLabel] = useState('Okay');
 
   useEffect(() => {
@@ -81,9 +81,9 @@ export const MeditationPlayerScreen: React.FC = () => {
         progressFillWidth.value = 0;
         
         // Initialize emotional feedback position (start at "okay" - middle)
-        const initialEmotionalPosition = (emotionalBarWidth * 2) / 4; // Position for "okay" (3rd of 5 positions)
-        emotionalThumbPosition.value = initialEmotionalPosition;
-        emotionalProgressFillWidth.value = initialEmotionalPosition;
+        // Will be set properly once actualEmotionalBarWidth is measured
+        emotionalThumbPosition.value = 0;
+        emotionalProgressFillWidth.value = 0;
         setEmotionalRating(3); // Start at "okay"
         
         // Load audio in background and start playing when ready
@@ -102,13 +102,22 @@ export const MeditationPlayerScreen: React.FC = () => {
         progressFillWidth.value = 0;
         
         // Initialize emotional feedback position (start at "okay" - middle)
-        const initialEmotionalPosition = (emotionalBarWidth * 2) / 4; // Position for "okay" (3rd of 5 positions)
-        emotionalThumbPosition.value = initialEmotionalPosition;
-        emotionalProgressFillWidth.value = initialEmotionalPosition;
+        // Will be set properly once actualEmotionalBarWidth is measured
+        emotionalThumbPosition.value = 0;
+        emotionalProgressFillWidth.value = 0;
         setEmotionalRating(3); // Start at "okay"
       }
     }
   }, [activeSession, thumbPosition]);
+
+  // Initialize emotional position once width is measured
+  useEffect(() => {
+    if (actualEmotionalBarWidth > 0) {
+      const initialPosition = (actualEmotionalBarWidth * 2) / 4; // "Okay" position
+      emotionalThumbPosition.value = initialPosition;
+      emotionalProgressFillWidth.value = initialPosition;
+    }
+  }, [actualEmotionalBarWidth, emotionalThumbPosition, emotionalProgressFillWidth]);
 
   useEffect(() => {
     if (playerState === 'playing' && currentTime < totalDuration) {
@@ -319,7 +328,7 @@ export const MeditationPlayerScreen: React.FC = () => {
 
   // Helper function to get emotional label based on position
   const getEmotionalLabel = (position: number) => {
-    const progress = position / emotionalBarWidth;
+    const progress = actualEmotionalBarWidth > 0 ? position / actualEmotionalBarWidth : 0;
     if (progress < 0.2) return 'Bad';
     if (progress < 0.4) return 'Meh';
     if (progress < 0.6) return 'Okay';
@@ -349,12 +358,18 @@ export const MeditationPlayerScreen: React.FC = () => {
       });
     })
     .onUpdate((event) => {
-      const newPosition = Math.max(0, Math.min(emotionalBarWidth, emotionalStartPosition.value + event.translationX));
+      // Calculate new position with strict clamping using actual measured width
+      const rawPosition = emotionalStartPosition.value + event.translationX;
+      
+      // Strict bounds: 0 to actualEmotionalBarWidth
+      const newPosition = Math.max(0, Math.min(actualEmotionalBarWidth, rawPosition));
+      
+      // Update position
       emotionalThumbPosition.value = newPosition;
       emotionalProgressFillWidth.value = newPosition;
       
       // Calculate rating (0-4 scale for 5 levels: bad, meh, okay, good, great)
-      const progress = newPosition / emotionalBarWidth;
+      const progress = actualEmotionalBarWidth > 0 ? newPosition / actualEmotionalBarWidth : 0;
       const newRating = Math.round(progress * 4) + 1; // 1-5 scale
       runOnJS(updateEmotionalRating)(newRating);
       runOnJS(updateEmotionalLabel)(newPosition);
@@ -498,7 +513,13 @@ export const MeditationPlayerScreen: React.FC = () => {
             </View>
             
             {/* Progress Bar */}
-            <View style={styles.emotionalProgressBar}>
+            <View 
+              style={styles.emotionalProgressBar}
+              onLayout={(event) => {
+                const { width } = event.nativeEvent.layout;
+                setActualEmotionalBarWidth(width);
+              }}
+            >
               <View style={styles.emotionalProgressTrack} />
               <Reanimated.View style={[styles.emotionalProgressFill, emotionalProgressFillAnimatedStyle]} />
               <GestureDetector gesture={emotionalGestureHandler}>

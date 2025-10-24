@@ -143,6 +143,7 @@ export const MeditationPlayerScreen: React.FC = () => {
   useEffect(() => {
     if (actualEmotionalBarWidth > 0) {
       // Position thumb at center of the bar (for "Okay" state)
+      // No need to adjust for thumb radius here since center is always within bounds
       const centerPosition = actualEmotionalBarWidth / 2;
       emotionalThumbPosition.value = centerPosition;
       // Set the initial label and color based on center position
@@ -445,8 +446,9 @@ export const MeditationPlayerScreen: React.FC = () => {
         // Calculate new position with strict clamping using actual measured width
         const rawPosition = emotionalStartPosition.value + event.translationX;
         
-        // Simple bounds: 0 to actualEmotionalBarWidth (left to right coordinate system)
-        const newPosition = Math.max(0, Math.min(actualEmotionalBarWidth, rawPosition));
+        // Account for thumb radius to prevent extending beyond bar boundaries
+        const thumbRadius = 10;
+        const newPosition = Math.max(thumbRadius, Math.min(actualEmotionalBarWidth - thumbRadius, rawPosition));
         
         // Update position
         emotionalThumbPosition.value = newPosition;
@@ -474,9 +476,11 @@ export const MeditationPlayerScreen: React.FC = () => {
 
   // Animated styles for emotional thumb
   const emotionalThumbAnimatedStyle = useAnimatedStyle(() => {
+    // Offset by half thumb width (10px) so the thumb center aligns with the position
+    const thumbRadius = 10;
     return {
       transform: [
-        { translateX: emotionalThumbPosition.value },
+        { translateX: emotionalThumbPosition.value - thumbRadius },
         { scale: emotionalThumbScale.value }
       ],
     };

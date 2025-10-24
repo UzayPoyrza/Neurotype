@@ -9,6 +9,7 @@ import {
   StatusBar,
   SafeAreaView,
 } from 'react-native';
+import { PanGestureHandler, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
 import { Slider0to10 } from '../components/Slider0to10';
@@ -32,6 +33,9 @@ export const MeditationPlayerScreen: React.FC = () => {
   const { activeSession, setActiveSession } = useStore();
   const progressAnim = useRef(new Animated.Value(0)).current;
   const playButtonScale = useRef(new Animated.Value(1)).current;
+  const thumbPosition = useRef(new Animated.Value(0)).current;
+  const thumbScale = useRef(new Animated.Value(1)).current;
+  const isDragging = useRef(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const audioPlayerRef = useRef(mockAudioPlayer);
 
@@ -107,13 +111,19 @@ export const MeditationPlayerScreen: React.FC = () => {
   }, [playerState, currentTime, totalDuration, activeSession, emotionalRating]);
 
   useEffect(() => {
-    const progress = totalDuration > 0 ? currentTime / totalDuration : 0;
-    Animated.timing(progressAnim, {
-      toValue: progress,
-      duration: 200,
-      useNativeDriver: false,
-    }).start();
-  }, [currentTime, totalDuration, progressAnim]);
+    if (!isDragging.current) {
+      const progress = totalDuration > 0 ? currentTime / totalDuration : 0;
+      Animated.timing(progressAnim, {
+        toValue: progress,
+        duration: 200,
+        useNativeDriver: false,
+      }).start();
+      
+      // Update thumb position when not dragging
+      const progressBarWidth = screenWidth - 64;
+      thumbPosition.setValue(progress * progressBarWidth);
+    }
+  }, [currentTime, totalDuration, progressAnim, thumbPosition]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -194,6 +204,54 @@ export const MeditationPlayerScreen: React.FC = () => {
     audioPlayerRef.current.seekTo(newTime);
   };
 
+  const handleProgressDrag = (event: any) => {
+    const { translationX, state } = event.nativeEvent;
+    const progressBarWidth = screenWidth - 64;
+    
+    if (state === 2) { // ACTIVE state - dragging
+      const currentProgress = totalDuration > 0 ? currentTime / totalDuration : 0;
+      const currentPosition = currentProgress * progressBarWidth;
+      const newPosition = Math.max(0, Math.min(progressBarWidth, currentPosition + translationX));
+      
+      // Update thumb position immediately for smooth 1:1 movement
+      thumbPosition.setValue(newPosition);
+      
+      // Calculate and update time in real-time
+      const progress = newPosition / progressBarWidth;
+      const newTime = Math.round(progress * totalDuration);
+      setCurrentTime(newTime);
+      
+    } else if (state === 5) { // END state - drag finished
+      isDragging.current = false;
+      const currentProgress = totalDuration > 0 ? currentTime / totalDuration : 0;
+      const currentPosition = currentProgress * progressBarWidth;
+      const newPosition = Math.max(0, Math.min(progressBarWidth, currentPosition + translationX));
+      const progress = newPosition / progressBarWidth;
+      const newTime = Math.round(progress * totalDuration);
+      
+      setCurrentTime(newTime);
+      audioPlayerRef.current.seekTo(newTime);
+      
+      // Scale thumb back to normal
+      Animated.spring(thumbScale, {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 300,
+        friction: 10,
+      }).start();
+    }
+  };
+
+  const handleProgressDragStart = () => {
+    isDragging.current = true;
+    Animated.spring(thumbScale, {
+      toValue: 1.2,
+      useNativeDriver: true,
+      tension: 300,
+      friction: 10,
+    }).start();
+  };
+
   if (!activeSession) return null;
 
   const progressWidth = progressAnim.interpolate({
@@ -203,8 +261,9 @@ export const MeditationPlayerScreen: React.FC = () => {
   });
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+    <GestureHandlerRootView style={styles.container}>
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
       {/* Background with meditation theme */}
       <View style={styles.backgroundOverlay} />
@@ -252,6 +311,23 @@ export const MeditationPlayerScreen: React.FC = () => {
           <View style={styles.progressContainer}>
             <View style={styles.progressTrack} />
             <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
+            <PanGestureHandler
+              onGestureEvent={handleProgressDrag}
+              onHandlerStateChange={handleProgressDrag}
+              onBegan={handleProgressDragStart}
+              activeOffsetX={[-10, 10]}
+              failOffsetY={[-20, 20]}
+            >
+              <Animated.View style={[
+                styles.progressThumb, 
+                { 
+                  transform: [
+                    { translateX: thumbPosition },
+                    { scale: thumbScale }
+                  ]
+                }
+              ]} />
+            </PanGestureHandler>
           </View>
           <View style={styles.timeContainer}>
             <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
@@ -308,7 +384,8 @@ export const MeditationPlayerScreen: React.FC = () => {
           </View>
         )}
       </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 };
 
@@ -395,8 +472,9 @@ const styles = StyleSheet.create({
   },
   progressContainer: {
     position: 'relative',
-    height: 8,
+    height: 20,
     marginBottom: 12,
+    justifyContent: 'center',
   },
   progressTrack: {
     position: 'absolute',
@@ -406,14 +484,32 @@ const styles = StyleSheet.create({
     height: 6,
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 3,
+    marginTop: 7,
   },
   progressFill: {
     position: 'absolute',
     top: 0,
     left: 0,
-    height: 8,
+    height: 6,
     backgroundColor: '#ffffff',
-    borderRadius: 4,
+    borderRadius: 3,
+    marginTop: 7,
+  },
+  progressThumb: {
+    position: 'absolute',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#ffffff',
+    top: 0,
+    left: -10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 6,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
   },
   timeContainer: {
     flexDirection: 'row',

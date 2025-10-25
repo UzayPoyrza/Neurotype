@@ -68,12 +68,19 @@ export const MeditationPlayerScreen: React.FC = () => {
   const emotionalProgressFillWidth = useSharedValue(0);
   const [actualEmotionalBarWidth, setActualEmotionalBarWidth] = useState(0);
   const [currentEmotionalLabel, setCurrentEmotionalLabel] = useState('');
-  const [progressBarColor, setProgressBarColor] = useState('rgba(255, 255, 255, 0.2)'); // Start with low opacity white
+  const [progressBarColor, setProgressBarColor] = useState('rgba(255, 255, 255, 0.8)'); // Start with high opacity white
   const [isProgressBarVisible, setIsProgressBarVisible] = useState(true);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const hasUserInteractedValue = useSharedValue(false);
   const progressBarWidthAnim = useRef(new Animated.Value(0)).current;
-  const previousColorRef = useRef('rgba(255, 255, 255, 0.2)');
+  const previousColorRef = useRef('rgba(255, 255, 255, 0.8)');
+  
+  // Confirmation system state
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+  const [confirmedEmotionalState, setConfirmedEmotionalState] = useState('');
+  const [lockedPosition, setLockedPosition] = useState<number | null>(null);
+  const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Gradient background colors
   const [gradientColors, setGradientColors] = useState({ top: '#1a1a1a', bottom: '#1a1a1a', base: '#1a1a1a' });
@@ -102,7 +109,7 @@ export const MeditationPlayerScreen: React.FC = () => {
         setCurrentEmotionalLabel(''); // No initial label - only show when interacted
         setHasUserInteracted(false); // Reset interaction state
         hasUserInteractedValue.value = false; // Reset shared value
-        setProgressBarColor('rgba(255, 255, 255, 0.2)'); // Start with low opacity white (neutral)
+        setProgressBarColor('rgba(255, 255, 255, 0.8)'); // Start with high opacity white (neutral)
         
         // Load audio in background and start playing when ready
         audioPlayerRef.current.loadAudio(audioData.backgroundAudio).then(() => {
@@ -126,7 +133,7 @@ export const MeditationPlayerScreen: React.FC = () => {
         setCurrentEmotionalLabel(''); // No initial label - only show when interacted
         setHasUserInteracted(false); // Reset interaction state
         hasUserInteractedValue.value = false; // Reset shared value
-        setProgressBarColor('rgba(255, 255, 255, 0.2)'); // Start with low opacity white (neutral)
+        setProgressBarColor('rgba(255, 255, 255, 0.8)'); // Start with high opacity white (neutral)
       }
     }
   }, [activeSession, thumbPosition]);
@@ -218,6 +225,22 @@ export const MeditationPlayerScreen: React.FC = () => {
       progressFillWidth.value = newThumbPosition;
     }
   }, [currentTime, totalDuration, progressAnim, thumbPosition, isDragging, progressBarWidth, progressFillWidth]);
+
+  // Cleanup countdown timer on unmount
+  useEffect(() => {
+    return () => {
+      if (countdownTimerRef.current) {
+        clearInterval(countdownTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Keep thumb position locked during countdown
+  useEffect(() => {
+    if (isConfirming && lockedPosition !== null) {
+      emotionalThumbPosition.value = lockedPosition;
+    }
+  }, [isConfirming, lockedPosition, emotionalThumbPosition]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -401,6 +424,71 @@ export const MeditationPlayerScreen: React.FC = () => {
     setEmotionalRating(newRating);
   };
 
+  // Start countdown confirmation
+  const startCountdown = (label: string) => {
+    // Clear any existing timer
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+    }
+    
+    // Lock the current position
+    setLockedPosition(emotionalThumbPosition.value);
+    
+    setIsConfirming(true);
+    setCountdown(3);
+    setConfirmedEmotionalState(label);
+    
+    countdownTimerRef.current = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          // Countdown finished, confirm the selection
+          confirmEmotionalState();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  // Confirm the emotional state and reset to default
+  const confirmEmotionalState = () => {
+    // Clear timer
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+      countdownTimerRef.current = null;
+    }
+    
+    // Reset all states
+    setIsConfirming(false);
+    setCountdown(0);
+    setHasUserInteracted(false);
+    hasUserInteractedValue.value = false;
+    setCurrentEmotionalLabel('');
+    setProgressBarColor('rgba(255, 255, 255, 0.8)');
+    setConfirmedEmotionalState('');
+    setLockedPosition(null);
+    
+    // Reset thumb to center position
+    if (actualEmotionalBarWidth > 0) {
+      const centerPosition = actualEmotionalBarWidth / 2;
+      emotionalThumbPosition.value = centerPosition;
+    }
+    
+    console.log('Emotional state confirmed:', confirmedEmotionalState);
+  };
+
+  // Cancel countdown (when user moves the bar)
+  const cancelCountdown = () => {
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+      countdownTimerRef.current = null;
+    }
+    setIsConfirming(false);
+    setCountdown(0);
+    setConfirmedEmotionalState('');
+    setLockedPosition(null);
+  };
+
   // Helper function to interpolate between colors for smooth transitions
   const interpolateColor = (progress: number) => {
     // Clamp progress between 0 and 1
@@ -512,6 +600,11 @@ export const MeditationPlayerScreen: React.FC = () => {
           return;
         }
         
+        // Cancel countdown if user moves the bar
+        if (isConfirming) {
+          runOnJS(cancelCountdown)();
+        }
+        
         // Calculate new position with strict clamping using actual measured width
         const rawPosition = emotionalStartPosition.value + event.translationX;
         
@@ -538,6 +631,11 @@ export const MeditationPlayerScreen: React.FC = () => {
         damping: 15,
         stiffness: 200,
       });
+      
+      // Start countdown confirmation if user has interacted
+      if (hasUserInteracted && currentEmotionalLabel) {
+        runOnJS(startCountdown)(currentEmotionalLabel);
+      }
     })
     .minDistance(0)
     .activeOffsetX([-10, 10])
@@ -730,6 +828,15 @@ export const MeditationPlayerScreen: React.FC = () => {
               <Text style={styles.emotionalEndLabel}>Great</Text>
             </View>
           </View>
+          
+          {/* Countdown Text - overlay at bottom during confirmation */}
+          {isConfirming && (
+            <View style={styles.countdownOverlay}>
+              <Text style={styles.countdownText}>
+                Confirming in {countdown}...
+              </Text>
+            </View>
+          )}
         </Animated.View>
 
         {/* Action Buttons Section - Always rendered, shown/hidden with opacity */}
@@ -1001,6 +1108,29 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     textAlign: 'center',
+  },
+  countdownOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    paddingBottom: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+  },
+  countdownText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   actionButtonsSection: {
     position: 'absolute',

@@ -82,6 +82,12 @@ export const MeditationPlayerScreen: React.FC = () => {
   const [lockedPosition, setLockedPosition] = useState<number | null>(null);
   const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Options menu state
+  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+  const [sleepModeEnabled, setSleepModeEnabled] = useState(false);
+  const [downloadEnabled, setDownloadEnabled] = useState(false);
+  const optionsMenuAnim = useRef(new Animated.Value(0)).current;
+  
   // Gradient background colors
   const [gradientColors, setGradientColors] = useState({ top: '#1a1a1a', bottom: '#1a1a1a', base: '#1a1a1a' });
 
@@ -299,8 +305,22 @@ export const MeditationPlayerScreen: React.FC = () => {
   };
 
   const handleOptions = () => {
-    // Handle options menu
-    console.log('Options pressed');
+    setShowOptionsMenu(true);
+    Animated.timing(optionsMenuAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleCloseOptions = () => {
+    Animated.timing(optionsMenuAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowOptionsMenu(false);
+    });
   };
 
   const handleSkipForward = () => {
@@ -852,6 +872,83 @@ export const MeditationPlayerScreen: React.FC = () => {
           </TouchableOpacity>
         </Animated.View>
       </View>
+
+      {/* Options Menu Bottom Sheet */}
+      {showOptionsMenu && (
+        <View style={styles.optionsMenuOverlay}>
+          <Animated.View 
+            style={[
+              styles.optionsMenuBackdrop,
+              {
+                opacity: optionsMenuAnim,
+              }
+            ]}
+          >
+            <TouchableOpacity 
+              style={styles.optionsMenuBackdropTouchable} 
+              onPress={handleCloseOptions}
+              activeOpacity={1}
+            />
+          </Animated.View>
+          <Animated.View style={[
+            styles.optionsMenuContainer,
+            {
+              transform: [{
+                translateY: optionsMenuAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [300, 0],
+                })
+              }]
+            }
+          ]}>
+            <View style={styles.optionsMenuHandle} />
+            
+            <View style={styles.optionsMenuContent}>
+              <Text style={styles.optionsMenuTitle}>Options</Text>
+              
+              {/* Sleep Mode Toggle */}
+              <View style={styles.optionsMenuItem}>
+                <View style={styles.optionsMenuTextContainer}>
+                  <Text style={styles.optionsMenuLabel}>Sleep Mode</Text>
+                  <Text style={styles.optionsMenuDescription}>Automatically pause when you fall asleep</Text>
+                </View>
+                <TouchableOpacity
+                  style={[
+                    styles.optionsMenuToggle,
+                    sleepModeEnabled && styles.optionsMenuToggleActive
+                  ]}
+                  onPress={() => setSleepModeEnabled(!sleepModeEnabled)}
+                >
+                  <View style={[
+                    styles.optionsMenuToggleThumb,
+                    sleepModeEnabled && styles.optionsMenuToggleThumbActive
+                  ]} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Download Toggle */}
+              <View style={styles.optionsMenuItem}>
+                <View style={styles.optionsMenuTextContainer}>
+                  <Text style={styles.optionsMenuLabel}>Download</Text>
+                  <Text style={styles.optionsMenuDescription}>Download for offline listening</Text>
+                </View>
+                <TouchableOpacity
+                  style={[
+                    styles.optionsMenuToggle,
+                    downloadEnabled && styles.optionsMenuToggleActive
+                  ]}
+                  onPress={() => setDownloadEnabled(!downloadEnabled)}
+                >
+                  <View style={[
+                    styles.optionsMenuToggleThumb,
+                    downloadEnabled && styles.optionsMenuToggleThumbActive
+                  ]} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Animated.View>
+        </View>
+      )}
       </SafeAreaView>
     </GestureHandlerRootView>
   );
@@ -1195,5 +1292,103 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.7)',
     fontSize: 16,
     fontWeight: '500',
+  },
+  // Options Menu Styles
+  optionsMenuOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
+  },
+  optionsMenuBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  optionsMenuBackdropTouchable: {
+    flex: 1,
+  },
+  optionsMenuContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#2a2a2a',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 40,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 20,
+  },
+  optionsMenuHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 20,
+  },
+  optionsMenuContent: {
+    paddingHorizontal: 24,
+  },
+  optionsMenuTitle: {
+    color: '#ffffff',
+    fontSize: 24,
+    fontWeight: '600',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  optionsMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  optionsMenuTextContainer: {
+    flex: 1,
+    marginRight: 16,
+  },
+  optionsMenuLabel: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  optionsMenuDescription: {
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: 14,
+    fontWeight: '400',
+  },
+  optionsMenuToggle: {
+    width: 50,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    paddingHorizontal: 2,
+  },
+  optionsMenuToggleActive: {
+    backgroundColor: '#4CAF50',
+  },
+  optionsMenuToggleThumb: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  optionsMenuToggleThumbActive: {
+    transform: [{ translateX: 20 }],
   },
 });

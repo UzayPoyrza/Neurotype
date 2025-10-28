@@ -82,39 +82,41 @@ export const ExploreScreen: React.FC = () => {
     },
   ];
 
-  // Create pinned "Liked Meditations" item
-  const likedMeditationsItem = {
-    id: 'liked-meditations',
-    title: 'Liked Meditations',
-    description: 'Your favorite meditation sessions',
-    category: 'favorites',
-    color: '#E74C3C',
-    meditationCount: 12,
-    isPinned: true,
-  };
-
   // Filter and sort modules
   const filteredModules = useMemo(() => {
-    let modules = mentalHealthModules.filter(module => {
-      // Filter by search query
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
+    // Create pinned "Liked Meditations" item
+    const likedMeditationsItem = {
+      id: 'liked-meditations',
+      title: 'Liked Meditations',
+      description: 'Your favorite meditation sessions',
+      category: 'favorites',
+      color: '#E74C3C',
+      meditationCount: 12,
+      isPinned: true,
+    };
+
+    // Start with all modules including the pinned item
+    let allModules = [...mentalHealthModules, likedMeditationsItem];
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      allModules = allModules.filter(module => {
         const matchesTitle = module.title.toLowerCase().includes(query);
         const matchesDescription = module.description.toLowerCase().includes(query);
-        
-        if (!matchesTitle && !matchesDescription) {
-          return false;
-        }
-      }
-      
-      return true;
-    });
+        return matchesTitle || matchesDescription;
+      });
+    }
 
-    // Sort modules based on selected sort option
+    // Separate pinned and non-pinned modules
+    const pinnedModules = allModules.filter(module => 'isPinned' in module && module.isPinned);
+    const regularModules = allModules.filter(module => !('isPinned' in module && module.isPinned));
+
+    // Sort regular modules based on selected sort option
     switch (selectedSort) {
       case 'recents':
         // Sort by recent access, then alphabetically for unaccessed modules
-        modules = modules.sort((a, b) => {
+        regularModules.sort((a, b) => {
           const aRecentIndex = recentModuleIds.indexOf(a.id);
           const bRecentIndex = recentModuleIds.indexOf(b.id);
           
@@ -132,10 +134,10 @@ export const ExploreScreen: React.FC = () => {
         });
         break;
       case 'alphabetical':
-        modules = modules.sort((a, b) => a.title.localeCompare(b.title));
+        regularModules.sort((a, b) => a.title.localeCompare(b.title));
         break;
       case 'category':
-        modules = modules.sort((a, b) => {
+        regularModules.sort((a, b) => {
           if (a.category !== b.category) {
             return a.category.localeCompare(b.category);
           }
@@ -144,8 +146,8 @@ export const ExploreScreen: React.FC = () => {
         break;
     }
 
-    // Always add pinned item at the beginning
-    return [likedMeditationsItem, ...modules];
+    // Return pinned modules first, then regular modules
+    return [...pinnedModules, ...regularModules];
   }, [searchQuery, selectedSort, recentModuleIds]);
 
   const handleModulePress = (moduleId: string) => {
@@ -296,7 +298,7 @@ export const ExploreScreen: React.FC = () => {
             {Array.from({ length: Math.ceil(filteredModules.length / 2) }, (_, rowIndex) => {
               const modulesInRow = filteredModules.slice(rowIndex * 2, rowIndex * 2 + 2);
               const isLastRow = rowIndex === Math.ceil(filteredModules.length / 2) - 1;
-              const hasOnlyOneCard = modulesInRow.length === 1;
+              const hasOnlyOneCard = modulesInRow.length === 1 && isLastRow;
               
               return (
                 <View key={rowIndex} style={styles.moduleRow}>
@@ -306,7 +308,10 @@ export const ExploreScreen: React.FC = () => {
                   // Apply animation only to non-pinned modules
                   if (isPinned) {
                     return (
-                      <View key={module.id} style={styles.moduleCardWrapper}>
+                      <View key={module.id} style={[
+                        styles.moduleCardWrapper,
+                        hasOnlyOneCard && styles.singleCardWrapper
+                      ]}>
                         <TouchableOpacity
                           style={[
                             styles.moduleCard,
@@ -357,7 +362,7 @@ export const ExploreScreen: React.FC = () => {
                     return (
                       <Animated.View key={module.id} style={[
                         styles.moduleCardWrapper,
-                        hasOnlyOneCard && rowIndex > 0 && styles.singleCardWrapper,
+                        hasOnlyOneCard && styles.singleCardWrapper,
                         moduleGridAnimatedStyle
                       ]}>
                         <TouchableOpacity

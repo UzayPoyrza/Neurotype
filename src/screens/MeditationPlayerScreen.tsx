@@ -1132,7 +1132,7 @@ const styles = StyleSheet.create({
   },
   confirmButtonContainer: {
     position: 'absolute',
-    bottom: -10,
+    bottom: -2,
     left: 0,
     right: 0,
     height: 60,

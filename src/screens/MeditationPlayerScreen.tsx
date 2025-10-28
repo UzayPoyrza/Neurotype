@@ -235,12 +235,6 @@ export const MeditationPlayerScreen: React.FC = () => {
     };
   }, []);
 
-  // Keep thumb position locked during countdown
-  useEffect(() => {
-    if (isConfirming && lockedPosition !== null) {
-      emotionalThumbPosition.value = lockedPosition;
-    }
-  }, [isConfirming, lockedPosition, emotionalThumbPosition]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -1141,10 +1135,11 @@ const styles = StyleSheet.create({
     bottom: -10,
     left: 0,
     right: 0,
-    height: 80,
+    height: 60,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 10,
+    zIndex: 5,
+    pointerEvents: 'box-none',
   },
   confirmButton: {
     backgroundColor: 'rgba(0, 0, 0, 0.2)',
@@ -1158,6 +1153,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
+    pointerEvents: 'auto',
   },
   confirmButtonText: {
     color: '#ffffff',

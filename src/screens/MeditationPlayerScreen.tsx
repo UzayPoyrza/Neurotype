@@ -91,6 +91,8 @@ export const MeditationPlayerScreen: React.FC = () => {
   
   // Dark mode state
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const darkModeAnim = useRef(new Animated.Value(0)).current;
+  const darkModeBackgroundAnim = useRef(new Animated.Value(0)).current;
   
   // Gradient background colors
   const [gradientColors, setGradientColors] = useState({ top: '#1a1a1a', bottom: '#1a1a1a', base: '#1a1a1a' });
@@ -331,7 +333,22 @@ export const MeditationPlayerScreen: React.FC = () => {
 
   const handleScreenTap = () => {
     // Toggle dark mode when tapping anywhere on the screen
-    setIsDarkMode(!isDarkMode);
+    const newDarkMode = !isDarkMode;
+    setIsDarkMode(newDarkMode);
+    
+    // Smooth fade animations
+    Animated.parallel([
+      Animated.timing(darkModeAnim, {
+        toValue: newDarkMode ? 1 : 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(darkModeBackgroundAnim, {
+        toValue: newDarkMode ? 1 : 0,
+        duration: 300,
+        useNativeDriver: false,
+      })
+    ]).start();
   };
 
   const handleSkipForward = () => {
@@ -705,18 +722,30 @@ export const MeditationPlayerScreen: React.FC = () => {
           backgroundColor="transparent" 
           translucent 
           hidden={isDarkMode}
+          animated={true}
         />
       
       {/* Dynamic gradient background based on module */}
-      <LinearGradient
-        colors={isDarkMode ? ['#000000', '#000000'] : [gradientColors.top, gradientColors.bottom]}
-        style={styles.backgroundGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-      />
+      <Animated.View style={styles.backgroundGradient}>
+        <LinearGradient
+          colors={isDarkMode ? ['#000000', '#000000'] : [gradientColors.top, gradientColors.bottom]}
+          style={styles.backgroundGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+        />
+      </Animated.View>
       
       {/* Top Bar - Hidden in dark mode */}
-      <View style={[styles.topBar, isDarkMode && styles.hiddenElement]}>
+      <Animated.View style={[
+        styles.topBar, 
+        {
+          opacity: darkModeAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [1, 0],
+          }),
+          pointerEvents: isDarkMode ? 'none' : 'auto',
+        }
+      ]}>
         <TouchableOpacity style={styles.topBarButton} onPress={handleBack}>
           <BackIcon size={20} color="#ffffff" />
         </TouchableOpacity>
@@ -738,7 +767,7 @@ export const MeditationPlayerScreen: React.FC = () => {
         <TouchableOpacity style={styles.topBarButton} onPress={handleOptions}>
           <MoreIcon size={20} color="#ffffff" />
         </TouchableOpacity>
-      </View>
+      </Animated.View>
 
       {/* Main Content */}
       <TouchableOpacity 
@@ -747,14 +776,32 @@ export const MeditationPlayerScreen: React.FC = () => {
         activeOpacity={1}
       >
         {/* Session Title - Hidden in dark mode */}
-        <View style={[styles.titleSection, isDarkMode && styles.hiddenElement]}>
+        <Animated.View style={[
+          styles.titleSection,
+          {
+            opacity: darkModeAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [1, 0],
+            }),
+            pointerEvents: isDarkMode ? 'none' : 'auto',
+          }
+        ]}>
           <Text style={styles.sessionTitle}>{activeSession.title}</Text>
-        </View>
+        </Animated.View>
 
         {/* Artist/Creator - Hidden in dark mode */}
-        <View style={[styles.artistContainer, isDarkMode && styles.hiddenElement]}>
+        <Animated.View style={[
+          styles.artistContainer,
+          {
+            opacity: darkModeAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [1, 0],
+            }),
+            pointerEvents: isDarkMode ? 'none' : 'auto',
+          }
+        ]}>
           <Text style={styles.artistName}>Prashanti Paz</Text>
-        </View>
+        </Animated.View>
 
         {/* Progress Bar - Always visible */}
         <TouchableOpacity 
@@ -776,7 +823,16 @@ export const MeditationPlayerScreen: React.FC = () => {
         </TouchableOpacity>
 
         {/* Player Controls - Hidden in dark mode */}
-        <View style={[styles.playerControls, isDarkMode && styles.hiddenElement]}>
+        <Animated.View style={[
+          styles.playerControls,
+          {
+            opacity: darkModeAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [1, 0],
+            }),
+            pointerEvents: isDarkMode ? 'none' : 'auto',
+          }
+        ]}>
           <TouchableOpacity style={styles.controlButton} onPress={(e) => { e.stopPropagation(); handleSkipBackward(); }}>
             <SkipBackward10Icon size={60} color="#ffffff" />
           </TouchableOpacity>
@@ -796,25 +852,32 @@ export const MeditationPlayerScreen: React.FC = () => {
           <TouchableOpacity style={styles.controlButton} onPress={(e) => { e.stopPropagation(); handleSkipForward(); }}>
             <SkipForward10Icon size={60} color="#ffffff" />
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </TouchableOpacity>
 
       {/* Bottom Section - Fixed Height */}
       <View style={styles.bottomSection}>
         {/* Emotional Feedback Section - Always rendered, shown/hidden with opacity */}
-        <TouchableOpacity 
+        <Animated.View 
           style={[
             styles.emotionalFeedbackSection,
             { 
               opacity: playerState === 'playing' ? 1 : 0,
               pointerEvents: playerState === 'playing' ? 'auto' : 'none',
-              backgroundColor: isDarkMode ? 'transparent' : 'rgba(255, 255, 255, 0.15)',
-              borderWidth: isDarkMode ? 0 : 1,
-              borderColor: isDarkMode ? 'transparent' : 'rgba(255, 255, 255, 0.1)',
+              backgroundColor: darkModeBackgroundAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: ['rgba(255, 255, 255, 0.15)', 'transparent'],
+              }),
+              borderWidth: darkModeBackgroundAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [1, 0],
+              }),
+              borderColor: darkModeBackgroundAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: ['rgba(255, 255, 255, 0.1)', 'transparent'],
+              }),
             }
           ]}
-          onPress={(e) => e.stopPropagation()}
-          activeOpacity={1}
         >
           <Text style={styles.emotionalFeedbackTitle}>How do you feel?</Text>
           
@@ -884,7 +947,7 @@ export const MeditationPlayerScreen: React.FC = () => {
               <Text style={styles.emotionalEndLabel}>Great</Text>
             </View>
           </View>
-        </TouchableOpacity>
+        </Animated.View>
 
         {/* Action Buttons Section - Always rendered, shown/hidden with opacity */}
         <TouchableOpacity 
@@ -1155,7 +1218,7 @@ const styles = StyleSheet.create({
   },
   emotionalFeedbackSection: {
     position: 'absolute',
-    top: 10, // Move down to create space from player controls
+    top: 20, // Move back up but still avoid overlap
     left: 32, // Match the paddingHorizontal
     right: 32, // Match the paddingHorizontal
     backgroundColor: 'rgba(255, 255, 255, 0.15)',

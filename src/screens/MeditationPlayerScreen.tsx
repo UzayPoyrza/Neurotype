@@ -773,6 +773,18 @@ export const MeditationPlayerScreen: React.FC = () => {
           }
         ]}>
           <Text style={styles.emotionalFeedbackTitle}>How do you feel?</Text>
+          
+          {/* Confirm Button */}
+          {isConfirming && (
+            <View style={styles.confirmButtonContainer}>
+              <TouchableOpacity style={styles.confirmButton}>
+                <Text style={styles.confirmButtonText}>
+                  Confirming in {countdown}...
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          
           <View style={styles.emotionalProgressContainer}>
             {/* Dynamic Indicator - always rendered but only visible when user has interacted */}
             <View style={styles.emotionalIndicator}>
@@ -828,15 +840,6 @@ export const MeditationPlayerScreen: React.FC = () => {
               <Text style={styles.emotionalEndLabel}>Great</Text>
             </View>
           </View>
-          
-          {/* Countdown Text - overlay at bottom during confirmation */}
-          {isConfirming && (
-            <View style={styles.countdownOverlay}>
-              <Text style={styles.countdownText}>
-                Confirming in {countdown}...
-              </Text>
-            </View>
-          )}
         </Animated.View>
 
         {/* Action Buttons Section - Always rendered, shown/hidden with opacity */}
@@ -1109,28 +1112,58 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textAlign: 'center',
   },
-  countdownOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+  countdownContainer: {
     alignItems: 'center',
-    paddingBottom: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    marginTop: 8,
+    marginBottom: 16,
   },
   countdownText: {
     color: '#ffffff',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
     textAlign: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'transparent',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderWidth: 0,
+  },
+  countdownTextClean: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,
+    fontWeight: '400',
+    textAlign: 'center',
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  confirmButtonContainer: {
+    position: 'absolute',
+    bottom: -10,
+    left: 0,
+    right: 0,
+    height: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  confirmButton: {
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    borderRadius: 25,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    marginHorizontal: 16,
+    borderWidth: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  confirmButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   actionButtonsSection: {
     position: 'absolute',

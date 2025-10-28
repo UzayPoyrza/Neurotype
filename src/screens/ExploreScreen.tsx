@@ -102,9 +102,11 @@ export const ExploreScreen: React.FC = () => {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       allModules = allModules.filter(module => {
-        const matchesTitle = module.title.toLowerCase().includes(query);
-        const matchesDescription = module.description.toLowerCase().includes(query);
-        return matchesTitle || matchesDescription;
+        // Check if title starts with the query
+        const matchesTitle = module.title.toLowerCase().startsWith(query);
+        // Check if category starts with the query
+        const matchesCategory = module.category.toLowerCase().startsWith(query);
+        return matchesTitle || matchesCategory;
       });
     }
 

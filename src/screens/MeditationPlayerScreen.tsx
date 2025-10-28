@@ -94,6 +94,10 @@ export const MeditationPlayerScreen: React.FC = () => {
   const darkModeAnim = useRef(new Animated.Value(0)).current;
   const darkModeBackgroundAnim = useRef(new Animated.Value(0)).current;
   
+  // Idle timer for auto dark mode
+  const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const IDLE_TIMEOUT = 10000; // 10 seconds
+  
   // Gradient background colors
   const [gradientColors, setGradientColors] = useState({ top: '#1a1a1a', bottom: '#1a1a1a', base: '#1a1a1a' });
 
@@ -247,6 +251,26 @@ export const MeditationPlayerScreen: React.FC = () => {
     };
   }, []);
 
+  // Idle timer management
+  useEffect(() => {
+    // Start idle timer when component mounts and player is playing
+    if (playerState === 'playing' && !isDarkMode) {
+      resetIdleTimer();
+    }
+
+    // Cleanup timer on unmount
+    return () => {
+      clearIdleTimer();
+    };
+  }, [playerState, isDarkMode]);
+
+  // Reset idle timer on specific user interactions (not on time updates)
+  useEffect(() => {
+    if (playerState === 'playing' && !isDarkMode) {
+      resetIdleTimer();
+    }
+  }, [emotionalRating, showTutorial, isLiked]);
+
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -255,6 +279,9 @@ export const MeditationPlayerScreen: React.FC = () => {
   };
 
   const handlePlayPause = () => {
+    // Reset idle timer on user interaction
+    resetIdleTimer();
+    
     // Animate button press
     Animated.sequence([
       Animated.timing(playButtonScale, {
@@ -331,9 +358,8 @@ export const MeditationPlayerScreen: React.FC = () => {
     });
   };
 
-  const handleScreenTap = () => {
-    // Toggle dark mode when tapping anywhere on the screen
-    const newDarkMode = !isDarkMode;
+  // Function to activate dark mode with animation
+  const activateDarkMode = (newDarkMode: boolean) => {
     setIsDarkMode(newDarkMode);
     
     // Smooth fade animations
@@ -351,22 +377,66 @@ export const MeditationPlayerScreen: React.FC = () => {
     ]).start();
   };
 
+  // Function to reset idle timer
+  const resetIdleTimer = () => {
+    // Clear existing timer
+    if (idleTimerRef.current) {
+      console.log('Resetting idle timer...');
+      clearTimeout(idleTimerRef.current);
+    }
+    
+    // Only start timer if not already in dark mode
+    if (!isDarkMode) {
+      console.log('Starting idle timer for dark mode...');
+      idleTimerRef.current = setTimeout(() => {
+        console.log('Idle timer triggered - activating dark mode');
+        activateDarkMode(true);
+      }, IDLE_TIMEOUT);
+    }
+  };
+
+  // Function to clear idle timer
+  const clearIdleTimer = () => {
+    if (idleTimerRef.current) {
+      clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = null;
+    }
+  };
+
+  const handleScreenTap = () => {
+    // Toggle dark mode when tapping anywhere on the screen
+    const newDarkMode = !isDarkMode;
+    activateDarkMode(newDarkMode);
+    
+    // Reset idle timer when user interacts
+    if (!newDarkMode) {
+      resetIdleTimer();
+    } else {
+      clearIdleTimer();
+    }
+  };
+
   const handleSkipForward = () => {
     const newTime = Math.min(currentTime + 10, totalDuration);
-    setCurrentTime(newTime);
-    audioPlayerRef.current.seekTo(newTime);
+    updateCurrentTimeWithReset(newTime);
   };
 
   const handleSkipBackward = () => {
     const newTime = Math.max(currentTime - 10, 0);
-    setCurrentTime(newTime);
-    audioPlayerRef.current.seekTo(newTime);
+    updateCurrentTimeWithReset(newTime);
   };
 
   // Helper function to update current time (called from worklet)
   const updateCurrentTime = (newTime: number) => {
     setCurrentTime(newTime);
     audioPlayerRef.current.seekTo(newTime);
+  };
+
+  // Helper function to update current time with idle timer reset (for user interactions)
+  const updateCurrentTimeWithReset = (newTime: number) => {
+    setCurrentTime(newTime);
+    audioPlayerRef.current.seekTo(newTime);
+    resetIdleTimer();
   };
 
   // Helper function to trigger haptic feedback
@@ -396,7 +466,7 @@ export const MeditationPlayerScreen: React.FC = () => {
       // Calculate and update time in real-time
       const progress = newPosition / progressBarWidth;
       const newTime = Math.round(progress * totalDuration);
-      runOnJS(updateCurrentTime)(newTime);
+      runOnJS(updateCurrentTimeWithReset)(newTime);
     })
     .onEnd(() => {
       isDragging.value = false;
@@ -464,6 +534,8 @@ export const MeditationPlayerScreen: React.FC = () => {
   // Helper function to update emotional rating (called from worklet)
   const updateEmotionalRating = (newRating: number) => {
     setEmotionalRating(newRating);
+    // Reset idle timer on emotional feedback interaction
+    resetIdleTimer();
   };
 
   // Start countdown confirmation
@@ -1493,3 +1565,4 @@ const styles = StyleSheet.create({
     pointerEvents: 'none',
   },
 });
+

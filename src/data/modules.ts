@@ -61,7 +61,7 @@ export const mentalHealthModules: MentalHealthModule[] = [
     id: 'stress',
     title: 'Stress Relief',
     description: 'Release tension and unwind',
-    color: '#98D8C8',
+    color: '#4ECDC4',
     meditationCount: 25,
     category: 'wellness'
   },
@@ -69,7 +69,7 @@ export const mentalHealthModules: MentalHealthModule[] = [
     id: 'sleep',
     title: 'Better Sleep',
     description: 'Improve sleep quality and rest deeply',
-    color: '#A8A8F0',
+    color: '#4ECDC4',
     meditationCount: 20,
     category: 'wellness'
   },
@@ -101,7 +101,7 @@ export const mentalHealthModules: MentalHealthModule[] = [
     id: 'self-compassion',
     title: 'Self-Compassion',
     description: 'Develop kindness towards yourself',
-    color: '#FFD93D',
+    color: '#4ECDC4',
     meditationCount: 11,
     category: 'wellness'
   }

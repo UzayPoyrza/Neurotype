@@ -205,11 +205,11 @@ export const ExploreScreen: React.FC = () => {
     };
   });
 
-  // Shuffle animation for modules
+  // Shuffle animation for modules (excluding pinned items)
   const triggerShuffleAnimation = () => {
     setIsShuffling(true);
     
-    // Fall down animation
+    // Fall down animation for non-pinned modules only
     moduleOpacity.value = withTiming(0, { duration: 200 });
     moduleScale.value = withTiming(0.8, { duration: 200 });
     
@@ -291,65 +291,114 @@ export const ExploreScreen: React.FC = () => {
           </View>
 
           {/* Module Grid */}
-          <Animated.View style={[styles.moduleGrid, moduleGridAnimatedStyle]}>
+          <View style={styles.moduleGrid}>
             {/* Create rows of 2 modules each, with pinned item in first position */}
-            {Array.from({ length: Math.ceil(filteredModules.length / 2) }, (_, rowIndex) => (
-              <View key={rowIndex} style={styles.moduleRow}>
-                {filteredModules.slice(rowIndex * 2, rowIndex * 2 + 2).map((module, moduleIndex) => {
-                  const isPinned = 'isPinned' in module && module.isPinned;
-                  return (
-                    <View key={module.id} style={styles.moduleCardWrapper}>
-                      <TouchableOpacity
-                        style={[
-                          styles.moduleCard,
-                          isPinned && styles.pinnedModuleCard
-                        ]}
-                        onPress={() => handleModulePress(module.id)}
-                        activeOpacity={0.8}
-                      >
-                        <View style={styles.moduleCardHeader}>
-                          <View style={styles.moduleHeaderLeft}>
-                            <View style={[styles.moduleIndicator, { backgroundColor: module.color }]} />
-                            <Text style={styles.moduleCategory}>{module.category.toUpperCase()}</Text>
-                          </View>
-                          {isPinned && (
+            {Array.from({ length: Math.ceil(filteredModules.length / 2) }, (_, rowIndex) => {
+              const modulesInRow = filteredModules.slice(rowIndex * 2, rowIndex * 2 + 2);
+              const isLastRow = rowIndex === Math.ceil(filteredModules.length / 2) - 1;
+              const hasOnlyOneCard = modulesInRow.length === 1;
+              
+              return (
+                <View key={rowIndex} style={styles.moduleRow}>
+                  {modulesInRow.map((module, moduleIndex) => {
+                    const isPinned = 'isPinned' in module && module.isPinned;
+                  
+                  // Apply animation only to non-pinned modules
+                  if (isPinned) {
+                    return (
+                      <View key={module.id} style={[
+                        styles.moduleCardWrapper,
+                        hasOnlyOneCard && styles.singleCardWrapper
+                      ]}>
+                        <TouchableOpacity
+                          style={[
+                            styles.moduleCard,
+                            styles.pinnedModuleCard
+                          ]}
+                          onPress={() => handleModulePress(module.id)}
+                          activeOpacity={0.8}
+                        >
+                          <View style={styles.moduleCardHeader}>
+                            <View style={styles.moduleHeaderLeft}>
+                              <View style={[styles.moduleIndicator, { backgroundColor: module.color }]} />
+                              <Text style={styles.moduleCategory}>{module.category.toUpperCase()}</Text>
+                            </View>
                             <View style={styles.pinBadge}>
                               <Text style={styles.pinIcon}>📌</Text>
                             </View>
-                          )}
-                        </View>
-                        
-                        <Text style={[
-                          styles.moduleTitle,
-                          isPinned && styles.pinnedModuleTitle
-                        ]} numberOfLines={isPinned ? 2 : 1} ellipsizeMode="tail">
-                          {module.title}
-                        </Text>
-                        <Text style={[
-                          styles.moduleDescription,
-                          isPinned && styles.pinnedModuleDescription
-                        ]} numberOfLines={2}>
-                          {module.description}
-                        </Text>
-                        
-                        <View style={styles.moduleFooter}>
-                          <Text style={[
-                            styles.sessionCount,
-                            isPinned && styles.pinnedSessionCount
-                          ]}>
-                            {module.meditationCount} sessions
-                          </Text>
-                          <View style={styles.moduleArrow}>
-                            <Text style={styles.moduleArrowText}>→</Text>
                           </View>
-                        </View>
-                      </TouchableOpacity>
-                    </View>
-                  );
-                })}
-              </View>
-            ))}
-          </Animated.View>
+                          
+                          <Text style={[
+                            styles.moduleTitle,
+                            styles.pinnedModuleTitle
+                          ]} numberOfLines={2} ellipsizeMode="tail">
+                            {module.title}
+                          </Text>
+                          <Text style={[
+                            styles.moduleDescription,
+                            styles.pinnedModuleDescription
+                          ]} numberOfLines={2}>
+                            {module.description}
+                          </Text>
+                          
+                          <View style={styles.moduleFooter}>
+                            <Text style={[
+                              styles.sessionCount,
+                              styles.pinnedSessionCount
+                            ]}>
+                              {module.meditationCount} sessions
+                            </Text>
+                            <View style={styles.moduleArrow}>
+                              <Text style={styles.moduleArrowText}>→</Text>
+                            </View>
+                          </View>
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  } else {
+                    // Non-pinned modules get the animation
+                    return (
+                      <Animated.View key={module.id} style={[
+                        styles.moduleCardWrapper,
+                        hasOnlyOneCard && styles.singleCardWrapper,
+                        moduleGridAnimatedStyle
+                      ]}>
+                        <TouchableOpacity
+                          style={styles.moduleCard}
+                          onPress={() => handleModulePress(module.id)}
+                          activeOpacity={0.8}
+                        >
+                          <View style={styles.moduleCardHeader}>
+                            <View style={styles.moduleHeaderLeft}>
+                              <View style={[styles.moduleIndicator, { backgroundColor: module.color }]} />
+                              <Text style={styles.moduleCategory}>{module.category.toUpperCase()}</Text>
+                            </View>
+                          </View>
+                          
+                          <Text style={styles.moduleTitle} numberOfLines={1} ellipsizeMode="tail">
+                            {module.title}
+                          </Text>
+                          <Text style={styles.moduleDescription} numberOfLines={2}>
+                            {module.description}
+                          </Text>
+                          
+                          <View style={styles.moduleFooter}>
+                            <Text style={styles.sessionCount}>
+                              {module.meditationCount} sessions
+                            </Text>
+                            <View style={styles.moduleArrow}>
+                              <Text style={styles.moduleArrowText}>→</Text>
+                            </View>
+                          </View>
+                        </TouchableOpacity>
+                      </Animated.View>
+                    );
+                  }
+                  })}
+                </View>
+              );
+            })}
+          </View>
 
           {/* Empty State */}
           {filteredModules.length === 0 && (
@@ -575,6 +624,10 @@ const styles = StyleSheet.create({
   moduleCardWrapper: {
     flex: 1,
     marginHorizontal: 6,
+  },
+  singleCardWrapper: {
+    flex: 0,
+    width: '48%', // Take up about half the width instead of full width
   },
   moduleCard: {
     backgroundColor: '#ffffff',

@@ -700,7 +700,12 @@ export const MeditationPlayerScreen: React.FC = () => {
   return (
     <GestureHandlerRootView style={styles.container}>
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        <StatusBar 
+          barStyle="light-content" 
+          backgroundColor="transparent" 
+          translucent 
+          hidden={isDarkMode}
+        />
       
       {/* Dynamic gradient background based on module */}
       <LinearGradient

@@ -301,6 +301,7 @@ export const ExploreScreen: React.FC = () => {
               const modulesInRow = filteredModules.slice(rowIndex * 2, rowIndex * 2 + 2);
               const isLastRow = rowIndex === Math.ceil(filteredModules.length / 2) - 1;
               const hasOnlyOneCard = modulesInRow.length === 1 && isLastRow;
+              const isSearching = searchQuery.trim().length > 0;
               
               return (
                 <View key={rowIndex} style={styles.moduleRow}>
@@ -312,7 +313,8 @@ export const ExploreScreen: React.FC = () => {
                     return (
                       <View key={module.id} style={[
                         styles.moduleCardWrapper,
-                        hasOnlyOneCard && styles.singleCardWrapper
+                        // Only apply single card wrapper if we're not searching and it's the only card in the last row
+                        hasOnlyOneCard && !isSearching && styles.singleCardWrapper
                       ]}>
                         <TouchableOpacity
                           style={[
@@ -364,7 +366,8 @@ export const ExploreScreen: React.FC = () => {
                     return (
                       <Animated.View key={module.id} style={[
                         styles.moduleCardWrapper,
-                        hasOnlyOneCard && styles.singleCardWrapper,
+                        // Only apply single card wrapper if we're not searching and it's the only card in the last row
+                        hasOnlyOneCard && !isSearching && styles.singleCardWrapper,
                         moduleGridAnimatedStyle
                       ]}>
                         <TouchableOpacity

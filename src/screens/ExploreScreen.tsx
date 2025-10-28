@@ -306,10 +306,7 @@ export const ExploreScreen: React.FC = () => {
                   // Apply animation only to non-pinned modules
                   if (isPinned) {
                     return (
-                      <View key={module.id} style={[
-                        styles.moduleCardWrapper,
-                        hasOnlyOneCard && styles.singleCardWrapper
-                      ]}>
+                      <View key={module.id} style={styles.moduleCardWrapper}>
                         <TouchableOpacity
                           style={[
                             styles.moduleCard,
@@ -360,7 +357,7 @@ export const ExploreScreen: React.FC = () => {
                     return (
                       <Animated.View key={module.id} style={[
                         styles.moduleCardWrapper,
-                        hasOnlyOneCard && styles.singleCardWrapper,
+                        hasOnlyOneCard && rowIndex > 0 && styles.singleCardWrapper,
                         moduleGridAnimatedStyle
                       ]}>
                         <TouchableOpacity

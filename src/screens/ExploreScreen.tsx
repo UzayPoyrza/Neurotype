@@ -27,6 +27,7 @@ import { ExploreScreen as ExploreScreenComponent } from '../components/ExploreSc
 type ExploreStackParamList = {
   ExploreMain: undefined;
   ModuleDetail: { moduleId: string };
+  MeditationDetail: { sessionId: string };
 };
 
 type ExploreScreenNavigationProp = StackNavigationProp<ExploreStackParamList, 'ExploreMain'>;
@@ -83,10 +84,11 @@ export const ExploreScreen: React.FC = () => {
     },
   ];
 
+  // Get liked sessions
+  const likedSessions = mockSessions.filter(session => likedSessionIds.includes(session.id));
+
   // Filter and sort modules
   const filteredModules = useMemo(() => {
-    // Get liked sessions
-    const likedSessions = mockSessions.filter(session => likedSessionIds.includes(session.id));
     
     // Create pinned "Liked Meditations" item (always show, even when empty)
     const likedMeditationsItem = {
@@ -160,13 +162,6 @@ export const ExploreScreen: React.FC = () => {
   }, [searchQuery, selectedSort, recentModuleIds, likedSessionIds]);
 
   const handleModulePress = (moduleId: string) => {
-    if (moduleId === 'liked-meditations') {
-      // Handle liked meditations - could navigate to a special screen or show a modal
-      // For now, we'll just add it to recent modules
-      addRecentModule(moduleId);
-      return;
-    }
-    
     addRecentModule(moduleId);
     // Don't change global background color - let the detail screen handle its own background
     navigation.navigate('ModuleDetail', { moduleId });

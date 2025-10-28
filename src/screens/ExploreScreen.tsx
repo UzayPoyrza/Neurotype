@@ -82,6 +82,17 @@ export const ExploreScreen: React.FC = () => {
     },
   ];
 
+  // Create pinned "Liked Meditations" item
+  const likedMeditationsItem = {
+    id: 'liked-meditations',
+    title: 'Liked Meditations',
+    description: 'Your favorite meditation sessions',
+    category: 'favorites',
+    color: '#FF6B6B',
+    meditationCount: 12,
+    isPinned: true,
+  };
+
   // Filter and sort modules
   const filteredModules = useMemo(() => {
     let modules = mentalHealthModules.filter(module => {
@@ -133,7 +144,8 @@ export const ExploreScreen: React.FC = () => {
         break;
     }
 
-    return modules;
+    // Always add pinned item at the beginning
+    return [likedMeditationsItem, ...modules];
   }, [searchQuery, selectedSort, recentModuleIds]);
 
   const handleModulePress = (moduleId: string) => {
@@ -280,41 +292,80 @@ export const ExploreScreen: React.FC = () => {
 
           {/* Module Grid */}
           <Animated.View style={[styles.moduleGrid, moduleGridAnimatedStyle]}>
-            {/* Create rows of 2 modules each */}
-            {Array.from({ length: Math.ceil(filteredModules.length / 2) }, (_, rowIndex) => (
-              <View key={rowIndex} style={styles.moduleRow}>
-                {filteredModules.slice(rowIndex * 2, rowIndex * 2 + 2).map((module) => (
-                  <View key={module.id} style={styles.moduleCardWrapper}>
-                    <TouchableOpacity
-                      style={styles.moduleCard}
-                      onPress={() => handleModulePress(module.id)}
-                      activeOpacity={0.8}
-                    >
-                      <View style={styles.moduleCardHeader}>
-                        <View style={[styles.moduleIndicator, { backgroundColor: module.color }]} />
-                        <Text style={styles.moduleCategory}>{module.category.toUpperCase()}</Text>
+            {/* Pinned Liked Meditations - Full Width */}
+            {filteredModules.length > 0 && 'isPinned' in filteredModules[0] && filteredModules[0].isPinned && (
+              <View style={styles.pinnedModuleRow}>
+                <TouchableOpacity
+                  style={styles.pinnedModuleCard}
+                  onPress={() => handleModulePress(filteredModules[0].id)}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.pinnedModuleHeader}>
+                    <View style={styles.pinnedModuleLeft}>
+                      <View style={[styles.pinnedModuleIndicator, { backgroundColor: filteredModules[0].color }]} />
+                      <View style={styles.pinnedModuleTextContainer}>
+                        <Text style={styles.pinnedModuleTitle}>{filteredModules[0].title}</Text>
+                        <Text style={styles.pinnedModuleDescription}>{filteredModules[0].description}</Text>
                       </View>
-                      
-                      <Text style={styles.moduleTitle} numberOfLines={1} ellipsizeMode="tail">
-                        {module.title}
-                      </Text>
-                      <Text style={styles.moduleDescription} numberOfLines={2}>
-                        {module.description}
-                      </Text>
-                      
-                      <View style={styles.moduleFooter}>
-                        <Text style={styles.sessionCount}>
-                          {module.meditationCount} sessions
-                        </Text>
-                        <View style={styles.moduleArrow}>
-                          <Text style={styles.moduleArrowText}>→</Text>
-                        </View>
+                    </View>
+                    <View style={styles.pinnedModuleRight}>
+                      <View style={styles.pinBadge}>
+                        <Text style={styles.pinIcon}>📌</Text>
                       </View>
-                    </TouchableOpacity>
+                      <View style={styles.pinnedModuleArrow}>
+                        <Text style={styles.pinnedModuleArrowText}>→</Text>
+                      </View>
+                    </View>
                   </View>
-                ))}
+                  <View style={styles.pinnedModuleFooter}>
+                    <Text style={styles.pinnedSessionCount}>
+                      {filteredModules[0].meditationCount} sessions
+                    </Text>
+                  </View>
+                </TouchableOpacity>
               </View>
-            ))}
+            )}
+
+            {/* Regular Module Grid - Create rows of 2 modules each */}
+            {Array.from({ length: Math.ceil((filteredModules.length - (filteredModules.length > 0 && 'isPinned' in filteredModules[0] && filteredModules[0].isPinned ? 1 : 0)) / 2) }, (_, rowIndex) => {
+              const startIndex = filteredModules.length > 0 && 'isPinned' in filteredModules[0] && filteredModules[0].isPinned ? 1 : 0;
+              const modulesInRow = filteredModules.slice(startIndex + rowIndex * 2, startIndex + rowIndex * 2 + 2);
+              
+              return (
+                <View key={rowIndex} style={styles.moduleRow}>
+                  {modulesInRow.map((module) => (
+                    <View key={module.id} style={styles.moduleCardWrapper}>
+                      <TouchableOpacity
+                        style={styles.moduleCard}
+                        onPress={() => handleModulePress(module.id)}
+                        activeOpacity={0.8}
+                      >
+                        <View style={styles.moduleCardHeader}>
+                          <View style={[styles.moduleIndicator, { backgroundColor: module.color }]} />
+                          <Text style={styles.moduleCategory}>{module.category.toUpperCase()}</Text>
+                        </View>
+                        
+                        <Text style={styles.moduleTitle} numberOfLines={1} ellipsizeMode="tail">
+                          {module.title}
+                        </Text>
+                        <Text style={styles.moduleDescription} numberOfLines={2}>
+                          {module.description}
+                        </Text>
+                        
+                        <View style={styles.moduleFooter}>
+                          <Text style={styles.sessionCount}>
+                            {module.meditationCount} sessions
+                          </Text>
+                          <View style={styles.moduleArrow}>
+                            <Text style={styles.moduleArrowText}>→</Text>
+                          </View>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              );
+            })}
           </Animated.View>
 
           {/* Empty State */}
@@ -486,6 +537,92 @@ const styles = StyleSheet.create({
   },
   moduleGrid: {
     gap: 12,
+  },
+  // Pinned Module Styles
+  pinnedModuleRow: {
+    marginBottom: 16,
+  },
+  pinnedModuleCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 2,
+    borderColor: '#FF6B6B',
+  },
+  pinnedModuleHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  pinnedModuleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  pinnedModuleIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 12,
+  },
+  pinnedModuleTextContainer: {
+    flex: 1,
+  },
+  pinnedModuleTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000000',
+    marginBottom: 4,
+  },
+  pinnedModuleDescription: {
+    fontSize: 14,
+    color: '#8e8e93',
+    fontWeight: '400',
+    lineHeight: 18,
+  },
+  pinnedModuleRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  pinBadge: {
+    backgroundColor: '#FF6B6B',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  pinIcon: {
+    fontSize: 12,
+    color: '#ffffff',
+  },
+  pinnedModuleArrow: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f2f2f7',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pinnedModuleArrowText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000000',
+  },
+  pinnedModuleFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  pinnedSessionCount: {
+    fontSize: 14,
+    color: '#8e8e93',
+    fontWeight: '500',
   },
   moduleRow: {
     flexDirection: 'row',

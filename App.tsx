@@ -13,7 +13,7 @@ import { ProgressScreen } from './src/screens/ProgressScreen';
 import { ExploreScreen } from './src/screens/ExploreScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
-import { PlayerScreen } from './src/screens/PlayerScreen';
+import { MeditationPlayerScreen } from './src/screens/MeditationPlayerScreen';
 import { ModuleDetailScreen } from './src/screens/ModuleDetailScreen';
 import { MeditationDetailScreen } from './src/screens/MeditationDetailScreen';
 import { SplashScreen } from './src/screens/SplashScreen';
@@ -281,7 +281,7 @@ export default function App() {
         animationType="slide"
         presentationStyle="fullScreen"
       >
-        <PlayerScreen />
+        <MeditationPlayerScreen />
       </Modal>
     </NavigationContainer>
     </>

@@ -5,18 +5,20 @@ interface Slider0to10Props {
   value: number;
   onValueChange: (value: number) => void;
   label: string;
+  showLabels?: boolean;
 }
 
 export const Slider0to10: React.FC<Slider0to10Props> = ({ 
   value, 
   onValueChange, 
-  label 
+  label,
+  showLabels = true
 }) => {
   const numbers = Array.from({ length: 11 }, (_, i) => i);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
+      {showLabels && <Text style={styles.label}>{label}</Text>}
       <View style={styles.sliderContainer}>
         {numbers.map((number) => (
           <TouchableOpacity
@@ -36,10 +38,12 @@ export const Slider0to10: React.FC<Slider0to10Props> = ({
           </TouchableOpacity>
         ))}
       </View>
-      <View style={styles.scaleLabels}>
-        <Text style={styles.scaleLabel}>Low</Text>
-        <Text style={styles.scaleLabel}>High</Text>
-      </View>
+      {showLabels && (
+        <View style={styles.scaleLabels}>
+          <Text style={styles.scaleLabel}>Low</Text>
+          <Text style={styles.scaleLabel}>High</Text>
+        </View>
+      )}
     </View>
   );
 };
@@ -75,12 +79,12 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   selectedButton: {
-    backgroundColor: '#000000',
-    borderColor: '#000000',
+    backgroundColor: '#ffffff',
+    borderColor: '#ffffff',
   },
   unselectedButton: {
-    backgroundColor: '#ffffff',
-    borderColor: '#000000',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: 'rgba(255, 255, 255, 0.4)',
   },
   numberText: {
     fontSize: 14,
@@ -88,10 +92,10 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
   },
   selectedText: {
-    color: '#ffffff',
+    color: '#1a1a1a',
   },
   unselectedText: {
-    color: '#000000',
+    color: '#ffffff',
   },
   scaleLabels: {
     flexDirection: 'row',
@@ -99,7 +103,7 @@ const styles = StyleSheet.create({
   },
   scaleLabel: {
     fontSize: 12,
-    color: '#666666',
+    color: 'rgba(255, 255, 255, 0.7)',
     fontFamily: 'System',
   },
 }); 

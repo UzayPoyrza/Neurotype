@@ -88,7 +88,7 @@ export const ExploreScreen: React.FC = () => {
     title: 'Liked Meditations',
     description: 'Your favorite meditation sessions',
     category: 'favorites',
-    color: '#FF6B6B',
+    color: '#E74C3C',
     meditationCount: 12,
     isPinned: true,
   };

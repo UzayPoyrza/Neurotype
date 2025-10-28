@@ -6,6 +6,7 @@ export interface MentalHealthModule {
   icon?: string;
   meditationCount: number;
   category: 'disorder' | 'wellness' | 'skill';
+  likedSessions?: any[]; // Optional field for liked sessions
 }
 
 // Category-based color system

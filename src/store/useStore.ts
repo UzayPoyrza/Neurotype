@@ -39,6 +39,7 @@ interface AppState {
   globalBackgroundColor: string;
   currentScreen: 'today' | 'explore' | 'progress' | 'profile' | 'settings' | 'module-detail';
   todayModuleId: string | null;
+  likedSessionIds: string[];
   addSessionDelta: (delta: SessionDelta) => void;
   setFilters: (filters: FilterState) => void;
   toggleReminder: () => void;
@@ -51,9 +52,11 @@ interface AppState {
   setGlobalBackgroundColor: (color: string) => void;
   setCurrentScreen: (screen: 'today' | 'explore' | 'progress' | 'profile' | 'settings' | 'module-detail') => void;
   setTodayModuleId: (moduleId: string | null) => void;
+  toggleLikedSession: (sessionId: string) => void;
+  isSessionLiked: (sessionId: string) => boolean;
 }
 
-export const useStore = create<AppState>((set) => ({
+export const useStore = create<AppState>((set, get) => ({
   userProgress: initialUserProgress,
   filters: {
     modality: 'all',
@@ -69,6 +72,7 @@ export const useStore = create<AppState>((set) => ({
   globalBackgroundColor: '#f2f2f7', // Default iOS background
   currentScreen: 'today',
   todayModuleId: 'anxiety', // Default module
+  likedSessionIds: [],
   
   addSessionDelta: (delta: SessionDelta) => 
     set((state) => ({
@@ -115,5 +119,17 @@ export const useStore = create<AppState>((set) => ({
     set({ currentScreen: screen }),
     
   setTodayModuleId: (moduleId: string | null) => 
-    set({ todayModuleId: moduleId })
+    set({ todayModuleId: moduleId }),
+    
+  toggleLikedSession: (sessionId: string) => 
+    set((state) => ({
+      likedSessionIds: state.likedSessionIds.includes(sessionId)
+        ? state.likedSessionIds.filter(id => id !== sessionId)
+        : [...state.likedSessionIds, sessionId]
+    })),
+    
+  isSessionLiked: (sessionId: string): boolean => {
+    const state = get();
+    return state.likedSessionIds.includes(sessionId);
+  }
 })); 

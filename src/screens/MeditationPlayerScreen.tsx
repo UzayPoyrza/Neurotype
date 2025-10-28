@@ -40,13 +40,14 @@ export const MeditationPlayerScreen: React.FC = () => {
   const [playerState, setPlayerState] = useState<PlayerState>('ready');
   const [currentTime, setCurrentTime] = useState(0);
   const [totalDuration, setTotalDuration] = useState(0);
-  const [isLiked, setIsLiked] = useState(false);
+  const { activeSession, setActiveSession } = useStore();
+  const toggleLikedSession = useStore((state: any) => state.toggleLikedSession);
+  const likedSessionIds = useStore((state: any) => state.likedSessionIds);
+  const isLiked = activeSession ? likedSessionIds.includes(activeSession.id) : false;
   const [showTutorial, setShowTutorial] = useState(false);
   const [emotionalRating, setEmotionalRating] = useState(5);
   const [currentSegment, setCurrentSegment] = useState<string>('');
   const [audioLoaded, setAudioLoaded] = useState(false);
-  
-  const { activeSession, setActiveSession } = useStore();
   const progressAnim = useRef(new Animated.Value(0)).current;
   const playButtonScale = useRef(new Animated.Value(1)).current;
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -301,7 +302,9 @@ export const MeditationPlayerScreen: React.FC = () => {
   };
 
   const handleLike = () => {
-    setIsLiked(!isLiked);
+    if (activeSession) {
+      toggleLikedSession(activeSession.id);
+    }
   };
 
   const handleOptions = () => {

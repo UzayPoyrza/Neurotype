@@ -38,6 +38,7 @@ export const ExploreScreen: React.FC = () => {
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const setGlobalBackgroundColor = useStore(state => state.setGlobalBackgroundColor);
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
+  const likedSessionIds = useStore(state => state.likedSessionIds);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [selectedSort, setSelectedSort] = useState<string>('recents');
@@ -84,19 +85,25 @@ export const ExploreScreen: React.FC = () => {
 
   // Filter and sort modules
   const filteredModules = useMemo(() => {
-    // Create pinned "Liked Meditations" item
+    // Get liked sessions
+    const likedSessions = mockSessions.filter(session => likedSessionIds.includes(session.id));
+    
+    // Create pinned "Liked Meditations" item (always show, even when empty)
     const likedMeditationsItem = {
       id: 'liked-meditations',
       title: 'Liked Meditations',
-      description: 'Your favorite meditation sessions',
-      category: 'favorites',
+      description: likedSessions.length > 0 
+        ? `${likedSessions.length} favorite meditation session${likedSessions.length === 1 ? '' : 's'}`
+        : 'No favorite sessions yet',
+      category: 'wellness' as const, // Use a valid category type
       color: '#E74C3C',
-      meditationCount: 12,
+      meditationCount: likedSessions.length,
       isPinned: true,
+      likedSessions: likedSessions, // Store the actual liked sessions
     };
 
-    // Start with all modules including the pinned item
-    let allModules = [...mentalHealthModules, likedMeditationsItem];
+    // Start with all modules, including the pinned item
+    let allModules = [likedMeditationsItem, ...mentalHealthModules];
 
     // Filter by search query
     if (searchQuery.trim()) {
@@ -150,9 +157,16 @@ export const ExploreScreen: React.FC = () => {
 
     // Return pinned modules first, then regular modules
     return [...pinnedModules, ...regularModules];
-  }, [searchQuery, selectedSort, recentModuleIds]);
+  }, [searchQuery, selectedSort, recentModuleIds, likedSessionIds]);
 
   const handleModulePress = (moduleId: string) => {
+    if (moduleId === 'liked-meditations') {
+      // Handle liked meditations - could navigate to a special screen or show a modal
+      // For now, we'll just add it to recent modules
+      addRecentModule(moduleId);
+      return;
+    }
+    
     addRecentModule(moduleId);
     // Don't change global background color - let the detail screen handle its own background
     navigation.navigate('ModuleDetail', { moduleId });

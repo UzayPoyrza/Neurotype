@@ -89,6 +89,9 @@ export const MeditationPlayerScreen: React.FC = () => {
   const [downloadEnabled, setDownloadEnabled] = useState(false);
   const optionsMenuAnim = useRef(new Animated.Value(0)).current;
   
+  // Dark mode state
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  
   // Gradient background colors
   const [gradientColors, setGradientColors] = useState({ top: '#1a1a1a', bottom: '#1a1a1a', base: '#1a1a1a' });
 
@@ -324,6 +327,11 @@ export const MeditationPlayerScreen: React.FC = () => {
     }).start(() => {
       setShowOptionsMenu(false);
     });
+  };
+
+  const handleScreenTap = () => {
+    // Toggle dark mode when tapping anywhere on the screen
+    setIsDarkMode(!isDarkMode);
   };
 
   const handleSkipForward = () => {
@@ -696,14 +704,14 @@ export const MeditationPlayerScreen: React.FC = () => {
       
       {/* Dynamic gradient background based on module */}
       <LinearGradient
-        colors={[gradientColors.top, gradientColors.bottom]}
+        colors={isDarkMode ? ['#000000', '#000000'] : [gradientColors.top, gradientColors.bottom]}
         style={styles.backgroundGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
       />
       
-      {/* Top Bar */}
-      <View style={styles.topBar}>
+      {/* Top Bar - Hidden in dark mode */}
+      <View style={[styles.topBar, isDarkMode && styles.hiddenElement]}>
         <TouchableOpacity style={styles.topBarButton} onPress={handleBack}>
           <BackIcon size={20} color="#ffffff" />
         </TouchableOpacity>
@@ -728,20 +736,27 @@ export const MeditationPlayerScreen: React.FC = () => {
       </View>
 
       {/* Main Content */}
-      <View style={styles.mainContent}>
-        {/* Session Title */}
-        <View style={styles.titleSection}>
+      <TouchableOpacity 
+        style={styles.mainContent} 
+        onPress={handleScreenTap}
+        activeOpacity={1}
+      >
+        {/* Session Title - Hidden in dark mode */}
+        <View style={[styles.titleSection, isDarkMode && styles.hiddenElement]}>
           <Text style={styles.sessionTitle}>{activeSession.title}</Text>
         </View>
 
-        {/* Artist/Creator */}
-        <View style={styles.artistContainer}>
+        {/* Artist/Creator - Hidden in dark mode */}
+        <View style={[styles.artistContainer, isDarkMode && styles.hiddenElement]}>
           <Text style={styles.artistName}>Prashanti Paz</Text>
         </View>
 
-
-        {/* Progress Bar */}
-        <View style={styles.progressSection}>
+        {/* Progress Bar - Always visible */}
+        <TouchableOpacity 
+          style={styles.progressSection} 
+          onPress={(e) => e.stopPropagation()}
+          activeOpacity={1}
+        >
           <View style={styles.progressContainer}>
             <View style={styles.progressTrack} />
             <Reanimated.View style={[styles.progressFill, progressFillAnimatedStyle]} />
@@ -753,16 +768,16 @@ export const MeditationPlayerScreen: React.FC = () => {
             <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
             <Text style={styles.timeText}>-{formatTime(totalDuration - currentTime)}</Text>
           </View>
-        </View>
+        </TouchableOpacity>
 
-        {/* Player Controls */}
-        <View style={styles.playerControls}>
-          <TouchableOpacity style={styles.controlButton} onPress={handleSkipBackward}>
+        {/* Player Controls - Hidden in dark mode */}
+        <View style={[styles.playerControls, isDarkMode && styles.hiddenElement]}>
+          <TouchableOpacity style={styles.controlButton} onPress={(e) => { e.stopPropagation(); handleSkipBackward(); }}>
             <SkipBackward10Icon size={60} color="#ffffff" />
           </TouchableOpacity>
           
           <Animated.View style={{ transform: [{ scale: playButtonScale }] }}>
-            <TouchableOpacity style={styles.playButton} onPress={handlePlayPause}>
+            <TouchableOpacity style={styles.playButton} onPress={(e) => { e.stopPropagation(); handlePlayPause(); }}>
               {!audioLoaded && playerState === 'playing' ? (
                 <ActivityIndicator size="small" color="#1a1a1a" />
               ) : playerState === 'playing' ? (
@@ -773,22 +788,29 @@ export const MeditationPlayerScreen: React.FC = () => {
             </TouchableOpacity>
           </Animated.View>
           
-          <TouchableOpacity style={styles.controlButton} onPress={handleSkipForward}>
+          <TouchableOpacity style={styles.controlButton} onPress={(e) => { e.stopPropagation(); handleSkipForward(); }}>
             <SkipForward10Icon size={60} color="#ffffff" />
           </TouchableOpacity>
         </View>
-      </View>
+      </TouchableOpacity>
 
       {/* Bottom Section - Fixed Height */}
       <View style={styles.bottomSection}>
         {/* Emotional Feedback Section - Always rendered, shown/hidden with opacity */}
-        <Animated.View style={[
-          styles.emotionalFeedbackSection,
-          { 
-            opacity: playerState === 'playing' ? 1 : 0,
-            pointerEvents: playerState === 'playing' ? 'auto' : 'none'
-          }
-        ]}>
+        <TouchableOpacity 
+          style={[
+            styles.emotionalFeedbackSection,
+            { 
+              opacity: playerState === 'playing' ? 1 : 0,
+              pointerEvents: playerState === 'playing' ? 'auto' : 'none',
+              backgroundColor: isDarkMode ? 'transparent' : 'rgba(255, 255, 255, 0.15)',
+              borderWidth: isDarkMode ? 0 : 1,
+              borderColor: isDarkMode ? 'transparent' : 'rgba(255, 255, 255, 0.1)',
+            }
+          ]}
+          onPress={(e) => e.stopPropagation()}
+          activeOpacity={1}
+        >
           <Text style={styles.emotionalFeedbackTitle}>How do you feel?</Text>
           
           {/* Confirm Button */}
@@ -857,23 +879,27 @@ export const MeditationPlayerScreen: React.FC = () => {
               <Text style={styles.emotionalEndLabel}>Great</Text>
             </View>
           </View>
-        </Animated.View>
+        </TouchableOpacity>
 
         {/* Action Buttons Section - Always rendered, shown/hidden with opacity */}
-        <Animated.View style={[
-          styles.actionButtonsSection,
-          { 
-            opacity: (playerState === 'paused' || playerState === 'finished') ? 1 : 0,
-            pointerEvents: (playerState === 'paused' || playerState === 'finished') ? 'auto' : 'none'
-          }
-        ]}>
-          <TouchableOpacity style={styles.finishButton} onPress={handleFinish}>
+        <TouchableOpacity 
+          style={[
+            styles.actionButtonsSection,
+            { 
+              opacity: (playerState === 'paused' || playerState === 'finished') ? 1 : 0,
+              pointerEvents: (playerState === 'paused' || playerState === 'finished') ? 'auto' : 'none'
+            }
+          ]}
+          onPress={(e) => e.stopPropagation()}
+          activeOpacity={1}
+        >
+          <TouchableOpacity style={styles.finishButton} onPress={(e) => { e.stopPropagation(); handleFinish(); }}>
             <Text style={styles.finishButtonText}>Finish</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.discardButton} onPress={handleDiscard}>
+          <TouchableOpacity style={styles.discardButton} onPress={(e) => { e.stopPropagation(); handleDiscard(); }}>
             <Text style={styles.discardButtonText}>Discard session</Text>
           </TouchableOpacity>
-        </Animated.View>
+        </TouchableOpacity>
       </View>
 
       {/* Options Menu Bottom Sheet */}
@@ -1393,5 +1419,9 @@ const styles = StyleSheet.create({
   },
   optionsMenuToggleThumbActive: {
     transform: [{ translateX: 20 }],
+  },
+  hiddenElement: {
+    opacity: 0,
+    pointerEvents: 'none',
   },
 });

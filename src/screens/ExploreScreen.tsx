@@ -582,7 +582,7 @@ const styles = StyleSheet.create({
   },
   pinnedModuleTitle: {
     fontSize: 17,
-    fontWeight: '800',
+    fontWeight: '600',
     color: '#000000',
     marginBottom: 4,
     lineHeight: 20,

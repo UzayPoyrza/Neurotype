@@ -113,6 +113,10 @@ export const MeditationPlayerScreen: React.FC = () => {
     }
   }, []);
 
+  // Prerender state to ensure screen is fully styled before unblur
+  const [isPrerendered, setIsPrerendered] = useState(false);
+  const [layoutComplete, setLayoutComplete] = useState(false);
+
   useEffect(() => {
     if (activeSession) {
       // Check if this is a transition from tutorial (no isTutorial flag means it came from tutorial)
@@ -173,19 +177,27 @@ export const MeditationPlayerScreen: React.FC = () => {
         transitionAnim.setValue(1);
         setIsTransitioning(true);
         
-        // Unblur animation
-        setTimeout(() => {
-          Animated.timing(transitionAnim, {
-            toValue: 0,
-            duration: 500,
-            useNativeDriver: true,
-          }).start(() => {
-            setIsTransitioning(false);
-          });
-        }, 100);
+        // Wait for layout to complete before starting unblur
+        if (layoutComplete) {
+          setIsPrerendered(true);
+          
+          // Then start unblur animation
+          setTimeout(() => {
+            Animated.timing(transitionAnim, {
+              toValue: 0,
+              duration: 500,
+              useNativeDriver: true,
+            }).start(() => {
+              setIsTransitioning(false);
+            });
+          }, 50);
+        }
+      } else {
+        // Not transitioning, mark as prerendered immediately
+        setIsPrerendered(true);
       }
     }
-  }, [activeSession, thumbPosition, isTransitioning]);
+  }, [activeSession, thumbPosition, isTransitioning, layoutComplete]);
 
   // Update gradient colors based on session progress
   useEffect(() => {
@@ -844,7 +856,12 @@ export const MeditationPlayerScreen: React.FC = () => {
   });
 
   return (
-    <GestureHandlerRootView style={styles.container}>
+    <GestureHandlerRootView 
+      style={styles.container}
+      onLayout={() => {
+        setLayoutComplete(true);
+      }}
+    >
       <SafeAreaView style={styles.container}>
         <StatusBar 
           barStyle="light-content" 

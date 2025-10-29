@@ -216,31 +216,33 @@ export const TutorialPlayerScreen: React.FC = () => {
     setIsTransitioning(true);
     Animated.timing(transitionAnim, {
       toValue: 1,
-      duration: 300,
+      duration: 500,
       useNativeDriver: true,
     }).start(() => {
-      // Stop tutorial audio and start actual meditation
+      // Stop tutorial audio
       audioPlayerRef.current.stop();
       
       // Reset animations
       completionAnim.setValue(0);
       completionContentAnim.setValue(0);
       
-      // Start the actual meditation (remove tutorial flag)
-      if (activeSession) {
-        const normalSession = { ...activeSession };
-        delete normalSession.isTutorial;
-        setActiveSession(normalSession);
-      }
-      
-      // Fade out the blur effect
-      Animated.timing(transitionAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start(() => {
-        setIsTransitioning(false);
-      });
+      // Start the actual meditation (remove tutorial flag) after a brief delay
+      setTimeout(() => {
+        if (activeSession) {
+          const normalSession = { ...activeSession };
+          delete normalSession.isTutorial;
+          setActiveSession(normalSession);
+        }
+        
+        // Fade out the blur effect after session change
+        Animated.timing(transitionAnim, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        }).start(() => {
+          setIsTransitioning(false);
+        });
+      }, 150);
     });
   };
 
@@ -255,28 +257,30 @@ export const TutorialPlayerScreen: React.FC = () => {
     setIsTransitioning(true);
     Animated.timing(transitionAnim, {
       toValue: 1,
-      duration: 300,
+      duration: 500,
       useNativeDriver: true,
     }).start(() => {
       // Reset animations
       completionAnim.setValue(0);
       completionContentAnim.setValue(0);
       
-      // Start the actual meditation (remove tutorial flag)
-      if (activeSession) {
-        const normalSession = { ...activeSession };
-        delete normalSession.isTutorial;
-        setActiveSession(normalSession);
-      }
-      
-      // Fade out the blur effect
-      Animated.timing(transitionAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start(() => {
-        setIsTransitioning(false);
-      });
+      // Start the actual meditation (remove tutorial flag) after a brief delay
+      setTimeout(() => {
+        if (activeSession) {
+          const normalSession = { ...activeSession };
+          delete normalSession.isTutorial;
+          setActiveSession(normalSession);
+        }
+        
+        // Fade out the blur effect after session change
+        Animated.timing(transitionAnim, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        }).start(() => {
+          setIsTransitioning(false);
+        });
+      }, 150);
     });
   };
 

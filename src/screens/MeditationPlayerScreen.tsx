@@ -344,22 +344,25 @@ export const MeditationPlayerScreen: React.FC = () => {
       setIsTransitioning(true);
       Animated.timing(transitionAnim, {
         toValue: 1,
-        duration: 300,
+        duration: 500,
         useNativeDriver: true,
       }).start(() => {
-        if (activeSession) {
-          const tutorialSession = { ...activeSession, isTutorial: true };
-          setActiveSession(tutorialSession);
-        }
-        
-        // Fade out the blur effect
-        Animated.timing(transitionAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }).start(() => {
-          setIsTransitioning(false);
-        });
+        // Switch to tutorial mode after a brief delay
+        setTimeout(() => {
+          if (activeSession) {
+            const tutorialSession = { ...activeSession, isTutorial: true };
+            setActiveSession(tutorialSession);
+          }
+          
+          // Fade out the blur effect after session change
+          Animated.timing(transitionAnim, {
+            toValue: 0,
+            duration: 500,
+            useNativeDriver: true,
+          }).start(() => {
+            setIsTransitioning(false);
+          });
+        }, 150);
       });
     }
   };

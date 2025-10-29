@@ -216,7 +216,7 @@ export const TutorialPlayerScreen: React.FC = () => {
     setIsTransitioning(true);
     Animated.timing(transitionAnim, {
       toValue: 1,
-      duration: 600,
+      duration: 300,
       useNativeDriver: true,
     }).start(() => {
       // Stop tutorial audio and start actual meditation
@@ -232,6 +232,15 @@ export const TutorialPlayerScreen: React.FC = () => {
         delete normalSession.isTutorial;
         setActiveSession(normalSession);
       }
+      
+      // Fade out the blur effect
+      Animated.timing(transitionAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        setIsTransitioning(false);
+      });
     });
   };
 
@@ -246,7 +255,7 @@ export const TutorialPlayerScreen: React.FC = () => {
     setIsTransitioning(true);
     Animated.timing(transitionAnim, {
       toValue: 1,
-      duration: 600,
+      duration: 300,
       useNativeDriver: true,
     }).start(() => {
       // Reset animations
@@ -259,6 +268,15 @@ export const TutorialPlayerScreen: React.FC = () => {
         delete normalSession.isTutorial;
         setActiveSession(normalSession);
       }
+      
+      // Fade out the blur effect
+      Animated.timing(transitionAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        setIsTransitioning(false);
+      });
     });
   };
 

@@ -60,6 +60,10 @@ export const TutorialPlayerScreen: React.FC = () => {
   const completionAnim = useRef(new Animated.Value(0)).current;
   const completionContentAnim = useRef(new Animated.Value(0)).current;
   
+  // Transition state
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const transitionAnim = useRef(new Animated.Value(0)).current;
+  
   // Gradient background colors - different shade for tutorial
   const [gradientColors, setGradientColors] = useState({ top: '#2a2a2a', bottom: '#2a2a2a', base: '#2a2a2a' });
 
@@ -207,19 +211,27 @@ export const TutorialPlayerScreen: React.FC = () => {
   };
 
   const handleSkipTutorial = () => {
-    // Stop tutorial audio and start actual meditation
-    audioPlayerRef.current.stop();
-    
-    // Reset animations
-    completionAnim.setValue(0);
-    completionContentAnim.setValue(0);
-    
-    // Start the actual meditation (remove tutorial flag)
-    if (activeSession) {
-      const normalSession = { ...activeSession };
-      delete normalSession.isTutorial;
-      setActiveSession(normalSession);
-    }
+    // Start transition animation
+    setIsTransitioning(true);
+    Animated.timing(transitionAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start(() => {
+      // Stop tutorial audio and start actual meditation
+      audioPlayerRef.current.stop();
+      
+      // Reset animations
+      completionAnim.setValue(0);
+      completionContentAnim.setValue(0);
+      
+      // Start the actual meditation (remove tutorial flag)
+      if (activeSession) {
+        const normalSession = { ...activeSession };
+        delete normalSession.isTutorial;
+        setActiveSession(normalSession);
+      }
+    });
   };
 
   const handleDiscardSession = () => {
@@ -229,16 +241,24 @@ export const TutorialPlayerScreen: React.FC = () => {
   };
 
   const handleStartMeditation = () => {
-    // Reset animations
-    completionAnim.setValue(0);
-    completionContentAnim.setValue(0);
-    
-    // Start the actual meditation (remove tutorial flag)
-    if (activeSession) {
-      const normalSession = { ...activeSession };
-      delete normalSession.isTutorial;
-      setActiveSession(normalSession);
-    }
+    // Start transition animation
+    setIsTransitioning(true);
+    Animated.timing(transitionAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start(() => {
+      // Reset animations
+      completionAnim.setValue(0);
+      completionContentAnim.setValue(0);
+      
+      // Start the actual meditation (remove tutorial flag)
+      if (activeSession) {
+        const normalSession = { ...activeSession };
+        delete normalSession.isTutorial;
+        setActiveSession(normalSession);
+      }
+    });
   };
 
   const handleBack = () => {
@@ -453,6 +473,18 @@ export const TutorialPlayerScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Transition Overlay */}
+      {isTransitioning && (
+        <Animated.View 
+          style={[
+            styles.transitionOverlay,
+            {
+              opacity: transitionAnim,
+            }
+          ]}
+        />
+      )}
 
       {/* Tutorial Completion Screen */}
       {showCompletionScreen && (
@@ -732,5 +764,14 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
     fontSize: 18,
     fontWeight: '600',
+  },
+  transitionOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    zIndex: 2000,
   },
 });

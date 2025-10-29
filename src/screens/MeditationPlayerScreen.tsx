@@ -95,6 +95,10 @@ export const MeditationPlayerScreen: React.FC = () => {
   const darkModeAnim = useRef(new Animated.Value(0)).current;
   const darkModeBackgroundAnim = useRef(new Animated.Value(0)).current;
   
+  // Transition state
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const transitionAnim = useRef(new Animated.Value(0)).current;
+  
   // Idle timer for auto dark mode
   const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
   const IDLE_TIMEOUT = 10000; // 10 seconds
@@ -335,11 +339,18 @@ export const MeditationPlayerScreen: React.FC = () => {
       // Skip tutorial - go back to normal player
       setShowTutorial(false);
     } else {
-      // Do tutorial - switch to tutorial mode
-      if (activeSession) {
-        const tutorialSession = { ...activeSession, isTutorial: true };
-        setActiveSession(tutorialSession);
-      }
+      // Do tutorial - switch to tutorial mode with transition
+      setIsTransitioning(true);
+      Animated.timing(transitionAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }).start(() => {
+        if (activeSession) {
+          const tutorialSession = { ...activeSession, isTutorial: true };
+          setActiveSession(tutorialSession);
+        }
+      });
     }
   };
 
@@ -1061,6 +1072,18 @@ export const MeditationPlayerScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
+      {/* Transition Overlay */}
+      {isTransitioning && (
+        <Animated.View 
+          style={[
+            styles.transitionOverlay,
+            {
+              opacity: transitionAnim,
+            }
+          ]}
+        />
+      )}
+
       {/* Options Menu Bottom Sheet */}
       {showOptionsMenu && (
         <View style={styles.optionsMenuOverlay}>
@@ -1613,6 +1636,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
     borderRadius: 12,
     padding: 16,
+  },
+  transitionOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    zIndex: 2000,
   },
 });
 

@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { 
   GestureHandlerRootView,
   Gesture,
@@ -483,7 +484,13 @@ export const TutorialPlayerScreen: React.FC = () => {
               opacity: transitionAnim,
             }
           ]}
-        />
+        >
+          <BlurView
+            intensity={80}
+            tint="dark"
+            style={styles.blurView}
+          />
+        </Animated.View>
       )}
 
       {/* Tutorial Completion Screen */}
@@ -771,7 +778,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     zIndex: 2000,
+  },
+  blurView: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
   },
 });

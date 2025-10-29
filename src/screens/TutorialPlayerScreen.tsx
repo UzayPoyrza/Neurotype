@@ -40,7 +40,7 @@ export const TutorialPlayerScreen: React.FC = () => {
   const [playerState, setPlayerState] = useState<PlayerState>('ready');
   const [currentTime, setCurrentTime] = useState(0);
   const [totalDuration, setTotalDuration] = useState(0);
-  const { activeSession, setActiveSession } = useStore();
+  const { activeSession, setActiveSession, isTransitioning, setIsTransitioning } = useStore();
   const [currentSegment, setCurrentSegment] = useState<string>('');
   const [audioLoaded, setAudioLoaded] = useState(false);
   const progressAnim = useRef(new Animated.Value(0)).current;
@@ -62,14 +62,23 @@ export const TutorialPlayerScreen: React.FC = () => {
   const completionContentAnim = useRef(new Animated.Value(0)).current;
   
   // Transition state
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const transitionAnim = useRef(new Animated.Value(0)).current;
   
   // Gradient background colors - different shade for tutorial
   const [gradientColors, setGradientColors] = useState({ top: '#2a2a2a', bottom: '#2a2a2a', base: '#2a2a2a' });
 
+  // Apply blur immediately on mount if transitioning to prevent visual glitch
+  useEffect(() => {
+    if (isTransitioning && activeSession && activeSession.isTutorial) {
+      transitionAnim.setValue(1);
+    }
+  }, []);
+
   useEffect(() => {
     if (activeSession) {
+      // Check if this is a transition from meditation (isTutorial flag means it came from meditation)
+      const isFromMeditation = activeSession.isTutorial && isTransitioning;
+      
       // Update gradient colors based on session goal with darker shade for tutorial
       const baseGradient = createMeditationPlayerBackground(activeSession.goal, 0);
       setGradientColors({
@@ -104,8 +113,26 @@ export const TutorialPlayerScreen: React.FC = () => {
         thumbPosition.value = 0;
         progressFillWidth.value = 0;
       }
+      
+      // If coming from meditation, start unblur animation
+      if (isFromMeditation) {
+        // Start with blur already at full intensity
+        transitionAnim.setValue(1);
+        setIsTransitioning(true);
+        
+        // Unblur animation
+        setTimeout(() => {
+          Animated.timing(transitionAnim, {
+            toValue: 0,
+            duration: 500,
+            useNativeDriver: true,
+          }).start(() => {
+            setIsTransitioning(false);
+          });
+        }, 100);
+      }
     }
-  }, [activeSession, thumbPosition]);
+  }, [activeSession, thumbPosition, isTransitioning]);
 
   useEffect(() => {
     if (playerState === 'playing' && currentTime < totalDuration) {
@@ -226,23 +253,14 @@ export const TutorialPlayerScreen: React.FC = () => {
       completionAnim.setValue(0);
       completionContentAnim.setValue(0);
       
-      // Start the actual meditation (remove tutorial flag) after a brief delay
-      setTimeout(() => {
-        if (activeSession) {
-          const normalSession = { ...activeSession };
-          delete normalSession.isTutorial;
-          setActiveSession(normalSession);
-        }
-        
-        // Fade out the blur effect after session change
-        Animated.timing(transitionAnim, {
-          toValue: 0,
-          duration: 500,
-          useNativeDriver: true,
-        }).start(() => {
-          setIsTransitioning(false);
-        });
-      }, 150);
+      // Switch to meditation mode while still blurred
+      if (activeSession) {
+        const normalSession = { ...activeSession };
+        delete normalSession.isTutorial;
+        setActiveSession(normalSession);
+      }
+      
+      // The new meditation screen will handle the unblur animation
     });
   };
 
@@ -264,23 +282,14 @@ export const TutorialPlayerScreen: React.FC = () => {
       completionAnim.setValue(0);
       completionContentAnim.setValue(0);
       
-      // Start the actual meditation (remove tutorial flag) after a brief delay
-      setTimeout(() => {
-        if (activeSession) {
-          const normalSession = { ...activeSession };
-          delete normalSession.isTutorial;
-          setActiveSession(normalSession);
-        }
-        
-        // Fade out the blur effect after session change
-        Animated.timing(transitionAnim, {
-          toValue: 0,
-          duration: 500,
-          useNativeDriver: true,
-        }).start(() => {
-          setIsTransitioning(false);
-        });
-      }, 150);
+      // Switch to meditation mode while still blurred
+      if (activeSession) {
+        const normalSession = { ...activeSession };
+        delete normalSession.isTutorial;
+        setActiveSession(normalSession);
+      }
+      
+      // The new meditation screen will handle the unblur animation
     });
   };
 
@@ -497,23 +506,22 @@ export const TutorialPlayerScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Transition Overlay */}
-      {isTransitioning && (
-        <Animated.View 
-          style={[
-            styles.transitionOverlay,
-            {
-              opacity: transitionAnim,
-            }
-          ]}
-        >
-          <BlurView
-            intensity={80}
-            tint="dark"
-            style={styles.blurView}
-          />
-        </Animated.View>
-      )}
+      {/* Transition Overlay - Always present to prevent glitch */}
+      <Animated.View 
+        style={[
+          styles.transitionOverlay,
+          {
+            opacity: transitionAnim,
+            pointerEvents: isTransitioning ? 'auto' : 'none',
+          }
+        ]}
+      >
+        <BlurView
+          intensity={80}
+          tint="dark"
+          style={styles.blurView}
+        />
+      </Animated.View>
 
       {/* Tutorial Completion Screen */}
       {showCompletionScreen && (

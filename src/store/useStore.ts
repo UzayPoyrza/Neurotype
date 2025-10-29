@@ -40,6 +40,7 @@ interface AppState {
   currentScreen: 'today' | 'explore' | 'progress' | 'profile' | 'settings' | 'module-detail';
   todayModuleId: string | null;
   likedSessionIds: string[];
+  isTransitioning: boolean;
   addSessionDelta: (delta: SessionDelta) => void;
   setFilters: (filters: FilterState) => void;
   toggleReminder: () => void;
@@ -54,6 +55,7 @@ interface AppState {
   setTodayModuleId: (moduleId: string | null) => void;
   toggleLikedSession: (sessionId: string) => void;
   isSessionLiked: (sessionId: string) => boolean;
+  setIsTransitioning: (isTransitioning: boolean) => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -73,6 +75,7 @@ export const useStore = create<AppState>((set, get) => ({
   currentScreen: 'today',
   todayModuleId: 'anxiety', // Default module
   likedSessionIds: [],
+  isTransitioning: false,
   
   addSessionDelta: (delta: SessionDelta) => 
     set((state) => ({
@@ -131,5 +134,8 @@ export const useStore = create<AppState>((set, get) => ({
   isSessionLiked: (sessionId: string): boolean => {
     const state = get();
     return state.likedSessionIds.includes(sessionId);
-  }
+  },
+  
+  setIsTransitioning: (isTransitioning: boolean) => 
+    set({ isTransitioning })
 })); 

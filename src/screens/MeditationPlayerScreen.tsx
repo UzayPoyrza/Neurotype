@@ -41,7 +41,7 @@ export const MeditationPlayerScreen: React.FC = () => {
   const [playerState, setPlayerState] = useState<PlayerState>('ready');
   const [currentTime, setCurrentTime] = useState(0);
   const [totalDuration, setTotalDuration] = useState(0);
-  const { activeSession, setActiveSession } = useStore();
+  const { activeSession, setActiveSession, isTransitioning, setIsTransitioning } = useStore();
   const toggleLikedSession = useStore((state: any) => state.toggleLikedSession);
   const likedSessionIds = useStore((state: any) => state.likedSessionIds);
   const isLiked = activeSession ? likedSessionIds.includes(activeSession.id) : false;
@@ -97,7 +97,6 @@ export const MeditationPlayerScreen: React.FC = () => {
   const darkModeBackgroundAnim = useRef(new Animated.Value(0)).current;
   
   // Transition state
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const transitionAnim = useRef(new Animated.Value(0)).current;
   
   // Idle timer for auto dark mode
@@ -107,8 +106,18 @@ export const MeditationPlayerScreen: React.FC = () => {
   // Gradient background colors
   const [gradientColors, setGradientColors] = useState({ top: '#1a1a1a', bottom: '#1a1a1a', base: '#1a1a1a' });
 
+  // Apply blur immediately on mount if transitioning to prevent visual glitch
+  useEffect(() => {
+    if (isTransitioning && activeSession && !activeSession.isTutorial) {
+      transitionAnim.setValue(1);
+    }
+  }, []);
+
   useEffect(() => {
     if (activeSession) {
+      // Check if this is a transition from tutorial (no isTutorial flag means it came from tutorial)
+      const isFromTutorial = !activeSession.isTutorial && isTransitioning;
+      
       // Update gradient colors based on session goal
       const newGradientColors = createMeditationPlayerBackground(activeSession.goal, 0);
       setGradientColors(newGradientColors);
@@ -126,7 +135,7 @@ export const MeditationPlayerScreen: React.FC = () => {
         
         // Initialize emotional feedback position (start at center)
         // Will be set properly once actualEmotionalBarWidth is measured
-        emotionalThumbPosition.value = 0; // Will be updated when width is measured
+        // Don't reset to 0 - let the width measurement handle positioning
         setEmotionalRating(3); // Start at "okay"
         setCurrentEmotionalLabel(''); // No initial label - only show when interacted
         setHasUserInteracted(false); // Reset interaction state
@@ -150,15 +159,33 @@ export const MeditationPlayerScreen: React.FC = () => {
         
         // Initialize emotional feedback position (start at center)
         // Will be set properly once actualEmotionalBarWidth is measured
-        emotionalThumbPosition.value = 0; // Will be updated when width is measured
+        // Don't reset to 0 - let the width measurement handle positioning
         setEmotionalRating(3); // Start at "okay"
         setCurrentEmotionalLabel(''); // No initial label - only show when interacted
         setHasUserInteracted(false); // Reset interaction state
         hasUserInteractedValue.value = false; // Reset shared value
         setProgressBarColor('rgba(255, 255, 255, 0.8)'); // Start with high opacity white (neutral)
       }
+      
+      // If coming from tutorial, start unblur animation
+      if (isFromTutorial) {
+        // Start with blur already at full intensity
+        transitionAnim.setValue(1);
+        setIsTransitioning(true);
+        
+        // Unblur animation
+        setTimeout(() => {
+          Animated.timing(transitionAnim, {
+            toValue: 0,
+            duration: 500,
+            useNativeDriver: true,
+          }).start(() => {
+            setIsTransitioning(false);
+          });
+        }, 100);
+      }
     }
-  }, [activeSession, thumbPosition]);
+  }, [activeSession, thumbPosition, isTransitioning]);
 
   // Update gradient colors based on session progress
   useEffect(() => {
@@ -347,22 +374,13 @@ export const MeditationPlayerScreen: React.FC = () => {
         duration: 500,
         useNativeDriver: true,
       }).start(() => {
-        // Switch to tutorial mode after a brief delay
-        setTimeout(() => {
-          if (activeSession) {
-            const tutorialSession = { ...activeSession, isTutorial: true };
-            setActiveSession(tutorialSession);
-          }
-          
-          // Fade out the blur effect after session change
-          Animated.timing(transitionAnim, {
-            toValue: 0,
-            duration: 500,
-            useNativeDriver: true,
-          }).start(() => {
-            setIsTransitioning(false);
-          });
-        }, 150);
+        // Switch to tutorial mode while still blurred
+        if (activeSession) {
+          const tutorialSession = { ...activeSession, isTutorial: true };
+          setActiveSession(tutorialSession);
+        }
+        
+        // The new tutorial screen will handle the unblur animation
       });
     }
   };
@@ -1085,23 +1103,22 @@ export const MeditationPlayerScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Transition Overlay */}
-      {isTransitioning && (
-        <Animated.View 
-          style={[
-            styles.transitionOverlay,
-            {
-              opacity: transitionAnim,
-            }
-          ]}
-        >
-          <BlurView
-            intensity={80}
-            tint="dark"
-            style={styles.blurView}
-          />
-        </Animated.View>
-      )}
+      {/* Transition Overlay - Always present to prevent glitch */}
+      <Animated.View 
+        style={[
+          styles.transitionOverlay,
+          {
+            opacity: transitionAnim,
+            pointerEvents: isTransitioning ? 'auto' : 'none',
+          }
+        ]}
+      >
+        <BlurView
+          intensity={80}
+          tint="dark"
+          style={styles.blurView}
+        />
+      </Animated.View>
 
       {/* Options Menu Bottom Sheet */}
       {showOptionsMenu && (

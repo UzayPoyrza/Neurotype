@@ -58,6 +58,7 @@ export const TutorialPlayerScreen: React.FC = () => {
   // Tutorial completion state
   const [showCompletionScreen, setShowCompletionScreen] = useState(false);
   const completionAnim = useRef(new Animated.Value(0)).current;
+  const completionContentAnim = useRef(new Animated.Value(0)).current;
   
   // Gradient background colors - different shade for tutorial
   const [gradientColors, setGradientColors] = useState({ top: '#2a2a2a', bottom: '#2a2a2a', base: '#2a2a2a' });
@@ -124,11 +125,19 @@ export const TutorialPlayerScreen: React.FC = () => {
             setPlayerState('finished');
             // Show completion screen
             setShowCompletionScreen(true);
-            Animated.timing(completionAnim, {
-              toValue: 1,
-              duration: 500,
-              useNativeDriver: true,
-            }).start();
+            Animated.parallel([
+              Animated.timing(completionAnim, {
+                toValue: 1,
+                duration: 500,
+                useNativeDriver: true,
+              }),
+              Animated.timing(completionContentAnim, {
+                toValue: 1,
+                duration: 800,
+                delay: 200, // Start content animation after background
+                useNativeDriver: true,
+              })
+            ]).start();
             return totalDuration;
           }
           return newTime;
@@ -209,6 +218,19 @@ export const TutorialPlayerScreen: React.FC = () => {
     setActiveSession(null);
   };
 
+  const handleStartMeditation = () => {
+    // Reset animations
+    completionAnim.setValue(0);
+    completionContentAnim.setValue(0);
+    
+    // Start the actual meditation
+    setShowCompletionScreen(false);
+    setPlayerState('playing');
+    setCurrentTime(0);
+    // Reset to normal player mode
+    setActiveSession(activeSession);
+  };
+
   const handleBack = () => {
     // Stop audio and close
     audioPlayerRef.current.stop();
@@ -234,11 +256,19 @@ export const TutorialPlayerScreen: React.FC = () => {
     if (newTime >= totalDuration) {
       setPlayerState('finished');
       setShowCompletionScreen(true);
-      Animated.timing(completionAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }).start();
+      Animated.parallel([
+        Animated.timing(completionAnim, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(completionContentAnim, {
+          toValue: 1,
+          duration: 800,
+          delay: 200, // Start content animation after background
+          useNativeDriver: true,
+        })
+      ]).start();
     }
   };
 
@@ -424,21 +454,27 @@ export const TutorialPlayerScreen: React.FC = () => {
             }
           ]}
         >
-          <View style={styles.completionContent}>
-            <TouchableOpacity style={styles.completionStartButton} onPress={() => {
-              // Start the actual meditation
-              setShowCompletionScreen(false);
-              setPlayerState('playing');
-              setCurrentTime(0);
-              // Reset to normal player mode
-              setActiveSession(activeSession);
-            }}>
+          <Animated.View 
+            style={[
+              styles.completionContent,
+              {
+                opacity: completionContentAnim,
+                transform: [{
+                  translateY: completionContentAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [30, 0],
+                  })
+                }]
+              }
+            ]}
+          >
+            <TouchableOpacity style={styles.completionStartButton} onPress={handleStartMeditation}>
               <Text style={styles.completionStartButtonText}>Start meditation</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.completionDiscardButton} onPress={handleDiscardSession}>
               <Text style={styles.completionDiscardButtonText}>Discard session</Text>
             </TouchableOpacity>
-          </View>
+          </Animated.View>
         </Animated.View>
       )}
       </SafeAreaView>

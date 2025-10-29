@@ -87,6 +87,7 @@ export const MeditationPlayerScreen: React.FC = () => {
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [sleepModeEnabled, setSleepModeEnabled] = useState(false);
   const [downloadEnabled, setDownloadEnabled] = useState(false);
+  const [idleTimerEnabled, setIdleTimerEnabled] = useState(true);
   const optionsMenuAnim = useRef(new Animated.Value(0)).current;
   
   // Dark mode state
@@ -254,7 +255,7 @@ export const MeditationPlayerScreen: React.FC = () => {
   // Idle timer management
   useEffect(() => {
     // Start idle timer when component mounts and player is playing
-    if (playerState === 'playing' && !isDarkMode) {
+    if (playerState === 'playing' && !isDarkMode && idleTimerEnabled) {
       resetIdleTimer();
     }
 
@@ -262,14 +263,14 @@ export const MeditationPlayerScreen: React.FC = () => {
     return () => {
       clearIdleTimer();
     };
-  }, [playerState, isDarkMode]);
+  }, [playerState, isDarkMode, idleTimerEnabled]);
 
   // Reset idle timer on specific user interactions (not on time updates)
   useEffect(() => {
-    if (playerState === 'playing' && !isDarkMode) {
+    if (playerState === 'playing' && !isDarkMode && idleTimerEnabled) {
       resetIdleTimer();
     }
-  }, [emotionalRating, showTutorial, isLiked]);
+  }, [emotionalRating, showTutorial, isLiked, idleTimerEnabled]);
 
 
   const formatTime = (seconds: number) => {
@@ -385,8 +386,8 @@ export const MeditationPlayerScreen: React.FC = () => {
       clearTimeout(idleTimerRef.current);
     }
     
-    // Only start timer if not already in dark mode
-    if (!isDarkMode) {
+    // Only start timer if enabled, not already in dark mode, and player is playing
+    if (idleTimerEnabled && !isDarkMode && playerState === 'playing') {
       console.log('Starting idle timer for dark mode...');
       idleTimerRef.current = setTimeout(() => {
         console.log('Idle timer triggered - activating dark mode');
@@ -1111,6 +1112,32 @@ export const MeditationPlayerScreen: React.FC = () => {
                   <View style={[
                     styles.optionsMenuToggleThumb,
                     downloadEnabled && styles.optionsMenuToggleThumbActive
+                  ]} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Idle Timer Toggle */}
+              <View style={styles.optionsMenuItem}>
+                <View style={styles.optionsMenuTextContainer}>
+                  <Text style={styles.optionsMenuLabel}>Auto Dark Mode</Text>
+                  <Text style={styles.optionsMenuDescription}>Automatically activate dark mode after 10 seconds of inactivity</Text>
+                </View>
+                <TouchableOpacity
+                  style={[
+                    styles.optionsMenuToggle,
+                    idleTimerEnabled && styles.optionsMenuToggleActive
+                  ]}
+                  onPress={() => {
+                    setIdleTimerEnabled(!idleTimerEnabled);
+                    // Clear timer if disabling
+                    if (idleTimerEnabled) {
+                      clearIdleTimer();
+                    }
+                  }}
+                >
+                  <View style={[
+                    styles.optionsMenuToggleThumb,
+                    idleTimerEnabled && styles.optionsMenuToggleThumbActive
                   ]} />
                 </TouchableOpacity>
               </View>

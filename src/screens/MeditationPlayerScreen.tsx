@@ -75,6 +75,7 @@ export const MeditationPlayerScreen: React.FC = () => {
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const hasUserInteractedValue = useSharedValue(false);
   const progressBarWidthAnim = useRef(new Animated.Value(0)).current;
+  const emotionalFeedbackOpacity = useRef(new Animated.Value(0)).current;
   const previousColorRef = useRef('rgba(255, 255, 255, 0.8)');
   
   // Confirmation system state
@@ -130,7 +131,7 @@ export const MeditationPlayerScreen: React.FC = () => {
       if (audioData) {
         setTotalDuration(audioData.duration);
         setCurrentTime(0);
-        setPlayerState('playing'); // Start immediately
+        setAudioLoaded(false);
         setCurrentSegment(audioData.segments[0]?.text || '');
         
         // Initialize thumb position and progress fill
@@ -146,15 +147,27 @@ export const MeditationPlayerScreen: React.FC = () => {
         hasUserInteractedValue.value = false; // Reset shared value
         setProgressBarColor('rgba(255, 255, 255, 0.8)'); // Start with high opacity white (neutral)
         
+        // Reset emotional feedback opacity
+        emotionalFeedbackOpacity.setValue(0);
+        
         // Load audio in background and start playing when ready
         audioPlayerRef.current.loadAudio(audioData.backgroundAudio).then(() => {
           setAudioLoaded(true);
+          setPlayerState('playing');
           audioPlayerRef.current.play();
+          
+          // Animate emotional feedback section in
+          Animated.timing(emotionalFeedbackOpacity, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }).start();
         });
       } else {
         // Fallback to duration in minutes
         setTotalDuration(activeSession.durationMin * 60);
         setCurrentTime(0);
+        setAudioLoaded(true);
         setPlayerState('playing'); // Auto-start even without audio data
         
         // Initialize thumb position and progress fill
@@ -169,6 +182,16 @@ export const MeditationPlayerScreen: React.FC = () => {
         setHasUserInteracted(false); // Reset interaction state
         hasUserInteractedValue.value = false; // Reset shared value
         setProgressBarColor('rgba(255, 255, 255, 0.8)'); // Start with high opacity white (neutral)
+        
+        // Reset emotional feedback opacity
+        emotionalFeedbackOpacity.setValue(0);
+        
+        // Animate emotional feedback section in (fallback case)
+        Animated.timing(emotionalFeedbackOpacity, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }).start();
       }
       
       // If coming from tutorial, start unblur animation
@@ -341,15 +364,36 @@ export const MeditationPlayerScreen: React.FC = () => {
       }),
     ]).start();
 
+    if (!audioLoaded) {
+      return;
+    }
     if (playerState === 'ready') {
       setPlayerState('playing');
       audioPlayerRef.current.play();
+      // Animate emotional feedback bar in
+      Animated.timing(emotionalFeedbackOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
     } else if (playerState === 'playing') {
       setPlayerState('paused');
       audioPlayerRef.current.pause();
+      // Animate emotional feedback bar out
+      Animated.timing(emotionalFeedbackOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
     } else if (playerState === 'paused') {
       setPlayerState('playing');
       audioPlayerRef.current.play();
+      // Animate emotional feedback bar in
+      Animated.timing(emotionalFeedbackOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
     }
   };
 
@@ -896,11 +940,13 @@ export const MeditationPlayerScreen: React.FC = () => {
           <BackIcon size={20} color="#ffffff" />
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.tutorialButton} onPress={handleTutorialToggle}>
-          <Text style={styles.tutorialButtonText}>
-            {showTutorial ? 'Skip tutorial' : 'Do tutorial'}
-          </Text>
-        </TouchableOpacity>
+        {!!(activeSession && (meditationAudioData[activeSession.id as keyof typeof meditationAudioData] as any)?.tutorialBackgroundAudio) && (
+          <TouchableOpacity style={styles.tutorialButton} onPress={handleTutorialToggle}>
+            <Text style={styles.tutorialButtonText}>
+              {showTutorial ? 'Skip tutorial' : 'Do tutorial'}
+            </Text>
+          </TouchableOpacity>
+        )}
         
         <TouchableOpacity style={styles.heartButtonTop} onPress={handleLike}>
           {isLiked ? (
@@ -988,7 +1034,7 @@ export const MeditationPlayerScreen: React.FC = () => {
           
           <Animated.View style={{ transform: [{ scale: playButtonScale }] }}>
             <TouchableOpacity style={styles.playButton} onPress={(e) => { e.stopPropagation(); handlePlayPause(); }}>
-              {!audioLoaded && playerState === 'playing' ? (
+              {!audioLoaded ? (
                 <ActivityIndicator size="small" color="#1a1a1a" />
               ) : playerState === 'playing' ? (
                 <PauseIcon size={36} color="#1a1a1a" />
@@ -1012,20 +1058,8 @@ export const MeditationPlayerScreen: React.FC = () => {
             styles.emotionalFeedbackSection,
             isDarkMode && styles.darkModeTint,
             { 
-              opacity: playerState === 'playing' ? 1 : 0,
+              opacity: emotionalFeedbackOpacity,
               pointerEvents: playerState === 'playing' ? 'auto' : 'none',
-              backgroundColor: darkModeBackgroundAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: ['rgba(255, 255, 255, 0.15)', 'transparent'],
-              }),
-              borderWidth: darkModeBackgroundAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [1, 0],
-              }),
-              borderColor: darkModeBackgroundAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: ['rgba(255, 255, 255, 0.1)', 'transparent'],
-              }),
             }
           ]}
         >

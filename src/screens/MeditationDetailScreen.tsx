@@ -21,6 +21,7 @@ import { useStore } from '../store/useStore';
 import { ShareIcon } from '../components/icons';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { DraggableActionBar } from '../components/DraggableActionBar';
+import { meditationAudioData } from '../data/meditationMockData';
 
 type MeditationDetailStackParamList = {
   MeditationDetail: {
@@ -52,6 +53,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const screenWidth = Dimensions.get('window').width;
   
   const session = mockSessions.find(s => s.id === sessionId);
+  const hasTutorial = !!(session && (meditationAudioData[session.id as keyof typeof meditationAudioData] as any)?.tutorialBackgroundAudio);
   
   const handleTabChange = (tab: TabType) => {
     const tabIndex = tab === 'summary' ? 0 : tab === 'history' ? 1 : 2;
@@ -554,11 +556,13 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           icon: "▶",
           onPress: handleStartPress,
         }}
-        secondaryAction={{
-          title: "Tutorial",
-          icon: "📖",
-          onPress: handleTutorialPress,
-        }}
+        {...(hasTutorial ? {
+          secondaryAction: {
+            title: "Tutorial",
+            icon: "📖",
+            onPress: handleTutorialPress,
+          }
+        } : {})}
         themeColor={getGoalColor(session.goal)}
         secondaryColor="#007AFF"
         tabTransitionProgress={scrollX}

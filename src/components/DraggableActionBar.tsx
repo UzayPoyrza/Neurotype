@@ -15,7 +15,7 @@ interface DraggableActionBarProps {
     onPress: () => void;
     icon?: string;
   };
-  secondaryAction: {
+  secondaryAction?: {
     title: string;
     onPress: () => void;
     icon?: string;
@@ -27,7 +27,7 @@ interface DraggableActionBarProps {
   tabTransitionProgress?: Animated.Value;
 }
 
-export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
+export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({ 
   primaryAction,
   secondaryAction,
   primaryColor = '#FF6B6B',
@@ -206,7 +206,9 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
   }, []);
 
   const handleLeftPress = () => {
-    secondaryAction.onPress();
+    if (secondaryAction) {
+      secondaryAction.onPress();
+    }
   };
 
   const handleRightPress = () => {
@@ -216,66 +218,68 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
   return (
     <View style={styles.container}>
       {/* Left Button (Secondary Action) */}
-      <View
-        style={[
-          styles.buttonContainer,
-          {
-            left: leftButtonPos.x,
-            top: leftButtonPos.y,
-          }
-        ]}
-      >
-        <Animated.View
+      {secondaryAction && (
+        <View
           style={[
-            styles.floatingButton,
+            styles.buttonContainer,
+            {
+              left: leftButtonPos.x,
+              top: leftButtonPos.y,
+            }
           ]}
         >
           <Animated.View
             style={[
-              styles.buttonBackground,
-              {
-                backgroundColor: secondaryColor,
-                width: leftButtonWidth,
-              }
+              styles.floatingButton,
             ]}
           >
-            <TouchableOpacity
-              style={styles.buttonContent}
-              onPress={handleLeftPress}
-              activeOpacity={0.8}
+            <Animated.View
+              style={[
+                styles.buttonBackground,
+                {
+                  backgroundColor: secondaryColor,
+                  width: leftButtonWidth,
+                }
+              ]}
             >
-              <View style={styles.content}>
-                <Animated.View
-                  style={[
-                    styles.iconContainer,
-                    { 
-                      transform: [{ scale: leftIconScale }],
-                    }
-                  ]}
-                >
-                  <Text style={styles.icon}>
-                    {secondaryAction.icon || '📖'}
-                  </Text>
-                </Animated.View>
-                
-                <Animated.View
-                  style={[
-                    styles.textContainer,
-                    { 
-                      opacity: leftTextOpacity,
-                      alignItems: 'flex-start',
-                    }
-                  ]}
-                >
-                  <Text style={styles.pillText} numberOfLines={1}>
-                    {secondaryAction.title}
-                  </Text>
-                </Animated.View>
-              </View>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.buttonContent}
+                onPress={handleLeftPress}
+                activeOpacity={0.8}
+              >
+                <View style={styles.content}>
+                  <Animated.View
+                    style={[
+                      styles.iconContainer,
+                      { 
+                        transform: [{ scale: leftIconScale }],
+                      }
+                    ]}
+                  >
+                    <Text style={styles.icon}>
+                      {secondaryAction.icon || '📖'}
+                    </Text>
+                  </Animated.View>
+                  
+                  <Animated.View
+                    style={[
+                      styles.textContainer,
+                      { 
+                        opacity: leftTextOpacity,
+                        alignItems: 'flex-start',
+                      }
+                    ]}
+                  >
+                    <Text style={styles.pillText} numberOfLines={1}>
+                      {secondaryAction.title}
+                    </Text>
+                  </Animated.View>
+                </View>
+              </TouchableOpacity>
+            </Animated.View>
           </Animated.View>
-        </Animated.View>
-      </View>
+        </View>
+      )}
 
       {/* Right Button (Primary Action) */}
       <View

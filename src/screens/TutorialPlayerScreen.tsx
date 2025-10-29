@@ -47,6 +47,7 @@ export const TutorialPlayerScreen: React.FC = () => {
   const playButtonScale = useRef(new Animated.Value(1)).current;
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const audioPlayerRef = useRef(mockAudioPlayer);
+  const skipTutorialOpacity = useRef(new Animated.Value(0)).current;
   
   // Reanimated values for smooth gesture handling
   const thumbPosition = useSharedValue(0);
@@ -95,23 +96,46 @@ export const TutorialPlayerScreen: React.FC = () => {
       if (audioData) {
         setTotalDuration(audioData.duration);
         setCurrentTime(0);
-        setPlayerState('playing'); // Start immediately
+        setAudioLoaded(false);
         setCurrentSegment(audioData.segments[0]?.text || '');
         
         // Initialize thumb position and progress fill
         thumbPosition.value = 0;
         progressFillWidth.value = 0;
         
-        // Load audio in background and start playing when ready
-        audioPlayerRef.current.loadAudio(audioData.backgroundAudio).then(() => {
+        // Reset skip tutorial button opacity
+        skipTutorialOpacity.setValue(0);
+        
+        // Load tutorial audio (fallback to main if not provided) and start playing when ready
+        const tutorialAudio = (audioData as any).tutorialBackgroundAudio || audioData.backgroundAudio;
+        audioPlayerRef.current.loadAudio(tutorialAudio).then(() => {
           setAudioLoaded(true);
+          setPlayerState('playing');
           audioPlayerRef.current.play();
+          
+          // Animate skip tutorial button in
+          Animated.timing(skipTutorialOpacity, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }).start();
         });
       } else {
         // Fallback to duration in minutes
         setTotalDuration(activeSession.durationMin * 60);
         setCurrentTime(0);
+        // Reset skip tutorial button opacity
+        skipTutorialOpacity.setValue(0);
+        
+        setAudioLoaded(true);
         setPlayerState('playing'); // Auto-start even without audio data
+        
+        // Animate skip tutorial button in (fallback case)
+        Animated.timing(skipTutorialOpacity, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }).start();
         
         // Initialize thumb position and progress fill
         thumbPosition.value = 0;
@@ -238,15 +262,36 @@ export const TutorialPlayerScreen: React.FC = () => {
       }),
     ]).start();
 
+    if (!audioLoaded) {
+      return;
+    }
     if (playerState === 'ready') {
       setPlayerState('playing');
       audioPlayerRef.current.play();
+      // Animate skip tutorial button in
+      Animated.timing(skipTutorialOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
     } else if (playerState === 'playing') {
       setPlayerState('paused');
       audioPlayerRef.current.pause();
+      // Animate skip tutorial button out
+      Animated.timing(skipTutorialOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
     } else if (playerState === 'paused') {
       setPlayerState('playing');
       audioPlayerRef.current.play();
+      // Animate skip tutorial button in
+      Animated.timing(skipTutorialOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
     }
   };
 
@@ -441,18 +486,24 @@ export const TutorialPlayerScreen: React.FC = () => {
           <BackIcon size={20} color="#ffffff" />
         </TouchableOpacity>
         
-        {playerState === 'playing' && (
+        <Animated.View style={{ opacity: skipTutorialOpacity }}>
           <TouchableOpacity style={styles.tutorialButton} onPress={handleSkipTutorial}>
             <Text style={styles.tutorialButtonText}>Skip tutorial</Text>
           </TouchableOpacity>
-        )}
+        </Animated.View>
       </View>
 
       {/* Main Content */}
       <View style={styles.mainContent}>
         {/* Session Title */}
         <View style={styles.titleSection}>
-          <Text style={styles.sessionTitle}>{activeSession.title}</Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.sessionTitle}>{activeSession.title}</Text>
+            <View style={styles.tutorialBadge}>
+              <Text style={styles.tutorialBadgeText}>TUTORIAL</Text>
+            </View>
+          </View>
+          <Text style={styles.subtitleText}>Guided tutorial for this meditation</Text>
         </View>
 
         {/* Artist/Creator */}
@@ -487,7 +538,7 @@ export const TutorialPlayerScreen: React.FC = () => {
           
           <Animated.View style={{ transform: [{ scale: playButtonScale }] }}>
             <TouchableOpacity style={styles.playButton} onPress={(e) => { e.stopPropagation(); handlePlayPause(); }}>
-              {!audioLoaded && playerState === 'playing' ? (
+              {!audioLoaded ? (
                 <ActivityIndicator size="small" color="#1a1a1a" />
               ) : playerState === 'playing' ? (
                 <PauseIcon size={36} color="#1a1a1a" />
@@ -631,6 +682,31 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 8,
     marginLeft: 0,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  tutorialBadge: {
+    marginLeft: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.28)'
+  },
+  tutorialBadgeText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.1
+  },
+  subtitleText: {
+    marginTop: 6,
+    color: 'rgba(255,255,255,0.75)',
+    fontSize: 13,
+    letterSpacing: 0.2
   },
   sessionTitle: {
     fontSize: 24,

@@ -207,9 +207,19 @@ export const TutorialPlayerScreen: React.FC = () => {
   };
 
   const handleSkipTutorial = () => {
-    // Stop audio and close tutorial
+    // Stop tutorial audio and start actual meditation
     audioPlayerRef.current.stop();
-    setActiveSession(null);
+    
+    // Reset animations
+    completionAnim.setValue(0);
+    completionContentAnim.setValue(0);
+    
+    // Start the actual meditation (remove tutorial flag)
+    if (activeSession) {
+      const normalSession = { ...activeSession };
+      delete normalSession.isTutorial;
+      setActiveSession(normalSession);
+    }
   };
 
   const handleDiscardSession = () => {
@@ -223,12 +233,12 @@ export const TutorialPlayerScreen: React.FC = () => {
     completionAnim.setValue(0);
     completionContentAnim.setValue(0);
     
-    // Start the actual meditation
-    setShowCompletionScreen(false);
-    setPlayerState('playing');
-    setCurrentTime(0);
-    // Reset to normal player mode
-    setActiveSession(activeSession);
+    // Start the actual meditation (remove tutorial flag)
+    if (activeSession) {
+      const normalSession = { ...activeSession };
+      delete normalSession.isTutorial;
+      setActiveSession(normalSession);
+    }
   };
 
   const handleBack = () => {

@@ -405,6 +405,11 @@ export const MeditationPlayerScreen: React.FC = () => {
   };
 
   const handleScreenTap = () => {
+    // Only allow dark mode toggle when playing, not when paused
+    if (playerState !== 'playing') {
+      return;
+    }
+    
     // Toggle dark mode when tapping anywhere on the screen
     const newDarkMode = !isDarkMode;
     activateDarkMode(newDarkMode);

@@ -498,17 +498,11 @@ export const TutorialPlayerScreen: React.FC = () => {
         {/* Session Title */}
         <View style={styles.titleSection}>
           <View style={styles.titleRow}>
-            <Text style={styles.sessionTitle}>{activeSession.title}</Text>
+            <Text style={styles.sessionTitle} numberOfLines={1} ellipsizeMode="tail">{activeSession.title}</Text>
             <View style={styles.tutorialBadge}>
               <Text style={styles.tutorialBadgeText}>TUTORIAL</Text>
             </View>
           </View>
-          <Text style={styles.subtitleText}>Guided tutorial for this meditation</Text>
-        </View>
-
-        {/* Artist/Creator */}
-        <View style={styles.artistContainer}>
-          <Text style={styles.artistName}>Prashanti Paz</Text>
         </View>
 
         {/* Progress Bar */}
@@ -686,32 +680,27 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  tutorialBadge: {
-    marginLeft: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.28)'
-  },
-  tutorialBadgeText: {
-    color: '#ffffff',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1.1
-  },
-  subtitleText: {
-    marginTop: 6,
-    color: 'rgba(255,255,255,0.75)',
-    fontSize: 13,
-    letterSpacing: 0.2
+    flexWrap: 'wrap',
+    gap: 8,
   },
   sessionTitle: {
     fontSize: 24,
     fontWeight: '600',
     color: '#ffffff',
+    flexShrink: 1,
+  },
+  tutorialBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    backgroundColor: 'rgba(255, 165, 0, 0.25)',
+    borderLeftWidth: 3,
+    borderLeftColor: '#FFA500',
+  },
+  tutorialBadgeText: {
+    color: '#FFA500',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.0,
   },
   artistContainer: {
     width: '100%',

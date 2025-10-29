@@ -12,6 +12,7 @@ export interface Session {
   whyItWorks?: string;
   adaptiveReason?: string;
   isRecommended?: boolean;
+  isTutorial?: boolean;
 }
 
 export interface SessionDelta {

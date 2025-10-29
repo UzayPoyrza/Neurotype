@@ -128,7 +128,9 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const handleTutorialPress = () => {
     // Start tutorial mode for the meditation session
     if (session) {
-      setActiveSession(session);
+      // Set a flag to indicate this is a tutorial session
+      const tutorialSession = { ...session, isTutorial: true };
+      setActiveSession(tutorialSession);
     }
   };
 

@@ -331,7 +331,16 @@ export const MeditationPlayerScreen: React.FC = () => {
   };
 
   const handleTutorialToggle = () => {
-    setShowTutorial(!showTutorial);
+    if (showTutorial) {
+      // Skip tutorial - go back to normal player
+      setShowTutorial(false);
+    } else {
+      // Do tutorial - switch to tutorial mode
+      if (activeSession) {
+        const tutorialSession = { ...activeSession, isTutorial: true };
+        setActiveSession(tutorialSession);
+      }
+    }
   };
 
   const handleLike = () => {
@@ -883,7 +892,10 @@ export const MeditationPlayerScreen: React.FC = () => {
 
         {/* Progress Bar - Always visible */}
         <TouchableOpacity 
-          style={styles.progressSection} 
+          style={[
+            styles.progressSection,
+            isDarkMode && styles.darkModeTint
+          ]} 
           onPress={(e) => e.stopPropagation()}
           activeOpacity={1}
         >
@@ -939,6 +951,7 @@ export const MeditationPlayerScreen: React.FC = () => {
         <Animated.View 
           style={[
             styles.emotionalFeedbackSection,
+            isDarkMode && styles.darkModeTint,
             { 
               opacity: playerState === 'playing' ? 1 : 0,
               pointerEvents: playerState === 'playing' ? 'auto' : 'none',
@@ -1595,6 +1608,11 @@ const styles = StyleSheet.create({
   hiddenElement: {
     opacity: 0,
     pointerEvents: 'none',
+  },
+  darkModeTint: {
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 12,
+    padding: 16,
   },
 });
 

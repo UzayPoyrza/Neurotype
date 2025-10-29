@@ -229,6 +229,17 @@ export const TutorialPlayerScreen: React.FC = () => {
   const updateCurrentTime = (newTime: number) => {
     setCurrentTime(newTime);
     audioPlayerRef.current.seekTo(newTime);
+    
+    // Check if we've reached the end of the tutorial
+    if (newTime >= totalDuration) {
+      setPlayerState('finished');
+      setShowCompletionScreen(true);
+      Animated.timing(completionAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }).start();
+    }
   };
 
   // Helper function to trigger haptic feedback
@@ -414,9 +425,6 @@ export const TutorialPlayerScreen: React.FC = () => {
           ]}
         >
           <View style={styles.completionContent}>
-            <TouchableOpacity style={styles.completionDiscardButton} onPress={handleDiscardSession}>
-              <Text style={styles.completionDiscardButtonText}>Discard session</Text>
-            </TouchableOpacity>
             <TouchableOpacity style={styles.completionStartButton} onPress={() => {
               // Start the actual meditation
               setShowCompletionScreen(false);
@@ -426,6 +434,9 @@ export const TutorialPlayerScreen: React.FC = () => {
               setActiveSession(activeSession);
             }}>
               <Text style={styles.completionStartButtonText}>Start meditation</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.completionDiscardButton} onPress={handleDiscardSession}>
+              <Text style={styles.completionDiscardButtonText}>Discard session</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>

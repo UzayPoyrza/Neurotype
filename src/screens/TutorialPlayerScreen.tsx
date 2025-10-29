@@ -505,6 +505,11 @@ export const TutorialPlayerScreen: React.FC = () => {
           </View>
         </View>
 
+        {/* Spacer to match main meditation layout */}
+        <View style={styles.artistContainer}>
+          <View style={styles.invisibleSpacer} />
+        </View>
+
         {/* Progress Bar */}
         <TouchableOpacity 
           style={styles.progressSection} 
@@ -706,6 +711,9 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'flex-start',
     marginBottom: 20,
+  },
+  invisibleSpacer: {
+    height: 0,
   },
   artistName: {
     fontSize: 16,

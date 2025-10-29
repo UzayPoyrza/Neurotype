@@ -361,7 +361,7 @@ export const ExploreScreen: React.FC = () => {
                               styles.sessionCount,
                               styles.pinnedSessionCount
                             ]}>
-                              {module.meditationCount} sessions
+                              {module.meditationCount} session{module.meditationCount === 1 ? '' : 's'}
                             </Text>
                             <View style={styles.moduleArrow}>
                               <Text style={styles.moduleArrowText}>→</Text>
@@ -400,7 +400,7 @@ export const ExploreScreen: React.FC = () => {
                           
                           <View style={styles.moduleFooter}>
                             <Text style={styles.sessionCount}>
-                              {module.meditationCount} sessions
+                              {module.meditationCount} session{module.meditationCount === 1 ? '' : 's'}
                             </Text>
                             <View style={styles.moduleArrow}>
                               <Text style={styles.moduleArrowText}>→</Text>

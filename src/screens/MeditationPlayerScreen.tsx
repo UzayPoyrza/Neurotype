@@ -1057,6 +1057,7 @@ export const MeditationPlayerScreen: React.FC = () => {
           style={[
             styles.emotionalFeedbackSection,
             isDarkMode && styles.darkModeTint,
+            isDarkMode && styles.darkModeEmotionalSection,
             { 
               opacity: emotionalFeedbackOpacity,
               pointerEvents: playerState === 'playing' ? 'auto' : 'none',
@@ -1454,6 +1455,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  darkModeEmotionalSection: {
+    borderWidth: 0,
+    borderColor: 'transparent',
   },
   emotionalFeedbackTitle: {
     color: '#ffffff',

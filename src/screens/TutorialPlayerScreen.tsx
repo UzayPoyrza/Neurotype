@@ -30,7 +30,7 @@ import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
 import { meditationAudioData, sessionProgressData, mockAudioPlayer } from '../data/meditationMockData';
 import { PlayIcon, PauseIcon, SkipForward10Icon, SkipBackward10Icon, BackIcon } from '../components/icons/PlayerIcons';
-import { createMeditationPlayerBackground, getPrerenderedGradient } from '../utils/gradientBackgrounds';
+import { createMeditationPlayerBackground, createTutorialBackground, getPrerenderedGradient } from '../utils/gradientBackgrounds';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -84,12 +84,12 @@ export const TutorialPlayerScreen: React.FC = () => {
       // Check if this is a transition from meditation (isTutorial flag means it came from meditation)
       const isFromMeditation = activeSession.isTutorial && isTransitioning;
       
-      // Update gradient colors based on session goal with darker shade for tutorial
-      const baseGradient = createMeditationPlayerBackground(activeSession.goal, 0);
+      // Update gradient colors based on session goal with tutorial-specific colors
+      const tutorialGradient = createTutorialBackground(activeSession.goal, 0);
       setGradientColors({
-        top: '#2a2a2a', // Darker shade
-        bottom: '#2a2a2a',
-        base: '#2a2a2a'
+        top: tutorialGradient.top,
+        bottom: tutorialGradient.bottom,
+        base: tutorialGradient.base
       });
       
       const audioData = meditationAudioData[activeSession.id as keyof typeof meditationAudioData];

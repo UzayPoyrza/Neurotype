@@ -37,6 +37,34 @@ const darkenColor = (color: string, factor: number = 0.3): string => {
   );
 };
 
+// Create a darker, more brownish version for tutorial backgrounds
+const createTutorialColor = (color: string): string => {
+  const rgb = hexToRgb(color);
+  
+  // Very drastic darkening with very strong brownish shift
+  // Brown is achieved by having red > green > blue (darker version of warm colors)
+  const reductionFactor = 0.25; // Reduce brightness by 75%
+  
+  // Reduce red the least to push toward warm/brown tones
+  let r = Math.round(rgb.r * reductionFactor);
+  // Reduce green dramatically more to create strong brownish desaturation
+  let g = Math.round(rgb.g * (reductionFactor * 0.35));
+  // Reduce blue heavily too
+  let b = Math.round(rgb.b * (reductionFactor * 0.5));
+  
+  // Ensure it doesn't go below a minimum brightness to avoid pure black
+  const minBrightness = 35;
+  r = Math.max(minBrightness, r);
+  g = Math.max(minBrightness - 12, g); // Green should be much lower for brown
+  b = Math.max(minBrightness - 10, b); // Blue should be much lower
+  
+  // Ensure red is always the dominant channel for brownish tone
+  if (r < g) r = g + 10;
+  if (r < b) r = b + 8;
+  
+  return rgbToHex(r, g, b);
+};
+
 // Create a much darker version for better text contrast
 const darkenColorForBackground = (color: string, factor: number = 0.6): string => {
   const rgb = hexToRgb(color);
@@ -131,4 +159,27 @@ mentalHealthModules.forEach(module => {
 // Get prerendered gradient for a module
 export const getPrerenderedGradient = (moduleId: string): { top: string; bottom: string; base: string } => {
   return prerenderedModuleGradients[moduleId] || prerenderedModuleGradients['anxiety'];
+};
+
+// Create tutorial background colors (darker, brownish version of main meditation color)
+export const createTutorialBackground = (
+  moduleIdOrGoal: string, 
+  sessionProgress: number = 0
+): { top: string; bottom: string; base: string } => {
+  // Check if it's a goal (anxiety, focus, sleep) or module ID
+  const baseColor = goalToModuleMap[moduleIdOrGoal] 
+    ? getModuleColorByGoal(moduleIdOrGoal)
+    : getModuleColor(moduleIdOrGoal);
+    
+  const variedColor = createModuleVariation(baseColor, sessionProgress);
+  const tutorialColor = createTutorialColor(variedColor);
+  
+  // Create a subtle gradient with the tutorial color
+  const gradient = createSpotifyGradient(tutorialColor);
+  
+  return {
+    top: gradient.top,
+    bottom: gradient.bottom,
+    base: tutorialColor
+  };
 };

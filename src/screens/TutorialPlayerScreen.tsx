@@ -321,9 +321,11 @@ export const TutorialPlayerScreen: React.FC = () => {
           <BackIcon size={20} color="#ffffff" />
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.tutorialButton} onPress={handleSkipTutorial}>
-          <Text style={styles.tutorialButtonText}>Skip tutorial</Text>
-        </TouchableOpacity>
+        {playerState === 'playing' && (
+          <TouchableOpacity style={styles.tutorialButton} onPress={handleSkipTutorial}>
+            <Text style={styles.tutorialButtonText}>Skip tutorial</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Main Content */}

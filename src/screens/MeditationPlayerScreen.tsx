@@ -32,6 +32,7 @@ import { Slider0to10 } from '../components/Slider0to10';
 import { meditationAudioData, emotionalFeedbackData, sessionProgressData, mockAudioPlayer } from '../data/meditationMockData';
 import { PlayIcon, PauseIcon, SkipForward10Icon, SkipBackward10Icon, HeartIcon, HeartOutlineIcon, BackIcon, MoreIcon } from '../components/icons/PlayerIcons';
 import { createMeditationPlayerBackground, getPrerenderedGradient } from '../utils/gradientBackgrounds';
+import MeditationCompletionLanding from '../components/MeditationCompletionLanding';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -49,6 +50,7 @@ export const MeditationPlayerScreen: React.FC = () => {
   const [emotionalRating, setEmotionalRating] = useState(5);
   const [currentSegment, setCurrentSegment] = useState<string>('');
   const [audioLoaded, setAudioLoaded] = useState(false);
+  const [showCompletionLanding, setShowCompletionLanding] = useState(false);
   const progressAnim = useRef(new Animated.Value(0)).current;
   const playButtonScale = useRef(new Animated.Value(1)).current;
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -271,10 +273,7 @@ export const MeditationPlayerScreen: React.FC = () => {
           
           if (newTime >= totalDuration) {
             setPlayerState('finished');
-            // Mark session as complete
-            if (activeSession) {
-              sessionProgressData.markSessionComplete(activeSession.id, totalDuration, emotionalRating);
-            }
+            setShowCompletionLanding(true);
             return totalDuration;
           }
           return newTime;
@@ -398,12 +397,9 @@ export const MeditationPlayerScreen: React.FC = () => {
   };
 
   const handleFinish = () => {
-    // Stop audio and save session
+    // Stop audio and open completion landing
     audioPlayerRef.current.stop();
-    if (activeSession) {
-      sessionProgressData.markSessionComplete(activeSession.id, currentTime, emotionalRating);
-    }
-    setActiveSession(null);
+    setShowCompletionLanding(true);
   };
 
   const handleDiscard = () => {
@@ -1274,6 +1270,20 @@ export const MeditationPlayerScreen: React.FC = () => {
           </Animated.View>
         </View>
       )}
+      {/* Completion Landing Overlay */}
+      <MeditationCompletionLanding
+        visible={showCompletionLanding}
+        secondsMeditated={currentTime}
+        onContinue={() => {
+          if (activeSession) {
+            sessionProgressData.markSessionComplete(activeSession.id, currentTime, emotionalRating);
+          }
+          setActiveSession(null);
+        }}
+        onDiscard={() => {
+          setActiveSession(null);
+        }}
+      />
       </SafeAreaView>
     </GestureHandlerRootView>
   );

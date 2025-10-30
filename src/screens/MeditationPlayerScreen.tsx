@@ -33,6 +33,7 @@ import { meditationAudioData, emotionalFeedbackData, sessionProgressData, mockAu
 import { PlayIcon, PauseIcon, SkipForward10Icon, SkipBackward10Icon, HeartIcon, HeartOutlineIcon, BackIcon, MoreIcon } from '../components/icons/PlayerIcons';
 import { createMeditationPlayerBackground, getPrerenderedGradient } from '../utils/gradientBackgrounds';
 import MeditationCompletionLanding from '../components/MeditationCompletionLanding';
+import MeditationFeedbackLanding from '../components/MeditationFeedbackLanding';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -51,6 +52,7 @@ export const MeditationPlayerScreen: React.FC = () => {
   const [currentSegment, setCurrentSegment] = useState<string>('');
   const [audioLoaded, setAudioLoaded] = useState(false);
   const [showCompletionLanding, setShowCompletionLanding] = useState(false);
+  const [showFeedbackLanding, setShowFeedbackLanding] = useState(false);
   const progressAnim = useRef(new Animated.Value(0)).current;
   const playButtonScale = useRef(new Animated.Value(1)).current;
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -1284,12 +1286,20 @@ export const MeditationPlayerScreen: React.FC = () => {
         visible={showCompletionLanding}
         secondsMeditated={currentTime}
         onContinue={() => {
-          if (activeSession) {
-            sessionProgressData.markSessionComplete(activeSession.id, currentTime, emotionalRating);
-          }
-          setActiveSession(null);
+          setShowFeedbackLanding(true);
         }}
         onDiscard={() => {
+          setActiveSession(null);
+        }}
+      />
+
+      {/* Feedback Landing Overlay */}
+      <MeditationFeedbackLanding
+        visible={showFeedbackLanding}
+        onFinish={(rating) => {
+          if (activeSession) {
+            sessionProgressData.markSessionComplete(activeSession.id, currentTime, rating);
+          }
           setActiveSession(null);
         }}
       />

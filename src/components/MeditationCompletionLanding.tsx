@@ -97,6 +97,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    zIndex: 3000,
   },
   background: {
     position: 'absolute',
@@ -113,7 +114,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 32,
     paddingBottom: 40,
-    paddingTop: 140,
+    paddingTop: 220,
   },
   centerTextContainer: {
     alignItems: 'center',

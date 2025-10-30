@@ -27,6 +27,7 @@ import { ExploreScreen as ExploreScreenComponent } from '../components/ExploreSc
 type ExploreStackParamList = {
   ExploreMain: undefined;
   ModuleDetail: { moduleId: string };
+  MeditationDetail: { sessionId: string };
 };
 
 type ExploreScreenNavigationProp = StackNavigationProp<ExploreStackParamList, 'ExploreMain'>;
@@ -38,6 +39,7 @@ export const ExploreScreen: React.FC = () => {
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const setGlobalBackgroundColor = useStore(state => state.setGlobalBackgroundColor);
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
+  const likedSessionIds = useStore(state => state.likedSessionIds);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [selectedSort, setSelectedSort] = useState<string>('recents');
@@ -82,28 +84,50 @@ export const ExploreScreen: React.FC = () => {
     },
   ];
 
+  // Get liked sessions
+  const likedSessions = mockSessions.filter(session => likedSessionIds.includes(session.id));
+
   // Filter and sort modules
   const filteredModules = useMemo(() => {
-    let modules = mentalHealthModules.filter(module => {
-      // Filter by search query
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        const matchesTitle = module.title.toLowerCase().includes(query);
-        const matchesDescription = module.description.toLowerCase().includes(query);
-        
-        if (!matchesTitle && !matchesDescription) {
-          return false;
-        }
-      }
-      
-      return true;
-    });
+    
+    // Create pinned "Liked Meditations" item (always show, even when empty)
+    const likedMeditationsItem = {
+      id: 'liked-meditations',
+      title: 'Liked Meditations',
+      description: likedSessions.length > 0 
+        ? `${likedSessions.length} favorite meditation session${likedSessions.length === 1 ? '' : 's'}`
+        : 'No favorite sessions yet',
+      category: 'wellness' as const, // Use a valid category type
+      color: '#E74C3C',
+      meditationCount: likedSessions.length,
+      isPinned: true,
+      likedSessions: likedSessions, // Store the actual liked sessions
+    };
 
-    // Sort modules based on selected sort option
+    // Start with all modules, including the pinned item
+    let allModules = [likedMeditationsItem, ...mentalHealthModules];
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      allModules = allModules.filter(module => {
+        // Check if title starts with the query
+        const matchesTitle = module.title.toLowerCase().startsWith(query);
+        // Check if category starts with the query
+        const matchesCategory = module.category.toLowerCase().startsWith(query);
+        return matchesTitle || matchesCategory;
+      });
+    }
+
+    // Separate pinned and non-pinned modules
+    const pinnedModules = allModules.filter(module => 'isPinned' in module && module.isPinned);
+    const regularModules = allModules.filter(module => !('isPinned' in module && module.isPinned));
+
+    // Sort regular modules based on selected sort option
     switch (selectedSort) {
       case 'recents':
         // Sort by recent access, then alphabetically for unaccessed modules
-        modules = modules.sort((a, b) => {
+        regularModules.sort((a, b) => {
           const aRecentIndex = recentModuleIds.indexOf(a.id);
           const bRecentIndex = recentModuleIds.indexOf(b.id);
           
@@ -121,10 +145,10 @@ export const ExploreScreen: React.FC = () => {
         });
         break;
       case 'alphabetical':
-        modules = modules.sort((a, b) => a.title.localeCompare(b.title));
+        regularModules.sort((a, b) => a.title.localeCompare(b.title));
         break;
       case 'category':
-        modules = modules.sort((a, b) => {
+        regularModules.sort((a, b) => {
           if (a.category !== b.category) {
             return a.category.localeCompare(b.category);
           }
@@ -133,8 +157,9 @@ export const ExploreScreen: React.FC = () => {
         break;
     }
 
-    return modules;
-  }, [searchQuery, selectedSort, recentModuleIds]);
+    // Return pinned modules first, then regular modules
+    return [...pinnedModules, ...regularModules];
+  }, [searchQuery, selectedSort, recentModuleIds, likedSessionIds]);
 
   const handleModulePress = (moduleId: string) => {
     addRecentModule(moduleId);
@@ -193,11 +218,11 @@ export const ExploreScreen: React.FC = () => {
     };
   });
 
-  // Shuffle animation for modules
+  // Shuffle animation for modules (excluding pinned items)
   const triggerShuffleAnimation = () => {
     setIsShuffling(true);
     
-    // Fall down animation
+    // Fall down animation for non-pinned modules only
     moduleOpacity.value = withTiming(0, { duration: 200 });
     moduleScale.value = withTiming(0.8, { duration: 200 });
     
@@ -279,43 +304,117 @@ export const ExploreScreen: React.FC = () => {
           </View>
 
           {/* Module Grid */}
-          <Animated.View style={[styles.moduleGrid, moduleGridAnimatedStyle]}>
-            {/* Create rows of 2 modules each */}
-            {Array.from({ length: Math.ceil(filteredModules.length / 2) }, (_, rowIndex) => (
-              <View key={rowIndex} style={styles.moduleRow}>
-                {filteredModules.slice(rowIndex * 2, rowIndex * 2 + 2).map((module) => (
-                  <View key={module.id} style={styles.moduleCardWrapper}>
-                    <TouchableOpacity
-                      style={styles.moduleCard}
-                      onPress={() => handleModulePress(module.id)}
-                      activeOpacity={0.8}
-                    >
-                      <View style={styles.moduleCardHeader}>
-                        <View style={[styles.moduleIndicator, { backgroundColor: module.color }]} />
-                        <Text style={styles.moduleCategory}>{module.category.toUpperCase()}</Text>
+          <View style={styles.moduleGrid}>
+            {/* Create rows of 2 modules each, with pinned item in first position */}
+            {Array.from({ length: Math.ceil(filteredModules.length / 2) }, (_, rowIndex) => {
+              const modulesInRow = filteredModules.slice(rowIndex * 2, rowIndex * 2 + 2);
+              const isLastRow = rowIndex === Math.ceil(filteredModules.length / 2) - 1;
+              const hasOnlyOneCard = modulesInRow.length === 1 && isLastRow;
+              const isSearching = searchQuery.trim().length > 0;
+              
+              return (
+                <View key={rowIndex} style={styles.moduleRow}>
+                  {modulesInRow.map((module, moduleIndex) => {
+                    const isPinned = 'isPinned' in module && module.isPinned;
+                  
+                  // Apply animation only to non-pinned modules
+                  if (isPinned) {
+                    return (
+                      <View key={module.id} style={[
+                        styles.moduleCardWrapper,
+                        // Only apply single card wrapper if we're not searching and it's the only card in the last row
+                        hasOnlyOneCard && !isSearching && styles.singleCardWrapper
+                      ]}>
+                        <TouchableOpacity
+                          style={[
+                            styles.moduleCard,
+                            styles.pinnedModuleCard
+                          ]}
+                          onPress={() => handleModulePress(module.id)}
+                          activeOpacity={0.8}
+                        >
+                          <View style={styles.moduleCardHeader}>
+                            <View style={styles.moduleHeaderLeft}>
+                              <View style={[styles.moduleIndicator, { backgroundColor: module.color }]} />
+                              <Text style={styles.moduleCategory}>{module.category.toUpperCase()}</Text>
+                            </View>
+                            <View style={styles.pinBadge}>
+                              <Text style={styles.pinIcon}>📌</Text>
+                            </View>
+                          </View>
+                          
+                          <Text style={[
+                            styles.moduleTitle,
+                            styles.pinnedModuleTitle
+                          ]} numberOfLines={2} ellipsizeMode="tail">
+                            {module.title}
+                          </Text>
+                          <Text style={[
+                            styles.moduleDescription,
+                            styles.pinnedModuleDescription
+                          ]} numberOfLines={2}>
+                            {module.description}
+                          </Text>
+                          
+                          <View style={styles.moduleFooter}>
+                            <Text style={[
+                              styles.sessionCount,
+                              styles.pinnedSessionCount
+                            ]}>
+                              {module.meditationCount} session{module.meditationCount === 1 ? '' : 's'}
+                            </Text>
+                            <View style={styles.moduleArrow}>
+                              <Text style={styles.moduleArrowText}>→</Text>
+                            </View>
+                          </View>
+                        </TouchableOpacity>
                       </View>
-                      
-                      <Text style={styles.moduleTitle} numberOfLines={1} ellipsizeMode="tail">
-                        {module.title}
-                      </Text>
-                      <Text style={styles.moduleDescription} numberOfLines={2}>
-                        {module.description}
-                      </Text>
-                      
-                      <View style={styles.moduleFooter}>
-                        <Text style={styles.sessionCount}>
-                          {module.meditationCount} sessions
-                        </Text>
-                        <View style={styles.moduleArrow}>
-                          <Text style={styles.moduleArrowText}>→</Text>
-                        </View>
-                      </View>
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </View>
-            ))}
-          </Animated.View>
+                    );
+                  } else {
+                    // Non-pinned modules get the animation
+                    return (
+                      <Animated.View key={module.id} style={[
+                        styles.moduleCardWrapper,
+                        // Only apply single card wrapper if we're not searching and it's the only card in the last row
+                        hasOnlyOneCard && !isSearching && styles.singleCardWrapper,
+                        moduleGridAnimatedStyle
+                      ]}>
+                        <TouchableOpacity
+                          style={styles.moduleCard}
+                          onPress={() => handleModulePress(module.id)}
+                          activeOpacity={0.8}
+                        >
+                          <View style={styles.moduleCardHeader}>
+                            <View style={styles.moduleHeaderLeft}>
+                              <View style={[styles.moduleIndicator, { backgroundColor: module.color }]} />
+                              <Text style={styles.moduleCategory}>{module.category.toUpperCase()}</Text>
+                            </View>
+                          </View>
+                          
+                          <Text style={styles.moduleTitle} numberOfLines={1} ellipsizeMode="tail">
+                            {module.title}
+                          </Text>
+                          <Text style={styles.moduleDescription} numberOfLines={2}>
+                            {module.description}
+                          </Text>
+                          
+                          <View style={styles.moduleFooter}>
+                            <Text style={styles.sessionCount}>
+                              {module.meditationCount} session{module.meditationCount === 1 ? '' : 's'}
+                            </Text>
+                            <View style={styles.moduleArrow}>
+                              <Text style={styles.moduleArrowText}>→</Text>
+                            </View>
+                          </View>
+                        </TouchableOpacity>
+                      </Animated.View>
+                    );
+                  }
+                  })}
+                </View>
+              );
+            })}
+          </View>
 
           {/* Empty State */}
           {filteredModules.length === 0 && (
@@ -487,6 +586,52 @@ const styles = StyleSheet.create({
   moduleGrid: {
     gap: 12,
   },
+  // Pinned Module Styles
+  pinnedModuleCard: {
+    borderWidth: 2,
+    borderColor: '#FF6B6B',
+    shadowColor: '#FF6B6B',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  pinnedModuleTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 4,
+    lineHeight: 20,
+  },
+  pinnedModuleDescription: {
+    fontSize: 13,
+    color: '#333333',
+    fontWeight: '500',
+    lineHeight: 17,
+  },
+  pinBadge: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: '#FF6B6B',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  pinIcon: {
+    fontSize: 14,
+    color: '#FF6B6B',
+    fontWeight: '700',
+  },
+  pinnedSessionCount: {
+    fontSize: 13,
+    color: '#555555',
+    fontWeight: '600',
+  },
   moduleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -495,6 +640,10 @@ const styles = StyleSheet.create({
   moduleCardWrapper: {
     flex: 1,
     marginHorizontal: 6,
+  },
+  singleCardWrapper: {
+    flex: 0,
+    width: '48%', // Take up about half the width instead of full width
   },
   moduleCard: {
     backgroundColor: '#ffffff',
@@ -511,7 +660,13 @@ const styles = StyleSheet.create({
   moduleCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 8, // Reduced from 12
+  },
+  moduleHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
   moduleIndicator: {
     width: 8,

@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { 
   GestureHandlerRootView,
   Gesture,
@@ -40,13 +41,14 @@ export const MeditationPlayerScreen: React.FC = () => {
   const [playerState, setPlayerState] = useState<PlayerState>('ready');
   const [currentTime, setCurrentTime] = useState(0);
   const [totalDuration, setTotalDuration] = useState(0);
-  const [isLiked, setIsLiked] = useState(false);
+  const { activeSession, setActiveSession, isTransitioning, setIsTransitioning } = useStore();
+  const toggleLikedSession = useStore((state: any) => state.toggleLikedSession);
+  const likedSessionIds = useStore((state: any) => state.likedSessionIds);
+  const isLiked = activeSession ? likedSessionIds.includes(activeSession.id) : false;
   const [showTutorial, setShowTutorial] = useState(false);
   const [emotionalRating, setEmotionalRating] = useState(5);
   const [currentSegment, setCurrentSegment] = useState<string>('');
   const [audioLoaded, setAudioLoaded] = useState(false);
-  
-  const { activeSession, setActiveSession } = useStore();
   const progressAnim = useRef(new Animated.Value(0)).current;
   const playButtonScale = useRef(new Animated.Value(1)).current;
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -73,6 +75,7 @@ export const MeditationPlayerScreen: React.FC = () => {
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const hasUserInteractedValue = useSharedValue(false);
   const progressBarWidthAnim = useRef(new Animated.Value(0)).current;
+  const emotionalFeedbackOpacity = useRef(new Animated.Value(0)).current;
   const previousColorRef = useRef('rgba(255, 255, 255, 0.8)');
   
   // Confirmation system state
@@ -82,11 +85,44 @@ export const MeditationPlayerScreen: React.FC = () => {
   const [lockedPosition, setLockedPosition] = useState<number | null>(null);
   const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Options menu state
+  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+  const [sleepModeEnabled, setSleepModeEnabled] = useState(false);
+  const [downloadEnabled, setDownloadEnabled] = useState(false);
+  const [idleTimerEnabled, setIdleTimerEnabled] = useState(true);
+  const optionsMenuAnim = useRef(new Animated.Value(0)).current;
+  
+  // Dark mode state
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const darkModeAnim = useRef(new Animated.Value(0)).current;
+  const darkModeBackgroundAnim = useRef(new Animated.Value(0)).current;
+  
+  // Transition state
+  const transitionAnim = useRef(new Animated.Value(0)).current;
+  
+  // Idle timer for auto dark mode
+  const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const IDLE_TIMEOUT = 10000; // 10 seconds
+  
   // Gradient background colors
   const [gradientColors, setGradientColors] = useState({ top: '#1a1a1a', bottom: '#1a1a1a', base: '#1a1a1a' });
 
+  // Apply blur immediately on mount if transitioning to prevent visual glitch
+  useEffect(() => {
+    if (isTransitioning && activeSession && !activeSession.isTutorial) {
+      transitionAnim.setValue(1);
+    }
+  }, []);
+
+  // Prerender state to ensure screen is fully styled before unblur
+  const [isPrerendered, setIsPrerendered] = useState(false);
+  const [layoutComplete, setLayoutComplete] = useState(false);
+
   useEffect(() => {
     if (activeSession) {
+      // Check if this is a transition from tutorial (no isTutorial flag means it came from tutorial)
+      const isFromTutorial = !activeSession.isTutorial && isTransitioning;
+      
       // Update gradient colors based on session goal
       const newGradientColors = createMeditationPlayerBackground(activeSession.goal, 0);
       setGradientColors(newGradientColors);
@@ -95,7 +131,7 @@ export const MeditationPlayerScreen: React.FC = () => {
       if (audioData) {
         setTotalDuration(audioData.duration);
         setCurrentTime(0);
-        setPlayerState('playing'); // Start immediately
+        setAudioLoaded(false);
         setCurrentSegment(audioData.segments[0]?.text || '');
         
         // Initialize thumb position and progress fill
@@ -104,22 +140,34 @@ export const MeditationPlayerScreen: React.FC = () => {
         
         // Initialize emotional feedback position (start at center)
         // Will be set properly once actualEmotionalBarWidth is measured
-        emotionalThumbPosition.value = 0; // Will be updated when width is measured
+        // Don't reset to 0 - let the width measurement handle positioning
         setEmotionalRating(3); // Start at "okay"
         setCurrentEmotionalLabel(''); // No initial label - only show when interacted
         setHasUserInteracted(false); // Reset interaction state
         hasUserInteractedValue.value = false; // Reset shared value
         setProgressBarColor('rgba(255, 255, 255, 0.8)'); // Start with high opacity white (neutral)
         
+        // Reset emotional feedback opacity
+        emotionalFeedbackOpacity.setValue(0);
+        
         // Load audio in background and start playing when ready
         audioPlayerRef.current.loadAudio(audioData.backgroundAudio).then(() => {
           setAudioLoaded(true);
+          setPlayerState('playing');
           audioPlayerRef.current.play();
+          
+          // Animate emotional feedback section in
+          Animated.timing(emotionalFeedbackOpacity, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }).start();
         });
       } else {
         // Fallback to duration in minutes
         setTotalDuration(activeSession.durationMin * 60);
         setCurrentTime(0);
+        setAudioLoaded(true);
         setPlayerState('playing'); // Auto-start even without audio data
         
         // Initialize thumb position and progress fill
@@ -128,15 +176,51 @@ export const MeditationPlayerScreen: React.FC = () => {
         
         // Initialize emotional feedback position (start at center)
         // Will be set properly once actualEmotionalBarWidth is measured
-        emotionalThumbPosition.value = 0; // Will be updated when width is measured
+        // Don't reset to 0 - let the width measurement handle positioning
         setEmotionalRating(3); // Start at "okay"
         setCurrentEmotionalLabel(''); // No initial label - only show when interacted
         setHasUserInteracted(false); // Reset interaction state
         hasUserInteractedValue.value = false; // Reset shared value
         setProgressBarColor('rgba(255, 255, 255, 0.8)'); // Start with high opacity white (neutral)
+        
+        // Reset emotional feedback opacity
+        emotionalFeedbackOpacity.setValue(0);
+        
+        // Animate emotional feedback section in (fallback case)
+        Animated.timing(emotionalFeedbackOpacity, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }).start();
+      }
+      
+      // If coming from tutorial, start unblur animation
+      if (isFromTutorial) {
+        // Start with blur already at full intensity
+        transitionAnim.setValue(1);
+        setIsTransitioning(true);
+        
+        // Wait for layout to complete before starting unblur
+        if (layoutComplete) {
+          setIsPrerendered(true);
+          
+          // Then start unblur animation
+          setTimeout(() => {
+            Animated.timing(transitionAnim, {
+              toValue: 0,
+              duration: 500,
+              useNativeDriver: true,
+            }).start(() => {
+              setIsTransitioning(false);
+            });
+          }, 50);
+        }
+      } else {
+        // Not transitioning, mark as prerendered immediately
+        setIsPrerendered(true);
       }
     }
-  }, [activeSession, thumbPosition]);
+  }, [activeSession, thumbPosition, isTransitioning, layoutComplete]);
 
   // Update gradient colors based on session progress
   useEffect(() => {
@@ -235,6 +319,26 @@ export const MeditationPlayerScreen: React.FC = () => {
     };
   }, []);
 
+  // Idle timer management
+  useEffect(() => {
+    // Start idle timer when component mounts and player is playing
+    if (playerState === 'playing' && !isDarkMode && idleTimerEnabled) {
+      resetIdleTimer();
+    }
+
+    // Cleanup timer on unmount
+    return () => {
+      clearIdleTimer();
+    };
+  }, [playerState, isDarkMode, idleTimerEnabled]);
+
+  // Reset idle timer on specific user interactions (not on time updates)
+  useEffect(() => {
+    if (playerState === 'playing' && !isDarkMode && idleTimerEnabled) {
+      resetIdleTimer();
+    }
+  }, [emotionalRating, showTutorial, isLiked, idleTimerEnabled]);
+
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -243,6 +347,9 @@ export const MeditationPlayerScreen: React.FC = () => {
   };
 
   const handlePlayPause = () => {
+    // Reset idle timer on user interaction
+    resetIdleTimer();
+    
     // Animate button press
     Animated.sequence([
       Animated.timing(playButtonScale, {
@@ -257,15 +364,36 @@ export const MeditationPlayerScreen: React.FC = () => {
       }),
     ]).start();
 
+    if (!audioLoaded) {
+      return;
+    }
     if (playerState === 'ready') {
       setPlayerState('playing');
       audioPlayerRef.current.play();
+      // Animate emotional feedback bar in
+      Animated.timing(emotionalFeedbackOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
     } else if (playerState === 'playing') {
       setPlayerState('paused');
       audioPlayerRef.current.pause();
+      // Animate emotional feedback bar out
+      Animated.timing(emotionalFeedbackOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
     } else if (playerState === 'paused') {
       setPlayerState('playing');
       audioPlayerRef.current.play();
+      // Animate emotional feedback bar in
+      Animated.timing(emotionalFeedbackOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
     }
   };
 
@@ -291,34 +419,137 @@ export const MeditationPlayerScreen: React.FC = () => {
   };
 
   const handleTutorialToggle = () => {
-    setShowTutorial(!showTutorial);
+    if (showTutorial) {
+      // Skip tutorial - go back to normal player
+      setShowTutorial(false);
+    } else {
+      // Do tutorial - switch to tutorial mode with transition
+      setIsTransitioning(true);
+      Animated.timing(transitionAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }).start(() => {
+        // Switch to tutorial mode while still blurred
+        if (activeSession) {
+          const tutorialSession = { ...activeSession, isTutorial: true };
+          setActiveSession(tutorialSession);
+        }
+        
+        // The new tutorial screen will handle the unblur animation
+      });
+    }
   };
 
   const handleLike = () => {
-    setIsLiked(!isLiked);
+    if (activeSession) {
+      toggleLikedSession(activeSession.id);
+    }
   };
 
   const handleOptions = () => {
-    // Handle options menu
-    console.log('Options pressed');
+    setShowOptionsMenu(true);
+    Animated.timing(optionsMenuAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleCloseOptions = () => {
+    Animated.timing(optionsMenuAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowOptionsMenu(false);
+    });
+  };
+
+  // Function to activate dark mode with animation
+  const activateDarkMode = (newDarkMode: boolean) => {
+    setIsDarkMode(newDarkMode);
+    
+    // Smooth fade animations
+    Animated.parallel([
+      Animated.timing(darkModeAnim, {
+        toValue: newDarkMode ? 1 : 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(darkModeBackgroundAnim, {
+        toValue: newDarkMode ? 1 : 0,
+        duration: 300,
+        useNativeDriver: false,
+      })
+    ]).start();
+  };
+
+  // Function to reset idle timer
+  const resetIdleTimer = () => {
+    // Clear existing timer
+    if (idleTimerRef.current) {
+      console.log('Resetting idle timer...');
+      clearTimeout(idleTimerRef.current);
+    }
+    
+    // Only start timer if enabled, not already in dark mode, and player is playing
+    if (idleTimerEnabled && !isDarkMode && playerState === 'playing') {
+      console.log('Starting idle timer for dark mode...');
+      idleTimerRef.current = setTimeout(() => {
+        console.log('Idle timer triggered - activating dark mode');
+        activateDarkMode(true);
+      }, IDLE_TIMEOUT);
+    }
+  };
+
+  // Function to clear idle timer
+  const clearIdleTimer = () => {
+    if (idleTimerRef.current) {
+      clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = null;
+    }
+  };
+
+  const handleScreenTap = () => {
+    // Only allow dark mode toggle when playing, not when paused
+    if (playerState !== 'playing') {
+      return;
+    }
+    
+    // Toggle dark mode when tapping anywhere on the screen
+    const newDarkMode = !isDarkMode;
+    activateDarkMode(newDarkMode);
+    
+    // Reset idle timer when user interacts
+    if (!newDarkMode) {
+      resetIdleTimer();
+    } else {
+      clearIdleTimer();
+    }
   };
 
   const handleSkipForward = () => {
     const newTime = Math.min(currentTime + 10, totalDuration);
-    setCurrentTime(newTime);
-    audioPlayerRef.current.seekTo(newTime);
+    updateCurrentTimeWithReset(newTime);
   };
 
   const handleSkipBackward = () => {
     const newTime = Math.max(currentTime - 10, 0);
-    setCurrentTime(newTime);
-    audioPlayerRef.current.seekTo(newTime);
+    updateCurrentTimeWithReset(newTime);
   };
 
   // Helper function to update current time (called from worklet)
   const updateCurrentTime = (newTime: number) => {
     setCurrentTime(newTime);
     audioPlayerRef.current.seekTo(newTime);
+  };
+
+  // Helper function to update current time with idle timer reset (for user interactions)
+  const updateCurrentTimeWithReset = (newTime: number) => {
+    setCurrentTime(newTime);
+    audioPlayerRef.current.seekTo(newTime);
+    resetIdleTimer();
   };
 
   // Helper function to trigger haptic feedback
@@ -348,7 +579,7 @@ export const MeditationPlayerScreen: React.FC = () => {
       // Calculate and update time in real-time
       const progress = newPosition / progressBarWidth;
       const newTime = Math.round(progress * totalDuration);
-      runOnJS(updateCurrentTime)(newTime);
+      runOnJS(updateCurrentTimeWithReset)(newTime);
     })
     .onEnd(() => {
       isDragging.value = false;
@@ -416,6 +647,8 @@ export const MeditationPlayerScreen: React.FC = () => {
   // Helper function to update emotional rating (called from worklet)
   const updateEmotionalRating = (newRating: number) => {
     setEmotionalRating(newRating);
+    // Reset idle timer on emotional feedback interaction
+    resetIdleTimer();
   };
 
   // Start countdown confirmation
@@ -667,29 +900,53 @@ export const MeditationPlayerScreen: React.FC = () => {
   });
 
   return (
-    <GestureHandlerRootView style={styles.container}>
+    <GestureHandlerRootView 
+      style={styles.container}
+      onLayout={() => {
+        setLayoutComplete(true);
+      }}
+    >
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        <StatusBar 
+          barStyle="light-content" 
+          backgroundColor="transparent" 
+          translucent 
+          hidden={isDarkMode}
+          animated={true}
+        />
       
       {/* Dynamic gradient background based on module */}
-      <LinearGradient
-        colors={[gradientColors.top, gradientColors.bottom]}
-        style={styles.backgroundGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-      />
+      <Animated.View style={styles.backgroundGradient}>
+        <LinearGradient
+          colors={isDarkMode ? ['#000000', '#000000'] : [gradientColors.top, gradientColors.bottom]}
+          style={styles.backgroundGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+        />
+      </Animated.View>
       
-      {/* Top Bar */}
-      <View style={styles.topBar}>
+      {/* Top Bar - Hidden in dark mode */}
+      <Animated.View style={[
+        styles.topBar, 
+        {
+          opacity: darkModeAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [1, 0],
+          }),
+          pointerEvents: isDarkMode ? 'none' : 'auto',
+        }
+      ]}>
         <TouchableOpacity style={styles.topBarButton} onPress={handleBack}>
           <BackIcon size={20} color="#ffffff" />
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.tutorialButton} onPress={handleTutorialToggle}>
-          <Text style={styles.tutorialButtonText}>
-            {showTutorial ? 'Skip tutorial' : 'Do tutorial'}
-          </Text>
-        </TouchableOpacity>
+        {!!(activeSession && (meditationAudioData[activeSession.id as keyof typeof meditationAudioData] as any)?.tutorialBackgroundAudio) && (
+          <TouchableOpacity style={styles.tutorialButton} onPress={handleTutorialToggle}>
+            <Text style={styles.tutorialButtonText}>
+              {showTutorial ? 'Skip tutorial' : 'Do tutorial'}
+            </Text>
+          </TouchableOpacity>
+        )}
         
         <TouchableOpacity style={styles.heartButtonTop} onPress={handleLike}>
           {isLiked ? (
@@ -702,23 +959,51 @@ export const MeditationPlayerScreen: React.FC = () => {
         <TouchableOpacity style={styles.topBarButton} onPress={handleOptions}>
           <MoreIcon size={20} color="#ffffff" />
         </TouchableOpacity>
-      </View>
+      </Animated.View>
 
       {/* Main Content */}
-      <View style={styles.mainContent}>
-        {/* Session Title */}
-        <View style={styles.titleSection}>
+      <TouchableOpacity 
+        style={styles.mainContent} 
+        onPress={handleScreenTap}
+        activeOpacity={1}
+      >
+        {/* Session Title - Hidden in dark mode */}
+        <Animated.View style={[
+          styles.titleSection,
+          {
+            opacity: darkModeAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [1, 0],
+            }),
+            pointerEvents: isDarkMode ? 'none' : 'auto',
+          }
+        ]}>
           <Text style={styles.sessionTitle}>{activeSession.title}</Text>
-        </View>
+        </Animated.View>
 
-        {/* Artist/Creator */}
-        <View style={styles.artistContainer}>
+        {/* Artist/Creator - Hidden in dark mode */}
+        <Animated.View style={[
+          styles.artistContainer,
+          {
+            opacity: darkModeAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [1, 0],
+            }),
+            pointerEvents: isDarkMode ? 'none' : 'auto',
+          }
+        ]}>
           <Text style={styles.artistName}>Prashanti Paz</Text>
-        </View>
+        </Animated.View>
 
-
-        {/* Progress Bar */}
-        <View style={styles.progressSection}>
+        {/* Progress Bar - Always visible */}
+        <TouchableOpacity 
+          style={[
+            styles.progressSection,
+            isDarkMode && styles.darkModeTint
+          ]} 
+          onPress={(e) => e.stopPropagation()}
+          activeOpacity={1}
+        >
           <View style={styles.progressContainer}>
             <View style={styles.progressTrack} />
             <Reanimated.View style={[styles.progressFill, progressFillAnimatedStyle]} />
@@ -730,17 +1015,26 @@ export const MeditationPlayerScreen: React.FC = () => {
             <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
             <Text style={styles.timeText}>-{formatTime(totalDuration - currentTime)}</Text>
           </View>
-        </View>
+        </TouchableOpacity>
 
-        {/* Player Controls */}
-        <View style={styles.playerControls}>
-          <TouchableOpacity style={styles.controlButton} onPress={handleSkipBackward}>
+        {/* Player Controls - Hidden in dark mode */}
+        <Animated.View style={[
+          styles.playerControls,
+          {
+            opacity: darkModeAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [1, 0],
+            }),
+            pointerEvents: isDarkMode ? 'none' : 'auto',
+          }
+        ]}>
+          <TouchableOpacity style={styles.controlButton} onPress={(e) => { e.stopPropagation(); handleSkipBackward(); }}>
             <SkipBackward10Icon size={60} color="#ffffff" />
           </TouchableOpacity>
           
           <Animated.View style={{ transform: [{ scale: playButtonScale }] }}>
-            <TouchableOpacity style={styles.playButton} onPress={handlePlayPause}>
-              {!audioLoaded && playerState === 'playing' ? (
+            <TouchableOpacity style={styles.playButton} onPress={(e) => { e.stopPropagation(); handlePlayPause(); }}>
+              {!audioLoaded ? (
                 <ActivityIndicator size="small" color="#1a1a1a" />
               ) : playerState === 'playing' ? (
                 <PauseIcon size={36} color="#1a1a1a" />
@@ -750,22 +1044,26 @@ export const MeditationPlayerScreen: React.FC = () => {
             </TouchableOpacity>
           </Animated.View>
           
-          <TouchableOpacity style={styles.controlButton} onPress={handleSkipForward}>
+          <TouchableOpacity style={styles.controlButton} onPress={(e) => { e.stopPropagation(); handleSkipForward(); }}>
             <SkipForward10Icon size={60} color="#ffffff" />
           </TouchableOpacity>
-        </View>
-      </View>
+        </Animated.View>
+      </TouchableOpacity>
 
       {/* Bottom Section - Fixed Height */}
       <View style={styles.bottomSection}>
         {/* Emotional Feedback Section - Always rendered, shown/hidden with opacity */}
-        <Animated.View style={[
-          styles.emotionalFeedbackSection,
-          { 
-            opacity: playerState === 'playing' ? 1 : 0,
-            pointerEvents: playerState === 'playing' ? 'auto' : 'none'
-          }
-        ]}>
+        <Animated.View 
+          style={[
+            styles.emotionalFeedbackSection,
+            isDarkMode && styles.darkModeTint,
+            isDarkMode && styles.darkModeEmotionalSection,
+            { 
+              opacity: emotionalFeedbackOpacity,
+              pointerEvents: playerState === 'playing' ? 'auto' : 'none',
+            }
+          ]}
+        >
           <Text style={styles.emotionalFeedbackTitle}>How do you feel?</Text>
           
           {/* Confirm Button */}
@@ -837,21 +1135,145 @@ export const MeditationPlayerScreen: React.FC = () => {
         </Animated.View>
 
         {/* Action Buttons Section - Always rendered, shown/hidden with opacity */}
-        <Animated.View style={[
-          styles.actionButtonsSection,
-          { 
-            opacity: (playerState === 'paused' || playerState === 'finished') ? 1 : 0,
-            pointerEvents: (playerState === 'paused' || playerState === 'finished') ? 'auto' : 'none'
-          }
-        ]}>
-          <TouchableOpacity style={styles.finishButton} onPress={handleFinish}>
+        <TouchableOpacity 
+          style={[
+            styles.actionButtonsSection,
+            { 
+              opacity: (playerState === 'paused' || playerState === 'finished') ? 1 : 0,
+              pointerEvents: (playerState === 'paused' || playerState === 'finished') ? 'auto' : 'none'
+            }
+          ]}
+          onPress={(e) => e.stopPropagation()}
+          activeOpacity={1}
+        >
+          <TouchableOpacity style={styles.finishButton} onPress={(e) => { e.stopPropagation(); handleFinish(); }}>
             <Text style={styles.finishButtonText}>Finish</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.discardButton} onPress={handleDiscard}>
+          <TouchableOpacity style={styles.discardButton} onPress={(e) => { e.stopPropagation(); handleDiscard(); }}>
             <Text style={styles.discardButtonText}>Discard session</Text>
           </TouchableOpacity>
-        </Animated.View>
+        </TouchableOpacity>
       </View>
+
+      {/* Transition Overlay - Always present to prevent glitch */}
+      <Animated.View 
+        style={[
+          styles.transitionOverlay,
+          {
+            opacity: transitionAnim,
+            pointerEvents: isTransitioning ? 'auto' : 'none',
+          }
+        ]}
+      >
+        <BlurView
+          intensity={80}
+          tint="dark"
+          style={styles.blurView}
+        />
+      </Animated.View>
+
+      {/* Options Menu Bottom Sheet */}
+      {showOptionsMenu && (
+        <View style={styles.optionsMenuOverlay}>
+          <Animated.View 
+            style={[
+              styles.optionsMenuBackdrop,
+              {
+                opacity: optionsMenuAnim,
+              }
+            ]}
+          >
+            <TouchableOpacity 
+              style={styles.optionsMenuBackdropTouchable} 
+              onPress={handleCloseOptions}
+              activeOpacity={1}
+            />
+          </Animated.View>
+          <Animated.View style={[
+            styles.optionsMenuContainer,
+            {
+              transform: [{
+                translateY: optionsMenuAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [300, 0],
+                })
+              }]
+            }
+          ]}>
+            <View style={styles.optionsMenuHandle} />
+            
+            <View style={styles.optionsMenuContent}>
+              <Text style={styles.optionsMenuTitle}>Options</Text>
+              
+              {/* Sleep Mode Toggle */}
+              <View style={styles.optionsMenuItem}>
+                <View style={styles.optionsMenuTextContainer}>
+                  <Text style={styles.optionsMenuLabel}>Sleep Mode</Text>
+                  <Text style={styles.optionsMenuDescription}>Automatically pause when you fall asleep</Text>
+                </View>
+                <TouchableOpacity
+                  style={[
+                    styles.optionsMenuToggle,
+                    sleepModeEnabled && styles.optionsMenuToggleActive
+                  ]}
+                  onPress={() => setSleepModeEnabled(!sleepModeEnabled)}
+                >
+                  <View style={[
+                    styles.optionsMenuToggleThumb,
+                    sleepModeEnabled && styles.optionsMenuToggleThumbActive
+                  ]} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Download Toggle */}
+              <View style={styles.optionsMenuItem}>
+                <View style={styles.optionsMenuTextContainer}>
+                  <Text style={styles.optionsMenuLabel}>Download</Text>
+                  <Text style={styles.optionsMenuDescription}>Download for offline listening</Text>
+                </View>
+                <TouchableOpacity
+                  style={[
+                    styles.optionsMenuToggle,
+                    downloadEnabled && styles.optionsMenuToggleActive
+                  ]}
+                  onPress={() => setDownloadEnabled(!downloadEnabled)}
+                >
+                  <View style={[
+                    styles.optionsMenuToggleThumb,
+                    downloadEnabled && styles.optionsMenuToggleThumbActive
+                  ]} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Idle Timer Toggle */}
+              <View style={styles.optionsMenuItem}>
+                <View style={styles.optionsMenuTextContainer}>
+                  <Text style={styles.optionsMenuLabel}>Auto Dark Mode</Text>
+                  <Text style={styles.optionsMenuDescription}>Automatically activate dark mode after 10 seconds of inactivity</Text>
+                </View>
+                <TouchableOpacity
+                  style={[
+                    styles.optionsMenuToggle,
+                    idleTimerEnabled && styles.optionsMenuToggleActive
+                  ]}
+                  onPress={() => {
+                    setIdleTimerEnabled(!idleTimerEnabled);
+                    // Clear timer if disabling
+                    if (idleTimerEnabled) {
+                      clearIdleTimer();
+                    }
+                  }}
+                >
+                  <View style={[
+                    styles.optionsMenuToggleThumb,
+                    idleTimerEnabled && styles.optionsMenuToggleThumbActive
+                  ]} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Animated.View>
+        </View>
+      )}
       </SafeAreaView>
     </GestureHandlerRootView>
   );
@@ -1024,7 +1446,7 @@ const styles = StyleSheet.create({
   },
   emotionalFeedbackSection: {
     position: 'absolute',
-    top: 10, // Move down to create space from player controls
+    top: 20, // Move back up but still avoid overlap
     left: 32, // Match the paddingHorizontal
     right: 32, // Match the paddingHorizontal
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -1033,6 +1455,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  darkModeEmotionalSection: {
+    borderWidth: 0,
+    borderColor: 'transparent',
   },
   emotionalFeedbackTitle: {
     color: '#ffffff',
@@ -1196,4 +1622,125 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
+  // Options Menu Styles
+  optionsMenuOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
+  },
+  optionsMenuBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  optionsMenuBackdropTouchable: {
+    flex: 1,
+  },
+  optionsMenuContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#2a2a2a',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 40,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 20,
+  },
+  optionsMenuHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 20,
+  },
+  optionsMenuContent: {
+    paddingHorizontal: 24,
+  },
+  optionsMenuTitle: {
+    color: '#ffffff',
+    fontSize: 24,
+    fontWeight: '600',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  optionsMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  optionsMenuTextContainer: {
+    flex: 1,
+    marginRight: 16,
+  },
+  optionsMenuLabel: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  optionsMenuDescription: {
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: 14,
+    fontWeight: '400',
+  },
+  optionsMenuToggle: {
+    width: 50,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    paddingHorizontal: 2,
+  },
+  optionsMenuToggleActive: {
+    backgroundColor: '#4CAF50',
+  },
+  optionsMenuToggleThumb: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  optionsMenuToggleThumbActive: {
+    transform: [{ translateX: 20 }],
+  },
+  hiddenElement: {
+    opacity: 0,
+    pointerEvents: 'none',
+  },
+  darkModeTint: {
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 12,
+    padding: 16,
+  },
+  transitionOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 2000,
+  },
+  blurView: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
 });
+

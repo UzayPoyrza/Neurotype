@@ -14,6 +14,7 @@ import { ExploreScreen } from './src/screens/ExploreScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { MeditationPlayerScreen } from './src/screens/MeditationPlayerScreen';
+import { TutorialPlayerScreen } from './src/screens/TutorialPlayerScreen';
 import { ModuleDetailScreen } from './src/screens/ModuleDetailScreen';
 import { MeditationDetailScreen } from './src/screens/MeditationDetailScreen';
 import { SplashScreen } from './src/screens/SplashScreen';
@@ -281,7 +282,11 @@ export default function App() {
         animationType="slide"
         presentationStyle="fullScreen"
       >
-        <MeditationPlayerScreen />
+        {(activeSession as any)?.isTutorial ? (
+          <TutorialPlayerScreen />
+        ) : (
+          <MeditationPlayerScreen />
+        )}
       </Modal>
     </NavigationContainer>
     </>

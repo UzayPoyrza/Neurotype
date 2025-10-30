@@ -28,6 +28,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
   
   const { moduleId } = route.params;
   const module = mentalHealthModules.find(m => m.id === moduleId);
+  const likedSessionIds = useStore(state => state.likedSessionIds);
   
   // Local background color for this screen only
   const [localBackgroundColor, setLocalBackgroundColor] = useState('#f2f2f7');
@@ -54,6 +55,11 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
   
   // Filter sessions based on module type
   const moduleSessions = useMemo(() => {
+    // Handle liked meditations case
+    if (moduleId === 'liked-meditations') {
+      return mockSessions.filter(session => likedSessionIds.includes(session.id));
+    }
+    
     if (!module) return [];
     
     // Map module IDs to session goals/types
@@ -77,14 +83,14 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
     return mockSessions.filter(session => 
       relevantGoals.includes(session.goal)
     );
-  }, [moduleId, module]);
+  }, [moduleId, module, likedSessionIds]);
 
   const handleSessionStart = (session: Session) => {
     // Navigate to MeditationDetail screen instead of setting active session
     navigation.navigate('MeditationDetail', { sessionId: session.id });
   };
 
-  if (!module) {
+  if (!module && moduleId !== 'liked-meditations') {
     return (
       <View style={[styles.container, { backgroundColor: '#f2f2f7' }]}>
         <View style={styles.header}>
@@ -107,11 +113,20 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <View style={[styles.moduleIcon, { backgroundColor: module.color }]}>
-            <Text style={styles.moduleIconText}>{module.title.charAt(0)}</Text>
+          <View style={[styles.moduleIcon, { backgroundColor: moduleId === 'liked-meditations' ? '#E74C3C' : module?.color }]}>
+            <Text style={styles.moduleIconText}>
+              {moduleId === 'liked-meditations' ? '❤️' : module?.title.charAt(0)}
+            </Text>
           </View>
-          <Text style={styles.moduleTitle}>{module.title}</Text>
-          <Text style={styles.moduleDescription}>{module.description}</Text>
+          <Text style={styles.moduleTitle}>
+            {moduleId === 'liked-meditations' ? 'Liked Meditations' : module?.title}
+          </Text>
+          <Text style={styles.moduleDescription}>
+            {moduleId === 'liked-meditations' 
+              ? `${moduleSessions.length} favorite meditation session${moduleSessions.length === 1 ? '' : 's'}`
+              : module?.description
+            }
+          </Text>
         </View>
       </View>
 
@@ -136,10 +151,13 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
           <View style={styles.emptyStateContainer}>
             <View style={styles.emptyState}>
               <Text style={styles.emptyText}>
-                Coming Soon
+                {moduleId === 'liked-meditations' ? 'No Liked Meditations' : 'Coming Soon'}
               </Text>
               <Text style={styles.emptySubtext}>
-                Meditations for {module.title} are being prepared
+                {moduleId === 'liked-meditations' 
+                  ? 'Heart meditations you enjoy to see them here'
+                  : `Meditations for ${module?.title} are being prepared`
+                }
               </Text>
             </View>
           </View>

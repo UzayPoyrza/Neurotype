@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Session } from '../types';
 import { theme } from '../styles/theme';
+import { useStore } from '../store/useStore';
 
 interface SessionCardProps {
   session: Session;
@@ -14,7 +15,9 @@ export const SessionCard: React.FC<SessionCardProps> = ({
   onStart, 
   variant = 'list' 
 }) => {
-  const [isFavorited, setIsFavorited] = useState(false);
+  const toggleLikedSession = useStore(state => state.toggleLikedSession);
+  const likedSessionIds = useStore(state => state.likedSessionIds);
+  const isFavorited = likedSessionIds.includes(session.id);
 
   const getModalityColor = (modality: string) => {
     switch (modality.toLowerCase()) {
@@ -52,7 +55,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
 
   const handleFavoritePress = (e: any) => {
     e.stopPropagation(); // Prevent triggering onStart
-    setIsFavorited(!isFavorited);
+    toggleLikedSession(session.id);
   };
 
   return (

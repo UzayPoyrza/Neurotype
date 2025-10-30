@@ -15,6 +15,8 @@ export const meditationAudioData = {
       { start: 270, end: 300, text: 'When you\'re ready, gently open your eyes. Take a moment to notice how you feel.' }
     ],
     backgroundAudio: 'ocean_waves.mp3',
+    // Use a distinct tutorial audio for the tutorial flow
+    tutorialBackgroundAudio: 'ocean_waves_tutorial.mp3',
     volume: 0.7
   },
 
@@ -34,6 +36,7 @@ export const meditationAudioData = {
       { start: 420, end: 480, text: 'Notice how your body feels more open and relaxed. Thank yourself for this practice.' }
     ],
     backgroundAudio: 'gentle_music.mp3',
+    tutorialBackgroundAudio: 'gentle_music_tutorial.mp3',
     volume: 0.5
   },
 
@@ -55,6 +58,7 @@ export const meditationAudioData = {
       { start: 570, end: 600, text: 'When you\'re ready, gently open your eyes. Take a moment to feel the peace within.' }
     ],
     backgroundAudio: 'om_chanting.mp3',
+    tutorialBackgroundAudio: 'om_chanting_tutorial.mp3',
     volume: 0.6
   },
 
@@ -73,6 +77,7 @@ export const meditationAudioData = {
       { start: 330, end: 360, text: 'When you\'re ready, gently open your eyes. Carry this mountain\'s stability with you.' }
     ],
     backgroundAudio: 'mountain_wind.mp3',
+    tutorialBackgroundAudio: 'mountain_wind_tutorial.mp3',
     volume: 0.4
   },
 
@@ -101,6 +106,7 @@ export const meditationAudioData = {
       { start: 660, end: 720, text: 'When you\'re ready, slowly open your eyes. Notice how refreshed you feel.' }
     ],
     backgroundAudio: 'soft_bells.mp3',
+    tutorialBackgroundAudio: 'soft_bells_tutorial.mp3',
     volume: 0.3
   },
 
@@ -120,6 +126,7 @@ export const meditationAudioData = {
       { start: 390, end: 420, text: 'When you\'re ready, gently open your eyes. Carry this awareness with you.' }
     ],
     backgroundAudio: 'soft_rain.mp3',
+    tutorialBackgroundAudio: 'soft_rain_tutorial.mp3',
     volume: 0.4
   }
 };

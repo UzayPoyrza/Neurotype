@@ -543,6 +543,15 @@ export const MeditationPlayerScreen: React.FC = () => {
 
   // Helper function to update current time with idle timer reset (for user interactions)
   const updateCurrentTimeWithReset = (newTime: number) => {
+    // If user skips to or beyond the end, finish immediately
+    if (newTime >= totalDuration) {
+      setCurrentTime(totalDuration);
+      audioPlayerRef.current.seekTo(totalDuration);
+      audioPlayerRef.current.stop();
+      setPlayerState('finished');
+      setShowCompletionLanding(true);
+      return;
+    }
     setCurrentTime(newTime);
     audioPlayerRef.current.seekTo(newTime);
     resetIdleTimer();

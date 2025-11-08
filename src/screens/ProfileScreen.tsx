@@ -361,14 +361,14 @@ const styles = StyleSheet.create({
   },
   mergedSection: {
     paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingVertical: 16,
   },
   mergedDivider: {
-    height: 1,
-    backgroundColor: '#f0f0f0',
+    height: 2,
+    backgroundColor: '#e0e0e0',
   },
   statsSection: {
-    backgroundColor: '#fafafa',
+    backgroundColor: '#ffffff',
   },
   profileName: {
     fontSize: 24,
@@ -391,28 +391,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   shareContent: {
-    marginTop: 16,
-    gap: 20,
+    marginTop: 12,
+    gap: 14,
   },
   shareSubtitle: {
     fontSize: 15,
     color: '#8e8e93',
     fontWeight: '400',
-    marginBottom: 20,
+    marginBottom: 12,
     textAlign: 'center',
   },
   stepsList: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   step: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   stepNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   referralSection: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   referralLabel: {
     fontSize: 15,
@@ -471,7 +471,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#007AFF',
     borderRadius: 12,
-    paddingVertical: 12,
+    paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f2f2f7',
     borderRadius: 12,
-    paddingVertical: 12,
+    paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -496,7 +496,7 @@ const styles = StyleSheet.create({
   statsContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: 12,
   },
   statItem: {
     flex: 1,
@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: 'bold',
     color: '#000000',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   statLabel: {
     fontSize: 13,

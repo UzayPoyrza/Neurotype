@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import Svg, { Path } from 'react-native-svg';
-import { useStore } from '../store/useStore';
+import { useStore, prerenderedModuleBackgrounds } from '../store/useStore';
 import { theme } from '../styles/theme';
-import { ProfilePictureModal } from '../components/ProfilePictureModal';
 import { SubscriptionBadge } from '../components/SubscriptionBadge';
-import { UserIcon } from '../components/icons';
+import { mentalHealthModules } from '../data/modules';
 
 type ProfileStackParamList = {
   ProfileMain: undefined;
@@ -20,22 +19,26 @@ export const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const { 
     userProgress,
-    profileIcon,
-    setProfileIcon,
     subscriptionType
   } = useStore();
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
+  const userFirstName = useStore(state => state.userFirstName);
+  const todayModuleId = useStore(state => state.todayModuleId);
 
   // Set screen context when component mounts
   React.useEffect(() => {
     setCurrentScreen('profile');
   }, [setCurrentScreen]);
-  
-  const [modalVisible, setModalVisible] = useState(false);
 
     // Get recent activity from session deltas
   const recentActivity = userProgress.sessionDeltas.slice(-10).reverse(); // Last 10 sessions, most recent first
+
+  const moduleId = todayModuleId || 'anxiety';
+  const activeModule = mentalHealthModules.find(module => module.id === moduleId);
+  const moduleBorderColor = activeModule?.color || theme.colors.primary;
+  const avatarBackgroundColor = prerenderedModuleBackgrounds[moduleId] || '#f2f2f7';
+  const profileInitial = userFirstName?.trim().charAt(0)?.toUpperCase() || 'N';
 
   return (
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
@@ -72,19 +75,21 @@ export const ProfileScreen: React.FC = () => {
         {/* Profile Header Card */}
         <View style={styles.profileHeaderCard}>
           <View style={styles.profileHeaderContent}>
-            <TouchableOpacity
-              style={styles.profilePictureContainer}
-              onPress={() => setModalVisible(true)}
-            >
-              <UserIcon 
-                size={100}
-                profileIcon={profileIcon}
-                onPress={() => setModalVisible(true)}
-              />
-              <View style={styles.profilePictureOverlay}>
-                <Text style={styles.changePhotoText}>✏️</Text>
+            <View style={styles.profilePictureWrapper}>
+              <View
+                style={[
+                  styles.profileInitialContainer,
+                  {
+                    borderColor: moduleBorderColor,
+                    backgroundColor: avatarBackgroundColor,
+                  }
+                ]}
+              >
+                <Text style={[styles.profileInitialText, { color: moduleBorderColor }]}>
+                  {profileInitial}
+                </Text>
               </View>
-            </TouchableOpacity>
+            </View>
             
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>Your Profile</Text>
@@ -264,14 +269,6 @@ export const ProfileScreen: React.FC = () => {
         {/* Bottom spacing */}
         <View style={styles.bottomSpacing} />
       </ScrollView>
-      
-      {/* Profile Picture Modal */}
-      <ProfilePictureModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        onSelectIcon={setProfileIcon}
-        currentIcon={profileIcon}
-      />
     </View>
   );
 };
@@ -330,26 +327,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
-  profilePictureContainer: {
-    position: 'relative',
+  profilePictureWrapper: {
     marginRight: 20,
   },
-  profilePictureOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
-    width: 24,
-    height: 24,
+  profileInitialContainer: {
+    width: 110,
+    height: 110,
+    borderRadius: 24,
+    borderWidth: theme.borders.width.thick,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#ffffff',
+    ...theme.shadows.medium,
+    borderColor: theme.colors.primary,
+    backgroundColor: '#f2f2f7',
   },
-  changePhotoText: {
-    fontSize: 12,
-    color: '#ffffff',
+  profileInitialText: {
+    fontSize: 48,
+    fontWeight: '700',
+    color: theme.colors.primary,
   },
   profileInfo: {
     flex: 1,

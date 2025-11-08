@@ -28,6 +28,7 @@ mentalHealthModules.forEach(module => {
 
 interface AppState {
   userProgress: UserProgress;
+  userFirstName: string;
   filters: FilterState;
   reminderEnabled: boolean;
   darkThemeEnabled: boolean;
@@ -45,6 +46,7 @@ interface AppState {
   setFilters: (filters: FilterState) => void;
   toggleReminder: () => void;
   toggleDarkTheme: () => void;
+  setUserFirstName: (name: string) => void;
   setProfileIcon: (icon: string) => void;
   setSubscriptionType: (type: 'basic' | 'premium') => void;
   setActiveSession: (session: Session | null) => void;
@@ -60,6 +62,7 @@ interface AppState {
 
 export const useStore = create<AppState>((set, get) => ({
   userProgress: initialUserProgress,
+  userFirstName: 'Ava',
   filters: {
     modality: 'all',
     goal: 'all'
@@ -94,6 +97,9 @@ export const useStore = create<AppState>((set, get) => ({
     
   toggleDarkTheme: () => 
     set((state) => ({ darkThemeEnabled: !state.darkThemeEnabled })),
+
+  setUserFirstName: (name: string) =>
+    set({ userFirstName: name }),
     
   setProfileIcon: (icon: string) => 
     set({ profileIcon: icon }),

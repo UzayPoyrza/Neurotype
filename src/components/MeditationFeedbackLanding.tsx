@@ -61,12 +61,15 @@ export const MeditationFeedbackLanding: React.FC<MeditationFeedbackLandingProps>
           ]}
         >
           {/* Top: Streak */}
-          <View style={styles.header}>
+          <View style={styles.topSection}>
             <View style={styles.streakPill}>
               <Text style={styles.streakNumber}>{userProgress.streak}</Text>
               <Text style={styles.streakFire}>🔥</Text>
               <Text style={styles.streakLabel}>day streak</Text>
             </View>
+          </View>
+
+          <View style={styles.header}>
             <Text style={styles.headerTitle}>Take a quick reflection</Text>
             <Text style={styles.headerSubtitle}>
               Your feedback keeps the journey tailored just for you.
@@ -76,7 +79,7 @@ export const MeditationFeedbackLanding: React.FC<MeditationFeedbackLandingProps>
           {/* Middle: Feedback Card */}
           <View style={styles.feedbackCard}>
             <Text style={styles.questionTitle}>How was this meditation?</Text>
-            <Text style={styles.questionSubtitle}>Slide to share how grounded you feel now.</Text>
+            <Text style={styles.questionSubtitle}>Slide to your best estimate on how this meditation felt overall.</Text>
             <View style={styles.sliderContainer}>
               <Slider0to10
                 value={rating ?? 5}
@@ -85,9 +88,8 @@ export const MeditationFeedbackLanding: React.FC<MeditationFeedbackLandingProps>
                 variant="bar"
               />
               <View style={styles.sliderLabelsRow}>
-                <Text style={styles.sliderEdgeLabel}>Not great</Text>
-                <Text style={styles.sliderCenterLabel}>Neutral</Text>
-                <Text style={styles.sliderEdgeLabel}>Transformative</Text>
+                <Text style={[styles.sliderLabel, styles.sliderLabelLeft]}>Not great</Text>
+                <Text style={[styles.sliderLabel, styles.sliderLabelRight]}>Very good</Text>
               </View>
             </View>
           </View>
@@ -134,12 +136,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 28,
     paddingBottom: 48,
-    paddingTop: 160,
+    paddingTop: 32,
     gap: 36,
+  },
+  topSection: {
+    alignItems: 'center',
+    marginBottom: 8,
   },
   header: {
     alignItems: 'center',
-    gap: 16,
+    gap: 12,
   },
   streakPill: {
     flexDirection: 'row',
@@ -218,17 +224,21 @@ const styles = StyleSheet.create({
   sliderLabelsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginTop: 18,
+    paddingHorizontal: 4,
   },
-  sliderEdgeLabel: {
+  sliderLabel: {
     color: 'rgba(255,255,255,0.8)',
     fontSize: 13,
     fontWeight: '500',
+    flex: 1,
   },
-  sliderCenterLabel: {
-    color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '600',
+  sliderLabelLeft: {
+    textAlign: 'left',
+  },
+  sliderLabelRight: {
+    textAlign: 'right',
   },
   bottomButtons: {
     alignItems: 'center',

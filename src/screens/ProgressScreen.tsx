@@ -110,18 +110,6 @@ export const ProgressScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Feel Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>😊 Feel</Text>
-            <Text style={styles.recordButton}>Record ✏️</Text>
-          </View>
-          
-          <View style={styles.feelContent}>
-            <Text style={styles.feelPrompt}>How do you feel now?</Text>
-          </View>
-        </View>
-
         {/* Bottom spacing */}
         <View style={styles.bottomSpacing} />
         </ScrollView>
@@ -192,11 +180,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingTop: 120, // Account for shorter sticky header height (same as Today page)
   },
-  recordButton: {
-    fontSize: 15,
-    color: '#8e8e93',
-    fontWeight: '400',
-  },
   sessionsContent: {
     flexDirection: 'row',
     paddingHorizontal: 16,
@@ -216,16 +199,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#000000',
-  },
-  feelContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 20,
-  },
-  feelPrompt: {
-    fontSize: 17,
-    color: '#8e8e93',
-    fontWeight: '400',
-    textAlign: 'center',
   },
   bottomSpacing: {
     height: 120,

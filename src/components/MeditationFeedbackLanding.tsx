@@ -79,7 +79,7 @@ export const MeditationFeedbackLanding: React.FC<MeditationFeedbackLandingProps>
           {/* Middle: Feedback Card */}
           <View style={styles.feedbackCard}>
             <Text style={styles.questionTitle}>How was this meditation?</Text>
-            <Text style={styles.questionSubtitle}>Slide to your best estimate on how this meditation felt overall.</Text>
+            <Text style={styles.questionSubtitle}>Slide to rate your experience.</Text>
             <View style={styles.sliderContainer}>
               <Slider0to10
                 value={rating ?? 5}

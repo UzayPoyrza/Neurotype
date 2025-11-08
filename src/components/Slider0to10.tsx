@@ -1,5 +1,5 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, LayoutChangeEvent, PanResponder, GestureResponderEvent } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, LayoutChangeEvent, PanResponder, GestureResponderEvent, Animated, Easing } from 'react-native';
 
 interface Slider0to10Props {
   value: number;
@@ -21,6 +21,8 @@ export const Slider0to10: React.FC<Slider0to10Props> = ({
 }) => {
   const numbers = Array.from({ length: 11 }, (_, i) => i);
   const [trackWidth, setTrackWidth] = useState(0);
+  const animatedKnobX = useRef(new Animated.Value(0)).current;
+  const knobScale = useRef(new Animated.Value(1)).current;
 
   const clamp = useCallback((input: number, min: number, max: number) => {
     return Math.min(Math.max(input, min), max);
@@ -31,30 +33,76 @@ export const Slider0to10: React.FC<Slider0to10Props> = ({
 
     const { locationX } = event.nativeEvent;
     const clampedPosition = clamp(locationX, 0, trackWidth);
+    animatedKnobX.setValue(clampedPosition);
+
     const ratio = clampedPosition / trackWidth;
     const newValue = Math.round(ratio * 10);
     if (newValue !== value) {
       onValueChange(newValue);
     }
-  }, [trackWidth, clamp, onValueChange, value]);
+  }, [trackWidth, clamp, onValueChange, value, animatedKnobX]);
+
+  const animateKnobToValue = useCallback((targetValue: number) => {
+    if (!trackWidth) return;
+    animatedKnobX.stopAnimation();
+    Animated.timing(animatedKnobX, {
+      toValue: (targetValue / 10) * trackWidth,
+      duration: 160,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [animatedKnobX, trackWidth]);
+
+  useEffect(() => {
+    if (trackWidth) {
+      animateKnobToValue(value);
+    }
+  }, [value, trackWidth, animateKnobToValue]);
+
+  const handlePanStart = useCallback((event: GestureResponderEvent) => {
+    Animated.spring(knobScale, {
+      toValue: 1.1,
+      useNativeDriver: false,
+      friction: 5,
+      tension: 90,
+    }).start();
+    updateValueFromGesture(event);
+  }, [knobScale, updateValueFromGesture]);
+
+  const handlePanMove = useCallback((event: GestureResponderEvent) => {
+    updateValueFromGesture(event);
+  }, [updateValueFromGesture]);
+
+  const handlePanEnd = useCallback((event: GestureResponderEvent) => {
+    updateValueFromGesture(event);
+    Animated.spring(knobScale, {
+      toValue: 1,
+      useNativeDriver: false,
+      friction: 6,
+      tension: 120,
+    }).start();
+  }, [knobScale, updateValueFromGesture]);
 
   const panResponder = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => true,
     onStartShouldSetPanResponderCapture: () => true,
     onMoveShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponderCapture: () => true,
-    onPanResponderGrant: updateValueFromGesture,
-    onPanResponderMove: updateValueFromGesture,
-    onPanResponderRelease: updateValueFromGesture,
+    onPanResponderGrant: handlePanStart,
+    onPanResponderMove: handlePanMove,
+    onPanResponderRelease: handlePanEnd,
+    onPanResponderTerminate: handlePanEnd,
     onPanResponderTerminationRequest: () => false,
-  }), [updateValueFromGesture]);
+  }), [handlePanEnd, handlePanMove, handlePanStart]);
 
-  const handleTrackLayout = (event: LayoutChangeEvent) => {
-    setTrackWidth(event.nativeEvent.layout.width);
-  };
+  const handleTrackLayout = useCallback((event: LayoutChangeEvent) => {
+    const width = event.nativeEvent.layout.width;
+    setTrackWidth(width);
+    animatedKnobX.setValue((value / 10) * width);
+  }, [animatedKnobX, value]);
 
   if (variant === 'bar') {
-    const knobPosition = trackWidth ? (value / 10) * trackWidth : 0;
+    const knobPosition = animatedKnobX;
     const knobRadius = BAR_KNOB_SIZE / 2;
     const knobVerticalOffset = -((BAR_KNOB_SIZE - BAR_TRACK_HEIGHT) / 2) + 10;
 
@@ -64,9 +112,9 @@ export const Slider0to10: React.FC<Slider0to10Props> = ({
 
         <View style={styles.barTrackWrapper} {...panResponder.panHandlers}>
           <View style={styles.barTrack} onLayout={handleTrackLayout}>
-            <View
+            <Animated.View
               pointerEvents="none"
-              style={[styles.barTrackFill, { width: trackWidth ? (value / 10) * trackWidth : 0 }]}
+              style={[styles.barTrackFill, { width: knobPosition }]}
             />
             <View style={styles.barTicksWrapper} pointerEvents="none">
               {numbers.map((number) => {
@@ -87,17 +135,17 @@ export const Slider0to10: React.FC<Slider0to10Props> = ({
             </View>
           </View>
           <View style={styles.barKnobWrapper} pointerEvents="none">
-            <View
+            <Animated.View
               style={[
                 styles.barKnob,
                 {
                   width: BAR_KNOB_SIZE,
                   height: BAR_KNOB_SIZE,
                   borderRadius: knobRadius,
-                  left: knobPosition,
                   transform: [
-                    { translateX: -knobRadius },
+                    { translateX: Animated.subtract(knobPosition, knobRadius) },
                     { translateY: knobVerticalOffset },
+                    { scale: knobScale },
                   ],
                 },
               ]}

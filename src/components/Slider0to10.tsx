@@ -56,7 +56,7 @@ export const Slider0to10: React.FC<Slider0to10Props> = ({
   if (variant === 'bar') {
     const knobPosition = trackWidth ? (value / 10) * trackWidth : 0;
     const knobRadius = BAR_KNOB_SIZE / 2;
-    const knobVerticalOffset = -((BAR_KNOB_SIZE - BAR_TRACK_HEIGHT) / 2);
+    const knobVerticalOffset = -((BAR_KNOB_SIZE - BAR_TRACK_HEIGHT) / 2) + 10;
 
     return (
       <View style={styles.barRoot}>

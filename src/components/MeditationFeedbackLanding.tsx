@@ -61,20 +61,33 @@ export const MeditationFeedbackLanding: React.FC<MeditationFeedbackLandingProps>
           ]}
         >
           {/* Top: Streak */}
-          <View style={styles.streakPill}>
-            <Text style={styles.streakNumber}>{userProgress.streak}</Text>
-            <Text style={styles.streakFire}>🔥</Text>
-            <Text style={styles.streakLabel}>day streak</Text>
+          <View style={styles.header}>
+            <View style={styles.streakPill}>
+              <Text style={styles.streakNumber}>{userProgress.streak}</Text>
+              <Text style={styles.streakFire}>🔥</Text>
+              <Text style={styles.streakLabel}>day streak</Text>
+            </View>
+            <Text style={styles.headerTitle}>Take a quick reflection</Text>
+            <Text style={styles.headerSubtitle}>
+              Your feedback keeps the journey tailored just for you.
+            </Text>
           </View>
 
-          {/* Middle: Feedback Slider */}
-          <View style={styles.panel}>
-            <Text style={styles.questionText}>How was this meditation for you?</Text>
+          {/* Middle: Feedback Card */}
+          <View style={styles.feedbackCard}>
+            <Text style={styles.questionTitle}>How was this meditation?</Text>
+            <Text style={styles.questionSubtitle}>Slide to share how grounded you feel now.</Text>
             <View style={styles.sliderContainer}>
-              <Slider0to10 value={rating ?? 5} onValueChange={(v) => setRating(v)} label={null as any} />
+              <Slider0to10
+                value={rating ?? 5}
+                onValueChange={(v) => setRating(v)}
+                showLabels={false}
+                variant="bar"
+              />
               <View style={styles.sliderLabelsRow}>
-                <Text style={styles.sliderEdgeLabel}>Low</Text>
-                <Text style={styles.sliderEdgeLabel}>High</Text>
+                <Text style={styles.sliderEdgeLabel}>Not great</Text>
+                <Text style={styles.sliderCenterLabel}>Neutral</Text>
+                <Text style={styles.sliderEdgeLabel}>Transformative</Text>
               </View>
             </View>
           </View>
@@ -82,13 +95,13 @@ export const MeditationFeedbackLanding: React.FC<MeditationFeedbackLandingProps>
           {/* Bottom: Finish Button */}
           <View style={styles.bottomButtons}>
             <TouchableOpacity
-              style={[styles.finishButton, !rating && styles.finishButtonDisabled]}
+              style={[styles.finishButton, rating === null && styles.finishButtonDisabled]}
               onPress={() => {
-                if (rating) onFinish(rating);
+                if (rating !== null) onFinish(rating);
               }}
-              disabled={!rating}
+              disabled={rating === null}
             >
-              <Text style={[styles.finishButtonText, !rating && styles.finishButtonTextDisabled]}>Finish</Text>
+              <Text style={[styles.finishButtonText, rating === null && styles.finishButtonTextDisabled]}>Finish</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -119,9 +132,14 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: 'space-between',
-    paddingHorizontal: 32,
-    paddingBottom: 40,
-    paddingTop: 120,
+    paddingHorizontal: 28,
+    paddingBottom: 48,
+    paddingTop: 160,
+    gap: 36,
+  },
+  header: {
+    alignItems: 'center',
+    gap: 16,
   },
   streakPill: {
     flexDirection: 'row',
@@ -148,17 +166,48 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  panel: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 20,
+  headerTitle: {
+    color: '#ffffff',
+    fontSize: 28,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  headerSubtitle: {
+    color: 'rgba(255,255,255,0.75)',
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+    paddingHorizontal: 16,
+  },
+  feedbackCard: {
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderRadius: 28,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    padding: 20,
-    gap: 16,
+    borderColor: 'rgba(255,255,255,0.18)',
+    paddingVertical: 28,
+    paddingHorizontal: 24,
+    gap: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.22,
+    shadowRadius: 24,
+    elevation: 12,
   },
   sliderContainer: {
     alignItems: 'stretch',
     gap: 8,
+  },
+  questionTitle: {
+    color: '#ffffff',
+    fontSize: 24,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  questionSubtitle: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   questionText: {
     color: '#ffffff',
@@ -169,11 +218,17 @@ const styles = StyleSheet.create({
   sliderLabelsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 6,
+    marginTop: 18,
   },
   sliderEdgeLabel: {
     color: 'rgba(255,255,255,0.8)',
     fontSize: 13,
+    fontWeight: '500',
+  },
+  sliderCenterLabel: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '600',
   },
   bottomButtons: {
     alignItems: 'center',

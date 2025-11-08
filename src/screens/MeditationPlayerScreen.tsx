@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -57,6 +57,18 @@ export const MeditationPlayerScreen: React.FC = () => {
   const playButtonScale = useRef(new Animated.Value(1)).current;
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const audioPlayerRef = useRef(mockAudioPlayer);
+  const truncatedTitle = useMemo(() => {
+    const title = activeSession?.title ?? '';
+    if (!title) return '';
+
+    const limit = 26;
+    if (title.length <= limit) {
+      return title;
+    }
+
+    const trimmed = title.slice(0, limit).trimEnd();
+    return `${trimmed}...`;
+  }, [activeSession?.title]);
   
   // Reanimated values for smooth gesture handling
   const thumbPosition = useSharedValue(0);
@@ -985,7 +997,9 @@ export const MeditationPlayerScreen: React.FC = () => {
             pointerEvents: isDarkMode ? 'none' : 'auto',
           }
         ]}>
-          <Text style={styles.sessionTitle}>{activeSession.title}</Text>
+          <Text style={styles.sessionTitle} numberOfLines={1} ellipsizeMode="tail">
+            {truncatedTitle}
+          </Text>
         </Animated.View>
 
         {/* Artist/Creator - Hidden in dark mode */}

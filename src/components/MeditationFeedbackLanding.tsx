@@ -89,6 +89,7 @@ export const MeditationFeedbackLanding: React.FC<MeditationFeedbackLandingProps>
               />
               <View style={styles.sliderLabelsRow}>
                 <Text style={[styles.sliderLabel, styles.sliderLabelLeft]}>Not great</Text>
+                <Text style={[styles.sliderLabel, styles.sliderLabelCenter]}>Neutral</Text>
                 <Text style={[styles.sliderLabel, styles.sliderLabelRight]}>Very good</Text>
               </View>
             </View>
@@ -239,6 +240,11 @@ const styles = StyleSheet.create({
   },
   sliderLabelRight: {
     textAlign: 'right',
+  },
+  sliderLabelCenter: {
+    textAlign: 'center',
+    color: '#ffffff',
+    fontWeight: '600',
   },
   bottomButtons: {
     alignItems: 'center',

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, LayoutChangeEvent } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, LayoutChangeEvent, PanResponder, GestureResponderEvent } from 'react-native';
 
 interface Slider0to10Props {
   value: number;
@@ -8,6 +8,9 @@ interface Slider0to10Props {
   showLabels?: boolean;
   variant?: 'pill' | 'bar';
 }
+
+const BAR_KNOB_SIZE = 26;
+const BAR_TRACK_HEIGHT = 6;
 
 export const Slider0to10: React.FC<Slider0to10Props> = ({ 
   value, 
@@ -19,57 +22,86 @@ export const Slider0to10: React.FC<Slider0to10Props> = ({
   const numbers = Array.from({ length: 11 }, (_, i) => i);
   const [trackWidth, setTrackWidth] = useState(0);
 
+  const clamp = useCallback((input: number, min: number, max: number) => {
+    return Math.min(Math.max(input, min), max);
+  }, []);
+
+  const updateValueFromGesture = useCallback((event: GestureResponderEvent) => {
+    if (!trackWidth) return;
+
+    const { locationX } = event.nativeEvent;
+    const clampedPosition = clamp(locationX, 0, trackWidth);
+    const ratio = clampedPosition / trackWidth;
+    const newValue = Math.round(ratio * 10);
+    if (newValue !== value) {
+      onValueChange(newValue);
+    }
+  }, [trackWidth, clamp, onValueChange, value]);
+
+  const panResponder = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onStartShouldSetPanResponderCapture: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponderCapture: () => true,
+    onPanResponderGrant: updateValueFromGesture,
+    onPanResponderMove: updateValueFromGesture,
+    onPanResponderRelease: updateValueFromGesture,
+    onPanResponderTerminationRequest: () => false,
+  }), [updateValueFromGesture]);
+
   const handleTrackLayout = (event: LayoutChangeEvent) => {
     setTrackWidth(event.nativeEvent.layout.width);
   };
 
   if (variant === 'bar') {
     const knobPosition = trackWidth ? (value / 10) * trackWidth : 0;
+    const knobRadius = BAR_KNOB_SIZE / 2;
+    const knobVerticalOffset = -((BAR_KNOB_SIZE - BAR_TRACK_HEIGHT) / 2);
 
     return (
       <View style={styles.barRoot}>
         {showLabels && !!label && <Text style={styles.label}>{label}</Text>}
 
-        <View style={styles.barTrackWrapper}>
+        <View style={styles.barTrackWrapper} {...panResponder.panHandlers}>
           <View style={styles.barTrack} onLayout={handleTrackLayout}>
-            <View style={[styles.barTrackFill, { width: trackWidth ? (value / 10) * trackWidth : 0 }]} />
+            <View
+              pointerEvents="none"
+              style={[styles.barTrackFill, { width: trackWidth ? (value / 10) * trackWidth : 0 }]}
+            />
+            <View style={styles.barTicksWrapper} pointerEvents="none">
+              {numbers.map((number) => {
+                const position = trackWidth ? (number / 10) * trackWidth : 0;
+                return (
+                  <View
+                    key={`tick-${number}`}
+                    style={[
+                      styles.barTick,
+                      {
+                        left: position,
+                      },
+                      value === number ? styles.barTickActive : undefined,
+                    ]}
+                  />
+                );
+              })}
+            </View>
+          </View>
+          <View style={styles.barKnobWrapper} pointerEvents="none">
             <View
               style={[
                 styles.barKnob,
                 {
-                  transform: [{ translateX: -16 }],
+                  width: BAR_KNOB_SIZE,
+                  height: BAR_KNOB_SIZE,
+                  borderRadius: knobRadius,
                   left: knobPosition,
+                  transform: [
+                    { translateX: -knobRadius },
+                    { translateY: knobVerticalOffset },
+                  ],
                 },
               ]}
-            >
-              <View style={styles.barKnobInner} />
-            </View>
-          </View>
-
-          <View style={styles.barTouchLayer}>
-            {numbers.map((number) => {
-              const position = trackWidth ? (number / 10) * trackWidth : 0;
-              return (
-                <TouchableOpacity
-                  key={number}
-                  onPress={() => onValueChange(number)}
-                  style={[
-                    styles.barTouchTarget,
-                    {
-                      left: position,
-                    },
-                  ]}
-                  activeOpacity={0.8}
-                >
-                  <View
-                    style={[
-                      styles.barTick,
-                      value === number ? styles.barTickActive : undefined,
-                    ]}
-                  />
-                </TouchableOpacity>
-              );
-            })}
+            />
           </View>
         </View>
 
@@ -192,14 +224,14 @@ const styles = StyleSheet.create({
   },
   barTrackWrapper: {
     position: 'relative',
-    paddingHorizontal: 4,
     paddingVertical: 12,
   },
   barTrack: {
     width: '100%',
-    height: 6,
+    height: BAR_TRACK_HEIGHT,
     borderRadius: 999,
     backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    position: 'relative',
     overflow: 'hidden',
   },
   barTrackFill: {
@@ -207,49 +239,35 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: '#ffffff',
   },
+  barKnobWrapper: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+  },
   barKnob: {
     position: 'absolute',
-    top: -10,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.22,
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
     elevation: 6,
   },
-  barKnobInner: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: '#ffffff',
-  },
-  barTouchLayer: {
-    position: 'absolute',
-    top: 0,
-    left: 4,
-    right: 4,
-    bottom: 0,
-  },
-  barTouchTarget: {
-    position: 'absolute',
-    width: 36,
-    height: 36,
-    marginLeft: -18,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
+  barTicksWrapper: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
   },
   barTick: {
+    position: 'absolute',
     width: 2,
     height: 10,
     borderRadius: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.35)',
+    bottom: -2,
+    transform: [{ translateX: -1 }],
   },
   barTickActive: {
     backgroundColor: '#ffffff',

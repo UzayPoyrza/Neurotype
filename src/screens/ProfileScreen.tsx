@@ -143,13 +143,6 @@ export const ProfileScreen: React.FC = () => {
               </View>
             </View>
 
-            <View style={styles.rewardSection}>
-              <Text style={styles.rewardTitle}>🌟 Your Reward</Text>
-              <Text style={styles.rewardDescription}>
-                Earn premium credits and exclusive content for each friend who joins!
-              </Text>
-            </View>
-
             <View style={styles.referralSection}>
               <Text style={styles.referralLabel}>Your referral link:</Text>
               <View style={styles.referralLinkContainer}>
@@ -407,24 +400,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#000000',
     fontWeight: '400',
-  },
-  rewardSection: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-  },
-  rewardTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 8,
-  },
-  rewardDescription: {
-    fontSize: 15,
-    color: '#8e8e93',
-    fontWeight: '400',
-    lineHeight: 20,
   },
   referralSection: {
     marginBottom: 20,

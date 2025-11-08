@@ -30,7 +30,6 @@ export const TodayScreen: React.FC = () => {
   const navigation = useNavigation<TodayScreenNavigationProp>();
   const { setActiveSession, setGlobalBackgroundColor, setCurrentScreen, setTodayModuleId } = useStore();
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
-  const userProgress = useStore(state => state.userProgress);
   
   // Module and session state management
   const [selectedModuleId, setSelectedModuleId] = useState('anxiety'); // Default to anxiety
@@ -161,8 +160,8 @@ export const TodayScreen: React.FC = () => {
     const goals = relevantGoals[selectedModule.id as keyof typeof relevantGoals] || ['focus'];
     const moduleSessions = mockSessions.filter(session => goals.includes(session.goal));
     
-    // Return 2-3 sessions with one marked as recommended
-    return moduleSessions.slice(0, 3).map((session, index) => ({
+    // Return up to four sessions with one marked as recommended
+    return moduleSessions.slice(0, 4).map((session, index) => ({
       ...session,
       id: `${session.id}-today`,
       isRecommended: index === 0,
@@ -301,21 +300,6 @@ export const TodayScreen: React.FC = () => {
     });
   };
 
-  // Subtle motivational messages based on progress
-  const getMotivationalMessage = () => {
-    const streak = userProgress?.streak || 0;
-    if (streak === 0) return "Your journey begins today";
-    if (streak === 1) return "Building your practice";
-    if (streak < 7) return "Developing consistency";
-    if (streak < 30) return "Strengthening your routine";
-    return "Sustained mindful practice";
-  };
-
-  // Get calm accent color (teal instead of red)
-  const getAccentColor = () => {
-    return '#4ECDC4'; // Calm teal from theme
-  };
-
   // Hero card press animations - simplified to avoid conflicts
   const handleHeroCardPressIn = () => {
     Animated.timing(heroCardScale, {
@@ -420,11 +404,10 @@ export const TodayScreen: React.FC = () => {
           const currentScrollY = event.nativeEvent.contentOffset.y;
           setScrollY(currentScrollY);
           
-          // Calculate if user is at or near the bottom of the content
-          const isAtBottom = contentHeight > 0 && scrollViewHeight > 0 && 
+          // Calculate if user is near the bottom only when content is scrollable
+          const hasScrollableContent = contentHeight > scrollViewHeight + 80;
+          const isAtBottom = hasScrollableContent &&
             (currentScrollY + scrollViewHeight) >= (contentHeight - 50);
-          const isNearBottom = contentHeight > 0 && scrollViewHeight > 0 && 
-            (currentScrollY + scrollViewHeight) >= (contentHeight - 150);
           
           // Track if user has reached the bottom (reset more quickly)
           if (isAtBottom && !hasReachedBottom) {
@@ -539,7 +522,7 @@ export const TodayScreen: React.FC = () => {
           </View>
           
           <View style={styles.alternativeSessionsList}>
-            {todaySessions.filter(s => !s.isRecommended).map((session, index) => (
+            {todaySessions.filter(s => !s.isRecommended).map((session) => (
               <TouchableOpacity
                 key={session.id}
                 style={styles.alternativeSession}
@@ -609,21 +592,6 @@ export const TodayScreen: React.FC = () => {
               </Text>
             </TouchableOpacity>
           </Animated.View>
-        </View>
-
-        {/* Motivation Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>✨ Keep Going</Text>
-          </View>
-          
-          <View style={styles.motivationContent}>
-            <Text style={styles.motivationText}>{getMotivationalMessage()}</Text>
-            <View style={styles.streakInfo}>
-              <Text style={styles.streakNumber}>{userProgress.streak}</Text>
-              <Text style={styles.streakLabel}>day streak</Text>
-            </View>
-          </View>
         </View>
 
         {/* Bottom spacing */}
@@ -916,31 +884,6 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     textAlign: 'center',
     fontStyle: 'italic',
-  },
-  motivationContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 20,
-    alignItems: 'center',
-  },
-  motivationText: {
-    fontSize: 17,
-    color: '#000000',
-    fontWeight: '500',
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  streakInfo: {
-    alignItems: 'center',
-  },
-  streakNumber: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#000000',
-  },
-  streakLabel: {
-    fontSize: 15,
-    color: '#8e8e93',
-    fontWeight: '400',
   },
   bottomSpacing: {
     height: 120,

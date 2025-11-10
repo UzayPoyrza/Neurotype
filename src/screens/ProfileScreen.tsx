@@ -499,7 +499,7 @@ export const ProfileScreen: React.FC = () => {
                       const truncatedTitle = truncateText(sessionTitle, 28);
                       const feedbackLabel = entry.label;
                       const feedbackColor = feedbackColorMap[feedbackLabel];
-                      const feedbackBackground = createSubtleBackground(feedbackColor);
+                      const feedbackBackground = feedbackColor;
                       const formattedDate = formatSessionDate(entry.date) || 'Date unavailable';
                       const formattedTimestamp = formatTimestamp(entry.timestampSeconds);
 
@@ -508,13 +508,9 @@ export const ProfileScreen: React.FC = () => {
                           <View
                             style={[
                               styles.activityIcon,
-                              { backgroundColor: feedbackBackground }
+                              { backgroundColor: feedbackBackground, borderWidth: 0 }
                             ]}
-                          >
-                            <Text style={[styles.activityIconText, { color: feedbackColor }]}>
-                              {feedbackLabel.charAt(0)}
-                            </Text>
-                          </View>
+                          />
                           <View style={styles.activityInfo}>
                             <View style={styles.activityHeader}>
                               <Text
@@ -531,8 +527,8 @@ export const ProfileScreen: React.FC = () => {
                                 style={[
                                   styles.feedbackLabelTag,
                                   {
-                                    color: feedbackColor,
-                                    backgroundColor: feedbackBackground
+                                    color: '#ffffff',
+                                    backgroundColor: feedbackColor
                                   }
                                 ]}
                               >
@@ -889,6 +885,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+    borderWidth: 1,
+    borderColor: '#ffffff',
   },
   activityIconText: {
     fontSize: 16,
@@ -946,6 +944,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 8,
     marginRight: 8,
+    color: '#ffffff',
   },
   deleteFeedbackButton: {
     marginLeft: 8,

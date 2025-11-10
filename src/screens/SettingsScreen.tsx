@@ -124,7 +124,7 @@ export const SettingsScreen: React.FC = () => {
 
         {/* Danger Zone */}
         <View style={styles.settingSection}>
-          <Text style={styles.sectionTitle}>Danger Zone</Text>
+          <Text style={styles.sectionTitle}>Clear Data</Text>
 
           <View style={styles.resetCard}>
             <Text style={styles.resetTitle}>Reset Account</Text>

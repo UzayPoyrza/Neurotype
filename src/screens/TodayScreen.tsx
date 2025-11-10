@@ -15,6 +15,7 @@ import { SessionRating } from '../components/SessionRating';
 import { InfoBox } from '../components/InfoBox';
 import { MeditationDetailModal } from '../components/MeditationDetailModal';
 import { MergedCard } from '../components/MergedCard';
+import { LineGraphIcon } from '../components/icons/LineGraphIcon';
 
 type SessionState = 'not_started' | 'in_progress' | 'completed' | 'rating';
 
@@ -607,7 +608,7 @@ export const TodayScreen: React.FC = () => {
             >
               <View style={styles.progressPreviewHeader}>
                 <View style={[styles.progressPreviewBadge, { backgroundColor: selectedModule.color }]}>
-                  <Text style={styles.progressPreviewBadgeIcon}>↺</Text>
+                  <LineGraphIcon size={20} color="#FFFFFF" accentColor="#FFFFFF" />
                 </View>
                 <View style={styles.progressPreviewHeaderText}>
                   <Text style={styles.progressPreviewTitle}>{selectedModule.title} Journey</Text>
@@ -939,11 +940,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 6,
     elevation: 3,
-  },
-  progressPreviewBadgeIcon: {
-    fontSize: 18,
-    color: '#ffffff',
-    fontWeight: '700',
   },
   progressPreviewHeaderText: {
     flex: 1,

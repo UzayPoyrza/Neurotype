@@ -194,7 +194,7 @@ export const TodayScreen: React.FC = () => {
   }, [selectedModule]);
 
   const completedPreviewSessions = useMemo(() => {
-    return moduleSessionsForRoadmap.slice(0, 2);
+    return moduleSessionsForRoadmap.slice(0, 3);
   }, [moduleSessionsForRoadmap]);
 
   const upcomingPreviewSessions = useMemo(() => {
@@ -912,7 +912,8 @@ const styles = StyleSheet.create({
   progressPreviewCard: {
     backgroundColor: '#ffffff',
     borderRadius: 16,
-    padding: 18,
+    paddingHorizontal: 18,
+    paddingVertical: 22,
     borderWidth: 1,
     borderColor: '#e5e5ea',
     shadowColor: '#000',
@@ -963,7 +964,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f2f2f7',
     backgroundColor: '#f9f9fb',
-    padding: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 18,
     marginBottom: 16,
   },
   progressPreviewColumn: {
@@ -978,7 +980,7 @@ const styles = StyleSheet.create({
   progressPreviewItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   progressPreviewItemIcon: {
     width: 28,

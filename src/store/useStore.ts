@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { UserProgress, FilterState, SessionDelta, Session } from '../types';
+import { UserProgress, FilterState, SessionDelta, Session, EmotionalFeedbackEntry } from '../types';
 import { initialUserProgress } from '../data/mockData';
 import { mentalHealthModules } from '../data/modules';
 
@@ -42,6 +42,7 @@ interface AppState {
   todayModuleId: string | null;
   likedSessionIds: string[];
   isTransitioning: boolean;
+  emotionalFeedbackHistory: EmotionalFeedbackEntry[];
   addSessionDelta: (delta: SessionDelta) => void;
   setFilters: (filters: FilterState) => void;
   toggleReminder: () => void;
@@ -58,6 +59,8 @@ interface AppState {
   toggleLikedSession: (sessionId: string) => void;
   isSessionLiked: (sessionId: string) => boolean;
   setIsTransitioning: (isTransitioning: boolean) => void;
+  addEmotionalFeedbackEntry: (entry: EmotionalFeedbackEntry) => void;
+  removeEmotionalFeedbackEntry: (entryId: string) => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -79,6 +82,50 @@ export const useStore = create<AppState>((set, get) => ({
   todayModuleId: 'anxiety', // Default module
   likedSessionIds: [],
   isTransitioning: false,
+  emotionalFeedbackHistory: [
+    {
+      id: 'feedback-1',
+      sessionId: '1',
+      label: 'Bad',
+      timestampSeconds: 75,
+      date: '2025-08-28T20:05:00Z',
+    },
+    {
+      id: 'feedback-2',
+      sessionId: '8',
+      label: 'Okay',
+      timestampSeconds: 180,
+      date: '2025-08-28T20:10:00Z',
+    },
+    {
+      id: 'feedback-3',
+      sessionId: '11',
+      label: 'Good',
+      timestampSeconds: 320,
+      date: '2025-08-29T14:22:00Z',
+    },
+    {
+      id: 'feedback-4',
+      sessionId: '12',
+      label: 'Great',
+      timestampSeconds: 420,
+      date: '2025-08-29T21:05:00Z',
+    },
+    {
+      id: 'feedback-5',
+      sessionId: '5',
+      label: 'Meh',
+      timestampSeconds: 95,
+      date: '2025-08-30T08:45:00Z',
+    },
+    {
+      id: 'feedback-6',
+      sessionId: '16',
+      label: 'Good',
+      timestampSeconds: 210,
+      date: '2025-08-30T09:15:00Z',
+    },
+  ],
   
   addSessionDelta: (delta: SessionDelta) => 
     set((state) => ({
@@ -143,5 +190,15 @@ export const useStore = create<AppState>((set, get) => ({
   },
   
   setIsTransitioning: (isTransitioning: boolean) => 
-    set({ isTransitioning })
+    set({ isTransitioning }),
+
+  addEmotionalFeedbackEntry: (entry: EmotionalFeedbackEntry) =>
+    set((state) => ({
+      emotionalFeedbackHistory: [entry, ...state.emotionalFeedbackHistory]
+    })),
+
+  removeEmotionalFeedbackEntry: (entryId: string) =>
+    set((state) => ({
+      emotionalFeedbackHistory: state.emotionalFeedbackHistory.filter(entry => entry.id !== entryId)
+    })),
 })); 

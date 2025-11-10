@@ -11,7 +11,7 @@ import { mentalHealthModules } from '../data/modules';
 import type { MentalHealthModule } from '../data/modules';
 import { MergedCard } from '../components/MergedCard';
 import { mockSessions } from '../data/mockData';
-import type { Session } from '../types';
+import type { Session, EmotionalFeedbackLabel } from '../types';
 
 const MAX_VISIBLE_ACTIVITY_ITEMS = 4;
 const APPROX_ACTIVITY_ROW_HEIGHT = 84;
@@ -56,6 +56,20 @@ const formatSessionDate = (rawDate?: string): string | null => {
   });
 };
 
+const feedbackColorMap: Record<EmotionalFeedbackLabel, string> = {
+  Bad: '#ff4757',
+  Meh: '#ffa502',
+  Okay: '#ffd700',
+  Good: '#2ed573',
+  Great: '#1e90ff',
+};
+
+const formatTimestamp = (timestampSeconds: number): string => {
+  const minutes = Math.floor(timestampSeconds / 60);
+  const seconds = Math.max(0, Math.floor(timestampSeconds % 60));
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};
+
 type ProfileStackParamList = {
   ProfileMain: undefined;
   Settings: undefined;
@@ -73,6 +87,8 @@ export const ProfileScreen: React.FC = () => {
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
   const userFirstName = useStore(state => state.userFirstName);
   const todayModuleId = useStore(state => state.todayModuleId);
+  const emotionalFeedbackHistory = useStore(state => state.emotionalFeedbackHistory);
+  const removeEmotionalFeedbackEntry = useStore(state => state.removeEmotionalFeedbackEntry);
 
   const sessionsById = React.useMemo(() => {
     return mockSessions.reduce<Record<string, Session>>((acc, session) => {
@@ -95,6 +111,13 @@ export const ProfileScreen: React.FC = () => {
 
     // Get recent activity from session deltas
   const recentActivity = userProgress.sessionDeltas.slice(-10).reverse(); // Last 10 sessions, most recent first
+  const sortedFeedbackHistory = React.useMemo(() => {
+    return [...emotionalFeedbackHistory].sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return dateB - dateA;
+    });
+  }, [emotionalFeedbackHistory]);
 
   const moduleId = todayModuleId || 'anxiety';
   const activeModule = mentalHealthModules.find(module => module.id === moduleId);
@@ -105,6 +128,9 @@ export const ProfileScreen: React.FC = () => {
   const activityListMaxHeight = visibleActivityCount * APPROX_ACTIVITY_ROW_HEIGHT;
   const hasScrollableOverflow = recentActivity.length > MAX_VISIBLE_ACTIVITY_ITEMS;
   const [isScrollHintVisible, setIsScrollHintVisible] = React.useState(hasScrollableOverflow);
+  const visibleFeedbackCount = Math.min(sortedFeedbackHistory.length, MAX_VISIBLE_ACTIVITY_ITEMS);
+  const feedbackListMaxHeight = visibleFeedbackCount * APPROX_ACTIVITY_ROW_HEIGHT;
+  const hasFeedbackOverflow = sortedFeedbackHistory.length > MAX_VISIBLE_ACTIVITY_ITEMS;
 
   React.useEffect(() => {
     if (!hasScrollableOverflow) {
@@ -398,6 +424,105 @@ export const ProfileScreen: React.FC = () => {
                       </View>
                     </>
                   )}
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+
+        {/* Emotional Feedback History Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>💬 Emotional Feedback History</Text>
+          </View>
+
+          <View style={styles.activityContent}>
+            {sortedFeedbackHistory.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateEmoji}>🎯</Text>
+                <Text style={styles.emptyStateTitle}>No feedback yet</Text>
+                <Text style={styles.emptyStateSubtitle}>
+                  Share how each meditation makes you feel to see it here.
+                </Text>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.activitySubtitle}>
+                  Moments you captured during sessions
+                </Text>
+                <View style={styles.activityListWrapper}>
+                  <ScrollView
+                    style={[
+                      styles.activityListScroll,
+                      { maxHeight: feedbackListMaxHeight },
+                      hasFeedbackOverflow && styles.activityListScrollWithIndicator
+                    ]}
+                    contentContainerStyle={[
+                      styles.activityList,
+                      hasFeedbackOverflow && styles.activityListScrollableContent
+                    ]}
+                    showsVerticalScrollIndicator={hasFeedbackOverflow}
+                    nestedScrollEnabled
+                  >
+                    {sortedFeedbackHistory.map(entry => {
+                      const sessionData = sessionsById[entry.sessionId];
+                      const sessionTitle = sessionData?.title || 'Meditation Session';
+                      const truncatedTitle = truncateText(sessionTitle, 28);
+                      const feedbackLabel = entry.label;
+                      const feedbackColor = feedbackColorMap[feedbackLabel];
+                      const feedbackBackground = createSubtleBackground(feedbackColor);
+                      const formattedDate = formatSessionDate(entry.date) || 'Date unavailable';
+                      const formattedTimestamp = formatTimestamp(entry.timestampSeconds);
+
+                      return (
+                        <View key={entry.id} style={styles.activityItem}>
+                          <View
+                            style={[
+                              styles.activityIcon,
+                              { backgroundColor: feedbackBackground }
+                            ]}
+                          >
+                            <Text style={[styles.activityIconText, { color: feedbackColor }]}>
+                              {feedbackLabel.charAt(0)}
+                            </Text>
+                          </View>
+                          <View style={styles.activityInfo}>
+                            <View style={styles.activityHeader}>
+                              <Text
+                                style={styles.activityTitle}
+                                numberOfLines={1}
+                                ellipsizeMode="tail"
+                              >
+                                {truncatedTitle}
+                              </Text>
+                              <Text style={styles.activityDate}>{formattedDate}</Text>
+                            </View>
+                            <View style={styles.feedbackDetailsRow}>
+                              <Text
+                                style={[
+                                  styles.feedbackLabelTag,
+                                  {
+                                    color: feedbackColor,
+                                    backgroundColor: feedbackBackground
+                                  }
+                                ]}
+                              >
+                                {feedbackLabel}
+                              </Text>
+                              <Text style={styles.activityMeta}>at {formattedTimestamp}</Text>
+                            </View>
+                          </View>
+                          <TouchableOpacity
+                            style={styles.deleteFeedbackButton}
+                            onPress={() => removeEmotionalFeedbackEntry(entry.id)}
+                            hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+                          >
+                            <Text style={styles.deleteFeedbackButtonText}>×</Text>
+                          </TouchableOpacity>
+                        </View>
+                      );
+                    })}
+                  </ScrollView>
                 </View>
               </>
             )}
@@ -755,6 +880,28 @@ const styles = StyleSheet.create({
   },
   durationBadgeText: {
     fontSize: 12,
+    fontWeight: '600',
+  },
+  feedbackDetailsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  feedbackLabelTag: {
+    fontSize: 12,
+    fontWeight: '600',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  deleteFeedbackButton: {
+    marginLeft: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  deleteFeedbackButtonText: {
+    fontSize: 18,
+    color: '#8e8e93',
     fontWeight: '600',
   },
   scrollFadeTop: {

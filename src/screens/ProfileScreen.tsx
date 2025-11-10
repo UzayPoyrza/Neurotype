@@ -12,7 +12,7 @@ import { MergedCard } from '../components/MergedCard';
 import { mockSessions } from '../data/mockData';
 import type { Session } from '../types';
 
-const MAX_VISIBLE_ACTIVITY_ITEMS = 5;
+const MAX_VISIBLE_ACTIVITY_ITEMS = 4;
 const APPROX_ACTIVITY_ROW_HEIGHT = 84;
 
 const truncateText = (text: string, maxLength: number): string => {

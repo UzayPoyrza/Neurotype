@@ -644,22 +644,6 @@ export const TodayScreen: React.FC = () => {
 
                 <View style={styles.progressPreviewColumn}>
                   <Text style={styles.progressPreviewSectionLabel}>Coming Up</Text>
-                  {recommendedSession && (
-                    <View style={[styles.progressPreviewHighlight, { borderColor: selectedModule.color }]}>
-                      <View style={[styles.progressPreviewHighlightAccent, { backgroundColor: selectedModule.color }]} />
-                      <View style={styles.progressPreviewHighlightContent}>
-                        <Text style={styles.progressPreviewHighlightTitle} numberOfLines={2}>
-                          {recommendedSession.title}
-                        </Text>
-                        <Text style={styles.progressPreviewHighlightMeta}>
-                          {recommendedSession.durationMin} min • {recommendedSession.modality}
-                        </Text>
-                        <Text style={[styles.progressPreviewHighlightBadge, { color: selectedModule.color }]}>
-                          Recommended today
-                        </Text>
-                      </View>
-                    </View>
-                  )}
                   {upcomingPreviewSessions.map(session => (
                     <View key={session.id} style={styles.progressPreviewItem}>
                       <View style={[styles.progressPreviewItemIcon, styles.progressPreviewItemIconUpcoming]}>
@@ -675,11 +659,8 @@ export const TodayScreen: React.FC = () => {
                       </View>
                     </View>
                   ))}
-                  {(!recommendedSession && upcomingPreviewSessions.length === 0) && (
+                  {upcomingPreviewSessions.length === 0 && (
                     <Text style={styles.progressPreviewEmptyText}>Explore the roadmap for more</Text>
-                  )}
-                  {(recommendedSession && upcomingPreviewSessions.length === 0) && (
-                    <Text style={styles.progressPreviewEmptyText}>More sessions will unlock soon</Text>
                   )}
                 </View>
               </View>
@@ -1035,41 +1016,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#e5e5ea',
     marginHorizontal: 12,
     borderRadius: 0.5,
-  },
-  progressPreviewHighlight: {
-    borderWidth: 1,
-    borderRadius: 12,
-    backgroundColor: '#ffffff',
-    padding: 12,
-    marginBottom: 8,
-    overflow: 'hidden',
-  },
-  progressPreviewHighlightAccent: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    bottom: 0,
-    width: 4,
-    borderTopLeftRadius: 12,
-    borderBottomLeftRadius: 12,
-  },
-  progressPreviewHighlightContent: {
-    marginLeft: 8,
-  },
-  progressPreviewHighlightTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 4,
-  },
-  progressPreviewHighlightMeta: {
-    fontSize: 12,
-    color: '#8e8e93',
-    marginBottom: 6,
-  },
-  progressPreviewHighlightBadge: {
-    fontSize: 12,
-    fontWeight: '600',
   },
   progressPreviewItemIconUpcoming: {
     backgroundColor: '#ffffff',

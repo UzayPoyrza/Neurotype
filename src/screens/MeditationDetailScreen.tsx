@@ -641,6 +641,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           <Animated.View
             style={[
               styles.shareSheet,
+              { backgroundColor: globalBackgroundColor },
               {
                 transform: [
                   {

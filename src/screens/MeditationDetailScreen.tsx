@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,6 @@ import {
   StatusBar,
   TouchableWithoutFeedback,
   Share,
-  Modal,
 } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -51,10 +50,8 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const horizontalScrollRef = useRef<ScrollView>(null);
   const draggableActionBarRef = useRef<any>(null);
   const horizontalScrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [isShareSheetVisible, setShareSheetVisible] = useState(false);
+  const [isShareSheetOpen, setShareSheetOpen] = useState(false);
   const shareSheetAnim = useRef(new Animated.Value(0)).current;
-  const shareBackdropAnim = useRef(new Animated.Value(0)).current;
-  const shareContentAnim = useRef(new Animated.Value(0)).current;
   const screenWidth = Dimensions.get('window').width;
   
   const session = mockSessions.find(s => s.id === sessionId);
@@ -156,12 +153,37 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
     }
   };
 
+  const openShareSheet = () => {
+    if (isShareSheetOpen) {
+      return;
+    }
+    setShareSheetOpen(true);
+    shareSheetAnim.stopAnimation();
+    shareSheetAnim.setValue(0);
+    Animated.timing(shareSheetAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const closeShareSheet = () => {
+    shareSheetAnim.stopAnimation();
+    Animated.timing(shareSheetAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setShareSheetOpen(false);
+    });
+  };
+
   const handleSharePress = () => {
-    setShareSheetVisible(true);
+    openShareSheet();
   };
 
   const handleCloseShareSheet = () => {
-    setShareSheetVisible(false);
+    closeShareSheet();
   };
 
   const handleShareSession = async () => {
@@ -178,72 +200,8 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
     } catch (error) {
       console.error('Error sharing meditation:', error);
     } finally {
-      setShareSheetVisible(false);
+      closeShareSheet();
     }
-  };
-
-  useEffect(() => {
-    if (!session) {
-      return;
-    }
-
-    if (isShareSheetVisible) {
-      Animated.parallel([
-        Animated.spring(shareSheetAnim, {
-          toValue: 1,
-          useNativeDriver: true,
-          damping: 16,
-          stiffness: 180,
-          mass: 1,
-        }),
-        Animated.timing(shareBackdropAnim, {
-          toValue: 1,
-          duration: 280,
-          useNativeDriver: true,
-        }),
-        Animated.timing(shareContentAnim, {
-          toValue: 1,
-          duration: 320,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(shareSheetAnim, {
-          toValue: 0,
-          duration: 220,
-          useNativeDriver: true,
-        }),
-        Animated.timing(shareBackdropAnim, {
-          toValue: 0,
-          duration: 220,
-          useNativeDriver: true,
-        }),
-        Animated.timing(shareContentAnim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [isShareSheetVisible, session, shareSheetAnim, shareBackdropAnim, shareContentAnim]);
-  
-  const shareContentAnimatedStyle = {
-    opacity: shareContentAnim,
-    transform: [
-      {
-        translateY: shareContentAnim.interpolate({
-          inputRange: [0, 1],
-          outputRange: [24, 0],
-        }),
-      },
-      {
-        scale: shareContentAnim.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0.96, 1],
-        }),
-      },
-    ],
   };
 
   if (!session) {
@@ -663,90 +621,83 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
       />
 
       {/* Share Preview Bottom Sheet */}
-      {session && (
-        <Modal
-          visible={isShareSheetVisible}
-          transparent
-          animationType="none"
-          statusBarTranslucent
-        >
-          <View style={styles.shareModalContainer}>
-            <Animated.View
-              style={[
-                styles.shareBackdrop,
-                {
-                  opacity: shareBackdropAnim,
-                },
-              ]}
-            >
-              <TouchableOpacity
-                style={styles.shareBackdropTouchable}
-                onPress={handleCloseShareSheet}
-                activeOpacity={1}
-              />
-            </Animated.View>
+      {session && isShareSheetOpen && (
+        <View style={styles.shareOverlay}>
+          <Animated.View
+            style={[
+              styles.shareBackdrop,
+              {
+                opacity: shareSheetAnim,
+              },
+            ]}
+          >
+            <TouchableOpacity
+              style={styles.shareBackdropTouchable}
+              onPress={handleCloseShareSheet}
+              activeOpacity={1}
+            />
+          </Animated.View>
 
-            <Animated.View
-              style={[
-                styles.shareSheet,
-                {
-                  transform: [
-                    {
-                      translateY: shareSheetAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [Dimensions.get('window').height * 0.45, 0],
-                      }),
-                    },
-                  ],
-                },
-              ]}
-            >
-              <View style={styles.shareHandle} />
+          <Animated.View
+            style={[
+              styles.shareSheet,
+              {
+                transform: [
+                  {
+                    translateY: shareSheetAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [300, 0],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <View style={styles.shareHandle} />
 
-              <Animated.View style={[styles.shareContent, shareContentAnimatedStyle]}>
-                <View style={styles.sharePreviewCard}>
-                  <View style={styles.sharePreviewHeader}>
-                    <View style={[styles.sharePreviewGlyph, { backgroundColor: getGoalColor(session.goal) }]}>
-                      <Text style={styles.sharePreviewGlyphText}>{getModalityIcon(session.modality)}</Text>
-                    </View>
-                    <View style={styles.sharePreviewHeaderText}>
-                      <Text style={styles.sharePreviewTitle}>{session.title}</Text>
-                      <Text style={styles.sharePreviewSubtitle}>{formattedGoal} · {session.durationMin} min</Text>
-                    </View>
+            <View style={styles.shareContent}>
+              <View style={styles.sharePreviewCard}>
+                <View style={styles.sharePreviewHeader}>
+                  <View style={[styles.sharePreviewGlyph, { backgroundColor: getGoalColor(session.goal) }]}>
+                    <Text style={styles.sharePreviewGlyphText}>{getModalityIcon(session.modality)}</Text>
                   </View>
-
-                  <Text style={styles.sharePreviewDescription}>
-                    {session.description || 'A guided experience designed to help you feel your best.'}
-                  </Text>
-
-                  <View style={styles.sharePreviewMetaRow}>
-                    <View style={styles.sharePreviewMetaPill}>
-                      <Text style={styles.sharePreviewMetaLabel}>Duration</Text>
-                      <Text style={styles.sharePreviewMetaValue}>{session.durationMin} min</Text>
-                    </View>
-                    <View style={styles.sharePreviewMetaPill}>
-                      <Text style={styles.sharePreviewMetaLabel}>Focus</Text>
-                      <Text style={styles.sharePreviewMetaValue}>{formattedGoal}</Text>
-                    </View>
-                    <View style={styles.sharePreviewMetaPill}>
-                      <Text style={styles.sharePreviewMetaLabel}>Modality</Text>
-                      <Text style={styles.sharePreviewMetaValue}>{session.modality}</Text>
-                    </View>
+                  <View style={styles.sharePreviewHeaderText}>
+                    <Text style={styles.sharePreviewTitle}>{session.title}</Text>
+                    <Text style={styles.sharePreviewSubtitle}>{formattedGoal} · {session.durationMin} min</Text>
                   </View>
                 </View>
 
-                <View style={styles.shareActions}>
-                  <TouchableOpacity onPress={handleShareSession} style={styles.sharePrimaryButton}>
-                    <Text style={styles.sharePrimaryButtonText}>Share Meditation</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={handleCloseShareSheet} style={styles.shareSecondaryButton}>
-                    <Text style={styles.shareSecondaryButtonText}>Cancel</Text>
-                  </TouchableOpacity>
+                <Text style={styles.sharePreviewDescription}>
+                  {session.description || 'A guided experience designed to help you feel your best.'}
+                </Text>
+
+                <View style={styles.sharePreviewMetaRow}>
+                  <View style={styles.sharePreviewMetaPill}>
+                    <Text style={styles.sharePreviewMetaLabel}>Duration</Text>
+                    <Text style={styles.sharePreviewMetaValue}>{session.durationMin} min</Text>
+                  </View>
+                  <View style={styles.sharePreviewMetaPill}>
+                    <Text style={styles.sharePreviewMetaLabel}>Focus</Text>
+                    <Text style={styles.sharePreviewMetaValue}>{formattedGoal}</Text>
+                  </View>
+                  <View style={styles.sharePreviewMetaPill}>
+                    <Text style={styles.sharePreviewMetaLabel}>Modality</Text>
+                    <Text style={styles.sharePreviewMetaValue}>{session.modality}</Text>
+                  </View>
                 </View>
-              </Animated.View>
-            </Animated.View>
-          </View>
-        </Modal>
+              </View>
+
+              <View style={styles.shareActions}>
+                <TouchableOpacity onPress={handleShareSession} style={styles.sharePrimaryButton}>
+                  <Text style={styles.sharePrimaryButtonText}>Share Meditation</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleCloseShareSheet} style={styles.shareSecondaryButton}>
+                  <Text style={styles.shareSecondaryButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Animated.View>
+        </View>
       )}
     </View>
   );
@@ -1357,13 +1308,18 @@ const styles = StyleSheet.create({
     color: theme.colors.text.primary,
     flex: 1,
   },
-  shareModalContainer: {
-    flex: 1,
+  shareOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'flex-end',
+    zIndex: 200,
   },
   shareBackdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   shareBackdropTouchable: {
     flex: 1,
@@ -1467,16 +1423,6 @@ const styles = StyleSheet.create({
   shareActions: {
     marginTop: 4,
     gap: 12,
-  },
-  shareCancelButton: {
-    alignItems: 'center',
-    paddingVertical: 8,
-    marginTop: 8,
-  },
-  shareCancelText: {
-    fontSize: 16,
-    color: theme.colors.text.secondary,
-    fontWeight: '500',
   },
   sharePrimaryButton: {
     ...theme.health.button,

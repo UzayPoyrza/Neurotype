@@ -12,6 +12,7 @@ import type { MentalHealthModule } from '../data/modules';
 import { MergedCard } from '../components/MergedCard';
 import { mockSessions } from '../data/mockData';
 import type { Session, EmotionalFeedbackLabel } from '../types';
+import { InfoBox } from '../components/InfoBox';
 
 const MAX_VISIBLE_ACTIVITY_ITEMS = 4;
 const APPROX_ACTIVITY_ROW_HEIGHT = 84;
@@ -132,6 +133,8 @@ export const ProfileScreen: React.FC = () => {
   const feedbackListMaxHeight = visibleFeedbackCount * APPROX_ACTIVITY_ROW_HEIGHT;
   const hasFeedbackOverflow = sortedFeedbackHistory.length > MAX_VISIBLE_ACTIVITY_ITEMS;
   const [isFeedbackScrollHintVisible, setIsFeedbackScrollHintVisible] = React.useState(hasFeedbackOverflow);
+  const [showFeedbackInfoBox, setShowFeedbackInfoBox] = React.useState(false);
+  const [isFeedbackInfoActive, setIsFeedbackInfoActive] = React.useState(false);
 
   React.useEffect(() => {
     if (!hasScrollableOverflow) {
@@ -184,6 +187,16 @@ export const ProfileScreen: React.FC = () => {
     },
     [hasFeedbackOverflow, isFeedbackScrollHintVisible]
   );
+
+  const handleFeedbackInfoPress = React.useCallback(() => {
+    setShowFeedbackInfoBox(true);
+    setIsFeedbackInfoActive(true);
+  }, []);
+
+  const handleCloseFeedbackInfoBox = React.useCallback(() => {
+    setShowFeedbackInfoBox(false);
+    setIsFeedbackInfoActive(false);
+  }, []);
 
   return (
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
@@ -459,9 +472,18 @@ export const ProfileScreen: React.FC = () => {
 
         {/* Emotional Feedback History Card */}
         <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>💬 Emotional Feedback History</Text>
-          </View>
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardTitle}>💬 Emotional Feedback History</Text>
+          <TouchableOpacity
+            style={[styles.infoButton, isFeedbackInfoActive && styles.infoButtonActive]}
+            onPress={handleFeedbackInfoPress}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.infoButtonText, isFeedbackInfoActive && styles.infoButtonTextActive]}>
+              i
+            </Text>
+          </TouchableOpacity>
+        </View>
 
           <View style={styles.activityContent}>
             {sortedFeedbackHistory.length === 0 ? (
@@ -581,6 +603,13 @@ export const ProfileScreen: React.FC = () => {
         {/* Bottom spacing */}
         <View style={styles.bottomSpacing} />
       </ScrollView>
+      <InfoBox
+        isVisible={showFeedbackInfoBox}
+        onClose={handleCloseFeedbackInfoBox}
+        title="Emotional Feedback"
+        content="Warning: deleting feedback may change the suggestion algorithm."
+        position={{ top: 120, right: 20 }}
+      />
     </View>
   );
 };
@@ -988,5 +1017,25 @@ const styles = StyleSheet.create({
   },
   scrollHintTextHidden: {
     opacity: 0,
+  },
+  infoButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  infoButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666666',
+  },
+  infoButtonActive: {
+    backgroundColor: '#007AFF',
+  },
+  infoButtonTextActive: {
+    color: '#ffffff',
   },
 }); 

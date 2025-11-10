@@ -1,17 +1,17 @@
 import React, { ReactNode } from 'react';
-import { StyleSheet, View, ViewStyle } from 'react-native';
+import { StyleSheet, StyleProp, View, ViewStyle } from 'react-native';
 
 type MergedCardSectionProps = {
   children: ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 };
 
 type MergedCardProps = {
   children: ReactNode;
-  outerStyle?: ViewStyle;
-  cardStyle?: ViewStyle;
-  sectionStyle?: ViewStyle;
-  dividerStyle?: ViewStyle;
+  outerStyle?: StyleProp<ViewStyle>;
+  cardStyle?: StyleProp<ViewStyle>;
+  sectionStyle?: StyleProp<ViewStyle>;
+  dividerStyle?: StyleProp<ViewStyle>;
 };
 
 const SectionComponent: React.FC<MergedCardSectionProps> = ({ children }) => <>{children}</>;
@@ -86,7 +86,6 @@ const styles = StyleSheet.create({
     borderColor: '#f0f0f0',
   },
   section: {
-    paddingHorizontal: 16,
     paddingVertical: 16,
     backgroundColor: '#ffffff',
   },

@@ -450,7 +450,7 @@ export const TodayScreen: React.FC = () => {
       >
 
         <MergedCard>
-          <MergedCard.Section>
+          <MergedCard.Section style={styles.mergedSectionTop}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>🧘‍♀️ Today's Focus</Text>
               <TouchableOpacity 
@@ -516,7 +516,7 @@ export const TodayScreen: React.FC = () => {
             </Animated.View>
           </MergedCard.Section>
 
-          <MergedCard.Section>
+          <MergedCard.Section style={styles.mergedSectionList}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>💡 Other Options</Text>
             </View>
@@ -699,6 +699,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#ffffff',
+  },
+  mergedSectionTop: {
+    paddingTop: 0,
+  },
+  mergedSectionList: {
+    paddingTop: 0,
+    paddingBottom: 0,
   },
   focusSubtitle: {
     fontSize: 15,

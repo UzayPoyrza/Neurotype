@@ -112,7 +112,7 @@ export const ProfileScreen: React.FC = () => {
 
         {/* Share & Stats Merged Card */}
         <MergedCard>
-          <MergedCard.Section>
+          <MergedCard.Section style={styles.mergedSectionTop}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>🎁 Share & Earn</Text>
             </View>
@@ -167,7 +167,7 @@ export const ProfileScreen: React.FC = () => {
             </View>
           </MergedCard.Section>
 
-          <MergedCard.Section style={styles.statsSection}>
+          <MergedCard.Section style={[styles.mergedSectionAfterDivider, styles.statsSection]}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>📊 Your Stats</Text>
             </View>
@@ -347,6 +347,12 @@ const styles = StyleSheet.create({
   statsSection: {
     backgroundColor: '#ffffff',
   },
+  mergedSectionTop: {
+    paddingTop: 0,
+  },
+  mergedSectionAfterDivider: {
+    paddingTop: 0,
+  },
   profileName: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -370,6 +376,7 @@ const styles = StyleSheet.create({
   shareContent: {
     marginTop: 12,
     gap: 14,
+    paddingHorizontal: 16,
   },
   shareSubtitle: {
     fontSize: 15,
@@ -474,6 +481,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 12,
+    paddingHorizontal: 16,
   },
   statItem: {
     flex: 1,

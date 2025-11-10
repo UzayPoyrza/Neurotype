@@ -3,11 +3,54 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-nati
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import Svg, { Path } from 'react-native-svg';
-import { useStore, prerenderedModuleBackgrounds } from '../store/useStore';
+import { useStore, prerenderedModuleBackgrounds, createSubtleBackground } from '../store/useStore';
 import { theme } from '../styles/theme';
 import { SubscriptionBadge } from '../components/SubscriptionBadge';
 import { mentalHealthModules } from '../data/modules';
+import type { MentalHealthModule } from '../data/modules';
 import { MergedCard } from '../components/MergedCard';
+import { mockSessions } from '../data/mockData';
+import type { Session } from '../types';
+
+const truncateText = (text: string, maxLength: number): string => {
+  if (!text || text.length <= maxLength) {
+    return text;
+  }
+
+  const trimmed = text.slice(0, maxLength).trimEnd();
+  return `${trimmed}...`;
+};
+
+const formatSessionDate = (rawDate?: string): string | null => {
+  if (!rawDate) {
+    return null;
+  }
+
+  const hasTimeComponent = rawDate.includes('T');
+  const parsedDate = new Date(hasTimeComponent ? rawDate : `${rawDate}T00:00:00`);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return null;
+  }
+
+  if (hasTimeComponent) {
+    const datePart = parsedDate.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
+    const timePart = parsedDate.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+    return `${datePart} at ${timePart}`;
+  }
+
+  return parsedDate.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+};
 
 type ProfileStackParamList = {
   ProfileMain: undefined;
@@ -26,6 +69,20 @@ export const ProfileScreen: React.FC = () => {
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
   const userFirstName = useStore(state => state.userFirstName);
   const todayModuleId = useStore(state => state.todayModuleId);
+
+  const sessionsById = React.useMemo(() => {
+    return mockSessions.reduce<Record<string, Session>>((acc, session) => {
+      acc[session.id] = session;
+      return acc;
+    }, {});
+  }, []);
+
+  const modulesById = React.useMemo(() => {
+    return mentalHealthModules.reduce<Record<string, MentalHealthModule>>((acc, module) => {
+      acc[module.id] = module;
+      return acc;
+    }, {});
+  }, []);
 
   // Set screen context when component mounts
   React.useEffect(() => {
@@ -204,52 +261,64 @@ export const ProfileScreen: React.FC = () => {
             ) : (
               <>
                 <Text style={styles.activitySubtitle}>
-                  Your recent meditation sessions and progress
+                  Recently completed meditations
                 </Text>
                 <View style={styles.activityList}>
-                  {recentActivity.map((session, index) => {
-                    const improvement = session.before - session.after;
-                    const date = new Date(session.date);
-                    const formattedDate = date.toLocaleDateString('en-US', { 
-                      month: 'short', 
-                      day: 'numeric',
-                      hour: 'numeric',
-                      minute: '2-digit'
-                    });
-                    
+                  {recentActivity.map((sessionDelta, index) => {
+                    const sessionData = sessionDelta.sessionId ? sessionsById[sessionDelta.sessionId] : undefined;
+                    const moduleData =
+                      (sessionDelta.moduleId && modulesById[sessionDelta.moduleId]) ||
+                      (sessionData ? modulesById[sessionData.goal] : undefined);
+                    const moduleTitle = moduleData?.title;
+                    const moduleColor = moduleData?.color || '#007AFF';
+                    const moduleInitial = moduleTitle?.trim().charAt(0)?.toUpperCase() || 'M';
+                    const iconBackground = createSubtleBackground(moduleColor);
+                    const formattedDate = formatSessionDate(sessionDelta.date);
+                    const sessionTitle = sessionData?.title || 'Meditation Session';
+                    const truncatedTitle = truncateText(sessionTitle, 28);
+                    const durationMinutes = sessionData?.durationMin ?? null;
+                    const durationLabel = durationMinutes !== null ? `${durationMinutes} min` : '-- min';
+                    const completionLabel = formattedDate ? `Completed ${formattedDate}` : 'Completion date unavailable';
+
                     return (
-                      <View key={index} style={styles.activityItem}>
-                        <View style={[
-                          styles.activityIcon, 
-                          { backgroundColor: improvement > 0 ? '#34c759' : '#ff9500' }
-                        ]}>
-                          <Text style={styles.activityEmoji}>
-                            {improvement > 0 ? '✨' : '🌱'}
+                      <View key={`${sessionDelta.date}-${index}`} style={styles.activityItem}>
+                        <View
+                          style={[
+                            styles.activityIcon,
+                            { backgroundColor: iconBackground }
+                          ]}
+                        >
+                          <Text style={[styles.activityIconText, { color: moduleColor }]}>
+                            {moduleInitial}
                           </Text>
                         </View>
                         <View style={styles.activityInfo}>
                           <View style={styles.activityHeader}>
-                            <Text style={styles.activityTitle}>Meditation Session</Text>
-                            <Text style={styles.activityDate}>{formattedDate}</Text>
-                          </View>
-                          <View style={styles.activityDetails}>
-                            <Text style={styles.activityMeta}>
-                              Anxiety: {session.before} → {session.after} 
-                              {improvement > 0 && (
-                                <Text style={styles.improvementText}> (-{improvement.toFixed(1)})</Text>
-                              )}
+                            <Text
+                              style={styles.activityTitle}
+                              numberOfLines={1}
+                              ellipsizeMode="tail"
+                            >
+                              {truncatedTitle}
+                            </Text>
+                            <Text style={styles.activityDate}>
+                              {completionLabel}
                             </Text>
                           </View>
+                          <View style={styles.activityDetails}>
+                            {moduleTitle ? (
+                              <Text style={styles.activityMeta}>{moduleTitle}</Text>
+                            ) : null}
+                          </View>
                         </View>
-                        <View style={[
-                          styles.improvementBadge,
-                          { backgroundColor: improvement > 0 ? '#e8f5e8' : '#fff3e0' }
-                        ]}>
-                          <Text style={[
-                            styles.improvementBadgeText,
-                            { color: improvement > 0 ? '#34c759' : '#ff9500' }
-                          ]}>
-                            {improvement > 0 ? `↓${improvement.toFixed(1)}` : '→'}
+                        <View
+                          style={[
+                            styles.durationBadge,
+                            { backgroundColor: iconBackground }
+                          ]}
+                        >
+                          <Text style={[styles.durationBadgeText, { color: moduleColor }]}>
+                            {durationLabel}
                           </Text>
                         </View>
                       </View>
@@ -545,6 +614,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
     borderRadius: 12,
     padding: 12,
+    overflow: 'hidden',
   },
   activityIcon: {
     width: 40,
@@ -554,16 +624,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  activityEmoji: {
-    fontSize: 18,
+  activityIconText: {
+    fontSize: 16,
+    fontWeight: '700',
   },
   activityInfo: {
     flex: 1,
+    paddingRight: 8,
   },
   activityHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
     marginBottom: 4,
   },
   activityTitle: {
@@ -575,28 +646,27 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#8e8e93',
     fontWeight: '400',
+    marginTop: 2,
   },
   activityDetails: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
   },
   activityMeta: {
     fontSize: 13,
     color: '#8e8e93',
     fontWeight: '400',
   },
-  improvementText: {
-    color: '#34c759',
-    fontWeight: '600',
-  },
-  improvementBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+  durationBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 8,
     marginLeft: 12,
+    alignSelf: 'flex-start',
   },
-  improvementBadgeText: {
+  durationBadgeText: {
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
 }); 

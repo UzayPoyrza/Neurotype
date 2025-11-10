@@ -132,6 +132,105 @@ export const mockSessions: Session[] = [
     whyItWorks: 'Mindfulness meditation strengthens the anterior cingulate cortex, which is responsible for attention control. Regular practice improves your ability to focus and reduces distractibility.',
     adaptiveReason: 'Builds attention skills',
     isRecommended: false
+  },
+  {
+    id: '13',
+    title: 'Calm Focus Reset',
+    durationMin: 9,
+    modality: 'mindfulness',
+    goal: 'focus',
+    description: 'A quick reset to regain clarity through mindful breathing and intention setting.',
+    whyItWorks: 'Combining breath awareness with intention helps quiet mental chatter and restores attention.',
+    adaptiveReason: 'Great when your mind feels scattered',
+    isRecommended: false
+  },
+  {
+    id: '14',
+    title: 'Steady Beam Practice',
+    durationMin: 7,
+    modality: 'visualization',
+    goal: 'focus',
+    description: 'Visualize a steady beam of light guiding your attention toward a single goal.',
+    whyItWorks: 'Guided visualization recruits focus-related neural pathways and reduces distractions.',
+    adaptiveReason: 'Perfect before deep work sessions',
+    isRecommended: false
+  },
+  {
+    id: '15',
+    title: 'Sleepy Sunset Drift',
+    durationMin: 12,
+    modality: 'sound',
+    goal: 'sleep',
+    description: 'Drift off with gentle narration and soft ambient tones inspired by sunset hues.',
+    whyItWorks: 'Soothing audio cues signal the nervous system to shift into rest-and-digest mode.',
+    adaptiveReason: 'Ideal for winding down after a long day',
+    isRecommended: false
+  },
+  {
+    id: '16',
+    title: 'Morning Grounding Flow',
+    durationMin: 10,
+    modality: 'movement',
+    goal: 'anxiety',
+    description: 'A gentle standing flow to shake out stress and welcome grounded energy.',
+    whyItWorks: 'Slow, rhythmic movement paired with breath calms the sympathetic nervous system.',
+    adaptiveReason: 'Start your day with calm steadiness',
+    isRecommended: false
+  },
+  {
+    id: '17',
+    title: 'Tension Release Walk',
+    durationMin: 8,
+    modality: 'movement',
+    goal: 'anxiety',
+    description: 'Guided walking meditation to release tension with each mindful step.',
+    whyItWorks: 'Walking meditations integrate body and mind, reducing anxious cycles through motion.',
+    adaptiveReason: 'Use when restlessness peaks',
+    isRecommended: false
+  },
+  {
+    id: '18',
+    title: 'Mindful Microbreak',
+    durationMin: 6,
+    modality: 'mindfulness',
+    goal: 'focus',
+    description: 'A short check-in that brings awareness back to the present moment between tasks.',
+    whyItWorks: 'Brief mindfulness resets improve executive functioning and task switching.',
+    adaptiveReason: 'Designed for mid-day mental resets',
+    isRecommended: false
+  },
+  {
+    id: '19',
+    title: 'Balanced Breath Flow',
+    durationMin: 11,
+    modality: 'somatic',
+    goal: 'anxiety',
+    description: 'Alternate nostril breathing paired with body scanning to balance your energy.',
+    whyItWorks: 'Balancing the breath modulates the autonomic nervous system and reduces anxiety.',
+    adaptiveReason: 'Supports emotional equilibrium',
+    isRecommended: false
+  },
+  {
+    id: '20',
+    title: 'Focus Pulse',
+    durationMin: 5,
+    modality: 'sound',
+    goal: 'focus',
+    description: 'Subtle binaural tones and cues that nudge your mind toward alert calmness.',
+    whyItWorks: 'Sound entrainment promotes steady brainwave states associated with concentration.',
+    adaptiveReason: 'Great before creative sprints',
+    isRecommended: false
+  },
+  {
+    id: '21',
+    title: 'Moonlit Wind Down',
+    durationMin: 14,
+    modality: 'visualization',
+    goal: 'sleep',
+    description: 'Float through a moonlit landscape designed to ease you into deep rest.',
+    whyItWorks: 'Soft guided imagery releases muscle tension and prepares the mind for sleep.',
+    adaptiveReason: 'For nights when your mind stays busy',
+    isRecommended: false
   }
 ];
 

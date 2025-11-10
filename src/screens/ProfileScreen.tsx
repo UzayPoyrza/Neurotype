@@ -110,78 +110,80 @@ export const ProfileScreen: React.FC = () => {
         </View>
 
         {/* Share & Stats Merged Card */}
-        <View style={styles.mergedCard}>
-          <View style={styles.mergedSection}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>🎁 Share & Earn</Text>
-            </View>
-            
-            <View style={styles.shareContent}>
-              <Text style={styles.shareSubtitle}>
-                Give your friends 30 days of premium meditation
-              </Text>
-
-              <View style={styles.stepsList}>
-                <View style={styles.step}>
-                  <View style={styles.stepNumber}>
-                    <Text style={styles.stepNumberText}>1</Text>
-                  </View>
-                  <Text style={styles.stepText}>Share your unique referral link</Text>
-                </View>
-                
-                <View style={styles.step}>
-                  <View style={styles.stepNumber}>
-                    <Text style={styles.stepNumberText}>2</Text>
-                  </View>
-                  <Text style={styles.stepText}>Friend downloads and signs up</Text>
-                </View>
-                
-                <View style={styles.step}>
-                  <View style={styles.stepNumber}>
-                    <Text style={styles.stepNumberText}>3</Text>
-                  </View>
-                  <Text style={styles.stepText}>They get 30 days of premium free!</Text>
-                </View>
+        <View style={styles.mergedCardOuter}>
+          <View style={styles.mergedCard}>
+            <View style={styles.mergedSection}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardTitle}>🎁 Share & Earn</Text>
               </View>
+              
+              <View style={styles.shareContent}>
+                <Text style={styles.shareSubtitle}>
+                  Give your friends 30 days of premium meditation
+                </Text>
 
-              <View style={styles.referralSection}>
-                <Text style={styles.referralLabel}>Your referral link:</Text>
-                <View style={styles.referralLinkContainer}>
-                  <Text style={styles.referralLink}>neurotype.app/ref/user123</Text>
-                  <TouchableOpacity style={styles.copyButton}>
-                    <Text style={styles.copyButtonText}>Copy</Text>
+                <View style={styles.stepsList}>
+                  <View style={styles.step}>
+                    <View style={styles.stepNumber}>
+                      <Text style={styles.stepNumberText}>1</Text>
+                    </View>
+                    <Text style={styles.stepText}>Share your unique referral link</Text>
+                  </View>
+                  
+                  <View style={styles.step}>
+                    <View style={styles.stepNumber}>
+                      <Text style={styles.stepNumberText}>2</Text>
+                    </View>
+                    <Text style={styles.stepText}>Friend downloads and signs up</Text>
+                  </View>
+                  
+                  <View style={styles.step}>
+                    <View style={styles.stepNumber}>
+                      <Text style={styles.stepNumberText}>3</Text>
+                    </View>
+                    <Text style={styles.stepText}>They get 30 days of premium free!</Text>
+                  </View>
+                </View>
+
+                <View style={styles.referralSection}>
+                  <Text style={styles.referralLabel}>Your referral link:</Text>
+                  <View style={styles.referralLinkContainer}>
+                    <Text style={styles.referralLink}>neurotype.app/ref/user123</Text>
+                    <TouchableOpacity style={styles.copyButton}>
+                      <Text style={styles.copyButtonText}>Copy</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={styles.actionButtons}>
+                  <TouchableOpacity style={styles.shareButton}>
+                    <Text style={styles.shareButtonText}>📱 Share Link</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity style={styles.inviteButton}>
+                    <Text style={styles.inviteButtonText}>✉️ Send Invite</Text>
                   </TouchableOpacity>
                 </View>
               </View>
-
-              <View style={styles.actionButtons}>
-                <TouchableOpacity style={styles.shareButton}>
-                  <Text style={styles.shareButtonText}>📱 Share Link</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity style={styles.inviteButton}>
-                  <Text style={styles.inviteButtonText}>✉️ Send Invite</Text>
-                </TouchableOpacity>
-              </View>
             </View>
-          </View>
 
-          <View style={styles.mergedDivider} />
+            <View style={styles.mergedDivider} />
 
-          <View style={[styles.mergedSection, styles.statsSection]}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>📊 Your Stats</Text>
-            </View>
-            
-            <View style={styles.statsContent}>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>0</Text>
-                <Text style={styles.statLabel}>Friends Invited</Text>
+            <View style={[styles.mergedSection, styles.statsSection]}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardTitle}>📊 Your Stats</Text>
               </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>0</Text>
-                <Text style={styles.statLabel}>Credits Earned</Text>
+              
+              <View style={styles.statsContent}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statNumber}>0</Text>
+                  <Text style={styles.statLabel}>Friends Invited</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.statItem}>
+                  <Text style={styles.statNumber}>0</Text>
+                  <Text style={styles.statLabel}>Credits Earned</Text>
+                </View>
               </View>
             </View>
           </View>
@@ -345,22 +347,28 @@ const styles = StyleSheet.create({
   profileInfo: {
     flex: 1,
   },
-  mergedCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
+  mergedCardOuter: {
     marginHorizontal: 20,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
+    marginBottom: 12,
+    borderRadius: 16,
+    backgroundColor: 'transparent',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  mergedCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
     overflow: 'hidden',
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
   mergedSection: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 16,
   },
   mergedDivider: {

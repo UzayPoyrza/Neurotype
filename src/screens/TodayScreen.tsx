@@ -608,7 +608,7 @@ export const TodayScreen: React.FC = () => {
             >
               <View style={styles.progressPreviewHeader}>
                 <View style={[styles.progressPreviewBadge, { backgroundColor: selectedModule.color }]}>
-                  <LineGraphIcon size={20} color="#FFFFFF" accentColor="#FFFFFF" />
+                  <LineGraphIcon size={24} color="#FFFFFF" accentColor="#FFFFFF" />
                 </View>
                 <View style={styles.progressPreviewHeaderText}>
                   <Text style={styles.progressPreviewTitle}>{selectedModule.title} Journey</Text>

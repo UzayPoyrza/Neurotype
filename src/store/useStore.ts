@@ -26,63 +26,8 @@ mentalHealthModules.forEach(module => {
   prerenderedModuleBackgrounds[module.id] = createSubtleBackground(module.color);
 });
 
-interface AppState {
-  userProgress: UserProgress;
-  userFirstName: string;
-  filters: FilterState;
-  reminderEnabled: boolean;
-  darkThemeEnabled: boolean;
-  profileIcon: string;
-  subscriptionType: 'basic' | 'premium';
-  activeSession: Session | null;
-  activeModuleId: string | null;
-  recentModuleIds: string[];
-  globalBackgroundColor: string;
-  currentScreen: 'today' | 'explore' | 'progress' | 'profile' | 'settings' | 'module-detail';
-  todayModuleId: string | null;
-  likedSessionIds: string[];
-  isTransitioning: boolean;
-  emotionalFeedbackHistory: EmotionalFeedbackEntry[];
-  addSessionDelta: (delta: SessionDelta) => void;
-  setFilters: (filters: FilterState) => void;
-  toggleReminder: () => void;
-  toggleDarkTheme: () => void;
-  setUserFirstName: (name: string) => void;
-  setProfileIcon: (icon: string) => void;
-  setSubscriptionType: (type: 'basic' | 'premium') => void;
-  setActiveSession: (session: Session | null) => void;
-  setActiveModuleId: (moduleId: string | null) => void;
-  addRecentModule: (moduleId: string) => void;
-  setGlobalBackgroundColor: (color: string) => void;
-  setCurrentScreen: (screen: 'today' | 'explore' | 'progress' | 'profile' | 'settings' | 'module-detail') => void;
-  setTodayModuleId: (moduleId: string | null) => void;
-  toggleLikedSession: (sessionId: string) => void;
-  isSessionLiked: (sessionId: string) => boolean;
-  setIsTransitioning: (isTransitioning: boolean) => void;
-  addEmotionalFeedbackEntry: (entry: EmotionalFeedbackEntry) => void;
-  removeEmotionalFeedbackEntry: (entryId: string) => void;
-}
-
-export const useStore = create<AppState>((set, get) => ({
-  userProgress: initialUserProgress,
-  userFirstName: 'Ava',
-  filters: {
-    modality: 'all',
-    goal: 'all'
-  },
-  reminderEnabled: false,
-  darkThemeEnabled: false,
-  profileIcon: '👤',
-  subscriptionType: 'premium',
-  activeSession: null,
-  activeModuleId: null,
-  recentModuleIds: [],
-  globalBackgroundColor: '#f2f2f7', // Default iOS background
-  currentScreen: 'today',
-  todayModuleId: 'anxiety', // Default module
-  likedSessionIds: [],
-  isTransitioning: false,
-  emotionalFeedbackHistory: [
+const buildInitialStoreData = () => {
+  const emotionalFeedbackHistorySeed: EmotionalFeedbackEntry[] = [
     {
       id: 'feedback-1',
       sessionId: '1',
@@ -125,8 +70,76 @@ export const useStore = create<AppState>((set, get) => ({
       timestampSeconds: 210,
       date: '2025-08-30T09:15:00Z',
     },
-  ],
-  
+  ];
+
+  return {
+    userProgress: {
+      ...initialUserProgress,
+      sessionDeltas: initialUserProgress.sessionDeltas.map(delta => ({ ...delta })),
+      techniqueEffectiveness: initialUserProgress.techniqueEffectiveness.map(item => ({ ...item })),
+    },
+    userFirstName: 'Ava',
+    filters: {
+      modality: 'all',
+      goal: 'all',
+    } as FilterState,
+    reminderEnabled: false,
+    darkThemeEnabled: false,
+    profileIcon: '👤',
+    subscriptionType: 'premium' as const,
+    activeSession: null,
+    activeModuleId: null,
+    recentModuleIds: [] as string[],
+    globalBackgroundColor: '#f2f2f7',
+    currentScreen: 'today' as const,
+    todayModuleId: 'anxiety',
+    likedSessionIds: [] as string[],
+    isTransitioning: false,
+    emotionalFeedbackHistory: emotionalFeedbackHistorySeed.map(entry => ({ ...entry })),
+  };
+};
+
+interface AppState {
+  userProgress: UserProgress;
+  userFirstName: string;
+  filters: FilterState;
+  reminderEnabled: boolean;
+  darkThemeEnabled: boolean;
+  profileIcon: string;
+  subscriptionType: 'basic' | 'premium';
+  activeSession: Session | null;
+  activeModuleId: string | null;
+  recentModuleIds: string[];
+  globalBackgroundColor: string;
+  currentScreen: 'today' | 'explore' | 'progress' | 'profile' | 'settings' | 'module-detail';
+  todayModuleId: string | null;
+  likedSessionIds: string[];
+  isTransitioning: boolean;
+  emotionalFeedbackHistory: EmotionalFeedbackEntry[];
+  addSessionDelta: (delta: SessionDelta) => void;
+  setFilters: (filters: FilterState) => void;
+  toggleReminder: () => void;
+  toggleDarkTheme: () => void;
+  setUserFirstName: (name: string) => void;
+  setProfileIcon: (icon: string) => void;
+  setSubscriptionType: (type: 'basic' | 'premium') => void;
+  setActiveSession: (session: Session | null) => void;
+  setActiveModuleId: (moduleId: string | null) => void;
+  addRecentModule: (moduleId: string) => void;
+  setGlobalBackgroundColor: (color: string) => void;
+  setCurrentScreen: (screen: 'today' | 'explore' | 'progress' | 'profile' | 'settings' | 'module-detail') => void;
+  setTodayModuleId: (moduleId: string | null) => void;
+  toggleLikedSession: (sessionId: string) => void;
+  isSessionLiked: (sessionId: string) => boolean;
+  setIsTransitioning: (isTransitioning: boolean) => void;
+  addEmotionalFeedbackEntry: (entry: EmotionalFeedbackEntry) => void;
+  removeEmotionalFeedbackEntry: (entryId: string) => void;
+  resetAppData: () => void;
+}
+
+export const useStore = create<AppState>((set, get) => ({
+  ...buildInitialStoreData(),
+
   addSessionDelta: (delta: SessionDelta) => 
     set((state) => ({
       userProgress: {
@@ -201,4 +214,12 @@ export const useStore = create<AppState>((set, get) => ({
     set((state) => ({
       emotionalFeedbackHistory: state.emotionalFeedbackHistory.filter(entry => entry.id !== entryId)
     })),
+
+  resetAppData: () => {
+    const defaults = buildInitialStoreData();
+    set((state) => ({
+      ...defaults,
+      currentScreen: state.currentScreen,
+    }));
+  },
 })); 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Switch, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Switch, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
@@ -13,10 +13,31 @@ export const SettingsScreen: React.FC = () => {
     toggleDarkTheme,
     subscriptionType,
     setSubscriptionType,
+    resetAppData,
   } = useStore();
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
   const [backButtonWidth, setBackButtonWidth] = React.useState(0);
+  const handleResetAccount = React.useCallback(() => {
+    Alert.alert(
+      'Reset Account',
+      'This will permanently delete all your progress, preferences, and saved data. This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Reset Everything',
+          style: 'destructive',
+          onPress: () => {
+            resetAppData();
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  }, [resetAppData]);
 
   // Set screen context when component mounts
   React.useEffect(() => {
@@ -98,6 +119,29 @@ export const SettingsScreen: React.FC = () => {
             <Text style={styles.aboutDescription}>
               The first meditation app that adapts to your brain type, using neuroscience to match you with proven meditation methods.
             </Text>
+          </View>
+        </View>
+
+        {/* Danger Zone */}
+        <View style={styles.settingSection}>
+          <Text style={styles.sectionTitle}>Danger Zone</Text>
+
+          <View style={styles.resetCard}>
+            <Text style={styles.resetTitle}>Reset Account</Text>
+            <Text style={styles.resetDescription}>
+              Remove all personal progress, preferences, and saved sessions to start fresh.
+            </Text>
+
+            <View style={styles.resetWarningBox}>
+              <Text style={styles.resetWarningTitle}>Warning</Text>
+              <Text style={styles.resetWarningText}>
+                This action is permanent. Once you reset, your data cannot be recovered.
+              </Text>
+            </View>
+
+            <TouchableOpacity style={styles.resetButton} onPress={handleResetAccount}>
+              <Text style={styles.resetButtonText}>Reset Account</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
@@ -267,5 +311,61 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#8e8e93',
     lineHeight: 20,
+  },
+  resetCard: {
+    backgroundColor: '#fff5f5',
+    borderRadius: 16,
+    padding: 20,
+    marginHorizontal: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: '#ff3b30',
+  },
+  resetTitle: {
+    fontSize: 19,
+    fontWeight: '700',
+    color: '#ff3b30',
+    marginBottom: 8,
+  },
+  resetDescription: {
+    fontSize: 15,
+    color: '#8e8e93',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  resetWarningBox: {
+    backgroundColor: '#ffecec',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#ff3b30',
+    marginBottom: 20,
+  },
+  resetWarningTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#ff3b30',
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  resetWarningText: {
+    fontSize: 14,
+    color: '#d73a2d',
+    lineHeight: 18,
+  },
+  resetButton: {
+    backgroundColor: '#ff3b30',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  resetButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#ffffff',
   },
 });

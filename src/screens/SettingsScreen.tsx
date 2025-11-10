@@ -16,6 +16,7 @@ export const SettingsScreen: React.FC = () => {
   } = useStore();
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
+  const [backButtonWidth, setBackButtonWidth] = React.useState(0);
 
   // Set screen context when component mounts
   React.useEffect(() => {
@@ -26,10 +27,18 @@ export const SettingsScreen: React.FC = () => {
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+          onLayout={event => {
+            const { width } = event.nativeEvent.layout;
+            setBackButtonWidth(width);
+          }}
+        >
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Settings</Text>
+        <View style={[styles.headerSpacer, { width: backButtonWidth }]} />
       </View>
 
       <ScrollView style={[styles.scrollView, { backgroundColor: globalBackgroundColor }]} contentContainerStyle={styles.content}>
@@ -113,14 +122,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   backButton: {
-    alignSelf: 'flex-start',
     backgroundColor: '#f2f2f7',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    marginBottom: 16,
+    marginRight: 12,
   },
   backButtonText: {
     fontSize: 16,
@@ -132,6 +143,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#000000',
     textAlign: 'center',
+    flex: 1,
+  },
+  headerSpacer: {
+    height: 0,
+    marginLeft: 12,
   },
   scrollView: {
     flex: 1,

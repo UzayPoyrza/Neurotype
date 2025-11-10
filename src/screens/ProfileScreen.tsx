@@ -131,6 +131,7 @@ export const ProfileScreen: React.FC = () => {
   const visibleFeedbackCount = Math.min(sortedFeedbackHistory.length, MAX_VISIBLE_ACTIVITY_ITEMS);
   const feedbackListMaxHeight = visibleFeedbackCount * APPROX_ACTIVITY_ROW_HEIGHT;
   const hasFeedbackOverflow = sortedFeedbackHistory.length > MAX_VISIBLE_ACTIVITY_ITEMS;
+  const [isFeedbackScrollHintVisible, setIsFeedbackScrollHintVisible] = React.useState(hasFeedbackOverflow);
 
   React.useEffect(() => {
     if (!hasScrollableOverflow) {
@@ -156,6 +157,32 @@ export const ProfileScreen: React.FC = () => {
       }
     },
     [hasScrollableOverflow, isScrollHintVisible]
+  );
+
+  React.useEffect(() => {
+    if (!hasFeedbackOverflow) {
+      setIsFeedbackScrollHintVisible(false);
+    } else {
+      setIsFeedbackScrollHintVisible(true);
+    }
+  }, [hasFeedbackOverflow]);
+
+  const handleFeedbackScroll = React.useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      if (!hasFeedbackOverflow) {
+        return;
+      }
+
+      const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
+      const isAtBottom = contentOffset.y + layoutMeasurement.height >= contentSize.height - 8;
+
+      if (isAtBottom && isFeedbackScrollHintVisible) {
+        setIsFeedbackScrollHintVisible(false);
+      } else if (!isAtBottom && !isFeedbackScrollHintVisible) {
+        setIsFeedbackScrollHintVisible(true);
+      }
+    },
+    [hasFeedbackOverflow, isFeedbackScrollHintVisible]
   );
 
   return (
@@ -463,6 +490,8 @@ export const ProfileScreen: React.FC = () => {
                     ]}
                     showsVerticalScrollIndicator={hasFeedbackOverflow}
                     nestedScrollEnabled
+                    onScroll={handleFeedbackScroll}
+                    scrollEventThrottle={16}
                   >
                     {sortedFeedbackHistory.map(entry => {
                       const sessionData = sessionsById[entry.sessionId];
@@ -523,6 +552,30 @@ export const ProfileScreen: React.FC = () => {
                       );
                     })}
                   </ScrollView>
+                  {hasFeedbackOverflow && (
+                    <>
+                      <LinearGradient
+                        pointerEvents="none"
+                        colors={['rgba(248,249,250,1)', 'rgba(248,249,250,0)']}
+                        style={styles.scrollFadeTop}
+                      />
+                      <LinearGradient
+                        pointerEvents="none"
+                        colors={['rgba(248,249,250,0)', 'rgba(248,249,250,1)']}
+                        style={styles.scrollFadeBottom}
+                      />
+                      <View pointerEvents="none" style={styles.scrollHintContainer}>
+                        <Text
+                          style={[
+                            styles.scrollHintText,
+                            !isFeedbackScrollHintVisible && styles.scrollHintTextHidden
+                          ]}
+                        >
+                          Scroll to see more
+                        </Text>
+                      </View>
+                    </>
+                  )}
                 </View>
               </>
             )}

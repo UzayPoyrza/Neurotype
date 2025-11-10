@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, NativeSyntheticEvent, NativeScrollEvent, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import Svg, { Path } from 'react-native-svg';
@@ -78,6 +78,8 @@ type ProfileStackParamList = {
 
 type ProfileScreenNavigationProp = StackNavigationProp<ProfileStackParamList, 'ProfileMain'>;
 
+type TouchableOpacityRef = React.ComponentRef<typeof TouchableOpacity>;
+
 export const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const { 
@@ -135,6 +137,11 @@ export const ProfileScreen: React.FC = () => {
   const [isFeedbackScrollHintVisible, setIsFeedbackScrollHintVisible] = React.useState(hasFeedbackOverflow);
   const [showFeedbackInfoBox, setShowFeedbackInfoBox] = React.useState(false);
   const [isFeedbackInfoActive, setIsFeedbackInfoActive] = React.useState(false);
+  const [feedbackInfoPosition, setFeedbackInfoPosition] = React.useState<{ top: number; right: number }>({
+    top: 120,
+    right: 20,
+  });
+  const feedbackInfoButtonRef = React.useRef<TouchableOpacityRef | null>(null);
 
   React.useEffect(() => {
     if (!hasScrollableOverflow) {
@@ -188,9 +195,26 @@ export const ProfileScreen: React.FC = () => {
     [hasFeedbackOverflow, isFeedbackScrollHintVisible]
   );
 
+  const INFO_BOX_VERTICAL_GAP = 0;
+
   const handleFeedbackInfoPress = React.useCallback(() => {
-    setShowFeedbackInfoBox(true);
     setIsFeedbackInfoActive(true);
+    const buttonInstance = feedbackInfoButtonRef.current;
+    if (buttonInstance && typeof (buttonInstance as any).measureInWindow === 'function') {
+      (buttonInstance as any).measureInWindow((x: number, y: number, width: number, height: number) => {
+        const windowWidth = Dimensions.get('window').width;
+        const margin = 16;
+        const calculatedTop = Math.max(margin, y + height + INFO_BOX_VERTICAL_GAP);
+        const calculatedRight = Math.max(margin, windowWidth - (x + width));
+        setFeedbackInfoPosition({
+          top: calculatedTop,
+          right: calculatedRight,
+        });
+        setShowFeedbackInfoBox(true);
+      });
+    } else {
+      setShowFeedbackInfoBox(true);
+    }
   }, []);
 
   const handleCloseFeedbackInfoBox = React.useCallback(() => {
@@ -475,6 +499,7 @@ export const ProfileScreen: React.FC = () => {
         <View style={styles.cardHeader}>
           <Text style={styles.cardTitle}>💬 Emotional Feedback History</Text>
           <TouchableOpacity
+            ref={feedbackInfoButtonRef}
             style={[styles.infoButton, isFeedbackInfoActive && styles.infoButtonActive]}
             onPress={handleFeedbackInfoPress}
             activeOpacity={0.7}
@@ -608,7 +633,7 @@ export const ProfileScreen: React.FC = () => {
         onClose={handleCloseFeedbackInfoBox}
         title="Emotional Feedback"
         content="Warning: deleting feedback may change the suggestion algorithm."
-        position={{ top: 120, right: 20 }}
+        position={feedbackInfoPosition}
       />
     </View>
   );

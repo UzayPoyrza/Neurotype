@@ -51,24 +51,6 @@ export const SettingsScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Appearance */}
-        <View style={styles.settingSection}>
-          <Text style={styles.sectionTitle}>Appearance</Text>
-          
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingLabel}>Dark Theme</Text>
-              <Text style={styles.settingDescription}>Switch to dark mode interface</Text>
-            </View>
-            <Switch
-              value={darkThemeEnabled}
-              onValueChange={toggleDarkTheme}
-              trackColor={{ false: '#e0e0e0', true: '#007AFF' }}
-              thumbColor={darkThemeEnabled ? '#ffffff' : '#ffffff'}
-            />
-          </View>
-        </View>
-
         {/* Subscription */}
         <View style={styles.settingSection}>
           <Text style={styles.sectionTitle}>Subscription</Text>

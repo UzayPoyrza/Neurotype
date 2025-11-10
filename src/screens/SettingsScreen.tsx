@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Switch, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Switch, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
@@ -13,9 +13,31 @@ export const SettingsScreen: React.FC = () => {
     toggleDarkTheme,
     subscriptionType,
     setSubscriptionType,
+    resetAppData,
   } = useStore();
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
+  const [backButtonWidth, setBackButtonWidth] = React.useState(0);
+  const handleResetAccount = React.useCallback(() => {
+    Alert.alert(
+      'Reset Account',
+      'This will permanently delete all your progress, preferences, and saved data. This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Reset Everything',
+          style: 'destructive',
+          onPress: () => {
+            resetAppData();
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  }, [resetAppData]);
 
   // Set screen context when component mounts
   React.useEffect(() => {
@@ -26,10 +48,18 @@ export const SettingsScreen: React.FC = () => {
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+          onLayout={event => {
+            const { width } = event.nativeEvent.layout;
+            setBackButtonWidth(width);
+          }}
+        >
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Settings</Text>
+        <View style={[styles.headerSpacer, { width: backButtonWidth }]} />
       </View>
 
       <ScrollView style={[styles.scrollView, { backgroundColor: globalBackgroundColor }]} contentContainerStyle={styles.content}>
@@ -47,24 +77,6 @@ export const SettingsScreen: React.FC = () => {
               onValueChange={toggleReminder}
               trackColor={{ false: '#e0e0e0', true: '#007AFF' }}
               thumbColor={reminderEnabled ? '#ffffff' : '#ffffff'}
-            />
-          </View>
-        </View>
-
-        {/* Appearance */}
-        <View style={styles.settingSection}>
-          <Text style={styles.sectionTitle}>Appearance</Text>
-          
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingLabel}>Dark Theme</Text>
-              <Text style={styles.settingDescription}>Switch to dark mode interface</Text>
-            </View>
-            <Switch
-              value={darkThemeEnabled}
-              onValueChange={toggleDarkTheme}
-              trackColor={{ false: '#e0e0e0', true: '#007AFF' }}
-              thumbColor={darkThemeEnabled ? '#ffffff' : '#ffffff'}
             />
           </View>
         </View>
@@ -109,6 +121,29 @@ export const SettingsScreen: React.FC = () => {
             </Text>
           </View>
         </View>
+
+        {/* Danger Zone */}
+        <View style={styles.settingSection}>
+          <Text style={styles.sectionTitle}>Clear Data</Text>
+
+          <View style={styles.resetCard}>
+            <Text style={styles.resetTitle}>Reset Account</Text>
+            <Text style={styles.resetDescription}>
+              Remove all personal progress, preferences, and saved sessions to start fresh.
+            </Text>
+
+            <View style={styles.resetWarningBox}>
+              <Text style={styles.resetWarningTitle}>Warning</Text>
+              <Text style={styles.resetWarningText}>
+                This action is permanent. Once you reset, your data cannot be recovered.
+              </Text>
+            </View>
+
+            <TouchableOpacity style={styles.resetButton} onPress={handleResetAccount}>
+              <Text style={styles.resetButtonText}>Reset Account</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </ScrollView>
     </View>
   );
@@ -131,14 +166,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   backButton: {
-    alignSelf: 'flex-start',
     backgroundColor: '#f2f2f7',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    marginBottom: 16,
+    marginRight: 12,
   },
   backButtonText: {
     fontSize: 16,
@@ -150,6 +187,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#000000',
     textAlign: 'center',
+    flex: 1,
+  },
+  headerSpacer: {
+    height: 0,
+    marginLeft: 12,
   },
   scrollView: {
     flex: 1,
@@ -269,5 +311,61 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#8e8e93',
     lineHeight: 20,
+  },
+  resetCard: {
+    backgroundColor: '#fff5f5',
+    borderRadius: 16,
+    padding: 20,
+    marginHorizontal: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: '#ff3b30',
+  },
+  resetTitle: {
+    fontSize: 19,
+    fontWeight: '700',
+    color: '#ff3b30',
+    marginBottom: 8,
+  },
+  resetDescription: {
+    fontSize: 15,
+    color: '#8e8e93',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  resetWarningBox: {
+    backgroundColor: '#ffecec',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#ff3b30',
+    marginBottom: 20,
+  },
+  resetWarningTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#ff3b30',
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  resetWarningText: {
+    fontSize: 14,
+    color: '#d73a2d',
+    lineHeight: 18,
+  },
+  resetButton: {
+    backgroundColor: '#ff3b30',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  resetButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#ffffff',
   },
 });

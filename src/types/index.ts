@@ -23,6 +23,16 @@ export interface SessionDelta {
   moduleId?: string;
 }
 
+export type EmotionalFeedbackLabel = 'Bad' | 'Meh' | 'Okay' | 'Good' | 'Great';
+
+export interface EmotionalFeedbackEntry {
+  id: string;
+  sessionId: string;
+  label: EmotionalFeedbackLabel;
+  timestampSeconds: number;
+  date: string;
+}
+
 export interface TechniqueEffectiveness {
   techniqueId: string;
   techniqueName: string;

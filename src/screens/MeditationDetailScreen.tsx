@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Dimensions,
   StatusBar,
   TouchableWithoutFeedback,
+  Share,
 } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,7 +20,6 @@ import { mockSessions } from '../data/mockData';
 import { theme } from '../styles/theme';
 import { useStore } from '../store/useStore';
 import { ShareIcon } from '../components/icons';
-import { PrimaryButton } from '../components/PrimaryButton';
 import { DraggableActionBar } from '../components/DraggableActionBar';
 import { meditationAudioData } from '../data/meditationMockData';
 
@@ -50,10 +50,14 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const horizontalScrollRef = useRef<ScrollView>(null);
   const draggableActionBarRef = useRef<any>(null);
   const horizontalScrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [isShareSheetOpen, setShareSheetOpen] = useState(false);
+  const shareSheetAnim = useRef(new Animated.Value(0)).current;
   const screenWidth = Dimensions.get('window').width;
   
   const session = mockSessions.find(s => s.id === sessionId);
   const hasTutorial = !!(session && (meditationAudioData[session.id as keyof typeof meditationAudioData] as any)?.tutorialBackgroundAudio);
+  const sessionShareLink = session ? `https://neurotype.app/sessions/${session.id}` : '';
+  const formattedGoal = session ? session.goal.charAt(0).toUpperCase() + session.goal.slice(1) : '';
   
   const handleTabChange = (tab: TabType) => {
     const tabIndex = tab === 'summary' ? 0 : tab === 'history' ? 1 : 2;
@@ -148,7 +152,58 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
       setActiveSession(session);
     }
   };
-  
+
+  const openShareSheet = () => {
+    if (isShareSheetOpen) {
+      return;
+    }
+    setShareSheetOpen(true);
+    shareSheetAnim.stopAnimation();
+    shareSheetAnim.setValue(0);
+    Animated.timing(shareSheetAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const closeShareSheet = () => {
+    shareSheetAnim.stopAnimation();
+    Animated.timing(shareSheetAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setShareSheetOpen(false);
+    });
+  };
+
+  const handleSharePress = () => {
+    openShareSheet();
+  };
+
+  const handleCloseShareSheet = () => {
+    closeShareSheet();
+  };
+
+  const handleShareSession = async () => {
+    if (!session) {
+      return;
+    }
+
+    try {
+      await Share.share({
+        title: session.title,
+        message: `Check out the meditation "${session.title}" on Neurotype.\n${sessionShareLink}`,
+        url: sessionShareLink,
+      });
+    } catch (error) {
+      console.error('Error sharing meditation:', error);
+    } finally {
+      closeShareSheet();
+    }
+  };
+
   if (!session) {
     return (
       <View style={styles.errorContainer}>
@@ -440,10 +495,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
             <Text style={styles.headerTitle}>{session.title}</Text>
             <View style={styles.headerActions}>
               <ShareIcon 
-                onPress={() => {
-                  // Handle share functionality
-                  console.log('Share meditation:', session.title);
-                }}
+                onPress={handleSharePress}
               />
             </View>
           </View>
@@ -567,6 +619,88 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         secondaryColor="#007AFF"
         tabTransitionProgress={scrollX}
       />
+
+      {/* Share Preview Bottom Sheet */}
+      {session && isShareSheetOpen && (
+        <View style={styles.shareOverlay} pointerEvents="box-none">
+          <Animated.View
+            style={[
+              styles.shareBackdrop,
+              {
+                opacity: shareSheetAnim,
+              },
+            ]}
+          >
+            <TouchableOpacity
+              style={styles.shareBackdropTouchable}
+              onPress={handleCloseShareSheet}
+              activeOpacity={1}
+            />
+          </Animated.View>
+
+          <Animated.View
+            style={[
+              styles.shareSheet,
+              { backgroundColor: globalBackgroundColor },
+              {
+                transform: [
+                  {
+                    translateY: shareSheetAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [320, 0],
+                      extrapolate: 'clamp',
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <View style={styles.shareHandle} />
+
+            <View style={styles.shareContent}>
+              <View style={styles.sharePreviewCard}>
+                <View style={styles.sharePreviewHeader}>
+                  <View style={[styles.sharePreviewGlyph, { backgroundColor: getGoalColor(session.goal) }]}>
+                    <Text style={styles.sharePreviewGlyphText}>{getModalityIcon(session.modality)}</Text>
+                  </View>
+                  <View style={styles.sharePreviewHeaderText}>
+                    <Text style={styles.sharePreviewTitle}>{session.title}</Text>
+                    <Text style={styles.sharePreviewSubtitle}>{formattedGoal} · {session.durationMin} min</Text>
+                  </View>
+                </View>
+
+                <Text style={styles.sharePreviewDescription}>
+                  {session.description || 'A guided experience designed to help you feel your best.'}
+                </Text>
+
+                <View style={styles.sharePreviewMetaRow}>
+                  <View style={styles.sharePreviewMetaPill}>
+                    <Text style={styles.sharePreviewMetaLabel}>Duration</Text>
+                    <Text style={styles.sharePreviewMetaValue}>{session.durationMin} min</Text>
+                  </View>
+                  <View style={styles.sharePreviewMetaPill}>
+                    <Text style={styles.sharePreviewMetaLabel}>Focus</Text>
+                    <Text style={styles.sharePreviewMetaValue}>{formattedGoal}</Text>
+                  </View>
+                  <View style={styles.sharePreviewMetaPill}>
+                    <Text style={styles.sharePreviewMetaLabel}>Modality</Text>
+                    <Text style={styles.sharePreviewMetaValue}>{session.modality}</Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.shareActions}>
+                <TouchableOpacity onPress={handleShareSession} style={styles.sharePrimaryButton}>
+                  <Text style={styles.sharePrimaryButtonText}>Share Meditation</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleCloseShareSheet} style={styles.shareSecondaryButton}>
+                  <Text style={styles.shareSecondaryButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Animated.View>
+        </View>
+      )}
     </View>
   );
 };
@@ -1175,5 +1309,140 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: theme.colors.text.primary,
     flex: 1,
+  },
+  shareOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'flex-end',
+    zIndex: 2000,
+    elevation: 2000,
+  },
+  shareBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  shareBackdropTouchable: {
+    flex: 1,
+  },
+  shareSheet: {
+    backgroundColor: theme.health.container.backgroundColor,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 24,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 12,
+  },
+  shareHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  shareContent: {
+    paddingBottom: 8,
+  },
+  sharePreviewCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.xl,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+    marginBottom: 20,
+  },
+  sharePreviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sharePreviewGlyph: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  sharePreviewGlyphText: {
+    fontSize: 24,
+  },
+  sharePreviewHeaderText: {
+    flex: 1,
+  },
+  sharePreviewTitle: {
+    fontSize: 19,
+    fontWeight: '700',
+    color: theme.colors.text.primary,
+    marginBottom: 2,
+  },
+  sharePreviewSubtitle: {
+    fontSize: 15,
+    color: '#8e8e93',
+    fontWeight: '500',
+  },
+  sharePreviewDescription: {
+    fontSize: 16,
+    lineHeight: 22,
+    color: theme.colors.text.secondary,
+    marginBottom: 18,
+  },
+  sharePreviewMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  sharePreviewMetaPill: {
+    flex: 1,
+    backgroundColor: '#f2f2f7',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+  },
+  sharePreviewMetaLabel: {
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    color: '#8e8e93',
+    marginBottom: 4,
+  },
+  sharePreviewMetaValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+  },
+  shareActions: {
+    marginTop: 4,
+    gap: 12,
+  },
+  sharePrimaryButton: {
+    ...theme.health.button,
+    shadowColor: '#007aff',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.16,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  sharePrimaryButtonText: {
+    ...theme.health.buttonText,
+    textTransform: 'none',
+  },
+  shareSecondaryButton: {
+    ...theme.health.secondaryButton,
+  },
+  shareSecondaryButtonText: {
+    ...theme.health.secondaryButtonText,
   },
 });

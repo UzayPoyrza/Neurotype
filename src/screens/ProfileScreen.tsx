@@ -1,13 +1,75 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, NativeSyntheticEvent, NativeScrollEvent, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import Svg, { Path } from 'react-native-svg';
-import { useStore } from '../store/useStore';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useStore, prerenderedModuleBackgrounds, createSubtleBackground } from '../store/useStore';
 import { theme } from '../styles/theme';
-import { ProfilePictureModal } from '../components/ProfilePictureModal';
 import { SubscriptionBadge } from '../components/SubscriptionBadge';
-import { UserIcon } from '../components/icons';
+import { mentalHealthModules } from '../data/modules';
+import type { MentalHealthModule } from '../data/modules';
+import { MergedCard } from '../components/MergedCard';
+import { mockSessions } from '../data/mockData';
+import type { Session, EmotionalFeedbackLabel } from '../types';
+import { InfoBox } from '../components/InfoBox';
+
+const MAX_VISIBLE_ACTIVITY_ITEMS = 4;
+const APPROX_ACTIVITY_ROW_HEIGHT = 84;
+
+const truncateText = (text: string, maxLength: number): string => {
+  if (!text || text.length <= maxLength) {
+    return text;
+  }
+
+  const trimmed = text.slice(0, maxLength).trimEnd();
+  return `${trimmed}...`;
+};
+
+const formatSessionDate = (rawDate?: string): string | null => {
+  if (!rawDate) {
+    return null;
+  }
+
+  const hasTimeComponent = rawDate.includes('T');
+  const parsedDate = new Date(hasTimeComponent ? rawDate : `${rawDate}T00:00:00`);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return null;
+  }
+
+  if (hasTimeComponent) {
+    const datePart = parsedDate.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
+    const timePart = parsedDate.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+    return `${datePart} at ${timePart}`;
+  }
+
+  return parsedDate.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+};
+
+const feedbackColorMap: Record<EmotionalFeedbackLabel, string> = {
+  Bad: '#ff4757',
+  Meh: '#ffa502',
+  Okay: '#ffd700',
+  Good: '#2ed573',
+  Great: '#1e90ff',
+};
+
+const formatTimestamp = (timestampSeconds: number): string => {
+  const minutes = Math.floor(timestampSeconds / 60);
+  const seconds = Math.max(0, Math.floor(timestampSeconds % 60));
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};
 
 type ProfileStackParamList = {
   ProfileMain: undefined;
@@ -16,26 +78,149 @@ type ProfileStackParamList = {
 
 type ProfileScreenNavigationProp = StackNavigationProp<ProfileStackParamList, 'ProfileMain'>;
 
+type TouchableOpacityRef = React.ComponentRef<typeof TouchableOpacity>;
+
 export const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const { 
     userProgress,
-    profileIcon,
-    setProfileIcon,
     subscriptionType
   } = useStore();
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
+  const userFirstName = useStore(state => state.userFirstName);
+  const todayModuleId = useStore(state => state.todayModuleId);
+  const emotionalFeedbackHistory = useStore(state => state.emotionalFeedbackHistory);
+  const removeEmotionalFeedbackEntry = useStore(state => state.removeEmotionalFeedbackEntry);
+
+  const sessionsById = React.useMemo(() => {
+    return mockSessions.reduce<Record<string, Session>>((acc, session) => {
+      acc[session.id] = session;
+      return acc;
+    }, {});
+  }, []);
+
+  const modulesById = React.useMemo(() => {
+    return mentalHealthModules.reduce<Record<string, MentalHealthModule>>((acc, module) => {
+      acc[module.id] = module;
+      return acc;
+    }, {});
+  }, []);
 
   // Set screen context when component mounts
   React.useEffect(() => {
     setCurrentScreen('profile');
   }, [setCurrentScreen]);
-  
-  const [modalVisible, setModalVisible] = useState(false);
 
     // Get recent activity from session deltas
   const recentActivity = userProgress.sessionDeltas.slice(-10).reverse(); // Last 10 sessions, most recent first
+  const sortedFeedbackHistory = React.useMemo(() => {
+    return [...emotionalFeedbackHistory].sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return dateB - dateA;
+    });
+  }, [emotionalFeedbackHistory]);
+
+  const moduleId = todayModuleId || 'anxiety';
+  const activeModule = mentalHealthModules.find(module => module.id === moduleId);
+  const moduleBorderColor = activeModule?.color || theme.colors.primary;
+  const avatarBackgroundColor = prerenderedModuleBackgrounds[moduleId] || '#f2f2f7';
+  const profileInitial = userFirstName?.trim().charAt(0)?.toUpperCase() || 'N';
+  const visibleActivityCount = Math.min(recentActivity.length, MAX_VISIBLE_ACTIVITY_ITEMS);
+  const activityListMaxHeight = visibleActivityCount * APPROX_ACTIVITY_ROW_HEIGHT;
+  const hasScrollableOverflow = recentActivity.length > MAX_VISIBLE_ACTIVITY_ITEMS;
+  const [isScrollHintVisible, setIsScrollHintVisible] = React.useState(hasScrollableOverflow);
+  const visibleFeedbackCount = Math.min(sortedFeedbackHistory.length, MAX_VISIBLE_ACTIVITY_ITEMS);
+  const feedbackListMaxHeight = visibleFeedbackCount * APPROX_ACTIVITY_ROW_HEIGHT;
+  const hasFeedbackOverflow = sortedFeedbackHistory.length > MAX_VISIBLE_ACTIVITY_ITEMS;
+  const [isFeedbackScrollHintVisible, setIsFeedbackScrollHintVisible] = React.useState(hasFeedbackOverflow);
+  const [showFeedbackInfoBox, setShowFeedbackInfoBox] = React.useState(false);
+  const [isFeedbackInfoActive, setIsFeedbackInfoActive] = React.useState(false);
+  const [feedbackInfoPosition, setFeedbackInfoPosition] = React.useState<{ top: number; right: number }>({
+    top: 120,
+    right: 20,
+  });
+  const feedbackInfoButtonRef = React.useRef<TouchableOpacityRef | null>(null);
+
+  React.useEffect(() => {
+    if (!hasScrollableOverflow) {
+      setIsScrollHintVisible(false);
+    } else {
+      setIsScrollHintVisible(true);
+    }
+  }, [hasScrollableOverflow]);
+
+  const handleActivityScroll = React.useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      if (!hasScrollableOverflow) {
+        return;
+      }
+
+      const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
+      const isAtBottom = contentOffset.y + layoutMeasurement.height >= contentSize.height - 8;
+
+      if (isAtBottom && isScrollHintVisible) {
+        setIsScrollHintVisible(false);
+      } else if (!isAtBottom && !isScrollHintVisible) {
+        setIsScrollHintVisible(true);
+      }
+    },
+    [hasScrollableOverflow, isScrollHintVisible]
+  );
+
+  React.useEffect(() => {
+    if (!hasFeedbackOverflow) {
+      setIsFeedbackScrollHintVisible(false);
+    } else {
+      setIsFeedbackScrollHintVisible(true);
+    }
+  }, [hasFeedbackOverflow]);
+
+  const handleFeedbackScroll = React.useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      if (!hasFeedbackOverflow) {
+        return;
+      }
+
+      const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
+      const isAtBottom = contentOffset.y + layoutMeasurement.height >= contentSize.height - 8;
+
+      if (isAtBottom && isFeedbackScrollHintVisible) {
+        setIsFeedbackScrollHintVisible(false);
+      } else if (!isAtBottom && !isFeedbackScrollHintVisible) {
+        setIsFeedbackScrollHintVisible(true);
+      }
+    },
+    [hasFeedbackOverflow, isFeedbackScrollHintVisible]
+  );
+
+  const INFO_BOX_VERTICAL_GAP = 0;
+
+  const handleFeedbackInfoPress = React.useCallback(() => {
+    setIsFeedbackInfoActive(true);
+    const buttonInstance = feedbackInfoButtonRef.current;
+    if (buttonInstance && typeof (buttonInstance as any).measureInWindow === 'function') {
+      (buttonInstance as any).measureInWindow((x: number, y: number, width: number, height: number) => {
+        const windowWidth = Dimensions.get('window').width;
+        const margin = 16;
+        const calculatedTop = Math.max(margin, y + height + INFO_BOX_VERTICAL_GAP);
+        const calculatedRight = Math.max(margin, windowWidth - (x + width));
+        setFeedbackInfoPosition({
+          top: calculatedTop,
+          right: calculatedRight,
+        });
+        setShowFeedbackInfoBox(true);
+      });
+    } else {
+      setShowFeedbackInfoBox(true);
+    }
+  }, []);
+
+  const handleCloseFeedbackInfoBox = React.useCallback(() => {
+    setShowFeedbackInfoBox(false);
+    setIsFeedbackInfoActive(false);
+  }, []);
 
   return (
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
@@ -72,19 +257,21 @@ export const ProfileScreen: React.FC = () => {
         {/* Profile Header Card */}
         <View style={styles.profileHeaderCard}>
           <View style={styles.profileHeaderContent}>
-            <TouchableOpacity
-              style={styles.profilePictureContainer}
-              onPress={() => setModalVisible(true)}
-            >
-              <UserIcon 
-                size={100}
-                profileIcon={profileIcon}
-                onPress={() => setModalVisible(true)}
-              />
-              <View style={styles.profilePictureOverlay}>
-                <Text style={styles.changePhotoText}>✏️</Text>
+            <View style={styles.profilePictureWrapper}>
+              <View
+                style={[
+                  styles.profileInitialContainer,
+                  {
+                    borderColor: moduleBorderColor,
+                    backgroundColor: avatarBackgroundColor,
+                  }
+                ]}
+              >
+                <Text style={[styles.profileInitialText, { color: moduleBorderColor }]}>
+                  {profileInitial}
+                </Text>
               </View>
-            </TouchableOpacity>
+            </View>
             
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>Your Profile</Text>
@@ -104,87 +291,81 @@ export const ProfileScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Share & Earn Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>🎁 Share & Earn</Text>
-          </View>
-          
-          <View style={styles.shareContent}>
-            <Text style={styles.shareSubtitle}>
-              Give your friends 30 days of premium meditation
-            </Text>
-
-            <View style={styles.stepsList}>
-              <View style={styles.step}>
-                <View style={styles.stepNumber}>
-                  <Text style={styles.stepNumberText}>1</Text>
-                </View>
-                <Text style={styles.stepText}>Share your unique referral link</Text>
-              </View>
-              
-              <View style={styles.step}>
-                <View style={styles.stepNumber}>
-                  <Text style={styles.stepNumberText}>2</Text>
-                </View>
-                <Text style={styles.stepText}>Friend downloads and signs up</Text>
-              </View>
-              
-              <View style={styles.step}>
-                <View style={styles.stepNumber}>
-                  <Text style={styles.stepNumberText}>3</Text>
-                </View>
-                <Text style={styles.stepText}>They get 30 days of premium free!</Text>
-              </View>
+        {/* Share & Stats Merged Card */}
+        <MergedCard>
+          <MergedCard.Section style={styles.mergedSectionTop}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>🎁 Share & Earn</Text>
             </View>
-
-            <View style={styles.rewardSection}>
-              <Text style={styles.rewardTitle}>🌟 Your Reward</Text>
-              <Text style={styles.rewardDescription}>
-                Earn premium credits and exclusive content for each friend who joins!
+            
+            <View style={styles.shareContent}>
+              <Text style={styles.shareSubtitle}>
+                Give your friends 30 days of premium meditation
               </Text>
-            </View>
 
-            <View style={styles.referralSection}>
-              <Text style={styles.referralLabel}>Your referral link:</Text>
-              <View style={styles.referralLinkContainer}>
-                <Text style={styles.referralLink}>neurotype.app/ref/user123</Text>
-                <TouchableOpacity style={styles.copyButton}>
-                  <Text style={styles.copyButtonText}>Copy</Text>
+              <View style={styles.stepsList}>
+                <View style={styles.step}>
+                  <View style={styles.stepNumber}>
+                    <Text style={styles.stepNumberText}>1</Text>
+                  </View>
+                  <Text style={styles.stepText}>Share your unique referral link</Text>
+                </View>
+                
+                <View style={styles.step}>
+                  <View style={styles.stepNumber}>
+                    <Text style={styles.stepNumberText}>2</Text>
+                  </View>
+                  <Text style={styles.stepText}>Friend downloads and signs up</Text>
+                </View>
+                
+                <View style={styles.step}>
+                  <View style={styles.stepNumber}>
+                    <Text style={styles.stepNumberText}>3</Text>
+                  </View>
+                  <Text style={styles.stepText}>They get 30 days of premium free!</Text>
+                </View>
+              </View>
+
+              <View style={styles.referralSection}>
+                <Text style={styles.referralLabel}>Your referral link:</Text>
+                <View style={styles.referralLinkContainer}>
+                  <Text style={styles.referralLink}>neurotype.app/ref/user123</Text>
+                  <TouchableOpacity style={styles.copyButton}>
+                    <Text style={styles.copyButtonText}>Copy</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={styles.actionButtons}>
+                <TouchableOpacity style={styles.shareButton}>
+                  <Text style={styles.shareButtonText}>📱 Share Link</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity style={styles.inviteButton}>
+                  <Text style={styles.inviteButtonText}>✉️ Send Invite</Text>
                 </TouchableOpacity>
               </View>
             </View>
+          </MergedCard.Section>
 
-            <View style={styles.actionButtons}>
-              <TouchableOpacity style={styles.shareButton}>
-                <Text style={styles.shareButtonText}>📱 Share Link</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.inviteButton}>
-                <Text style={styles.inviteButtonText}>✉️ Send Invite</Text>
-              </TouchableOpacity>
+          <MergedCard.Section style={[styles.mergedSectionAfterDivider, styles.statsSection]}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>📊 Your Stats</Text>
             </View>
-          </View>
-        </View>
-
-        {/* Stats Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>📊 Your Stats</Text>
-          </View>
-          
-          <View style={styles.statsContent}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>0</Text>
-              <Text style={styles.statLabel}>Friends Invited</Text>
+            
+            <View style={styles.statsContent}>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>0</Text>
+                <Text style={styles.statLabel}>Friends Invited</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>0</Text>
+                <Text style={styles.statLabel}>Credits Earned</Text>
+              </View>
             </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>0</Text>
-              <Text style={styles.statLabel}>Credits Earned</Text>
-            </View>
-          </View>
-        </View>
+          </MergedCard.Section>
+        </MergedCard>
 
         {/* Activity History Card */}
         <View style={styles.card}>
@@ -204,57 +385,240 @@ export const ProfileScreen: React.FC = () => {
             ) : (
               <>
                 <Text style={styles.activitySubtitle}>
-                  Your recent meditation sessions and progress
+                  Recently completed meditations
                 </Text>
-                <View style={styles.activityList}>
-                  {recentActivity.map((session, index) => {
-                    const improvement = session.before - session.after;
-                    const date = new Date(session.date);
-                    const formattedDate = date.toLocaleDateString('en-US', { 
-                      month: 'short', 
-                      day: 'numeric',
-                      hour: 'numeric',
-                      minute: '2-digit'
-                    });
-                    
-                    return (
-                      <View key={index} style={styles.activityItem}>
-                        <View style={[
-                          styles.activityIcon, 
-                          { backgroundColor: improvement > 0 ? '#34c759' : '#ff9500' }
-                        ]}>
-                          <Text style={styles.activityEmoji}>
-                            {improvement > 0 ? '✨' : '🌱'}
-                          </Text>
-                        </View>
-                        <View style={styles.activityInfo}>
-                          <View style={styles.activityHeader}>
-                            <Text style={styles.activityTitle}>Meditation Session</Text>
-                            <Text style={styles.activityDate}>{formattedDate}</Text>
+                <View style={styles.activityListWrapper}>
+                  <ScrollView
+                    style={[
+                      styles.activityListScroll,
+                      { maxHeight: activityListMaxHeight },
+                      hasScrollableOverflow && styles.activityListScrollWithIndicator
+                    ]}
+                    contentContainerStyle={[
+                      styles.activityList,
+                      hasScrollableOverflow && styles.activityListScrollableContent
+                    ]}
+                    showsVerticalScrollIndicator={hasScrollableOverflow}
+                    nestedScrollEnabled
+                    onScroll={handleActivityScroll}
+                    scrollEventThrottle={16}
+                  >
+                    {recentActivity.map((sessionDelta, index) => {
+                      const sessionData = sessionDelta.sessionId ? sessionsById[sessionDelta.sessionId] : undefined;
+                      const moduleData =
+                        (sessionDelta.moduleId && modulesById[sessionDelta.moduleId]) ||
+                        (sessionData ? modulesById[sessionData.goal] : undefined);
+                      const moduleTitle = moduleData?.title;
+                      const moduleColor = moduleData?.color || '#007AFF';
+                      const moduleInitial = moduleTitle?.trim().charAt(0)?.toUpperCase() || 'M';
+                      const iconBackground = createSubtleBackground(moduleColor);
+                      const formattedDate = formatSessionDate(sessionDelta.date);
+                      const sessionTitle = sessionData?.title || 'Meditation Session';
+                      const truncatedTitle = truncateText(sessionTitle, 28);
+                      const durationMinutes = sessionData?.durationMin ?? null;
+                      const durationLabel = durationMinutes !== null ? `${durationMinutes} min` : '-- min';
+                      const completionLabel = formattedDate ? `Completed ${formattedDate}` : 'Completion date unavailable';
+
+                      return (
+                        <View key={`${sessionDelta.date}-${index}`} style={styles.activityItem}>
+                          <View
+                            style={[
+                              styles.activityIcon,
+                              { backgroundColor: iconBackground }
+                            ]}
+                          >
+                            <Text style={[styles.activityIconText, { color: moduleColor }]}>
+                              {moduleInitial}
+                            </Text>
                           </View>
-                          <View style={styles.activityDetails}>
-                            <Text style={styles.activityMeta}>
-                              Anxiety: {session.before} → {session.after} 
-                              {improvement > 0 && (
-                                <Text style={styles.improvementText}> (-{improvement.toFixed(1)})</Text>
-                              )}
+                          <View style={styles.activityInfo}>
+                            <View style={styles.activityHeader}>
+                              <Text
+                                style={styles.activityTitle}
+                                numberOfLines={1}
+                                ellipsizeMode="tail"
+                              >
+                                {truncatedTitle}
+                              </Text>
+                              <Text style={styles.activityDate}>
+                                {completionLabel}
+                              </Text>
+                            </View>
+                            <View style={styles.activityDetails}>
+                              {moduleTitle ? (
+                                <Text style={styles.activityMeta}>{moduleTitle}</Text>
+                              ) : null}
+                            </View>
+                          </View>
+                          <View
+                            style={[
+                              styles.durationBadge,
+                              { backgroundColor: iconBackground }
+                            ]}
+                          >
+                            <Text style={[styles.durationBadgeText, { color: moduleColor }]}>
+                              {durationLabel}
                             </Text>
                           </View>
                         </View>
-                        <View style={[
-                          styles.improvementBadge,
-                          { backgroundColor: improvement > 0 ? '#e8f5e8' : '#fff3e0' }
-                        ]}>
-                          <Text style={[
-                            styles.improvementBadgeText,
-                            { color: improvement > 0 ? '#34c759' : '#ff9500' }
-                          ]}>
-                            {improvement > 0 ? `↓${improvement.toFixed(1)}` : '→'}
-                          </Text>
-                        </View>
+                      );
+                    })}
+                  </ScrollView>
+                  {hasScrollableOverflow && (
+                    <>
+                      <LinearGradient
+                        pointerEvents="none"
+                        colors={['rgba(248,249,250,1)', 'rgba(248,249,250,0)']}
+                        style={styles.scrollFadeTop}
+                      />
+                      <LinearGradient
+                        pointerEvents="none"
+                        colors={['rgba(248,249,250,0)', 'rgba(248,249,250,1)']}
+                        style={styles.scrollFadeBottom}
+                      />
+                      <View pointerEvents="none" style={styles.scrollHintContainer}>
+                        <Text
+                          style={[
+                            styles.scrollHintText,
+                            !isScrollHintVisible && styles.scrollHintTextHidden
+                          ]}
+                        >
+                          Scroll to see more
+                        </Text>
                       </View>
-                    );
-                  })}
+                    </>
+                  )}
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+
+        {/* Emotional Feedback History Card */}
+        <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardTitle}>💬 Emotional Feedback History</Text>
+          <TouchableOpacity
+            ref={feedbackInfoButtonRef}
+            style={[styles.infoButton, isFeedbackInfoActive && styles.infoButtonActive]}
+            onPress={handleFeedbackInfoPress}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.infoButtonText, isFeedbackInfoActive && styles.infoButtonTextActive]}>
+              i
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+          <View style={styles.activityContent}>
+            {sortedFeedbackHistory.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateEmoji}>🎯</Text>
+                <Text style={styles.emptyStateTitle}>No feedback yet</Text>
+                <Text style={styles.emptyStateSubtitle}>
+                  Share how each meditation makes you feel to see it here.
+                </Text>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.activitySubtitle}>
+                  Moments you captured during sessions
+                </Text>
+                <View style={styles.activityListWrapper}>
+                  <ScrollView
+                    style={[
+                      styles.activityListScroll,
+                      { maxHeight: feedbackListMaxHeight },
+                      hasFeedbackOverflow && styles.activityListScrollWithIndicator
+                    ]}
+                    contentContainerStyle={[
+                      styles.activityList,
+                      hasFeedbackOverflow && styles.activityListScrollableContent
+                    ]}
+                    showsVerticalScrollIndicator={hasFeedbackOverflow}
+                    nestedScrollEnabled
+                    onScroll={handleFeedbackScroll}
+                    scrollEventThrottle={16}
+                  >
+                    {sortedFeedbackHistory.map(entry => {
+                      const sessionData = sessionsById[entry.sessionId];
+                      const sessionTitle = sessionData?.title || 'Meditation Session';
+                      const truncatedTitle = truncateText(sessionTitle, 28);
+                      const feedbackLabel = entry.label;
+                      const feedbackColor = feedbackColorMap[feedbackLabel];
+                      const feedbackBackground = feedbackColor;
+                      const formattedDate = formatSessionDate(entry.date) || 'Date unavailable';
+                      const formattedTimestamp = formatTimestamp(entry.timestampSeconds);
+
+                      return (
+                        <View key={entry.id} style={styles.activityItem}>
+                          <View
+                            style={[
+                              styles.activityIcon,
+                              { backgroundColor: feedbackBackground, borderWidth: 0 }
+                            ]}
+                          />
+                          <View style={styles.activityInfo}>
+                            <View style={styles.activityHeader}>
+                              <Text
+                                style={styles.activityTitle}
+                                numberOfLines={1}
+                                ellipsizeMode="tail"
+                              >
+                                {truncatedTitle}
+                              </Text>
+                              <Text style={styles.activityDate}>{formattedDate}</Text>
+                            </View>
+                            <View style={styles.feedbackDetailsRow}>
+                              <Text
+                                style={[
+                                  styles.feedbackLabelTag,
+                                  {
+                                    color: '#ffffff',
+                                    backgroundColor: feedbackColor
+                                  }
+                                ]}
+                              >
+                                {feedbackLabel}
+                              </Text>
+                              <Text style={styles.activityMeta}>at {formattedTimestamp}</Text>
+                            </View>
+                          </View>
+                          <TouchableOpacity
+                            style={styles.deleteFeedbackButton}
+                            onPress={() => removeEmotionalFeedbackEntry(entry.id)}
+                            hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+                          >
+                            <Text style={styles.deleteFeedbackButtonText}>×</Text>
+                          </TouchableOpacity>
+                        </View>
+                      );
+                    })}
+                  </ScrollView>
+                  {hasFeedbackOverflow && (
+                    <>
+                      <LinearGradient
+                        pointerEvents="none"
+                        colors={['rgba(248,249,250,1)', 'rgba(248,249,250,0)']}
+                        style={styles.scrollFadeTop}
+                      />
+                      <LinearGradient
+                        pointerEvents="none"
+                        colors={['rgba(248,249,250,0)', 'rgba(248,249,250,1)']}
+                        style={styles.scrollFadeBottom}
+                      />
+                      <View pointerEvents="none" style={styles.scrollHintContainer}>
+                        <Text
+                          style={[
+                            styles.scrollHintText,
+                            !isFeedbackScrollHintVisible && styles.scrollHintTextHidden
+                          ]}
+                        >
+                          Scroll to see more
+                        </Text>
+                      </View>
+                    </>
+                  )}
                 </View>
               </>
             )}
@@ -264,13 +628,12 @@ export const ProfileScreen: React.FC = () => {
         {/* Bottom spacing */}
         <View style={styles.bottomSpacing} />
       </ScrollView>
-      
-      {/* Profile Picture Modal */}
-      <ProfilePictureModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        onSelectIcon={setProfileIcon}
-        currentIcon={profileIcon}
+      <InfoBox
+        isVisible={showFeedbackInfoBox}
+        onClose={handleCloseFeedbackInfoBox}
+        title="Emotional Feedback"
+        content="Warning: deleting feedback may change the suggestion algorithm."
+        position={feedbackInfoPosition}
       />
     </View>
   );
@@ -330,29 +693,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
-  profilePictureContainer: {
-    position: 'relative',
+  profilePictureWrapper: {
     marginRight: 20,
   },
-  profilePictureOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
-    width: 24,
-    height: 24,
+  profileInitialContainer: {
+    width: 110,
+    height: 110,
+    borderRadius: 24,
+    borderWidth: theme.borders.width.thick,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#ffffff',
+    ...theme.shadows.medium,
+    borderColor: theme.colors.primary,
+    backgroundColor: '#f2f2f7',
   },
-  changePhotoText: {
-    fontSize: 12,
-    color: '#ffffff',
+  profileInitialText: {
+    fontSize: 48,
+    fontWeight: '700',
+    color: theme.colors.primary,
   },
   profileInfo: {
     flex: 1,
+  },
+  statsSection: {
+    backgroundColor: '#ffffff',
+  },
+  mergedSectionTop: {
+    paddingTop: 0,
+  },
+  mergedSectionAfterDivider: {
+    paddingTop: 0,
   },
   profileName: {
     fontSize: 24,
@@ -375,28 +745,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   shareContent: {
+    marginTop: 12,
+    gap: 14,
     paddingHorizontal: 16,
-    paddingBottom: 20,
   },
   shareSubtitle: {
     fontSize: 15,
     color: '#8e8e93',
     fontWeight: '400',
-    marginBottom: 20,
+    marginBottom: 12,
     textAlign: 'center',
   },
   stepsList: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   step: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   stepNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
@@ -413,26 +784,8 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontWeight: '400',
   },
-  rewardSection: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-  },
-  rewardTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 8,
-  },
-  rewardDescription: {
-    fontSize: 15,
-    color: '#8e8e93',
-    fontWeight: '400',
-    lineHeight: 20,
-  },
   referralSection: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   referralLabel: {
     fontSize: 15,
@@ -473,7 +826,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#007AFF',
     borderRadius: 12,
-    paddingVertical: 12,
+    paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -486,7 +839,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f2f2f7',
     borderRadius: 12,
-    paddingVertical: 12,
+    paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -498,8 +851,8 @@ const styles = StyleSheet.create({
   statsContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 12,
     paddingHorizontal: 16,
-    paddingBottom: 20,
   },
   statItem: {
     flex: 1,
@@ -509,7 +862,7 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: 'bold',
     color: '#000000',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   statLabel: {
     fontSize: 13,
@@ -557,12 +910,27 @@ const styles = StyleSheet.create({
   activityList: {
     gap: 12,
   },
+  activityListScrollableContent: {
+    paddingBottom: 36,
+  },
+  activityListScroll: {
+    width: '100%',
+    marginRight: -4,
+  },
+  activityListScrollWithIndicator: {
+    paddingRight: 8,
+    marginRight: -12,
+  },
+  activityListWrapper: {
+    position: 'relative',
+  },
   activityItem: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f8f9fa',
     borderRadius: 12,
     padding: 12,
+    overflow: 'hidden',
   },
   activityIcon: {
     width: 40,
@@ -571,17 +939,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+    borderWidth: 1,
+    borderColor: '#ffffff',
   },
-  activityEmoji: {
-    fontSize: 18,
+  activityIconText: {
+    fontSize: 16,
+    fontWeight: '700',
   },
   activityInfo: {
     flex: 1,
+    paddingRight: 8,
   },
   activityHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
     marginBottom: 4,
   },
   activityTitle: {
@@ -593,28 +964,103 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#8e8e93',
     fontWeight: '400',
+    marginTop: 2,
   },
   activityDetails: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
   },
   activityMeta: {
     fontSize: 13,
     color: '#8e8e93',
     fontWeight: '400',
   },
-  improvementText: {
-    color: '#34c759',
+  durationBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginLeft: 12,
+    alignSelf: 'flex-start',
+  },
+  durationBadgeText: {
+    fontSize: 12,
     fontWeight: '600',
   },
-  improvementBadge: {
+  feedbackDetailsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  feedbackLabelTag: {
+    fontSize: 12,
+    fontWeight: '600',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
-    marginLeft: 12,
+    marginRight: 8,
+    color: '#ffffff',
   },
-  improvementBadgeText: {
-    fontSize: 12,
-    fontWeight: 'bold',
+  deleteFeedbackButton: {
+    marginLeft: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  deleteFeedbackButtonText: {
+    fontSize: 18,
+    color: '#8e8e93',
+    fontWeight: '600',
+  },
+  scrollFadeTop: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 24,
+  },
+  scrollFadeBottom: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 32,
+    height: 32,
+  },
+  scrollHintContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#ffffff',
+  },
+  scrollHintText: {
+    fontSize: 11,
+    color: '#8e8e93',
+    fontWeight: '500',
+  },
+  scrollHintTextHidden: {
+    opacity: 0,
+  },
+  infoButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  infoButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666666',
+  },
+  infoButtonActive: {
+    backgroundColor: '#007AFF',
+  },
+  infoButtonTextActive: {
+    color: '#ffffff',
   },
 }); 

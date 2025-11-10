@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -32,6 +32,8 @@ import { Slider0to10 } from '../components/Slider0to10';
 import { meditationAudioData, emotionalFeedbackData, sessionProgressData, mockAudioPlayer } from '../data/meditationMockData';
 import { PlayIcon, PauseIcon, SkipForward10Icon, SkipBackward10Icon, HeartIcon, HeartOutlineIcon, BackIcon, MoreIcon } from '../components/icons/PlayerIcons';
 import { createMeditationPlayerBackground, getPrerenderedGradient } from '../utils/gradientBackgrounds';
+import MeditationCompletionLanding from '../components/MeditationCompletionLanding';
+import MeditationFeedbackLanding from '../components/MeditationFeedbackLanding';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -49,10 +51,24 @@ export const MeditationPlayerScreen: React.FC = () => {
   const [emotionalRating, setEmotionalRating] = useState(5);
   const [currentSegment, setCurrentSegment] = useState<string>('');
   const [audioLoaded, setAudioLoaded] = useState(false);
+  const [showCompletionLanding, setShowCompletionLanding] = useState(false);
+  const [showFeedbackLanding, setShowFeedbackLanding] = useState(false);
   const progressAnim = useRef(new Animated.Value(0)).current;
   const playButtonScale = useRef(new Animated.Value(1)).current;
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const audioPlayerRef = useRef(mockAudioPlayer);
+  const truncatedTitle = useMemo(() => {
+    const title = activeSession?.title ?? '';
+    if (!title) return '';
+
+    const limit = 26;
+    if (title.length <= limit) {
+      return title;
+    }
+
+    const trimmed = title.slice(0, limit).trimEnd();
+    return `${trimmed}...`;
+  }, [activeSession?.title]);
   
   // Reanimated values for smooth gesture handling
   const thumbPosition = useSharedValue(0);
@@ -271,10 +287,7 @@ export const MeditationPlayerScreen: React.FC = () => {
           
           if (newTime >= totalDuration) {
             setPlayerState('finished');
-            // Mark session as complete
-            if (activeSession) {
-              sessionProgressData.markSessionComplete(activeSession.id, totalDuration, emotionalRating);
-            }
+            setShowCompletionLanding(true);
             return totalDuration;
           }
           return newTime;
@@ -398,12 +411,9 @@ export const MeditationPlayerScreen: React.FC = () => {
   };
 
   const handleFinish = () => {
-    // Stop audio and save session
+    // Stop audio and open completion landing
     audioPlayerRef.current.stop();
-    if (activeSession) {
-      sessionProgressData.markSessionComplete(activeSession.id, currentTime, emotionalRating);
-    }
-    setActiveSession(null);
+    setShowCompletionLanding(true);
   };
 
   const handleDiscard = () => {
@@ -547,6 +557,15 @@ export const MeditationPlayerScreen: React.FC = () => {
 
   // Helper function to update current time with idle timer reset (for user interactions)
   const updateCurrentTimeWithReset = (newTime: number) => {
+    // If user skips to or beyond the end, finish immediately
+    if (newTime >= totalDuration) {
+      setCurrentTime(totalDuration);
+      audioPlayerRef.current.seekTo(totalDuration);
+      audioPlayerRef.current.stop();
+      setPlayerState('finished');
+      setShowCompletionLanding(true);
+      return;
+    }
     setCurrentTime(newTime);
     audioPlayerRef.current.seekTo(newTime);
     resetIdleTimer();
@@ -978,7 +997,9 @@ export const MeditationPlayerScreen: React.FC = () => {
             pointerEvents: isDarkMode ? 'none' : 'auto',
           }
         ]}>
-          <Text style={styles.sessionTitle}>{activeSession.title}</Text>
+          <Text style={styles.sessionTitle} numberOfLines={1} ellipsizeMode="tail">
+            {truncatedTitle}
+          </Text>
         </Animated.View>
 
         {/* Artist/Creator - Hidden in dark mode */}
@@ -1274,6 +1295,28 @@ export const MeditationPlayerScreen: React.FC = () => {
           </Animated.View>
         </View>
       )}
+      {/* Completion Landing Overlay */}
+      <MeditationCompletionLanding
+        visible={showCompletionLanding}
+        secondsMeditated={currentTime}
+        onContinue={() => {
+          setShowFeedbackLanding(true);
+        }}
+        onDiscard={() => {
+          setActiveSession(null);
+        }}
+      />
+
+      {/* Feedback Landing Overlay */}
+      <MeditationFeedbackLanding
+        visible={showFeedbackLanding}
+        onFinish={(rating) => {
+          if (activeSession) {
+            sessionProgressData.markSessionComplete(activeSession.id, currentTime, rating);
+          }
+          setActiveSession(null);
+        }}
+      />
       </SafeAreaView>
     </GestureHandlerRootView>
   );

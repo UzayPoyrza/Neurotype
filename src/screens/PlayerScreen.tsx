@@ -91,7 +91,8 @@ export const PlayerScreen: React.FC = () => {
       <StatusBar hidden={true} />
       <View style={styles.container}>
         <TopNav 
-          title={activeSession.title} 
+          title={activeSession.title}
+          titleMaxLength={26}
           showBackButton={true}
           onBackPress={closeSession}
         />

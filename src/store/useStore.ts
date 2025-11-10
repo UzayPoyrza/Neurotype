@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { UserProgress, FilterState, SessionDelta, Session } from '../types';
+import { UserProgress, FilterState, SessionDelta, Session, EmotionalFeedbackEntry } from '../types';
 import { initialUserProgress } from '../data/mockData';
 import { mentalHealthModules } from '../data/modules';
 
@@ -26,8 +26,82 @@ mentalHealthModules.forEach(module => {
   prerenderedModuleBackgrounds[module.id] = createSubtleBackground(module.color);
 });
 
+const buildInitialStoreData = () => {
+  const emotionalFeedbackHistorySeed: EmotionalFeedbackEntry[] = [
+    {
+      id: 'feedback-1',
+      sessionId: '1',
+      label: 'Bad',
+      timestampSeconds: 75,
+      date: '2025-08-28T20:05:00Z',
+    },
+    {
+      id: 'feedback-2',
+      sessionId: '8',
+      label: 'Okay',
+      timestampSeconds: 180,
+      date: '2025-08-28T20:10:00Z',
+    },
+    {
+      id: 'feedback-3',
+      sessionId: '11',
+      label: 'Good',
+      timestampSeconds: 320,
+      date: '2025-08-29T14:22:00Z',
+    },
+    {
+      id: 'feedback-4',
+      sessionId: '12',
+      label: 'Great',
+      timestampSeconds: 420,
+      date: '2025-08-29T21:05:00Z',
+    },
+    {
+      id: 'feedback-5',
+      sessionId: '5',
+      label: 'Meh',
+      timestampSeconds: 95,
+      date: '2025-08-30T08:45:00Z',
+    },
+    {
+      id: 'feedback-6',
+      sessionId: '16',
+      label: 'Good',
+      timestampSeconds: 210,
+      date: '2025-08-30T09:15:00Z',
+    },
+  ];
+
+  return {
+    userProgress: {
+      ...initialUserProgress,
+      sessionDeltas: initialUserProgress.sessionDeltas.map(delta => ({ ...delta })),
+      techniqueEffectiveness: initialUserProgress.techniqueEffectiveness.map(item => ({ ...item })),
+    },
+    userFirstName: 'Ava',
+    filters: {
+      modality: 'all',
+      goal: 'all',
+    } as FilterState,
+    reminderEnabled: false,
+    darkThemeEnabled: false,
+    profileIcon: '👤',
+    subscriptionType: 'premium' as const,
+    activeSession: null,
+    activeModuleId: null,
+    recentModuleIds: [] as string[],
+    globalBackgroundColor: '#f2f2f7',
+    currentScreen: 'today' as const,
+    todayModuleId: 'anxiety',
+    likedSessionIds: [] as string[],
+    isTransitioning: false,
+    emotionalFeedbackHistory: emotionalFeedbackHistorySeed.map(entry => ({ ...entry })),
+  };
+};
+
 interface AppState {
   userProgress: UserProgress;
+  userFirstName: string;
   filters: FilterState;
   reminderEnabled: boolean;
   darkThemeEnabled: boolean;
@@ -41,10 +115,12 @@ interface AppState {
   todayModuleId: string | null;
   likedSessionIds: string[];
   isTransitioning: boolean;
+  emotionalFeedbackHistory: EmotionalFeedbackEntry[];
   addSessionDelta: (delta: SessionDelta) => void;
   setFilters: (filters: FilterState) => void;
   toggleReminder: () => void;
   toggleDarkTheme: () => void;
+  setUserFirstName: (name: string) => void;
   setProfileIcon: (icon: string) => void;
   setSubscriptionType: (type: 'basic' | 'premium') => void;
   setActiveSession: (session: Session | null) => void;
@@ -56,27 +132,14 @@ interface AppState {
   toggleLikedSession: (sessionId: string) => void;
   isSessionLiked: (sessionId: string) => boolean;
   setIsTransitioning: (isTransitioning: boolean) => void;
+  addEmotionalFeedbackEntry: (entry: EmotionalFeedbackEntry) => void;
+  removeEmotionalFeedbackEntry: (entryId: string) => void;
+  resetAppData: () => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
-  userProgress: initialUserProgress,
-  filters: {
-    modality: 'all',
-    goal: 'all'
-  },
-  reminderEnabled: false,
-  darkThemeEnabled: false,
-  profileIcon: '👤',
-  subscriptionType: 'premium',
-  activeSession: null,
-  activeModuleId: null,
-  recentModuleIds: [],
-  globalBackgroundColor: '#f2f2f7', // Default iOS background
-  currentScreen: 'today',
-  todayModuleId: 'anxiety', // Default module
-  likedSessionIds: [],
-  isTransitioning: false,
-  
+  ...buildInitialStoreData(),
+
   addSessionDelta: (delta: SessionDelta) => 
     set((state) => ({
       userProgress: {
@@ -94,6 +157,9 @@ export const useStore = create<AppState>((set, get) => ({
     
   toggleDarkTheme: () => 
     set((state) => ({ darkThemeEnabled: !state.darkThemeEnabled })),
+
+  setUserFirstName: (name: string) =>
+    set({ userFirstName: name }),
     
   setProfileIcon: (icon: string) => 
     set({ profileIcon: icon }),
@@ -137,5 +203,23 @@ export const useStore = create<AppState>((set, get) => ({
   },
   
   setIsTransitioning: (isTransitioning: boolean) => 
-    set({ isTransitioning })
+    set({ isTransitioning }),
+
+  addEmotionalFeedbackEntry: (entry: EmotionalFeedbackEntry) =>
+    set((state) => ({
+      emotionalFeedbackHistory: [entry, ...state.emotionalFeedbackHistory]
+    })),
+
+  removeEmotionalFeedbackEntry: (entryId: string) =>
+    set((state) => ({
+      emotionalFeedbackHistory: state.emotionalFeedbackHistory.filter(entry => entry.id !== entryId)
+    })),
+
+  resetAppData: () => {
+    const defaults = buildInitialStoreData();
+    set((state) => ({
+      ...defaults,
+      currentScreen: state.currentScreen,
+    }));
+  },
 })); 

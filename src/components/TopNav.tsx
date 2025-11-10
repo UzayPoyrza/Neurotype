@@ -8,13 +8,15 @@ interface TopNavProps {
   showBackButton?: boolean;
   onBackPress?: () => void;
   rightComponent?: React.ReactNode;
+  titleMaxLength?: number;
 }
 
 export const TopNav: React.FC<TopNavProps> = ({
   title,
   showBackButton = false,
   onBackPress,
-  rightComponent
+  rightComponent,
+  titleMaxLength,
 }) => {
   const navigation = useNavigation();
 
@@ -54,7 +56,9 @@ export const TopNav: React.FC<TopNavProps> = ({
           {/* Center - Title */}
           <View style={styles.centerSection}>
             <Text style={styles.title} numberOfLines={1}>
-              {title}
+              {titleMaxLength && title.length > titleMaxLength
+                ? `${title.slice(0, titleMaxLength).trimEnd()}...`
+                : title}
             </Text>
           </View>
 

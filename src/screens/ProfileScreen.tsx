@@ -12,6 +12,9 @@ import { MergedCard } from '../components/MergedCard';
 import { mockSessions } from '../data/mockData';
 import type { Session } from '../types';
 
+const MAX_VISIBLE_ACTIVITY_ITEMS = 5;
+const APPROX_ACTIVITY_ROW_HEIGHT = 84;
+
 const truncateText = (text: string, maxLength: number): string => {
   if (!text || text.length <= maxLength) {
     return text;
@@ -97,6 +100,8 @@ export const ProfileScreen: React.FC = () => {
   const moduleBorderColor = activeModule?.color || theme.colors.primary;
   const avatarBackgroundColor = prerenderedModuleBackgrounds[moduleId] || '#f2f2f7';
   const profileInitial = userFirstName?.trim().charAt(0)?.toUpperCase() || 'N';
+  const visibleActivityCount = Math.min(recentActivity.length, MAX_VISIBLE_ACTIVITY_ITEMS);
+  const activityListMaxHeight = visibleActivityCount * APPROX_ACTIVITY_ROW_HEIGHT;
 
   return (
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
@@ -263,7 +268,12 @@ export const ProfileScreen: React.FC = () => {
                 <Text style={styles.activitySubtitle}>
                   Recently completed meditations
                 </Text>
-                <View style={styles.activityList}>
+                <ScrollView
+                  style={[styles.activityListScroll, { maxHeight: activityListMaxHeight }]}
+                  contentContainerStyle={styles.activityList}
+                  showsVerticalScrollIndicator={recentActivity.length > MAX_VISIBLE_ACTIVITY_ITEMS}
+                  nestedScrollEnabled
+                >
                   {recentActivity.map((sessionDelta, index) => {
                     const sessionData = sessionDelta.sessionId ? sessionsById[sessionDelta.sessionId] : undefined;
                     const moduleData =
@@ -324,7 +334,7 @@ export const ProfileScreen: React.FC = () => {
                       </View>
                     );
                   })}
-                </View>
+                </ScrollView>
               </>
             )}
           </View>
@@ -607,6 +617,9 @@ const styles = StyleSheet.create({
   },
   activityList: {
     gap: 12,
+  },
+  activityListScroll: {
+    width: '100%',
   },
   activityItem: {
     flexDirection: 'row',

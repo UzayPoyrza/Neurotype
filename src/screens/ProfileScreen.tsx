@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import Svg, { Path } from 'react-native-svg';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useStore, prerenderedModuleBackgrounds, createSubtleBackground } from '../store/useStore';
 import { theme } from '../styles/theme';
 import { SubscriptionBadge } from '../components/SubscriptionBadge';
@@ -102,6 +103,34 @@ export const ProfileScreen: React.FC = () => {
   const profileInitial = userFirstName?.trim().charAt(0)?.toUpperCase() || 'N';
   const visibleActivityCount = Math.min(recentActivity.length, MAX_VISIBLE_ACTIVITY_ITEMS);
   const activityListMaxHeight = visibleActivityCount * APPROX_ACTIVITY_ROW_HEIGHT;
+  const hasScrollableOverflow = recentActivity.length > MAX_VISIBLE_ACTIVITY_ITEMS;
+  const [isScrollHintVisible, setIsScrollHintVisible] = React.useState(hasScrollableOverflow);
+
+  React.useEffect(() => {
+    if (!hasScrollableOverflow) {
+      setIsScrollHintVisible(false);
+    } else {
+      setIsScrollHintVisible(true);
+    }
+  }, [hasScrollableOverflow]);
+
+  const handleActivityScroll = React.useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      if (!hasScrollableOverflow) {
+        return;
+      }
+
+      const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
+      const isAtBottom = contentOffset.y + layoutMeasurement.height >= contentSize.height - 8;
+
+      if (isAtBottom && isScrollHintVisible) {
+        setIsScrollHintVisible(false);
+      } else if (!isAtBottom && !isScrollHintVisible) {
+        setIsScrollHintVisible(true);
+      }
+    },
+    [hasScrollableOverflow, isScrollHintVisible]
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
@@ -268,73 +297,99 @@ export const ProfileScreen: React.FC = () => {
                 <Text style={styles.activitySubtitle}>
                   Recently completed meditations
                 </Text>
-                <ScrollView
-                  style={[styles.activityListScroll, { maxHeight: activityListMaxHeight }]}
-                  contentContainerStyle={styles.activityList}
-                  showsVerticalScrollIndicator={recentActivity.length > MAX_VISIBLE_ACTIVITY_ITEMS}
-                  nestedScrollEnabled
-                >
-                  {recentActivity.map((sessionDelta, index) => {
-                    const sessionData = sessionDelta.sessionId ? sessionsById[sessionDelta.sessionId] : undefined;
-                    const moduleData =
-                      (sessionDelta.moduleId && modulesById[sessionDelta.moduleId]) ||
-                      (sessionData ? modulesById[sessionData.goal] : undefined);
-                    const moduleTitle = moduleData?.title;
-                    const moduleColor = moduleData?.color || '#007AFF';
-                    const moduleInitial = moduleTitle?.trim().charAt(0)?.toUpperCase() || 'M';
-                    const iconBackground = createSubtleBackground(moduleColor);
-                    const formattedDate = formatSessionDate(sessionDelta.date);
-                    const sessionTitle = sessionData?.title || 'Meditation Session';
-                    const truncatedTitle = truncateText(sessionTitle, 28);
-                    const durationMinutes = sessionData?.durationMin ?? null;
-                    const durationLabel = durationMinutes !== null ? `${durationMinutes} min` : '-- min';
-                    const completionLabel = formattedDate ? `Completed ${formattedDate}` : 'Completion date unavailable';
+                <View style={styles.activityListWrapper}>
+                  <ScrollView
+                    style={[styles.activityListScroll, { maxHeight: activityListMaxHeight }]}
+                    contentContainerStyle={[
+                      styles.activityList,
+                      hasScrollableOverflow && styles.activityListScrollableContent
+                    ]}
+                    showsVerticalScrollIndicator={hasScrollableOverflow}
+                    nestedScrollEnabled
+                    onScroll={handleActivityScroll}
+                    scrollEventThrottle={16}
+                  >
+                    {recentActivity.map((sessionDelta, index) => {
+                      const sessionData = sessionDelta.sessionId ? sessionsById[sessionDelta.sessionId] : undefined;
+                      const moduleData =
+                        (sessionDelta.moduleId && modulesById[sessionDelta.moduleId]) ||
+                        (sessionData ? modulesById[sessionData.goal] : undefined);
+                      const moduleTitle = moduleData?.title;
+                      const moduleColor = moduleData?.color || '#007AFF';
+                      const moduleInitial = moduleTitle?.trim().charAt(0)?.toUpperCase() || 'M';
+                      const iconBackground = createSubtleBackground(moduleColor);
+                      const formattedDate = formatSessionDate(sessionDelta.date);
+                      const sessionTitle = sessionData?.title || 'Meditation Session';
+                      const truncatedTitle = truncateText(sessionTitle, 28);
+                      const durationMinutes = sessionData?.durationMin ?? null;
+                      const durationLabel = durationMinutes !== null ? `${durationMinutes} min` : '-- min';
+                      const completionLabel = formattedDate ? `Completed ${formattedDate}` : 'Completion date unavailable';
 
-                    return (
-                      <View key={`${sessionDelta.date}-${index}`} style={styles.activityItem}>
-                        <View
-                          style={[
-                            styles.activityIcon,
-                            { backgroundColor: iconBackground }
-                          ]}
-                        >
-                          <Text style={[styles.activityIconText, { color: moduleColor }]}>
-                            {moduleInitial}
-                          </Text>
-                        </View>
-                        <View style={styles.activityInfo}>
-                          <View style={styles.activityHeader}>
-                            <Text
-                              style={styles.activityTitle}
-                              numberOfLines={1}
-                              ellipsizeMode="tail"
-                            >
-                              {truncatedTitle}
-                            </Text>
-                            <Text style={styles.activityDate}>
-                              {completionLabel}
+                      return (
+                        <View key={`${sessionDelta.date}-${index}`} style={styles.activityItem}>
+                          <View
+                            style={[
+                              styles.activityIcon,
+                              { backgroundColor: iconBackground }
+                            ]}
+                          >
+                            <Text style={[styles.activityIconText, { color: moduleColor }]}>
+                              {moduleInitial}
                             </Text>
                           </View>
-                          <View style={styles.activityDetails}>
-                            {moduleTitle ? (
-                              <Text style={styles.activityMeta}>{moduleTitle}</Text>
-                            ) : null}
+                          <View style={styles.activityInfo}>
+                            <View style={styles.activityHeader}>
+                              <Text
+                                style={styles.activityTitle}
+                                numberOfLines={1}
+                                ellipsizeMode="tail"
+                              >
+                                {truncatedTitle}
+                              </Text>
+                              <Text style={styles.activityDate}>
+                                {completionLabel}
+                              </Text>
+                            </View>
+                            <View style={styles.activityDetails}>
+                              {moduleTitle ? (
+                                <Text style={styles.activityMeta}>{moduleTitle}</Text>
+                              ) : null}
+                            </View>
+                          </View>
+                          <View
+                            style={[
+                              styles.durationBadge,
+                              { backgroundColor: iconBackground }
+                            ]}
+                          >
+                            <Text style={[styles.durationBadgeText, { color: moduleColor }]}>
+                              {durationLabel}
+                            </Text>
                           </View>
                         </View>
-                        <View
-                          style={[
-                            styles.durationBadge,
-                            { backgroundColor: iconBackground }
-                          ]}
-                        >
-                          <Text style={[styles.durationBadgeText, { color: moduleColor }]}>
-                            {durationLabel}
-                          </Text>
+                      );
+                    })}
+                  </ScrollView>
+                  {hasScrollableOverflow && (
+                    <>
+                      <LinearGradient
+                        pointerEvents="none"
+                        colors={['rgba(248,249,250,1)', 'rgba(248,249,250,0)']}
+                        style={styles.scrollFadeTop}
+                      />
+                      <LinearGradient
+                        pointerEvents="none"
+                        colors={['rgba(248,249,250,0)', 'rgba(248,249,250,1)']}
+                        style={styles.scrollFadeBottom}
+                      />
+                      {isScrollHintVisible && (
+                        <View pointerEvents="none" style={styles.scrollHintContainer}>
+                          <Text style={styles.scrollHintText}>Scroll to see more</Text>
                         </View>
-                      </View>
-                    );
-                  })}
-                </ScrollView>
+                      )}
+                    </>
+                  )}
+                </View>
               </>
             )}
           </View>
@@ -618,8 +673,14 @@ const styles = StyleSheet.create({
   activityList: {
     gap: 12,
   },
+  activityListScrollableContent: {
+    paddingBottom: 36,
+  },
   activityListScroll: {
     width: '100%',
+  },
+  activityListWrapper: {
+    position: 'relative',
   },
   activityItem: {
     flexDirection: 'row',
@@ -681,5 +742,37 @@ const styles = StyleSheet.create({
   durationBadgeText: {
     fontSize: 12,
     fontWeight: '600',
+  },
+  scrollFadeTop: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 24,
+  },
+  scrollFadeBottom: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 32,
+    height: 32,
+  },
+  scrollHintContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginHorizontal: 32,
+    borderRadius: 12,
+    backgroundColor: 'rgba(242, 242, 247, 0.92)',
+  },
+  scrollHintText: {
+    fontSize: 11,
+    color: '#8e8e93',
+    fontWeight: '500',
   },
 }); 

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, Animated, Dimensions, TouchableOpacity, FlatList, AccessibilityInfo, TouchableWithoutFeedback } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -172,6 +172,46 @@ export const TodayScreen: React.FC = () => {
 
   const todaySessions = getTodaySessions();
   const recommendedSession = todaySessions.find(s => s.isRecommended) || todaySessions[0];
+
+  const moduleSessionsForRoadmap = useMemo(() => {
+    const relevantGoals = {
+      'anxiety': ['anxiety'],
+      'adhd': ['focus'],
+      'depression': ['sleep', 'focus'],
+      'bipolar': ['anxiety', 'sleep'],
+      'panic': ['anxiety'],
+      'ptsd': ['anxiety', 'sleep'],
+      'stress': ['anxiety', 'focus'],
+      'sleep': ['sleep'],
+      'focus': ['focus'],
+      'emotional-regulation': ['anxiety', 'focus'],
+      'mindfulness': ['focus', 'sleep'],
+      'self-compassion': ['sleep', 'focus'],
+    };
+
+    const goals = relevantGoals[selectedModule.id as keyof typeof relevantGoals] || ['focus'];
+    return mockSessions.filter(session => goals.includes(session.goal));
+  }, [selectedModule]);
+
+  const completedPreviewSessions = useMemo(() => {
+    return moduleSessionsForRoadmap.slice(0, 2);
+  }, [moduleSessionsForRoadmap]);
+
+  const upcomingPreviewSessions = useMemo(() => {
+    const todayIds = todaySessions.map(session => session.id.replace('-today', ''));
+    return moduleSessionsForRoadmap
+      .filter(session => !todayIds.includes(session.id))
+      .slice(0, 2);
+  }, [moduleSessionsForRoadmap, todaySessions]);
+
+  const formatCompletedLabel = useCallback((index: number) => {
+    if (index === 0) return 'Yesterday';
+    if (index === 1) return '2 days ago';
+
+    const date = new Date();
+    date.setDate(date.getDate() - (index + 1));
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }, []);
 
   const handleSessionSelect = (session: Session) => {
     setSelectedSession(session);
@@ -549,48 +589,107 @@ export const TodayScreen: React.FC = () => {
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>🗺️ Progress Path</Text>
           </View>
-          
+
           <Animated.View
             style={[
-              styles.progressPathContainer,
+              styles.progressPreviewContainer,
               {
                 transform: [{ scale: roadmapCardScale }],
               }
             ]}
           >
-            <TouchableOpacity 
-              style={styles.progressPath}
+            <TouchableOpacity
+              style={styles.progressPreviewCard}
               onPress={handleRoadmapCardPress}
               onPressIn={handleRoadmapCardPressIn}
               onPressOut={handleRoadmapCardPressOut}
               activeOpacity={1}
             >
-              <View style={styles.progressPathHeader}>
-                <Text style={styles.progressPathTitle}>{selectedModule.title} Journey</Text>
-                <Text style={styles.progressPathSubtitle}>Level 3 of 8</Text>
-              </View>
-
-              <View style={styles.progressNodes}>
-                <View style={[styles.progressNode, styles.completedNode]}>
-                  <Text style={styles.progressNodeText}>1</Text>
+              <View style={styles.progressPreviewHeader}>
+                <View style={[styles.progressPreviewBadge, { backgroundColor: selectedModule.color }]}>
+                  <Text style={styles.progressPreviewBadgeIcon}>↺</Text>
                 </View>
-                <View style={[styles.progressLine, { backgroundColor: selectedModule.color }]} />
-                <View style={[styles.progressNode, styles.completedNode]}>
-                  <Text style={styles.progressNodeText}>2</Text>
-                </View>
-                <View style={[styles.progressLine, { backgroundColor: selectedModule.color }]} />
-                <View style={[styles.progressNode, styles.currentNode, { borderColor: selectedModule.color }]}>
-                  <Text style={styles.progressNodeText}>3</Text>
-                </View>
-                <View style={[styles.progressLine, { backgroundColor: '#e0e0e0' }]} />
-                <View style={[styles.progressNode, styles.lockedNode]}>
-                  <Text style={styles.progressNodeText}>4</Text>
+                <View style={styles.progressPreviewHeaderText}>
+                  <Text style={styles.progressPreviewTitle}>{selectedModule.title} Journey</Text>
+                  <Text style={styles.progressPreviewSubtitle}>
+                    See what you’ve completed and what’s next
+                  </Text>
                 </View>
               </View>
 
-              <Text style={styles.progressPathFooter}>
-                Tap to view your full journey
-              </Text>
+              <View style={styles.progressPreviewTimeline}>
+                <View style={styles.progressPreviewColumn}>
+                  <Text style={styles.progressPreviewSectionLabel}>Completed</Text>
+                  {completedPreviewSessions.map((session, index) => (
+                    <View key={session.id} style={styles.progressPreviewItem}>
+                      <View style={styles.progressPreviewItemIcon}>
+                        <Text style={styles.progressPreviewItemIconText}>✓</Text>
+                      </View>
+                      <View style={styles.progressPreviewItemBody}>
+                        <Text style={styles.progressPreviewItemTitle} numberOfLines={1}>
+                          {session.title}
+                        </Text>
+                        <Text style={styles.progressPreviewItemMeta}>
+                          {formatCompletedLabel(index)}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                  {completedPreviewSessions.length === 0 && (
+                    <Text style={styles.progressPreviewEmptyText}>Start your first session</Text>
+                  )}
+                </View>
+
+                <View style={styles.progressPreviewDivider} />
+
+                <View style={styles.progressPreviewColumn}>
+                  <Text style={styles.progressPreviewSectionLabel}>Coming Up</Text>
+                  {recommendedSession && (
+                    <View style={[styles.progressPreviewHighlight, { borderColor: selectedModule.color }]}>
+                      <View style={[styles.progressPreviewHighlightAccent, { backgroundColor: selectedModule.color }]} />
+                      <View style={styles.progressPreviewHighlightContent}>
+                        <Text style={styles.progressPreviewHighlightTitle} numberOfLines={2}>
+                          {recommendedSession.title}
+                        </Text>
+                        <Text style={styles.progressPreviewHighlightMeta}>
+                          {recommendedSession.durationMin} min • {recommendedSession.modality}
+                        </Text>
+                        <Text style={[styles.progressPreviewHighlightBadge, { color: selectedModule.color }]}>
+                          Recommended today
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+                  {upcomingPreviewSessions.map(session => (
+                    <View key={session.id} style={styles.progressPreviewItem}>
+                      <View style={[styles.progressPreviewItemIcon, styles.progressPreviewItemIconUpcoming]}>
+                        <Text style={[styles.progressPreviewItemIconText, styles.progressPreviewItemIconUpcomingText]}>▶</Text>
+                      </View>
+                      <View style={styles.progressPreviewItemBody}>
+                        <Text style={styles.progressPreviewItemTitle} numberOfLines={1}>
+                          {session.title}
+                        </Text>
+                        <Text style={styles.progressPreviewItemMeta}>
+                          {session.durationMin} min • {session.modality}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                  {(!recommendedSession && upcomingPreviewSessions.length === 0) && (
+                    <Text style={styles.progressPreviewEmptyText}>Explore the roadmap for more</Text>
+                  )}
+                  {(recommendedSession && upcomingPreviewSessions.length === 0) && (
+                    <Text style={styles.progressPreviewEmptyText}>More sessions will unlock soon</Text>
+                  )}
+                </View>
+              </View>
+
+              <View style={styles.progressPreviewFooter}>
+                <Text style={styles.progressPreviewFooterText}>
+                  Tap to open your full progress path
+                </Text>
+                <Text style={[styles.progressPreviewFooterArrow, { color: selectedModule.color }]}>›</Text>
+              </View>
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -825,73 +924,174 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 1,
   },
-  progressPathContainer: {
+  progressPreviewContainer: {
     paddingHorizontal: 16,
     paddingBottom: 20,
   },
-  progressPath: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    padding: 16,
+  progressPreviewCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 18,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#e5e5ea',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
   },
-  progressPathHeader: {
+  progressPreviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 16,
   },
-  progressPathTitle: {
+  progressPreviewBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  progressPreviewBadgeIcon: {
+    fontSize: 18,
+    color: '#ffffff',
+    fontWeight: '700',
+  },
+  progressPreviewHeaderText: {
+    flex: 1,
+  },
+  progressPreviewTitle: {
     fontSize: 17,
     fontWeight: '600',
     color: '#000000',
     marginBottom: 4,
   },
-  progressPathSubtitle: {
-    fontSize: 15,
+  progressPreviewSubtitle: {
+    fontSize: 14,
     color: '#8e8e93',
-    fontWeight: '400',
   },
-  progressNodes: {
+  progressPreviewTimeline: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#f2f2f7',
+    backgroundColor: '#f9f9fb',
+    padding: 12,
     marginBottom: 16,
   },
-  progressNode: {
+  progressPreviewColumn: {
+    flex: 1,
+  },
+  progressPreviewSectionLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1d1d1f',
+    marginBottom: 8,
+  },
+  progressPreviewItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  progressPreviewItemIcon: {
     width: 28,
     height: 28,
     borderRadius: 14,
+    backgroundColor: '#34c759',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
+    marginRight: 8,
   },
-  completedNode: {
-    backgroundColor: '#34c759',
-    borderColor: '#34c759',
-  },
-  currentNode: {
-    backgroundColor: '#ffffff',
-    borderWidth: 3,
-  },
-  lockedNode: {
-    backgroundColor: '#f2f2f7',
-    borderColor: '#e0e0e0',
-  },
-  progressNodeText: {
-    fontSize: 12,
-    fontWeight: 'bold',
+  progressPreviewItemIconText: {
+    fontSize: 14,
+    fontWeight: '700',
     color: '#ffffff',
   },
-  progressLine: {
-    width: 16,
-    height: 2,
-    marginHorizontal: 4,
+  progressPreviewItemBody: {
+    flex: 1,
   },
-  progressPathFooter: {
+  progressPreviewItemTitle: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#1d1d1f',
+  },
+  progressPreviewItemMeta: {
+    fontSize: 12,
+    color: '#8e8e93',
+  },
+  progressPreviewEmptyText: {
+    fontSize: 12,
+    color: '#8e8e93',
+    marginTop: 4,
+  },
+  progressPreviewDivider: {
+    width: 1,
+    backgroundColor: '#e5e5ea',
+    marginHorizontal: 12,
+    borderRadius: 0.5,
+  },
+  progressPreviewHighlight: {
+    borderWidth: 1,
+    borderRadius: 12,
+    backgroundColor: '#ffffff',
+    padding: 12,
+    marginBottom: 8,
+    overflow: 'hidden',
+  },
+  progressPreviewHighlightAccent: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    width: 4,
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
+  },
+  progressPreviewHighlightContent: {
+    marginLeft: 8,
+  },
+  progressPreviewHighlightTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 4,
+  },
+  progressPreviewHighlightMeta: {
+    fontSize: 12,
+    color: '#8e8e93',
+    marginBottom: 6,
+  },
+  progressPreviewHighlightBadge: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  progressPreviewItemIconUpcoming: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#d1d1d6',
+  },
+  progressPreviewItemIconUpcomingText: {
+    color: '#1d1d1f',
+  },
+  progressPreviewFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  progressPreviewFooterText: {
     fontSize: 13,
     color: '#8e8e93',
-    fontWeight: '400',
-    textAlign: 'center',
     fontStyle: 'italic',
+  },
+  progressPreviewFooterArrow: {
+    fontSize: 20,
+    fontWeight: '600',
   },
   bottomSpacing: {
     height: 120,

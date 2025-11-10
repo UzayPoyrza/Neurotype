@@ -14,6 +14,7 @@ import { SessionProgressView } from '../components/SessionProgressView';
 import { SessionRating } from '../components/SessionRating';
 import { InfoBox } from '../components/InfoBox';
 import { MeditationDetailModal } from '../components/MeditationDetailModal';
+import { MergedCard } from '../components/MergedCard';
 
 type SessionState = 'not_started' | 'in_progress' | 'completed' | 'rating';
 
@@ -448,100 +449,100 @@ export const TodayScreen: React.FC = () => {
         scrollEventThrottle={16}
       >
 
-        {/* Today's Focus Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>🧘‍♀️ Today's Focus</Text>
-            <TouchableOpacity 
-              style={styles.moduleButton}
-              onPress={handleModuleButtonPress}
-              activeOpacity={1}
-            >
-              <Animated.View style={{ opacity: moduleButtonFade, flexDirection: 'row', alignItems: 'center' }}>
-                <View style={[styles.moduleIndicator, { backgroundColor: selectedModule.color }]} />
-                <Text style={styles.moduleButtonText}>{selectedModule.title}</Text>
-              </Animated.View>
-            </TouchableOpacity>
-          </View>
-          
-          <Text style={styles.focusSubtitle}>
-            Personalized for your {selectedModule.title.toLowerCase()} journey
-          </Text>
+        <MergedCard>
+          <MergedCard.Section>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>🧘‍♀️ Today's Focus</Text>
+              <TouchableOpacity 
+                style={styles.moduleButton}
+                onPress={handleModuleButtonPress}
+                activeOpacity={1}
+              >
+                <Animated.View style={{ opacity: moduleButtonFade, flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={[styles.moduleIndicator, { backgroundColor: selectedModule.color }]} />
+                  <Text style={styles.moduleButtonText}>{selectedModule.title}</Text>
+                </Animated.View>
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={styles.focusSubtitle}>
+              Personalized for your {selectedModule.title.toLowerCase()} journey
+            </Text>
 
-          {/* Recommended Session */}
-          <Animated.View
-            style={[
-              styles.recommendedSessionContainer,
-              {
-                transform: [{ scale: heroCardScale }],
-              }
-            ]}
-          >
-            <TouchableOpacity
-              style={[styles.recommendedSession, { 
-                backgroundColor: todayCompleted ? '#e8f5e8' : '#ffffff'
-              }]}
-              onPress={() => handleSessionSelect(recommendedSession)}
-              onPressIn={handleHeroCardPressIn}
-              onPressOut={handleHeroCardPressOut}
-              activeOpacity={1}
+            {/* Recommended Session */}
+            <Animated.View
+              style={[
+                styles.recommendedSessionContainer,
+                {
+                  transform: [{ scale: heroCardScale }],
+                }
+              ]}
             >
-              <View style={styles.sessionContent}>
-                <Text style={styles.sessionTitle}>{recommendedSession.title}</Text>
-                <Text style={styles.sessionSubtitle}>
-                  {recommendedSession.adaptiveReason || 'Recommended for you'}
-                </Text>
-                
-                <View style={styles.sessionMeta}>
-                  <Text style={styles.sessionMetaText}>
-                    {recommendedSession.durationMin} min • {recommendedSession.modality}
+              <TouchableOpacity
+                style={[styles.recommendedSession, { 
+                  backgroundColor: todayCompleted ? '#e8f5e8' : '#ffffff'
+                }]}
+                onPress={() => handleSessionSelect(recommendedSession)}
+                onPressIn={handleHeroCardPressIn}
+                onPressOut={handleHeroCardPressOut}
+                activeOpacity={1}
+              >
+                <View style={styles.sessionContent}>
+                  <Text style={styles.sessionTitle}>{recommendedSession.title}</Text>
+                  <Text style={styles.sessionSubtitle}>
+                    {recommendedSession.adaptiveReason || 'Recommended for you'}
                   </Text>
-                  <View style={styles.recommendedBadge}>
-                    <Text style={styles.recommendedBadgeText}>Recommended</Text>
+                  
+                  <View style={styles.sessionMeta}>
+                    <Text style={styles.sessionMetaText}>
+                      {recommendedSession.durationMin} min • {recommendedSession.modality}
+                    </Text>
+                    <View style={styles.recommendedBadge}>
+                      <Text style={styles.recommendedBadgeText}>Recommended</Text>
+                    </View>
                   </View>
                 </View>
-              </View>
 
-              <View style={[styles.sessionPlayButton, { backgroundColor: selectedModule.color }]}>
-                <Text style={styles.sessionPlayText}>▶</Text>
-              </View>
+                <View style={[styles.sessionPlayButton, { backgroundColor: selectedModule.color }]}>
+                  <Text style={styles.sessionPlayText}>▶</Text>
+                </View>
 
-              {todayCompleted && (
-                <View style={styles.sessionCompletedBadge}>
-                  <Text style={styles.sessionCompletedText}>✓</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
-
-        {/* Alternative Sessions Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>💡 Other Options</Text>
-          </View>
-          
-          <View style={styles.alternativeSessionsList}>
-            {todaySessions.filter(s => !s.isRecommended).map((session) => (
-              <TouchableOpacity
-                key={session.id}
-                style={styles.alternativeSession}
-                onPress={() => handleSessionSelect(session)}
-                activeOpacity={0.8}
-              >
-                <View style={styles.alternativeSessionContent}>
-                  <Text style={styles.alternativeSessionTitle}>{session.title}</Text>
-                  <Text style={styles.alternativeSessionMeta}>
-                    {session.durationMin} min • {session.modality}
-                  </Text>
-                </View>
-                <View style={styles.alternativeSessionPlayButton}>
-                  <Text style={styles.alternativeSessionPlayText}>▶</Text>
-                </View>
+                {todayCompleted && (
+                  <View style={styles.sessionCompletedBadge}>
+                    <Text style={styles.sessionCompletedText}>✓</Text>
+                  </View>
+                )}
               </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+            </Animated.View>
+          </MergedCard.Section>
+
+          <MergedCard.Section>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>💡 Other Options</Text>
+            </View>
+            
+            <View style={styles.alternativeSessionsList}>
+              {todaySessions.filter(s => !s.isRecommended).map((session) => (
+                <TouchableOpacity
+                  key={session.id}
+                  style={styles.alternativeSession}
+                  onPress={() => handleSessionSelect(session)}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.alternativeSessionContent}>
+                    <Text style={styles.alternativeSessionTitle}>{session.title}</Text>
+                    <Text style={styles.alternativeSessionMeta}>
+                      {session.durationMin} min • {session.modality}
+                    </Text>
+                  </View>
+                  <View style={styles.alternativeSessionPlayButton}>
+                    <Text style={styles.alternativeSessionPlayText}>▶</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </MergedCard.Section>
+        </MergedCard>
 
         {/* Progress Path Card */}
         <View style={styles.card}>

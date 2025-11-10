@@ -622,7 +622,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
 
       {/* Share Preview Bottom Sheet */}
       {session && isShareSheetOpen && (
-        <View style={styles.shareOverlay}>
+        <View style={styles.shareOverlay} pointerEvents="box-none">
           <Animated.View
             style={[
               styles.shareBackdrop,
@@ -646,7 +646,8 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
                   {
                     translateY: shareSheetAnim.interpolate({
                       inputRange: [0, 1],
-                      outputRange: [300, 0],
+                      outputRange: [320, 0],
+                      extrapolate: 'clamp',
                     }),
                   },
                 ],
@@ -1315,7 +1316,8 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     justifyContent: 'flex-end',
-    zIndex: 200,
+    zIndex: 2000,
+    elevation: 2000,
   },
   shareBackdrop: {
     ...StyleSheet.absoluteFillObject,

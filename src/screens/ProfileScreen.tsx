@@ -299,7 +299,11 @@ export const ProfileScreen: React.FC = () => {
                 </Text>
                 <View style={styles.activityListWrapper}>
                   <ScrollView
-                    style={[styles.activityListScroll, { maxHeight: activityListMaxHeight }]}
+                    style={[
+                      styles.activityListScroll,
+                      { maxHeight: activityListMaxHeight },
+                      hasScrollableOverflow && styles.activityListScrollWithIndicator
+                    ]}
                     contentContainerStyle={[
                       styles.activityList,
                       hasScrollableOverflow && styles.activityListScrollableContent
@@ -382,11 +386,16 @@ export const ProfileScreen: React.FC = () => {
                         colors={['rgba(248,249,250,0)', 'rgba(248,249,250,1)']}
                         style={styles.scrollFadeBottom}
                       />
-                      {isScrollHintVisible && (
-                        <View pointerEvents="none" style={styles.scrollHintContainer}>
-                          <Text style={styles.scrollHintText}>Scroll to see more</Text>
-                        </View>
-                      )}
+                      <View pointerEvents="none" style={styles.scrollHintContainer}>
+                        <Text
+                          style={[
+                            styles.scrollHintText,
+                            !isScrollHintVisible && styles.scrollHintTextHidden
+                          ]}
+                        >
+                          Scroll to see more
+                        </Text>
+                      </View>
                     </>
                   )}
                 </View>
@@ -678,6 +687,11 @@ const styles = StyleSheet.create({
   },
   activityListScroll: {
     width: '100%',
+    marginRight: -4,
+  },
+  activityListScrollWithIndicator: {
+    paddingRight: 8,
+    marginRight: -12,
   },
   activityListWrapper: {
     position: 'relative',
@@ -761,18 +775,19 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 4,
+    bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginHorizontal: 32,
-    borderRadius: 12,
-    backgroundColor: 'rgba(242, 242, 247, 0.92)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#ffffff',
   },
   scrollHintText: {
     fontSize: 11,
     color: '#8e8e93',
     fontWeight: '500',
+  },
+  scrollHintTextHidden: {
+    opacity: 0,
   },
 }); 

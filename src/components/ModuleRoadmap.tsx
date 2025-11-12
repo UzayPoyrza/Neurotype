@@ -402,8 +402,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         <TouchableOpacity onPress={onBackPress || (() => navigation.goBack())} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{module.title}</Text>
-        <Text style={styles.headerSubtitle}>A quick, glanceable path through this module</Text>
+        <Text style={styles.headerTitle}>{module.title + " Journey"}</Text>
         {renderQuickJump()}
       </View>
 
@@ -457,8 +456,8 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#FFFFFF',
-    paddingTop: 56,
-    paddingBottom: 24,
+    paddingTop: 48,
+    paddingBottom: 16,
     paddingHorizontal: 24,
     borderBottomWidth: 1,
     borderBottomColor: '#ECECEC',
@@ -469,7 +468,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   backButtonText: {
     fontSize: 16,
@@ -483,16 +482,10 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontFamily: 'System',
   },
-  headerSubtitle: {
-    marginTop: 6,
-    fontSize: 16,
-    color: '#8E8E93',
-    fontFamily: 'System',
-  },
   quickJumpRow: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 18,
+    marginTop: 14,
   },
   quickJumpChip: {
     borderWidth: 1,

@@ -607,7 +607,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
           setContentHeight(height);
         }}
       >
-        <View onLayout={handleContentLayout}>
+        <View style={styles.contentWrapper} onLayout={handleContentLayout}>
           <View style={[styles.summaryCard, { borderColor: module.color }]}>
             <Text style={styles.summaryTitle}>Module Progress</Text>
             <View style={styles.summaryStatsRow}>
@@ -749,8 +749,11 @@ const styles = StyleSheet.create({
   },
   bodyContent: {
     paddingHorizontal: 24,
-    paddingBottom: 64,
-    gap: 28,
+    paddingTop: 32,
+    paddingBottom: 96,
+  },
+  contentWrapper: {
+    flexDirection: 'column',
   },
   summaryCard: {
     backgroundColor: '#FFFFFF',
@@ -793,6 +796,7 @@ const styles = StyleSheet.create({
   },
   section: {
     width: '100%',
+    marginTop: 20,
   },
   sectionHeader: {
     marginBottom: 16,

@@ -314,7 +314,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
 
     return (
       <View
-        style={styles.section}
+        style={[styles.section, styles.sectionFirst]}
         onLayout={event => {
           completedSectionY.current = event.nativeEvent.layout.y;
         }}
@@ -749,7 +749,7 @@ const styles = StyleSheet.create({
   },
   bodyContent: {
     paddingHorizontal: 24,
-    paddingTop: 32,
+    paddingTop: 16,
     paddingBottom: 96,
   },
   contentWrapper: {
@@ -797,6 +797,9 @@ const styles = StyleSheet.create({
   section: {
     width: '100%',
     marginTop: 20,
+  },
+  sectionFirst: {
+    marginTop: 12,
   },
   sectionHeader: {
     marginBottom: 16,

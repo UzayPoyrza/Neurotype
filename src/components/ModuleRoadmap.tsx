@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, Animated, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, Animated, TouchableOpacity, Dimensions, LayoutChangeEvent } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Session } from '../types';
 import { MentalHealthModule } from '../data/modules';
 import { mockSessions } from '../data/mockData';
 import { useStore } from '../store/useStore';
+import { useInstagramScrollDetection } from '../hooks/useInstagramScrollDetection';
 
 interface CompletedMeditation {
   id: string;
@@ -32,11 +33,17 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   const navigation = useNavigation();
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const scrollViewRef = useRef<ScrollView>(null);
-  const completedSectionY = useRef(0);
-  const todaySectionY = useRef(0);
-  const tomorrowSectionY = useRef(0);
   const pulseAnim = useRef(new Animated.Value(0)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
+  const [scrollViewHeight, setScrollViewHeight] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
+  const revealTranslateY = useRef(new Animated.Value(0)).current;
+  const revealBarContentOpacity = useRef(new Animated.Value(1)).current;
+  const topShellBorderOpacity = useRef(new Animated.Value(0)).current;
+  const isAnimating = useRef(false);
+  const lastScrollY = useRef(0);
+  const slideRange = 56; // Height to slide pills behind title
+  const revealBarHeight = 56; // Height of the pill buttons bar
 
   const roadmapData = useMemo(() => {
     const relevantGoals = {
@@ -100,6 +107,114 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   const { completedSessions, todaySessions, tomorrowSession } = roadmapData;
   const todayRecommendedSessionId = todaySessions[0]?.id;
 
+  // Show reveal bar (pills)
+  const showRevealBar = useCallback(() => {
+    if (!isAnimating.current) {
+      isAnimating.current = true;
+      Animated.parallel([
+        Animated.timing(revealTranslateY, {
+          toValue: 0,
+          duration: 160,
+          useNativeDriver: true,
+        }),
+        Animated.timing(revealBarContentOpacity, {
+          toValue: 1,
+          duration: 160,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        isAnimating.current = false;
+      });
+    }
+  }, [revealTranslateY, revealBarContentOpacity]);
+
+  // Hide reveal bar (pills)
+  const hideRevealBar = useCallback(() => {
+    if (!isAnimating.current) {
+      isAnimating.current = true;
+      Animated.parallel([
+        Animated.timing(revealTranslateY, {
+          toValue: -slideRange,
+          duration: 160,
+          useNativeDriver: true,
+        }),
+        Animated.timing(revealBarContentOpacity, {
+          toValue: 0,
+          duration: 160,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        isAnimating.current = false;
+      });
+    }
+  }, [revealTranslateY, revealBarContentOpacity, slideRange]);
+
+  // Scroll detection hook
+  const { scrollY, handleScroll, handleTouchStart, handleTouchEnd } = useInstagramScrollDetection({
+    onScrollEnd: (direction) => {
+      if (direction === 'up') {
+        showRevealBar();
+      } else {
+        hideRevealBar();
+      }
+    },
+    scrollViewHeight,
+    contentHeight,
+    headerHeight: 166, // TopShell (110) + RevealBar (56)
+  });
+
+  // Link scroll Y to reveal bar position (1:1 movement)
+  useEffect(() => {
+    if (scrollY && !isAnimating.current) {
+      const listener = scrollY.addListener(({ value }) => {
+        const scrollDifference = value - lastScrollY.current;
+        
+        if (Math.abs(scrollDifference) > 3 && value >= 0) {
+          const currentTranslateY = (revealTranslateY as any)._value || 0;
+          
+          // Check if we're at the bottom
+          const isAtBottom = contentHeight > 0 && scrollViewHeight > 0 && 
+            value + scrollViewHeight >= contentHeight - 10;
+          
+          const scrollableHeight = contentHeight - scrollViewHeight;
+          const bottomThreshold = scrollableHeight * 0.9999;
+          const isInBottom10Percent = value >= bottomThreshold;
+          
+          if ((isAtBottom && scrollDifference > 0) || isInBottom10Percent) {
+            revealTranslateY.setValue(-slideRange);
+          } else {
+            const newTranslateY = scrollDifference > 0 
+              ? Math.max(currentTranslateY - Math.abs(scrollDifference), -slideRange)
+              : Math.min(currentTranslateY + Math.abs(scrollDifference), 0);
+            
+            revealTranslateY.setValue(newTranslateY);
+          }
+        }
+        
+        lastScrollY.current = value;
+      });
+
+      return () => scrollY.removeListener(listener);
+    }
+  }, [scrollY, revealTranslateY, contentHeight, scrollViewHeight, slideRange]);
+
+  // Animate border and content opacity based on reveal bar position
+  useEffect(() => {
+    const listener = revealTranslateY.addListener(({ value }) => {
+      const progress = Math.abs(value) / slideRange;
+      
+      // Top border fades in when reveal bar is hidden
+      const borderOpacity = progress < 0.8 ? 0 : Math.pow((progress - 0.8) / 0.2, 3);
+      topShellBorderOpacity.setValue(Math.min(borderOpacity, 1));
+      
+      // Content opacity fades out as reveal bar hides
+      const contentOpacity = Math.max(Math.pow(1 - progress, 2), 0);
+      revealBarContentOpacity.setValue(contentOpacity);
+    });
+
+    return () => revealTranslateY.removeListener(listener);
+  }, [revealTranslateY, topShellBorderOpacity, revealBarContentOpacity, slideRange]);
+
   useEffect(() => {
     // Pulse animation for today's node
     const pulse = () => {
@@ -140,6 +255,10 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
     glow();
   }, [glowAnim]);
 
+  const completedSectionY = useRef(0);
+  const todaySectionY = useRef(0);
+  const tomorrowSectionY = useRef(0);
+
   useEffect(() => {
     if (!scrollViewRef.current) {
       return;
@@ -155,7 +274,6 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
     return () => clearTimeout(timer);
   }, []);
 
-
   const handleJumpTo = (position: 'completed' | 'today' | 'tomorrow') => {
     const target =
       position === 'completed'
@@ -168,8 +286,9 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
       return;
     }
 
+    // Account for header height when scrolling
     scrollViewRef.current.scrollTo({
-      y: Math.max(0, target - 24),
+      y: Math.max(0, target - 166), // Header height (166) + some offset
       animated: true,
     });
   };
@@ -242,7 +361,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Today's Plan</Text>
           <Text style={styles.sectionSubtitle}>
-            {todayCompleted ? 'You finished today’s check-in 🎉' : 'Choose the meditation that feels right now'}
+            {todayCompleted ? 'You finished today\'s check-in 🎉' : 'Choose the meditation that feels right now'}
           </Text>
         </View>
         <View style={styles.todayList}>
@@ -335,7 +454,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
       >
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Unlocked for Tomorrow</Text>
-          <Text style={styles.sectionSubtitle}>You’ll see this after tomorrow’s check-in</Text>
+          <Text style={styles.sectionSubtitle}>You'll see this after tomorrow's check-in</Text>
         </View>
         <View style={styles.tomorrowCard}>
           <View style={styles.tomorrowHeader}>
@@ -396,55 +515,132 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
     );
   };
 
+  // Layout handlers
+  const handleScrollViewLayout = useCallback((event: LayoutChangeEvent) => {
+    const { height } = event.nativeEvent.layout;
+    setScrollViewHeight(height);
+  }, []);
+
+  const handleContentLayout = useCallback((event: LayoutChangeEvent) => {
+    const { height } = event.nativeEvent.layout;
+    setContentHeight(height);
+  }, []);
+
   return (
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBackPress || (() => navigation.goBack())} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{module.title + " Journey"}</Text>
-        {renderQuickJump()}
+      {/* Sticky Header */}
+      <View style={styles.headerContainer}>
+        {/* RevealBar - Contains pill buttons, slides behind TopShell */}
+        <Animated.View
+          style={[
+            styles.revealBar,
+            { backgroundColor: '#FFFFFF' },
+            {
+              transform: [{ translateY: revealTranslateY }],
+            }
+          ]}
+        >
+          <Animated.View
+            style={[
+              styles.revealBarContent,
+              {
+                opacity: revealBarContentOpacity,
+              }
+            ]}
+          >
+            {renderQuickJump()}
+          </Animated.View>
+          {/* Border at bottom of revealBar when visible */}
+          <Animated.View
+            style={[
+              styles.revealBarBorder,
+              {
+                opacity: revealBarContentOpacity,
+              }
+            ]}
+          />
+        </Animated.View>
+
+        {/* TopShell - Always visible with title */}
+        <Animated.View
+          style={[
+            styles.topShell,
+            { backgroundColor: '#FFFFFF' }
+          ]}
+        >
+          <View style={styles.topShellContent}>
+            <TouchableOpacity
+              onPress={onBackPress || (() => navigation.goBack())}
+              style={styles.backButton}
+            >
+              <Text style={styles.backButtonText}>← Back</Text>
+            </TouchableOpacity>
+            <Text style={styles.headerTitle} numberOfLines={1}>
+              {module.title + " Journey"}
+            </Text>
+          </View>
+          {/* Animated border that appears when reveal bar is hidden */}
+          <Animated.View
+            style={[
+              styles.topShellBorder,
+              {
+                opacity: topShellBorderOpacity,
+              }
+            ]}
+          />
+        </Animated.View>
       </View>
 
+      {/* ScrollView with content */}
       <ScrollView
         ref={scrollViewRef}
         style={styles.bodyScroll}
         contentContainerStyle={styles.bodyContent}
+        onScroll={handleScroll}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        scrollEventThrottle={1}
         showsVerticalScrollIndicator={false}
         bounces={false}
+        onLayout={handleScrollViewLayout}
+        onContentSizeChange={(width, height) => {
+          setContentHeight(height);
+        }}
       >
-        <View style={[styles.summaryCard, { borderColor: module.color }]}>
-          <Text style={styles.summaryTitle}>Module Progress</Text>
-          <Text style={styles.summaryCopy}>
-            {todayCompleted
-              ? 'Great job today—come back tomorrow to stay on pace.'
-              : 'Stay consistent by choosing one of today’s meditations.'}
-          </Text>
-          <View style={styles.summaryProgressRow}>
-            <View style={[styles.progressDot, { backgroundColor: module.color }]} />
-            <View style={styles.progressLine} />
-            <View style={styles.progressDotMuted} />
+        <View onLayout={handleContentLayout}>
+          <View style={[styles.summaryCard, { borderColor: module.color }]}>
+            <Text style={styles.summaryTitle}>Module Progress</Text>
+            <Text style={styles.summaryCopy}>
+              {todayCompleted
+                ? 'Great job today—come back tomorrow to stay on pace.'
+                : 'Stay consistent by choosing one of today\'s meditations.'}
+            </Text>
+            <View style={styles.summaryProgressRow}>
+              <View style={[styles.progressDot, { backgroundColor: module.color }]} />
+              <View style={styles.progressLine} />
+              <View style={styles.progressDotMuted} />
+            </View>
+            <View style={styles.summaryStatsRow}>
+              <View style={styles.summaryStat}>
+                <Text style={styles.summaryStatValue}>{completedSessions.length}</Text>
+                <Text style={styles.summaryStatLabel}>Completed</Text>
+              </View>
+              <View style={styles.summaryDivider} />
+              <View style={styles.summaryStat}>
+                <Text style={styles.summaryStatValue}>{todaySessions.length}</Text>
+                <Text style={styles.summaryStatLabel}>Today</Text>
+              </View>
+              <View style={styles.summaryDivider} />
+              <View style={styles.summaryStat}>
+                <Text style={styles.summaryStatValue}>{tomorrowSession ? 1 : 0}</Text>
+                <Text style={styles.summaryStatLabel}>Queued</Text>
+              </View>
+            </View>
           </View>
-          <View style={styles.summaryStatsRow}>
-            <View style={styles.summaryStat}>
-              <Text style={styles.summaryStatValue}>{completedSessions.length}</Text>
-              <Text style={styles.summaryStatLabel}>Completed</Text>
-            </View>
-            <View style={styles.summaryDivider} />
-            <View style={styles.summaryStat}>
-              <Text style={styles.summaryStatValue}>{todaySessions.length}</Text>
-              <Text style={styles.summaryStatLabel}>Today</Text>
-            </View>
-            <View style={styles.summaryDivider} />
-            <View style={styles.summaryStat}>
-              <Text style={styles.summaryStatValue}>{tomorrowSession ? 1 : 0}</Text>
-              <Text style={styles.summaryStatLabel}>Queued</Text>
-            </View>
-          </View>
+          {renderCompletedMeditations()}
+          {renderTodayPlan()}
+          {renderTomorrowPreview()}
         </View>
-        {renderCompletedMeditations()}
-        {renderTodayPlan()}
-        {renderTomorrowPreview()}
       </ScrollView>
     </View>
   );
@@ -454,13 +650,56 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
+  headerContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+  },
+  topShell: {
+    height: 110, // Status bar padding + back button + title
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1001,
     backgroundColor: '#FFFFFF',
+  },
+  topShellContent: {
     paddingTop: 48,
-    paddingBottom: 16,
     paddingHorizontal: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ECECEC',
+    paddingBottom: 8,
+  },
+  topShellBorder: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: '#ECECEC',
+  },
+  revealBar: {
+    height: 56,
+    position: 'absolute',
+    top: 110, // Start below TopShell
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    backgroundColor: '#FFFFFF',
+  },
+  revealBarContent: {
+    flex: 1,
+    paddingHorizontal: 24,
+    justifyContent: 'center',
+  },
+  revealBarBorder: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: '#ECECEC',
   },
   backButton: {
     alignSelf: 'flex-start',
@@ -468,7 +707,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    marginBottom: 12,
+    marginBottom: 6,
   },
   backButtonText: {
     fontSize: 16,
@@ -481,11 +720,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#000000',
     fontFamily: 'System',
+    marginTop: 2,
   },
   quickJumpRow: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 14,
   },
   quickJumpChip: {
     borderWidth: 1,
@@ -512,6 +751,7 @@ const styles = StyleSheet.create({
   },
   bodyScroll: {
     flex: 1,
+    paddingTop: 166, // TopShell (110) + RevealBar (56)
   },
   bodyContent: {
     paddingHorizontal: 24,

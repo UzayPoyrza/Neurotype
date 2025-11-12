@@ -169,6 +169,14 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
       const listener = scrollY.addListener(({ value }) => {
         const scrollDifference = value - lastScrollY.current;
         
+        // Always show reveal bar when at or near the top
+        if (value <= 5) {
+          revealTranslateY.setValue(0);
+          revealBarContentOpacity.setValue(1);
+          lastScrollY.current = value;
+          return;
+        }
+        
         if (Math.abs(scrollDifference) > 3 && value >= 0) {
           const currentTranslateY = (revealTranslateY as any)._value || 0;
           
@@ -196,7 +204,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
 
       return () => scrollY.removeListener(listener);
     }
-  }, [scrollY, revealTranslateY, contentHeight, scrollViewHeight, slideRange]);
+  }, [scrollY, revealTranslateY, revealBarContentOpacity, contentHeight, scrollViewHeight, slideRange]);
 
   // Animate border and content opacity based on reveal bar position
   useEffect(() => {
@@ -258,6 +266,12 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   const completedSectionY = useRef(0);
   const todaySectionY = useRef(0);
   const tomorrowSectionY = useRef(0);
+
+  // Ensure reveal bar starts visible
+  useEffect(() => {
+    revealTranslateY.setValue(0);
+    revealBarContentOpacity.setValue(1);
+  }, []);
 
   useEffect(() => {
     if (!scrollViewRef.current) {
@@ -872,7 +886,7 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
   },
   todayList: {
-    gap: 12,
+    gap: 10,
   },
   todayCardWrapper: {
     borderRadius: 18,
@@ -885,7 +899,7 @@ const styles = StyleSheet.create({
   todayCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
-    padding: 18,
+    padding: 14,
     borderWidth: 2,
     borderColor: '#F2F2F7',
   },
@@ -893,7 +907,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 10,
   },
   todayCardBadge: {
     borderRadius: 10,
@@ -921,7 +935,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 16,
+    marginTop: 12,
   },
   todayCardCTA: {
     fontSize: 15,
@@ -949,7 +963,7 @@ const styles = StyleSheet.create({
     marginLeft: 1,
   },
   recommendedCopy: {
-    marginTop: 12,
+    marginTop: 8,
     fontSize: 12,
     fontWeight: '600',
     fontFamily: 'System',

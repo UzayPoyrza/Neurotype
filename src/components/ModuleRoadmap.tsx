@@ -333,9 +333,6 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         >
           {completedSessions.map(item => (
             <View key={item.id} style={styles.completedCard}>
-              <View style={[styles.completedBadge, { backgroundColor: module.color }]}>
-                <Text style={styles.completedBadgeIcon}>✓</Text>
-              </View>
               <Text style={styles.completedTitle} numberOfLines={2}>
                 {item.session.title}
               </Text>
@@ -343,6 +340,9 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
                 {item.session.durationMin} min • {item.session.modality}
               </Text>
               <Text style={styles.completedDate}>{formatDate(item.completedDate)}</Text>
+              <View style={[styles.completedBadge, { backgroundColor: module.color }]}>
+                <Text style={styles.completedBadgeIcon}>✓</Text>
+              </View>
             </View>
           ))}
         </ScrollView>
@@ -822,9 +822,10 @@ const styles = StyleSheet.create({
   },
   completedCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 16,
-    width: 220,
+    borderRadius: 12,
+    padding: 10,
+    width: 160,
+    height: 160,
     borderWidth: 1,
     borderColor: '#E5E5EA',
     shadowColor: '#000',
@@ -832,36 +833,40 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
+    justifyContent: 'space-between',
+    position: 'relative',
   },
   completedBadge: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 14,
+    position: 'absolute',
+    bottom: 10,
+    right: 10,
   },
   completedBadgeIcon: {
-    fontSize: 22,
+    fontSize: 12,
     color: '#FFFFFF',
     fontWeight: '700',
   },
   completedTitle: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '600',
     color: '#1C1C1E',
-    lineHeight: 21,
-    marginBottom: 6,
+    lineHeight: 17,
+    marginBottom: 3,
     fontFamily: 'System',
   },
   completedMeta: {
-    fontSize: 13,
+    fontSize: 10,
     color: '#8E8E93',
-    marginBottom: 8,
+    marginBottom: 3,
     fontFamily: 'System',
   },
   completedDate: {
-    fontSize: 12,
+    fontSize: 10,
     color: '#34C759',
     fontWeight: '600',
     fontFamily: 'System',

@@ -610,16 +610,6 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         <View onLayout={handleContentLayout}>
           <View style={[styles.summaryCard, { borderColor: module.color }]}>
             <Text style={styles.summaryTitle}>Module Progress</Text>
-            <Text style={styles.summaryCopy}>
-              {todayCompleted
-                ? 'Great job today—come back tomorrow to stay on pace.'
-                : 'Stay consistent by choosing one of today\'s meditations.'}
-            </Text>
-            <View style={styles.summaryProgressRow}>
-              <View style={[styles.progressDot, { backgroundColor: module.color }]} />
-              <View style={styles.progressLine} />
-              <View style={styles.progressDotMuted} />
-            </View>
             <View style={styles.summaryStatsRow}>
               <View style={styles.summaryStat}>
                 <Text style={styles.summaryStatValue}>{completedSessions.length}</Text>
@@ -764,71 +754,41 @@ const styles = StyleSheet.create({
   },
   summaryCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: 16,
+    padding: 14,
     borderWidth: 2,
   },
   summaryTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: '#1D1D1F',
     fontFamily: 'System',
   },
-  summaryCopy: {
-    marginTop: 8,
-    fontSize: 15,
-    lineHeight: 21,
-    color: '#636366',
-    fontFamily: 'System',
-  },
-  summaryProgressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 18,
-  },
-  progressDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-  },
-  progressLine: {
-    flex: 1,
-    height: 2,
-    backgroundColor: '#E5E5EA',
-    marginHorizontal: 8,
-    borderRadius: 1,
-  },
-  progressDotMuted: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#E5E5EA',
-  },
   summaryStatsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 18,
+    marginTop: 10,
   },
   summaryStat: {
     flex: 1,
     alignItems: 'center',
   },
   summaryStatValue: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: '#1D1D1F',
     fontFamily: 'System',
   },
   summaryStatLabel: {
     marginTop: 2,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500',
     color: '#8E8E93',
     fontFamily: 'System',
   },
   summaryDivider: {
     width: 1,
-    height: 36,
+    height: 28,
     backgroundColor: '#E5E5EA',
   },
   section: {

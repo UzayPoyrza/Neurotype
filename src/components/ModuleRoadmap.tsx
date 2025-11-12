@@ -160,7 +160,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
     },
     scrollViewHeight,
     contentHeight,
-    headerHeight: 186, // TopShell (130) + RevealBar (56)
+    headerHeight: 191, // TopShell (135) + RevealBar (56)
   });
 
   // Link scroll Y to reveal bar position (1:1 movement)
@@ -288,7 +288,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
 
     // Account for header height when scrolling
     scrollViewRef.current.scrollTo({
-      y: Math.max(0, target - 186), // Header height (186) + some offset
+      y: Math.max(0, target - 191), // Header height (191) + some offset
       animated: true,
     });
   };
@@ -658,7 +658,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   topShell: {
-    height: 130, // Status bar padding (48) + back button (~36) + title (~40) + spacing
+    height: 135, // Fixed height to fully contain title
     position: 'absolute',
     top: 0,
     left: 0,
@@ -682,7 +682,7 @@ const styles = StyleSheet.create({
   revealBar: {
     height: 56,
     position: 'absolute',
-    top: 130, // Start below TopShell - right below title "Anxiety Journey"
+    top: 135, // Start below TopShell - right below title "Anxiety Journey"
     left: 0,
     right: 0,
     zIndex: 1000,
@@ -721,7 +721,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#000000',
     fontFamily: 'System',
-    marginTop: 6,
+    marginTop: 0,
     lineHeight: 36,
     marginBottom: 0,
   },
@@ -755,7 +755,7 @@ const styles = StyleSheet.create({
   },
   bodyScroll: {
     flex: 1,
-    paddingTop: 186, // TopShell (130) + RevealBar (56)
+    paddingTop: 191, // TopShell (135) + RevealBar (56)
   },
   bodyContent: {
     paddingHorizontal: 24,

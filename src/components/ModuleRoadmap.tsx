@@ -5,7 +5,6 @@ import { Session } from '../types';
 import { MentalHealthModule } from '../data/modules';
 import { mockSessions } from '../data/mockData';
 import { useStore } from '../store/useStore';
-import { useInstagramScrollDetection } from '../hooks/useInstagramScrollDetection';
 
 interface CompletedMeditation {
   id: string;
@@ -37,13 +36,6 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   const glowAnim = useRef(new Animated.Value(0)).current;
   const [scrollViewHeight, setScrollViewHeight] = useState(0);
   const [contentHeight, setContentHeight] = useState(0);
-  const revealTranslateY = useRef(new Animated.Value(0)).current;
-  const revealBarContentOpacity = useRef(new Animated.Value(1)).current;
-  const topShellBorderOpacity = useRef(new Animated.Value(0)).current;
-  const isAnimating = useRef(false);
-  const lastScrollY = useRef(0);
-  const slideRange = 56; // Height to slide pills behind title
-  const revealBarHeight = 56; // Height of the pill buttons bar
 
   const roadmapData = useMemo(() => {
     const relevantGoals = {
@@ -107,121 +99,6 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   const { completedSessions, todaySessions, tomorrowSession } = roadmapData;
   const todayRecommendedSessionId = todaySessions[0]?.id;
 
-  // Show reveal bar (pills)
-  const showRevealBar = useCallback(() => {
-    if (!isAnimating.current) {
-      isAnimating.current = true;
-      Animated.parallel([
-        Animated.timing(revealTranslateY, {
-          toValue: 0,
-          duration: 160,
-          useNativeDriver: true,
-        }),
-        Animated.timing(revealBarContentOpacity, {
-          toValue: 1,
-          duration: 160,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        isAnimating.current = false;
-      });
-    }
-  }, [revealTranslateY, revealBarContentOpacity]);
-
-  // Hide reveal bar (pills)
-  const hideRevealBar = useCallback(() => {
-    if (!isAnimating.current) {
-      isAnimating.current = true;
-      Animated.parallel([
-        Animated.timing(revealTranslateY, {
-          toValue: -slideRange,
-          duration: 160,
-          useNativeDriver: true,
-        }),
-        Animated.timing(revealBarContentOpacity, {
-          toValue: 0,
-          duration: 160,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        isAnimating.current = false;
-      });
-    }
-  }, [revealTranslateY, revealBarContentOpacity, slideRange]);
-
-  // Scroll detection hook
-  const { scrollY, handleScroll, handleTouchStart, handleTouchEnd } = useInstagramScrollDetection({
-    onScrollEnd: (direction) => {
-      if (direction === 'up') {
-        showRevealBar();
-      } else {
-        hideRevealBar();
-      }
-    },
-    scrollViewHeight,
-    contentHeight,
-    headerHeight: 191, // TopShell (135) + RevealBar (56)
-  });
-
-  // Link scroll Y to reveal bar position (1:1 movement)
-  useEffect(() => {
-    if (scrollY && !isAnimating.current) {
-      const listener = scrollY.addListener(({ value }) => {
-        const scrollDifference = value - lastScrollY.current;
-        
-        // Always show reveal bar when at or near the top
-        if (value <= 5) {
-          revealTranslateY.setValue(0);
-          revealBarContentOpacity.setValue(1);
-          lastScrollY.current = value;
-          return;
-        }
-        
-        if (Math.abs(scrollDifference) > 3 && value >= 0) {
-          const currentTranslateY = (revealTranslateY as any)._value || 0;
-          
-          // Check if we're at the bottom
-          const isAtBottom = contentHeight > 0 && scrollViewHeight > 0 && 
-            value + scrollViewHeight >= contentHeight - 10;
-          
-          const scrollableHeight = contentHeight - scrollViewHeight;
-          const bottomThreshold = scrollableHeight * 0.9999;
-          const isInBottom10Percent = value >= bottomThreshold;
-          
-          if ((isAtBottom && scrollDifference > 0) || isInBottom10Percent) {
-            revealTranslateY.setValue(-slideRange);
-          } else {
-            const newTranslateY = scrollDifference > 0 
-              ? Math.max(currentTranslateY - Math.abs(scrollDifference), -slideRange)
-              : Math.min(currentTranslateY + Math.abs(scrollDifference), 0);
-            
-            revealTranslateY.setValue(newTranslateY);
-          }
-        }
-        
-        lastScrollY.current = value;
-      });
-
-      return () => scrollY.removeListener(listener);
-    }
-  }, [scrollY, revealTranslateY, revealBarContentOpacity, contentHeight, scrollViewHeight, slideRange]);
-
-  // Animate border and content opacity based on reveal bar position
-  useEffect(() => {
-    const listener = revealTranslateY.addListener(({ value }) => {
-      const progress = Math.abs(value) / slideRange;
-      
-      // Top border fades in when reveal bar is hidden
-      const borderOpacity = progress < 0.8 ? 0 : Math.pow((progress - 0.8) / 0.2, 3);
-      topShellBorderOpacity.setValue(Math.min(borderOpacity, 1));
-      
-      // Content opacity fades out as reveal bar hides
-      const contentOpacity = Math.max(Math.pow(1 - progress, 2), 0);
-      revealBarContentOpacity.setValue(contentOpacity);
-    });
-
-    return () => revealTranslateY.removeListener(listener);
-  }, [revealTranslateY, topShellBorderOpacity, revealBarContentOpacity, slideRange]);
 
   useEffect(() => {
     // Pulse animation for today's node
@@ -267,11 +144,6 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   const todaySectionY = useRef(0);
   const tomorrowSectionY = useRef(0);
 
-  // Ensure reveal bar starts visible
-  useEffect(() => {
-    revealTranslateY.setValue(0);
-    revealBarContentOpacity.setValue(1);
-  }, []);
 
   useEffect(() => {
     if (!scrollViewRef.current) {
@@ -302,7 +174,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
 
     // Account for header height when scrolling
     scrollViewRef.current.scrollTo({
-      y: Math.max(0, target - 191), // Header height (191) + some offset
+      y: Math.max(0, target - 180), // Header height
       animated: true,
     });
   };
@@ -544,44 +416,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
       {/* Sticky Header */}
       <View style={styles.headerContainer}>
-        {/* RevealBar - Contains pill buttons, slides behind TopShell */}
-        <Animated.View
-          style={[
-            styles.revealBar,
-            { backgroundColor: '#FFFFFF' },
-            {
-              transform: [{ translateY: revealTranslateY }],
-            }
-          ]}
-        >
-          <Animated.View
-            style={[
-              styles.revealBarContent,
-              {
-                opacity: revealBarContentOpacity,
-              }
-            ]}
-          >
-            {renderQuickJump()}
-          </Animated.View>
-          {/* Border at bottom of revealBar when visible */}
-          <Animated.View
-            style={[
-              styles.revealBarBorder,
-              {
-                opacity: revealBarContentOpacity,
-              }
-            ]}
-          />
-        </Animated.View>
-
-        {/* TopShell - Always visible with title */}
-        <Animated.View
-          style={[
-            styles.topShell,
-            { backgroundColor: '#FFFFFF' }
-          ]}
-        >
+        <View style={styles.topShell}>
           <View style={styles.topShellContent}>
             <TouchableOpacity
               onPress={onBackPress || (() => navigation.goBack())}
@@ -593,16 +428,11 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
               {module.title + " Journey"}
             </Text>
           </View>
-          {/* Animated border that appears when reveal bar is hidden */}
-          <Animated.View
-            style={[
-              styles.topShellBorder,
-              {
-                opacity: topShellBorderOpacity,
-              }
-            ]}
-          />
-        </Animated.View>
+          <View style={styles.quickJumpContainer}>
+            {renderQuickJump()}
+          </View>
+          <View style={styles.topShellBorder} />
+        </View>
       </View>
 
       {/* ScrollView with content */}
@@ -610,10 +440,6 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         ref={scrollViewRef}
         style={styles.bodyScroll}
         contentContainerStyle={styles.bodyContent}
-        onScroll={handleScroll}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        scrollEventThrottle={1}
         showsVerticalScrollIndicator={false}
         bounces={false}
         onLayout={handleScrollViewLayout}
@@ -662,43 +488,23 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   topShell: {
-    height: 135, // Fixed height to fully contain title
+    backgroundColor: '#FFFFFF',
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     zIndex: 1001,
-    backgroundColor: '#FFFFFF',
   },
   topShellContent: {
     paddingTop: 48,
     paddingHorizontal: 24,
     paddingBottom: 14,
   },
-  topShellBorder: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 1,
-    backgroundColor: '#ECECEC',
-  },
-  revealBar: {
-    height: 56,
-    position: 'absolute',
-    top: 135, // Start below TopShell - right below title "Anxiety Journey"
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    backgroundColor: '#FFFFFF',
-  },
-  revealBarContent: {
-    height: 56,
+  quickJumpContainer: {
     paddingHorizontal: 24,
-    alignItems: 'flex-start',
-    justifyContent: 'center',
+    paddingBottom: 14,
   },
-  revealBarBorder: {
+  topShellBorder: {
     position: 'absolute',
     bottom: 0,
     left: 0,
@@ -759,7 +565,7 @@ const styles = StyleSheet.create({
   },
   bodyScroll: {
     flex: 1,
-    paddingTop: 191, // TopShell (135) + RevealBar (56)
+    paddingTop: 180, // TopShell height
   },
   bodyContent: {
     paddingHorizontal: 24,

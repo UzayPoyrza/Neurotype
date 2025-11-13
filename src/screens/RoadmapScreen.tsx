@@ -14,10 +14,13 @@ export const RoadmapScreen: React.FC = () => {
     setActiveSession(session);
   };
   
+  // Set todayCompleted to true for anxiety and ptsd modules to show preview
+  const isTodayCompleted = selectedModule.id === 'anxiety' || selectedModule.id === 'ptsd';
+  
   return (
     <ModuleRoadmap
       module={selectedModule}
-      todayCompleted={false}
+      todayCompleted={isTodayCompleted}
       triggerUnlockAnimation={false}
       onUnlockComplete={() => {}}
       onSessionSelect={handleSessionSelect}

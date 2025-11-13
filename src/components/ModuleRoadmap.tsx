@@ -322,10 +322,41 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   };
 
   const renderTomorrowPreview = () => {
-    if (!todayCompleted || !tomorrowSession) {
+    if (!tomorrowSession) {
       return null;
     }
 
+    // Locked version when today is not completed
+    if (!todayCompleted) {
+      return (
+        <View
+          style={styles.section}
+          onLayout={event => {
+            tomorrowSectionY.current = event.nativeEvent.layout.y;
+          }}
+        >
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Tomorrow</Text>
+            <Text style={styles.sectionSubtitle}>Finish today's meditation to unlock</Text>
+          </View>
+          <View style={[styles.tomorrowCard, styles.tomorrowCardLocked]}>
+            <View style={styles.tomorrowHeader}>
+              <View style={[styles.tomorrowIcon, styles.tomorrowIconLocked, { backgroundColor: '#D1D1D6' }]}>
+                <Text style={styles.tomorrowIconText}>🔒</Text>
+              </View>
+              <View style={styles.tomorrowLockedContent}>
+                <Text style={styles.tomorrowLockedTitle}>Locked</Text>
+                <Text style={styles.tomorrowLockedDescription}>
+                  Complete today's sessions to see what's coming next
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      );
+    }
+
+    // Preview version when today is completed
     const glow = glowAnim.interpolate({
       inputRange: [0, 1],
       outputRange: [0.85, 1],
@@ -344,8 +375,8 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         }}
       >
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Unlocked for Tomorrow</Text>
-          <Text style={styles.sectionSubtitle}>You'll see this after tomorrow's check-in</Text>
+          <Text style={styles.sectionTitle}>Tomorrow</Text>
+          <Text style={styles.sectionSubtitle}>Preview of what's coming next</Text>
         </View>
         <View style={styles.tomorrowCard}>
           <View style={styles.tomorrowHeader}>
@@ -838,6 +869,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     color: '#636366',
+    fontFamily: 'System',
+  },
+  tomorrowCardLocked: {
+    opacity: 0.6,
+    borderColor: '#D1D1D6',
+    borderStyle: 'dashed',
+  },
+  tomorrowIconLocked: {
+    backgroundColor: '#D1D1D6',
+  },
+  tomorrowLockedContent: {
+    flex: 1,
+  },
+  tomorrowLockedTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#8E8E93',
+    fontFamily: 'System',
+    marginBottom: 4,
+  },
+  tomorrowLockedDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#8E8E93',
     fontFamily: 'System',
   },
 });

@@ -98,6 +98,11 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
 
   const { completedSessions, todaySessions, tomorrowSession } = roadmapData;
   const todayRecommendedSessionId = todaySessions[0]?.id;
+  
+  const titleText = `${module.title} Journey`;
+  // Use smaller font for longer titles
+  // <= 20 chars: 30px, 21-24 chars: 26px, > 24 chars: 22px
+  const titleFontSize = titleText.length > 24 ? 22 : titleText.length > 20 ? 26 : 30;
 
 
   useEffect(() => {
@@ -424,9 +429,14 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
             >
               <Text style={styles.backButtonText}>← Back</Text>
             </TouchableOpacity>
-            <Text style={styles.headerTitle} numberOfLines={1}>
-              {module.title + " Journey"}
-            </Text>
+            <View style={styles.headerTitleContainer}>
+              <Text 
+                style={[styles.headerTitle, { fontSize: titleFontSize, lineHeight: titleFontSize * 1.2 }]} 
+                numberOfLines={1}
+              >
+                {titleText}
+              </Text>
+            </View>
           </View>
           <View style={styles.quickJumpContainer}>
             {renderQuickJump()}
@@ -525,6 +535,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#007AFF',
     fontFamily: 'System',
+  },
+  headerTitleContainer: {
+    flexShrink: 1,
   },
   headerTitle: {
     fontSize: 30,

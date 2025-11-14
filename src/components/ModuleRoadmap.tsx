@@ -482,6 +482,11 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
                 { borderColor: module.color, backgroundColor: '#F7F9FF' },
               ]}
             >
+              {todayCompleted && (
+                <View style={[styles.todayCardCheckmark, { backgroundColor: module.color }]}>
+                  <Text style={styles.todayCardCheckmarkIcon}>✓</Text>
+                </View>
+              )}
               <View style={styles.todayCardHeader}>
                 <Text style={styles.todayCardDuration}>
                   {recommendedSession.durationMin} min • {recommendedSession.modality}
@@ -500,7 +505,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
                 </View>
               </View>
               <Text style={[styles.recommendedCopy, { color: module.color }]}>
-                Recommended for you today based on your data
+                Recommended for you today
               </Text>
             </TouchableOpacity>
           </Animated.View>
@@ -1045,6 +1050,29 @@ const styles = StyleSheet.create({
     padding: 14,
     borderWidth: 2,
     borderColor: '#F2F2F7',
+    position: 'relative',
+  },
+  todayCardCheckmark: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  todayCardCheckmarkIcon: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontFamily: 'System',
   },
   todayCardHeader: {
     flexDirection: 'row',

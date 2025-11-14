@@ -204,6 +204,10 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   const screenWidth = Dimensions.get('window').width;
   const scrollX = useRef(new Animated.Value(0)).current; // Initialize to timeline tab position
   const horizontalScrollRef = useRef<ScrollView>(null);
+  const completedScrollRef = useRef<ScrollView>(null);
+  const [showScrollArrow, setShowScrollArrow] = useState(true);
+  const scrollArrowOpacity = useRef(new Animated.Value(1)).current;
+  const scrollViewWidth = useRef(0);
 
   const roadmapData = useMemo(() => {
     const relevantGoals = {
@@ -412,37 +416,101 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         }}
       >
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recently Sessions</Text>
+          <Text style={styles.sectionTitle}>Recent Sessions</Text>
           <Text style={styles.sectionSubtitle}>
             {completedSessions.length} completed {completedSessions.length === 1 ? 'session' : 'sessions'}
           </Text>
         </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.completedScrollContent}
-          bounces={false}
-        >
-          {completedSessions.map(item => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.completedCard}
-              onPress={() => navigation.navigate('MeditationDetail', { sessionId: item.session.id })}
-              activeOpacity={0.7}
+        <View style={styles.completedScrollContainer}>
+          <ScrollView
+            ref={completedScrollRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.completedScrollContent}
+            bounces={false}
+            onScroll={(event) => {
+              const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+              const isAtEnd = contentOffset.x + layoutMeasurement.width >= contentSize.width - 10;
+              const hasOverflow = contentSize.width > layoutMeasurement.width;
+              
+              if (isAtEnd || !hasOverflow) {
+                if (showScrollArrow) {
+                  setShowScrollArrow(false);
+                  Animated.timing(scrollArrowOpacity, {
+                    toValue: 0,
+                    duration: 300,
+                    useNativeDriver: true,
+                  }).start();
+                }
+              } else {
+                if (!showScrollArrow) {
+                  setShowScrollArrow(true);
+                  Animated.timing(scrollArrowOpacity, {
+                    toValue: 1,
+                    duration: 300,
+                    useNativeDriver: true,
+                  }).start();
+                }
+              }
+            }}
+            onLayout={(event) => {
+              scrollViewWidth.current = event.nativeEvent.layout.width;
+            }}
+            onContentSizeChange={(contentWidth, contentHeight) => {
+              // Check if there's overflow on content size change
+              const hasOverflow = contentWidth > scrollViewWidth.current;
+              if (!hasOverflow && showScrollArrow) {
+                setShowScrollArrow(false);
+                Animated.timing(scrollArrowOpacity, {
+                  toValue: 0,
+                  duration: 300,
+                  useNativeDriver: true,
+                }).start();
+              } else if (hasOverflow && !showScrollArrow) {
+                setShowScrollArrow(true);
+                Animated.timing(scrollArrowOpacity, {
+                  toValue: 1,
+                  duration: 300,
+                  useNativeDriver: true,
+                }).start();
+              }
+            }}
+            scrollEventThrottle={16}
+          >
+            {completedSessions.map(item => (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.completedCard}
+                onPress={() => navigation.navigate('MeditationDetail', { sessionId: item.session.id })}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.completedTitle} numberOfLines={2}>
+                  {item.session.title}
+                </Text>
+                <Text style={styles.completedMeta}>
+                  {item.session.durationMin} min • {item.session.modality}
+                </Text>
+                <Text style={styles.completedDate}>{formatDate(item.completedDate)}</Text>
+                <View style={[styles.completedBadge, { backgroundColor: module.color }]}>
+                  <Text style={styles.completedBadgeIcon}>✓</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+          {completedSessions.length > 0 && (
+            <Animated.View
+              style={[
+                styles.scrollArrow,
+                {
+                  opacity: scrollArrowOpacity,
+                },
+              ]}
+              pointerEvents="none"
             >
-              <Text style={styles.completedTitle} numberOfLines={2}>
-                {item.session.title}
-              </Text>
-              <Text style={styles.completedMeta}>
-                {item.session.durationMin} min • {item.session.modality}
-              </Text>
-              <Text style={styles.completedDate}>{formatDate(item.completedDate)}</Text>
-              <View style={[styles.completedBadge, { backgroundColor: module.color }]}>
-                <Text style={styles.completedBadgeIcon}>✓</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+              <Text style={styles.scrollArrowText}>→</Text>
+            </Animated.View>
+          )}
+        </View>
       </View>
     );
   };
@@ -987,9 +1055,30 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     fontFamily: 'System',
   },
+  completedScrollContainer: {
+    position: 'relative',
+  },
   completedScrollContent: {
     paddingRight: 12,
     gap: 12,
+  },
+  scrollArrow: {
+    position: 'absolute',
+    right: 8,
+    top: '50%',
+    marginTop: -20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  scrollArrowText: {
+    fontSize: 20,
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
   completedCard: {
     backgroundColor: '#FFFFFF',

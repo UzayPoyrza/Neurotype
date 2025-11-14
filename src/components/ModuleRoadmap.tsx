@@ -607,7 +607,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(0, 0, 0, 0.1)',
     zIndex: 100,
-    paddingTop: 44, // Status bar height
+    paddingTop: 52, // Status bar height
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

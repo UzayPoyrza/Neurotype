@@ -297,6 +297,22 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   };
 
   const renderTodayPlan = () => {
+    // Only show the recommended session
+    const recommendedSession = todaySessions.find(session => session.id === todayRecommendedSessionId);
+    
+    if (!recommendedSession) {
+      return null;
+    }
+
+    const scale = pulseAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [1, 1.04],
+    });
+    const shadowOpacity = pulseAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.12, 0.3],
+    });
+
     return (
       <View
         style={styles.section}
@@ -307,70 +323,50 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Today's Plan</Text>
           <Text style={styles.sectionSubtitle}>
-            {todayCompleted ? 'You finished today\'s check-in 🎉' : 'Choose the meditation that feels right now'}
+            {todayCompleted ? 'You finished today\'s check-in 🎉' : 'Your recommended meditation for today'}
           </Text>
         </View>
         <View style={styles.todayList}>
-          {todaySessions.map(session => {
-            const isRecommended = session.id === todayRecommendedSessionId;
-            const scale = pulseAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [1, 1.04],
-            });
-            const shadowOpacity = pulseAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0.12, 0.3],
-            });
-
-            return (
-              <Animated.View
-                key={session.id}
-                style={[
-                  styles.todayCardWrapper,
-                  isRecommended && {
-                    transform: [{ scale }],
-                    shadowOpacity,
-                    shadowColor: module.color,
-                  },
-                ]}
+          <Animated.View
+            style={[
+              styles.todayCardWrapper,
+              {
+                transform: [{ scale }],
+                shadowOpacity,
+                shadowColor: module.color,
+              },
+            ]}
+          >
+            <TouchableOpacity
+              onPress={() => onSessionSelect?.(recommendedSession)}
+              activeOpacity={0.85}
+              style={[
+                styles.todayCard,
+                { borderColor: module.color, backgroundColor: '#F7F9FF' },
+              ]}
+            >
+              <View style={styles.todayCardHeader}>
+                <Text style={styles.todayCardDuration}>
+                  {recommendedSession.durationMin} min • {recommendedSession.modality}
+                </Text>
+              </View>
+              <Text
+                style={[styles.todayCardTitle, { color: module.color }]}
+                numberOfLines={2}
               >
-                <TouchableOpacity
-                  onPress={() => onSessionSelect?.(session)}
-                  activeOpacity={0.85}
-                  style={[
-                    styles.todayCard,
-                    isRecommended && { borderColor: module.color, backgroundColor: '#F7F9FF' },
-                  ]}
-                >
-                  <View style={styles.todayCardHeader}>
-                    <View style={[styles.todayCardBadge, { backgroundColor: module.color }]}>
-                      <Text style={styles.todayCardBadgeText}>{isRecommended ? 'Start here' : 'Next'}</Text>
-                    </View>
-                    <Text style={styles.todayCardDuration}>
-                      {session.durationMin} min • {session.modality}
-                    </Text>
-                  </View>
-                  <Text
-                    style={[styles.todayCardTitle, isRecommended && { color: module.color }]}
-                    numberOfLines={2}
-                  >
-                    {session.title}
-                  </Text>
-                  <View style={styles.todayCardFooter}>
-                    <Text style={styles.todayCardCTA}>{todayCompleted ? 'Replay session' : 'Begin session'}</Text>
-                    <View style={[styles.todayPlayButton, { backgroundColor: module.color }]}>
-                      <Text style={styles.todayPlayIcon}>▶</Text>
-                    </View>
-                  </View>
-                  {isRecommended && (
-                    <Text style={[styles.recommendedCopy, { color: module.color }]}>
-                      Recommended to keep your streak alive
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              </Animated.View>
-            );
-          })}
+                {recommendedSession.title}
+              </Text>
+              <View style={styles.todayCardFooter}>
+                <Text style={styles.todayCardCTA}>{todayCompleted ? 'Replay session' : 'Begin session'}</Text>
+                <View style={[styles.todayPlayButton, { backgroundColor: module.color }]}>
+                  <Text style={styles.todayPlayIcon}>▶</Text>
+                </View>
+              </View>
+              <Text style={[styles.recommendedCopy, { color: module.color }]}>
+                Recommended for you today based on your data
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
         </View>
       </View>
     );

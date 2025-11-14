@@ -576,7 +576,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
                     translateX: scrollX.interpolate({
                       inputRange: [0, screenWidth],
                       outputRange: [
-                        -16, // First tab: indicator starts at left edge of screen (accounting for container padding)
+                        0, // First tab: indicator starts at left edge of screen
                         screenWidth / 2, // Second tab: indicator extends to right edge of screen
                       ],
                       extrapolate: 'clamp',
@@ -666,13 +666,14 @@ const styles = StyleSheet.create({
   tabsContainer: {
     flexDirection: 'row',
     backgroundColor: 'transparent',
-    paddingHorizontal: 16,
+    paddingHorizontal: 0,
     height: 44, // Fixed height to prevent layout shifts
   },
   tab: {
-    flex: 1,
+    width: '50%',
     paddingVertical: 8,
     alignItems: 'center',
+    justifyContent: 'center',
     position: 'relative',
   },
   activeTab: {

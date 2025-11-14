@@ -507,7 +507,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
               ]}
               pointerEvents="none"
             >
-              <Text style={styles.scrollArrowText}>→</Text>
+              <Text style={styles.scrollArrowText}>›</Text>
             </Animated.View>
           )}
         </View>
@@ -1064,21 +1064,20 @@ const styles = StyleSheet.create({
   },
   scrollArrow: {
     position: 'absolute',
-    right: 8,
+    right: -2,
     top: '50%',
     marginTop: -20,
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     zIndex: 10,
+    paddingRight: 0,
   },
   scrollArrowText: {
-    fontSize: 20,
-    color: '#FFFFFF',
-    fontWeight: '600',
+    fontSize: 40,
+    color: '#000000',
+    fontWeight: '300',
   },
   completedCard: {
     backgroundColor: '#FFFFFF',

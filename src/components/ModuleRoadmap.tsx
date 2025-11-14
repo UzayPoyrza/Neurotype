@@ -636,22 +636,6 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.timelineContainer}>
-          <Text style={styles.timelineTitle}>🧠 Neuroadaptation Timeline</Text>
-          <Text style={styles.timelineSubtitle}>
-            Track your brain's adaptation to meditation practice
-          </Text>
-          
-          <View style={styles.timelineStats}>
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>{totalSessions}</Text>
-              <Text style={styles.statLabel}>Sessions Completed</Text>
-            </View>
-            <View style={[styles.statCard, { marginRight: 0, marginLeft: 12 }]}>
-              <Text style={styles.statValue}>{userProgress.streak}</Text>
-              <Text style={styles.statLabel}>Day Streak</Text>
-            </View>
-          </View>
-
           {milestones.map((milestone, index) => {
             const progress = Math.min(100, (totalSessions / milestone.sessionsRequired) * 100);
             const isUnlocked = totalSessions >= milestone.sessionsRequired;
@@ -1178,8 +1162,8 @@ const styles = StyleSheet.create({
   },
   timelinePageContent: {
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 100,
+    paddingTop: 16,
+    paddingBottom: 85,
   },
   timelineContainer: {
     width: '100%',

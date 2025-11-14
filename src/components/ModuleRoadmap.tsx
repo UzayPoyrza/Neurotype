@@ -94,6 +94,19 @@ const NeuroadaptationCard: React.FC<NeuroadaptationCardProps> = ({
     extrapolate: 'clamp',
   });
 
+  // Color palette for variation - different colors for each card
+  const accentColors = [
+    { main: '#007AFF', light: 'rgba(0, 122, 255, 0.1)', border: 'rgba(0, 122, 255, 0.4)' }, // Blue
+    { main: '#5856D6', light: 'rgba(88, 86, 214, 0.1)', border: 'rgba(88, 86, 214, 0.4)' }, // Purple
+    { main: '#AF52DE', light: 'rgba(175, 82, 222, 0.1)', border: 'rgba(175, 82, 222, 0.4)' }, // Deep Purple
+    { main: '#FF2D55', light: 'rgba(255, 45, 85, 0.1)', border: 'rgba(255, 45, 85, 0.4)' }, // Pink
+    { main: '#FF9500', light: 'rgba(255, 149, 0, 0.1)', border: 'rgba(255, 149, 0, 0.4)' }, // Orange
+    { main: '#34C759', light: 'rgba(52, 199, 89, 0.1)', border: 'rgba(52, 199, 89, 0.4)' }, // Green
+  ];
+
+  const colorScheme = accentColors[index % accentColors.length];
+  const accentColor = colorScheme.main;
+
   return (
     <Animated.View
       style={[
@@ -101,6 +114,8 @@ const NeuroadaptationCard: React.FC<NeuroadaptationCardProps> = ({
         {
           opacity: cardOpacity,
           transform: [{ scale: cardScale }],
+          borderLeftWidth: 3,
+          borderLeftColor: colorScheme.border,
         },
       ]}
     >
@@ -108,7 +123,7 @@ const NeuroadaptationCard: React.FC<NeuroadaptationCardProps> = ({
         <View style={styles.neuroCardTitleRow}>
           <Text style={styles.neuroCardTitle}>{milestone.title}</Text>
           {isUnlocked && (
-            <View style={styles.checkmarkBadge}>
+            <View style={[styles.checkmarkBadge, { backgroundColor: accentColor }]}>
               <Text style={styles.checkmarkText}>✓</Text>
             </View>
           )}
@@ -124,11 +139,12 @@ const NeuroadaptationCard: React.FC<NeuroadaptationCardProps> = ({
               {
                 width: progressWidth,
                 opacity: progressOpacity,
+                backgroundColor: accentColor,
               },
             ]}
           />
         </View>
-        <Text style={styles.progressPercentage}>
+        <Text style={[styles.progressPercentage, { color: accentColor }]}>
           {Math.round(progress)}%
         </Text>
       </View>
@@ -136,8 +152,14 @@ const NeuroadaptationCard: React.FC<NeuroadaptationCardProps> = ({
       <Text style={styles.neuroCardDescription}>{milestone.description}</Text>
 
       {isPartiallyComplete || isUnlocked ? (
-        <View style={styles.whatYouFeelContainer}>
-          <Text style={styles.whatYouFeelLabel}>What you feel:</Text>
+        <View style={[
+          styles.whatYouFeelContainer,
+          {
+            borderLeftColor: accentColor,
+            backgroundColor: colorScheme.light,
+          }
+        ]}>
+          <Text style={[styles.whatYouFeelLabel, { color: accentColor }]}>What you feel:</Text>
           <Text style={styles.whatYouFeelText}>{milestone.whatYouFeel}</Text>
         </View>
       ) : (
@@ -1215,15 +1237,17 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
   },
   neuroCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
   },
   neuroCardHeader: {
     marginBottom: 16,
@@ -1237,7 +1261,7 @@ const styles = StyleSheet.create({
   neuroCardTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#1D1D1F',
     fontFamily: 'System',
     flex: 1,
   },
@@ -1245,7 +1269,6 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#FF9500',
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,
@@ -1270,24 +1293,18 @@ const styles = StyleSheet.create({
   progressBarTrack: {
     flex: 1,
     height: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: '#E5E5EA',
     borderRadius: 4,
     overflow: 'hidden',
     marginRight: 12,
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#FF9500',
     borderRadius: 4,
-    shadowColor: '#FF9500',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 4,
   },
   progressPercentage: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FF9500',
     fontFamily: 'System',
     minWidth: 50,
     textAlign: 'right',
@@ -1295,21 +1312,18 @@ const styles = StyleSheet.create({
   neuroCardDescription: {
     fontSize: 15,
     lineHeight: 22,
-    color: '#E5E5EA',
+    color: '#636366',
     marginBottom: 12,
     fontFamily: 'System',
   },
   whatYouFeelContainer: {
-    backgroundColor: 'rgba(255, 149, 0, 0.1)',
     borderRadius: 12,
     padding: 12,
     borderLeftWidth: 3,
-    borderLeftColor: '#FF9500',
   },
   whatYouFeelLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#FF9500',
     marginBottom: 6,
     fontFamily: 'System',
     textTransform: 'uppercase',
@@ -1318,7 +1332,7 @@ const styles = StyleSheet.create({
   whatYouFeelText: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#E5E5EA',
+    color: '#636366',
     fontFamily: 'System',
   },
   sessionsRequired: {

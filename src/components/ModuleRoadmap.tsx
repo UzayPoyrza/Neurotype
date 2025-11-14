@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Animated, TouchableOpacity, Dimensions, LayoutChangeEvent } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Animated, TouchableOpacity, Dimensions, LayoutChangeEvent, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Session } from '../types';
 import { MentalHealthModule } from '../data/modules';
 import { mockSessions } from '../data/mockData';
 import { useStore } from '../store/useStore';
+import { theme } from '../styles/theme';
 
 interface CompletedMeditation {
   id: string;
@@ -21,6 +23,8 @@ interface ModuleRoadmapProps {
   onBackPress?: () => void;
 }
 
+type TabType = 'timeline' | 'overview';
+
 export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   module,
   todayCompleted = false,
@@ -36,6 +40,10 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   const glowAnim = useRef(new Animated.Value(0)).current;
   const [scrollViewHeight, setScrollViewHeight] = useState(0);
   const [contentHeight, setContentHeight] = useState(0);
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const scrollX = useRef(new Animated.Value(0)).current;
+  const horizontalScrollRef = useRef<ScrollView>(null);
+  const screenWidth = Dimensions.get('window').width;
 
   const roadmapData = useMemo(() => {
     const relevantGoals = {
@@ -104,6 +112,72 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   // <= 20 chars: 30px, 21-24 chars: 26px, > 24 chars: 22px
   const titleFontSize = titleText.length > 24 ? 22 : titleText.length > 20 ? 26 : 30;
 
+  const handleTabChange = (tab: TabType) => {
+    const tabIndex = tab === 'timeline' ? 0 : 1;
+    
+    // Scroll to the appropriate page
+    horizontalScrollRef.current?.scrollTo({
+      x: tabIndex * screenWidth,
+      animated: true,
+    });
+    
+    setActiveTab(tab);
+  };
+
+  const handleScroll = (event: any) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    
+    // Update scrollX animated value for tab indicator
+    scrollX.setValue(offsetX);
+    
+    const tabIndex = Math.round(offsetX / screenWidth);
+    
+    // Update active tab based on scroll position
+    const newTab = tabIndex === 0 ? 'timeline' : 'overview';
+    if (newTab !== activeTab) {
+      setActiveTab(newTab);
+    }
+  };
+
+  const handleScrollEnd = (event: any) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const maxScrollX = screenWidth; // Maximum scroll position (Overview page)
+    
+    // Check if we're at the left edge (Timeline page) and scrolled beyond it
+    if (offsetX < -30) {
+      // Navigate back
+      if (onBackPress) {
+        onBackPress();
+      } else {
+        navigation.goBack();
+      }
+      return;
+    }
+    
+    // Check if we're at the right edge (Overview page) and scrolled beyond it
+    if (offsetX > maxScrollX + 30) {
+      // Snap back to the Overview page
+      horizontalScrollRef.current?.scrollTo({
+        x: maxScrollX,
+        animated: true,
+      });
+    }
+  };
+
+  const handleMomentumScrollEnd = (event: any) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    
+    // Check if we're at the left edge (Timeline page) and scrolled beyond it
+    if (offsetX < -30) {
+      // Navigate back
+      if (onBackPress) {
+        onBackPress();
+      } else {
+        navigation.goBack();
+      }
+    }
+  };
+
 
   useEffect(() => {
     // Pulse animation for today's node
@@ -164,25 +238,6 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
 
     return () => clearTimeout(timer);
   }, []);
-
-  const handleJumpTo = (position: 'completed' | 'today' | 'tomorrow') => {
-    const target =
-      position === 'completed'
-        ? completedSectionY.current
-        : position === 'today'
-          ? todaySectionY.current
-          : tomorrowSectionY.current;
-
-    if (!scrollViewRef.current) {
-      return;
-    }
-
-    // Account for header height when scrolling
-    scrollViewRef.current.scrollTo({
-      y: Math.max(0, target - 180), // Header height
-      animated: true,
-    });
-  };
 
   const renderCompletedMeditations = () => {
     if (!completedSessions.length) {
@@ -401,42 +456,6 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
     );
   };
 
-  const renderQuickJump = () => {
-    const destinations: Array<{ key: 'completed' | 'today' | 'tomorrow'; label: string; disabled?: boolean }> = [
-      { key: 'completed', label: 'Progress', disabled: !completedSessions.length },
-      { key: 'today', label: 'Today' },
-      { key: 'tomorrow', label: 'Tomorrow', disabled: !todayCompleted || !tomorrowSession },
-    ];
-
-    return (
-      <View style={styles.quickJumpRow}>
-        {destinations.map(item => (
-          <TouchableOpacity
-            key={item.key}
-            onPress={() => !item.disabled && handleJumpTo(item.key)}
-            activeOpacity={item.disabled ? 1 : 0.85}
-            style={[
-              styles.quickJumpChip,
-              item.key === 'today' && styles.quickJumpChipActive,
-              item.key === 'today' && { backgroundColor: module.color },
-              item.disabled && styles.quickJumpChipDisabled,
-            ]}
-          >
-            <Text
-              style={[
-                styles.quickJumpChipText,
-                item.key === 'today' && { color: '#FFFFFF' },
-                item.disabled && styles.quickJumpChipTextDisabled,
-              ]}
-            >
-              {item.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    );
-  };
-
   // Layout handlers
   const handleScrollViewLayout = useCallback((event: LayoutChangeEvent) => {
     const { height } = event.nativeEvent.layout;
@@ -448,71 +467,146 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
     setContentHeight(height);
   }, []);
 
-  return (
-    <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
-      {/* Sticky Header */}
-      <View style={styles.headerContainer}>
-        <View style={styles.topShell}>
-          <View style={styles.topShellContent}>
-            <TouchableOpacity
-              onPress={onBackPress || (() => navigation.goBack())}
-              style={styles.backButton}
-            >
-              <Text style={styles.backButtonText}>← Back</Text>
-            </TouchableOpacity>
-            <View style={styles.headerTitleContainer}>
-              <Text 
-                style={[styles.headerTitle, { fontSize: titleFontSize, lineHeight: titleFontSize * 1.2 }]} 
-                numberOfLines={1}
-              >
-                {titleText}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.quickJumpContainer}>
-            {renderQuickJump()}
-          </View>
-          <View style={styles.topShellBorder} />
+  const renderTimelinePage = () => (
+    <ScrollView 
+      style={[styles.page, { width: screenWidth }]} 
+      contentContainerStyle={styles.pageContent}
+    >
+      <View style={styles.timelineContainer}>
+        <Text style={styles.timelineTitle}>Neuroadaptation Timeline</Text>
+        <Text style={styles.timelineSubtitle}>
+          Track your brain's adaptation to meditation practice
+        </Text>
+        
+        <View style={styles.placeholderCard}>
+          <Text style={styles.placeholderIcon}>🧠</Text>
+          <Text style={styles.placeholderTitle}>Coming Soon</Text>
+          <Text style={styles.placeholderText}>
+            The neuroadaptation timeline will show how your brain changes over time as you practice meditation.
+          </Text>
         </View>
       </View>
+    </ScrollView>
+  );
 
-      {/* ScrollView with content */}
-      <ScrollView
-        ref={scrollViewRef}
-        style={styles.bodyScroll}
-        contentContainerStyle={styles.bodyContent}
-        showsVerticalScrollIndicator={false}
-        bounces={false}
-        onLayout={handleScrollViewLayout}
-        onContentSizeChange={(width, height) => {
-          setContentHeight(height);
-        }}
-      >
-        <View style={styles.contentWrapper} onLayout={handleContentLayout}>
-          <View style={[styles.summaryCard, { borderColor: module.color }]}>
-            <Text style={styles.summaryTitle}>Module Progress</Text>
-            <View style={styles.summaryStatsRow}>
-              <View style={styles.summaryStat}>
-                <Text style={styles.summaryStatValue}>{completedSessions.length}</Text>
-                <Text style={styles.summaryStatLabel}>Completed</Text>
-              </View>
-              <View style={styles.summaryDivider} />
-              <View style={styles.summaryStat}>
-                <Text style={styles.summaryStatValue}>{todaySessions.length}</Text>
-                <Text style={styles.summaryStatLabel}>Today</Text>
-              </View>
-              <View style={styles.summaryDivider} />
-              <View style={styles.summaryStat}>
-                <Text style={styles.summaryStatValue}>{tomorrowSession ? 1 : 0}</Text>
-                <Text style={styles.summaryStatLabel}>Queued</Text>
-              </View>
+  const renderOverviewPage = () => (
+    <ScrollView
+      ref={scrollViewRef}
+      style={[styles.page, { width: screenWidth }]}
+      contentContainerStyle={styles.bodyContent}
+      showsVerticalScrollIndicator={false}
+      bounces={false}
+      onLayout={handleScrollViewLayout}
+      onContentSizeChange={(width, height) => {
+        setContentHeight(height);
+      }}
+    >
+      <View style={styles.contentWrapper} onLayout={handleContentLayout}>
+        <View style={[styles.summaryCard, { borderColor: module.color }]}>
+          <Text style={styles.summaryTitle}>Module Progress</Text>
+          <View style={styles.summaryStatsRow}>
+            <View style={styles.summaryStat}>
+              <Text style={styles.summaryStatValue}>{completedSessions.length}</Text>
+              <Text style={styles.summaryStatLabel}>Completed</Text>
+            </View>
+            <View style={styles.summaryDivider} />
+            <View style={styles.summaryStat}>
+              <Text style={styles.summaryStatValue}>{todaySessions.length}</Text>
+              <Text style={styles.summaryStatLabel}>Today</Text>
+            </View>
+            <View style={styles.summaryDivider} />
+            <View style={styles.summaryStat}>
+              <Text style={styles.summaryStatValue}>{tomorrowSession ? 1 : 0}</Text>
+              <Text style={styles.summaryStatLabel}>Queued</Text>
             </View>
           </View>
-          {renderCompletedMeditations()}
-          {renderTodayPlan()}
-          {renderTomorrowPreview()}
         </View>
-      </ScrollView>
+        {renderCompletedMeditations()}
+        {renderTodayPlan()}
+        {renderTomorrowPreview()}
+      </View>
+    </ScrollView>
+  );
+
+  return (
+    <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+      
+      <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+        {/* Sticky Header */}
+        <View style={styles.stickyHeader}>
+          <View style={styles.headerContent}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={onBackPress || (() => navigation.goBack())}
+            >
+              <Text style={styles.backButtonText}>←</Text>
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>{titleText}</Text>
+            <View style={styles.headerActions} />
+          </View>
+          
+          {/* Tabs in Header */}
+          <View style={styles.tabsContainer}>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'timeline' && styles.activeTab]}
+              onPress={() => handleTabChange('timeline')}
+            >
+              <Text style={[styles.tabText, activeTab === 'timeline' && styles.activeTabText]}>
+                Neuroadaptation Timeline
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'overview' && styles.activeTab]}
+              onPress={() => handleTabChange('overview')}
+            >
+              <Text style={[styles.tabText, activeTab === 'overview' && styles.activeTabText]}>
+                Module Overview
+              </Text>
+            </TouchableOpacity>
+            
+            {/* Animated Indicator */}
+            <Animated.View 
+              style={[
+                styles.tabIndicator,
+                {
+                  transform: [{
+                    translateX: scrollX.interpolate({
+                      inputRange: [0, screenWidth],
+                      outputRange: [
+                        ((screenWidth - 32) / 2) / 2 - 60, // Center of first tab minus half indicator width
+                        ((screenWidth - 32) / 2) + ((screenWidth - 32) / 2) / 2 - 60, // Center of second tab minus half indicator width
+                      ],
+                      extrapolate: 'clamp',
+                    })
+                  }]
+                }
+              ]} 
+            />
+          </View>
+        </View>
+
+        {/* Horizontal ScrollView for pages */}
+        <ScrollView
+          ref={horizontalScrollRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onScroll={handleScroll}
+          onScrollEndDrag={handleScrollEnd}
+          onMomentumScrollEnd={handleMomentumScrollEnd}
+          scrollEventThrottle={16}
+          style={styles.horizontalScrollView}
+          bounces={false}
+        >
+          {/* Timeline Page */}
+          {renderTimelinePage()}
+          
+          {/* Overview Page */}
+          {renderOverviewPage()}
+        </ScrollView>
+      </SafeAreaView>
     </View>
   );
 };
@@ -520,96 +614,96 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: theme.health.container.backgroundColor,
   },
-  headerContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
+  safeArea: {
+    flex: 1,
   },
-  topShell: {
-    backgroundColor: '#FFFFFF',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1001,
+  stickyHeader: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    zIndex: 100,
+    paddingTop: 44, // Status bar height
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
   },
-  topShellContent: {
-    paddingTop: 48,
-    paddingHorizontal: 24,
-    paddingBottom: 14,
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    minHeight: 44,
   },
-  quickJumpContainer: {
-    paddingHorizontal: 24,
-    paddingBottom: 14,
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  topShellBorder: {
+  backButtonText: {
+    color: '#007AFF',
+    fontSize: 24,
+    fontWeight: '400',
+  },
+  headerTitle: {
+    color: theme.colors.text.primary,
+    fontSize: 17,
+    fontWeight: '600',
+    flex: 1,
+    textAlign: 'center',
+    marginHorizontal: 16,
+  },
+  headerActions: {
+    width: 40,
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    backgroundColor: 'transparent',
+    paddingHorizontal: 16,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    position: 'relative',
+  },
+  activeTab: {
+    // Active tab styling handled by text color
+  },
+  tabText: {
+    fontSize: 15,
+    fontWeight: '400',
+    color: theme.colors.text.secondary,
+  },
+  activeTabText: {
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  tabIndicator: {
     position: 'absolute',
     bottom: 0,
     left: 0,
-    right: 0,
-    height: 1,
-    backgroundColor: '#ECECEC',
+    width: 120,
+    height: 2,
+    backgroundColor: '#007AFF',
+    borderRadius: 1,
   },
-  backButton: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#f2f2f7',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    marginBottom: 8,
-  },
-  backButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#007AFF',
-    fontFamily: 'System',
-  },
-  headerTitleContainer: {
-    flexShrink: 1,
-  },
-  headerTitle: {
-    fontSize: 30,
-    fontWeight: '700',
-    color: '#000000',
-    fontFamily: 'System',
-    marginTop: 0,
-    lineHeight: 36,
-    marginBottom: 0,
-  },
-  quickJumpRow: {
-    flexDirection: 'row',
-    gap: 12,
-    alignItems: 'center',
-  },
-  quickJumpChip: {
-    borderWidth: 1,
-    borderColor: '#D1D1D6',
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    backgroundColor: '#FFFFFF',
-  },
-  quickJumpChipActive: {
-    borderColor: 'transparent',
-  },
-  quickJumpChipDisabled: {
-    backgroundColor: '#F2F2F7',
-  },
-  quickJumpChipText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1C1C1E',
-    fontFamily: 'System',
-  },
-  quickJumpChipTextDisabled: {
-    color: '#AEAEB2',
-  },
-  bodyScroll: {
+  horizontalScrollView: {
     flex: 1,
-    paddingTop: 180, // TopShell height
+  },
+  page: {
+    flex: 1,
+  },
+  pageContent: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 100,
   },
   bodyContent: {
     paddingHorizontal: 24,
@@ -894,5 +988,50 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: '#8E8E93',
     fontFamily: 'System',
+  },
+  timelineContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  timelineTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+    marginBottom: 8,
+  },
+  timelineSubtitle: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: theme.colors.text.secondary,
+    marginBottom: 24,
+  },
+  placeholderCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+    minHeight: 300,
+  },
+  placeholderIcon: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  placeholderTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+    marginBottom: 12,
+  },
+  placeholderText: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: theme.colors.text.secondary,
+    textAlign: 'center',
   },
 });

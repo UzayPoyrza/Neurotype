@@ -41,6 +41,7 @@ interface NeuroadaptationCardProps {
   isPartiallyComplete: boolean;
   totalSessions: number;
   index: number;
+  accentColor: string;
 }
 
 const NeuroadaptationCard: React.FC<NeuroadaptationCardProps> = ({
@@ -50,6 +51,7 @@ const NeuroadaptationCard: React.FC<NeuroadaptationCardProps> = ({
   isPartiallyComplete,
   totalSessions,
   index,
+  accentColor,
 }) => {
   const progressAnim = useRef(new Animated.Value(0)).current;
   const cardOpacity = useRef(new Animated.Value(0)).current;
@@ -94,18 +96,21 @@ const NeuroadaptationCard: React.FC<NeuroadaptationCardProps> = ({
     extrapolate: 'clamp',
   });
 
-  // Color palette for variation - different colors for each card
-  const accentColors = [
-    { main: '#007AFF', light: 'rgba(0, 122, 255, 0.1)', border: 'rgba(0, 122, 255, 0.4)' }, // Blue
-    { main: '#5856D6', light: 'rgba(88, 86, 214, 0.1)', border: 'rgba(88, 86, 214, 0.4)' }, // Purple
-    { main: '#AF52DE', light: 'rgba(175, 82, 222, 0.1)', border: 'rgba(175, 82, 222, 0.4)' }, // Deep Purple
-    { main: '#FF2D55', light: 'rgba(255, 45, 85, 0.1)', border: 'rgba(255, 45, 85, 0.4)' }, // Pink
-    { main: '#FF9500', light: 'rgba(255, 149, 0, 0.1)', border: 'rgba(255, 149, 0, 0.4)' }, // Orange
-    { main: '#34C759', light: 'rgba(52, 199, 89, 0.1)', border: 'rgba(52, 199, 89, 0.4)' }, // Green
-  ];
+  // Convert hex to RGB for rgba colors
+  const hexToRgb = (hex: string) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result
+      ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16),
+        }
+      : { r: 255, g: 107, b: 107 }; // Default to red
+  };
 
-  const colorScheme = accentColors[index % accentColors.length];
-  const accentColor = colorScheme.main;
+  const rgb = hexToRgb(accentColor);
+  const lightColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.1)`;
+  const borderColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.4)`;
 
   return (
     <Animated.View
@@ -115,7 +120,7 @@ const NeuroadaptationCard: React.FC<NeuroadaptationCardProps> = ({
           opacity: cardOpacity,
           transform: [{ scale: cardScale }],
           borderLeftWidth: 3,
-          borderLeftColor: colorScheme.border,
+          borderLeftColor: borderColor,
         },
       ]}
     >
@@ -156,7 +161,7 @@ const NeuroadaptationCard: React.FC<NeuroadaptationCardProps> = ({
           styles.whatYouFeelContainer,
           {
             borderLeftColor: accentColor,
-            backgroundColor: colorScheme.light,
+            backgroundColor: lightColor,
           }
         ]}>
           <Text style={[styles.whatYouFeelLabel, { color: accentColor }]}>What you feel:</Text>
@@ -672,6 +677,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
                 isPartiallyComplete={isPartiallyComplete}
                 totalSessions={totalSessions}
                 index={index}
+                accentColor={module.color}
               />
             );
           })}

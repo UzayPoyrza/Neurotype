@@ -473,7 +473,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
       contentContainerStyle={styles.pageContent}
     >
       <View style={styles.timelineContainer}>
-        <Text style={styles.timelineTitle}>Neuroadaptation Timeline</Text>
+        <Text style={styles.timelineTitle}>Neuroadaptation</Text>
         <Text style={styles.timelineSubtitle}>
           Track your brain's adaptation to meditation practice
         </Text>
@@ -542,7 +542,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
             >
               <Text style={styles.backButtonText}>←</Text>
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>{titleText}</Text>
+            <Text style={styles.headerTitle} numberOfLines={1} ellipsizeMode="tail">{titleText}</Text>
             <View style={styles.headerActions} />
           </View>
           
@@ -553,7 +553,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
               onPress={() => handleTabChange('timeline')}
             >
               <Text style={[styles.tabText, activeTab === 'timeline' && styles.activeTabText]}>
-                Neuroadaptation Timeline
+                Neuroadaptation
               </Text>
             </TouchableOpacity>
             
@@ -562,7 +562,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
               onPress={() => handleTabChange('overview')}
             >
               <Text style={[styles.tabText, activeTab === 'overview' && styles.activeTabText]}>
-                Module Overview
+                Overview
               </Text>
             </TouchableOpacity>
             
@@ -575,8 +575,8 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
                     translateX: scrollX.interpolate({
                       inputRange: [0, screenWidth],
                       outputRange: [
-                        ((screenWidth - 32) / 2) / 2 - 60, // Center of first tab minus half indicator width
-                        ((screenWidth - 32) / 2) + ((screenWidth - 32) / 2) / 2 - 60, // Center of second tab minus half indicator width
+                        ((screenWidth - 32) / 2) / 2 - 60, // Center of first tab minus half indicator width (120/2)
+                        ((screenWidth - 32) / 2) + ((screenWidth - 32) / 2) / 2 - 60, // Center of second tab minus half indicator width (120/2)
                       ],
                       extrapolate: 'clamp',
                     })
@@ -637,7 +637,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    minHeight: 44,
+    height: 44, // Fixed height to prevent layout shifts
   },
   backButton: {
     width: 40,
@@ -666,6 +666,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: 'transparent',
     paddingHorizontal: 16,
+    height: 44, // Fixed height to prevent layout shifts
   },
   tab: {
     flex: 1,

@@ -403,7 +403,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         }}
       >
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent Progress</Text>
+          <Text style={styles.sectionTitle}>Recently Sessions</Text>
           <Text style={styles.sectionSubtitle}>
             {completedSessions.length} completed {completedSessions.length === 1 ? 'session' : 'sessions'}
           </Text>
@@ -705,7 +705,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
     >
       <View style={styles.contentWrapper} onLayout={handleContentLayout}>
         <View style={[styles.summaryCard, { borderColor: module.color }]}>
-          <Text style={styles.summaryTitle}>Module Progress</Text>
+          <Text style={styles.summaryTitle}>{module.title} Progress</Text>
           <View style={styles.summaryStatsRow}>
             <View style={styles.summaryStat}>
               <Text style={styles.summaryStatValue}>{completedSessions.length}</Text>
@@ -715,11 +715,6 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
             <View style={styles.summaryStat}>
               <Text style={styles.summaryStatValue}>{todaySessions.length}</Text>
               <Text style={styles.summaryStatLabel}>Today</Text>
-            </View>
-            <View style={styles.summaryDivider} />
-            <View style={styles.summaryStat}>
-              <Text style={styles.summaryStatValue}>{tomorrowSession ? 1 : 0}</Text>
-              <Text style={styles.summaryStatLabel}>Queued</Text>
             </View>
           </View>
         </View>

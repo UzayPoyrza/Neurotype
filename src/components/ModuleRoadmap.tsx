@@ -571,12 +571,13 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
               style={[
                 styles.tabIndicator,
                 {
+                  width: screenWidth / 2,
                   transform: [{
                     translateX: scrollX.interpolate({
                       inputRange: [0, screenWidth],
                       outputRange: [
-                        ((screenWidth - 32) / 2) / 2 - 60, // Center of first tab minus half indicator width (120/2)
-                        ((screenWidth - 32) / 2) + ((screenWidth - 32) / 2) / 2 - 60, // Center of second tab minus half indicator width (120/2)
+                        -16, // First tab: indicator starts at left edge of screen (accounting for container padding)
+                        screenWidth / 2, // Second tab: indicator extends to right edge of screen
                       ],
                       extrapolate: 'clamp',
                     })
@@ -690,7 +691,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     left: 0,
-    width: 120,
     height: 2,
     backgroundColor: '#007AFF',
     borderRadius: 1,

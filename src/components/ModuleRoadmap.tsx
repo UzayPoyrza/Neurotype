@@ -40,10 +40,10 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   const glowAnim = useRef(new Animated.Value(0)).current;
   const [scrollViewHeight, setScrollViewHeight] = useState(0);
   const [contentHeight, setContentHeight] = useState(0);
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
-  const scrollX = useRef(new Animated.Value(0)).current;
-  const horizontalScrollRef = useRef<ScrollView>(null);
+  const [activeTab, setActiveTab] = useState<TabType>('timeline');
   const screenWidth = Dimensions.get('window').width;
+  const scrollX = useRef(new Animated.Value(0)).current; // Initialize to timeline tab position
+  const horizontalScrollRef = useRef<ScrollView>(null);
 
   const roadmapData = useMemo(() => {
     const relevantGoals = {
@@ -224,20 +224,6 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   const tomorrowSectionY = useRef(0);
 
 
-  useEffect(() => {
-    if (!scrollViewRef.current) {
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      const screenHeight = Dimensions.get('window').height;
-      const targetOffset = Math.max(0, todaySectionY.current - screenHeight * 0.2);
-
-      scrollViewRef.current?.scrollTo({ y: targetOffset, animated: true });
-    }, 400);
-
-    return () => clearTimeout(timer);
-  }, []);
 
   const renderCompletedMeditations = () => {
     if (!completedSessions.length) {

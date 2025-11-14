@@ -1,12 +1,21 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Animated, TouchableOpacity, Dimensions, LayoutChangeEvent, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Session } from '../types';
 import { MentalHealthModule } from '../data/modules';
 import { mockSessions } from '../data/mockData';
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
+
+type TodayStackParamList = {
+  TodayMain: undefined;
+  Roadmap: undefined;
+  MeditationDetail: { sessionId: string };
+};
+
+type ModuleRoadmapNavigationProp = StackNavigationProp<TodayStackParamList>;
 
 interface CompletedMeditation {
   id: string;
@@ -184,7 +193,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   onSessionSelect,
   onBackPress,
 }) => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<ModuleRoadmapNavigationProp>();
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const scrollViewRef = useRef<ScrollView>(null);
   const pulseAnim = useRef(new Animated.Value(0)).current;
@@ -415,7 +424,12 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
           bounces={false}
         >
           {completedSessions.map(item => (
-            <View key={item.id} style={styles.completedCard}>
+            <TouchableOpacity
+              key={item.id}
+              style={styles.completedCard}
+              onPress={() => navigation.navigate('MeditationDetail', { sessionId: item.session.id })}
+              activeOpacity={0.7}
+            >
               <Text style={styles.completedTitle} numberOfLines={2}>
                 {item.session.title}
               </Text>
@@ -426,7 +440,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
               <View style={[styles.completedBadge, { backgroundColor: module.color }]}>
                 <Text style={styles.completedBadgeIcon}>✓</Text>
               </View>
-            </View>
+            </TouchableOpacity>
           ))}
         </ScrollView>
       </View>
@@ -475,7 +489,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
             ]}
           >
             <TouchableOpacity
-              onPress={() => onSessionSelect?.(recommendedSession)}
+              onPress={() => navigation.navigate('MeditationDetail', { sessionId: recommendedSession.id })}
               activeOpacity={0.85}
               style={[
                 styles.todayCard,

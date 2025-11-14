@@ -25,6 +25,130 @@ interface ModuleRoadmapProps {
 
 type TabType = 'timeline' | 'overview';
 
+interface Milestone {
+  id: string;
+  title: string;
+  timeRange: string;
+  sessionsRequired: number;
+  description: string;
+  whatYouFeel: string;
+}
+
+interface NeuroadaptationCardProps {
+  milestone: Milestone;
+  progress: number;
+  isUnlocked: boolean;
+  isPartiallyComplete: boolean;
+  totalSessions: number;
+  index: number;
+}
+
+const NeuroadaptationCard: React.FC<NeuroadaptationCardProps> = ({
+  milestone,
+  progress,
+  isUnlocked,
+  isPartiallyComplete,
+  totalSessions,
+  index,
+}) => {
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const cardOpacity = useRef(new Animated.Value(0)).current;
+  const cardScale = useRef(new Animated.Value(0.95)).current;
+
+  useEffect(() => {
+    // Stagger card animations
+    Animated.parallel([
+      Animated.timing(cardOpacity, {
+        toValue: 1,
+        duration: 400,
+        delay: index * 100,
+        useNativeDriver: true,
+      }),
+      Animated.spring(cardScale, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        delay: index * 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Animate progress bar
+    Animated.timing(progressAnim, {
+      toValue: progress / 100,
+      duration: 1200,
+      delay: 300 + index * 100,
+      useNativeDriver: false,
+    }).start();
+  }, [progress, index, cardOpacity, cardScale, progressAnim]);
+
+  const progressWidth = progressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+    extrapolate: 'clamp',
+  });
+
+  const progressOpacity = progressAnim.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [0.3, 0.7, 1],
+    extrapolate: 'clamp',
+  });
+
+  return (
+    <Animated.View
+      style={[
+        styles.neuroCard,
+        {
+          opacity: cardOpacity,
+          transform: [{ scale: cardScale }],
+        },
+      ]}
+    >
+      <View style={styles.neuroCardHeader}>
+        <View style={styles.neuroCardTitleRow}>
+          <Text style={styles.neuroCardTitle}>{milestone.title}</Text>
+          {isUnlocked && (
+            <View style={styles.checkmarkBadge}>
+              <Text style={styles.checkmarkText}>✓</Text>
+            </View>
+          )}
+        </View>
+        <Text style={styles.neuroCardTimeRange}>{milestone.timeRange}</Text>
+      </View>
+
+      <View style={styles.progressBarContainer}>
+        <View style={styles.progressBarTrack}>
+          <Animated.View
+            style={[
+              styles.progressBarFill,
+              {
+                width: progressWidth,
+                opacity: progressOpacity,
+              },
+            ]}
+          />
+        </View>
+        <Text style={styles.progressPercentage}>
+          {Math.round(progress)}%
+        </Text>
+      </View>
+
+      <Text style={styles.neuroCardDescription}>{milestone.description}</Text>
+
+      {isPartiallyComplete || isUnlocked ? (
+        <View style={styles.whatYouFeelContainer}>
+          <Text style={styles.whatYouFeelLabel}>What you feel:</Text>
+          <Text style={styles.whatYouFeelText}>{milestone.whatYouFeel}</Text>
+        </View>
+      ) : (
+        <Text style={styles.sessionsRequired}>
+          {milestone.sessionsRequired - totalSessions} more sessions to unlock
+        </Text>
+      )}
+    </Animated.View>
+  );
+};
+
 export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   module,
   todayCompleted = false,
@@ -449,27 +573,106 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
     setContentHeight(height);
   }, []);
 
-  const renderTimelinePage = () => (
-    <ScrollView 
-      style={[styles.page, { width: screenWidth }]} 
-      contentContainerStyle={styles.pageContent}
-    >
-      <View style={styles.timelineContainer}>
-        <Text style={styles.timelineTitle}>Neuroadaptation</Text>
-        <Text style={styles.timelineSubtitle}>
-          Track your brain's adaptation to meditation practice
-        </Text>
-        
-        <View style={styles.placeholderCard}>
-          <Text style={styles.placeholderIcon}>🧠</Text>
-          <Text style={styles.placeholderTitle}>Coming Soon</Text>
-          <Text style={styles.placeholderText}>
-            The neuroadaptation timeline will show how your brain changes over time as you practice meditation.
+  const renderTimelinePage = () => {
+    const userProgress = useStore(state => state.userProgress);
+    const totalSessions = userProgress.sessionDeltas.length;
+    
+    // Calculate progress for each milestone based on sessions completed
+    const milestones = [
+      {
+        id: 'week1',
+        title: 'Reduced amygdala activity',
+        timeRange: '0–1 Week',
+        sessionsRequired: 7,
+        description: 'Lower acute stress reactivity. Heart rate decreases, parasympathetic activation increases. Improved attention for short periods.',
+        whatYouFeel: 'Slight calm after sessions, more aware of anxious thoughts, some restlessness (very normal at start)',
+      },
+      {
+        id: 'weeks2-4',
+        title: 'Increased prefrontal cortex regulation',
+        timeRange: '2–4 Weeks',
+        sessionsRequired: 28,
+        description: 'Better impulse control & emotional regulation. Reduced cortisol baseline levels. Thicker hippocampal gray matter begins.',
+        whatYouFeel: 'Anxiety decreases slightly but consistently, better sleep onset, you notice reactions before they happen, mood is more stable',
+      },
+      {
+        id: 'weeks6-8',
+        title: 'Amygdala density reduction',
+        timeRange: '6–8 Weeks',
+        sessionsRequired: 56,
+        description: 'Amygdala shrinks in density. Hippocampus increases (memory + learning). Default Mode Network activity decreases → Less rumination.',
+        whatYouFeel: 'Noticeably lower anxiety baseline, stress hits you less intensely, emotional resilience increases, mind wandering drops',
+      },
+      {
+        id: '3months',
+        title: 'Stronger frontal-limbic connectivity',
+        timeRange: '3 Months',
+        sessionsRequired: 90,
+        description: 'You regulate emotions automatically. Significant improvements in working memory. Lower blood pressure in many adults.',
+        whatYouFeel: 'Anxiety triggers don\'t hit as hard, you handle conflict more smoothly, you recover from stress much faster',
+      },
+      {
+        id: '6months',
+        title: 'Permanent structural changes',
+        timeRange: '6 Months',
+        sessionsRequired: 180,
+        description: 'Permanent structural changes in prefrontal cortex, anterior cingulate cortex, and insula. DMN quieting becomes your default.',
+        whatYouFeel: 'Overall anxiety level drops 30–40% on average, you begin feeling "centered" most days, your mind feels clearer',
+      },
+      {
+        id: '1year',
+        title: 'Deep neural transformation',
+        timeRange: '1 Year',
+        sessionsRequired: 365,
+        description: 'Gamma-wave activity increases. Massive increases in cortical thickness. Stronger white-matter pathways for emotional regulation.',
+        whatYouFeel: 'Deep, stable calm under most conditions, fast recovery from stress, very strong "observer mind" — thoughts don\'t control you anymore',
+      },
+    ];
+
+    return (
+      <ScrollView 
+        style={[styles.page, { width: screenWidth }]} 
+        contentContainerStyle={styles.timelinePageContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.timelineContainer}>
+          <Text style={styles.timelineTitle}>🧠 Neuroadaptation Timeline</Text>
+          <Text style={styles.timelineSubtitle}>
+            Track your brain's adaptation to meditation practice
           </Text>
+          
+          <View style={styles.timelineStats}>
+            <View style={styles.statCard}>
+              <Text style={styles.statValue}>{totalSessions}</Text>
+              <Text style={styles.statLabel}>Sessions Completed</Text>
+            </View>
+            <View style={[styles.statCard, { marginRight: 0, marginLeft: 12 }]}>
+              <Text style={styles.statValue}>{userProgress.streak}</Text>
+              <Text style={styles.statLabel}>Day Streak</Text>
+            </View>
+          </View>
+
+          {milestones.map((milestone, index) => {
+            const progress = Math.min(100, (totalSessions / milestone.sessionsRequired) * 100);
+            const isUnlocked = totalSessions >= milestone.sessionsRequired;
+            const isPartiallyComplete = totalSessions > 0 && totalSessions < milestone.sessionsRequired;
+            
+            return (
+              <NeuroadaptationCard
+                key={milestone.id}
+                milestone={milestone}
+                progress={progress}
+                isUnlocked={isUnlocked}
+                isPartiallyComplete={isPartiallyComplete}
+                totalSessions={totalSessions}
+                index={index}
+              />
+            );
+          })}
         </View>
-      </View>
-    </ScrollView>
-  );
+      </ScrollView>
+    );
+  };
 
   const renderOverviewPage = () => (
     <ScrollView
@@ -973,21 +1176,172 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     fontFamily: 'System',
   },
-  timelineContainer: {
+  timelinePageContent: {
     paddingHorizontal: 20,
     paddingTop: 20,
+    paddingBottom: 100,
+  },
+  timelineContainer: {
+    width: '100%',
   },
   timelineTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: theme.colors.text.primary,
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#1D1D1F',
     marginBottom: 8,
+    fontFamily: 'System',
   },
   timelineSubtitle: {
+    fontSize: 16,
+    lineHeight: 22,
+    color: '#8E8E93',
+    marginBottom: 24,
+    fontFamily: 'System',
+  },
+  timelineStats: {
+    flexDirection: 'row',
+    marginBottom: 24,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    marginRight: 12,
+  },
+  statValue: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#1D1D1F',
+    fontFamily: 'System',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 13,
+    color: '#8E8E93',
+    fontWeight: '500',
+    fontFamily: 'System',
+  },
+  neuroCard: {
+    backgroundColor: '#1C1C1E',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  neuroCardHeader: {
+    marginBottom: 16,
+  },
+  neuroCardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  neuroCardTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    fontFamily: 'System',
+    flex: 1,
+  },
+  checkmarkBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FF9500',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  checkmarkText: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontFamily: 'System',
+  },
+  neuroCardTimeRange: {
+    fontSize: 14,
+    color: '#8E8E93',
+    fontWeight: '500',
+    fontFamily: 'System',
+  },
+  progressBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  progressBarTrack: {
+    flex: 1,
+    height: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginRight: 12,
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#FF9500',
+    borderRadius: 4,
+    shadowColor: '#FF9500',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+  },
+  progressPercentage: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FF9500',
+    fontFamily: 'System',
+    minWidth: 50,
+    textAlign: 'right',
+  },
+  neuroCardDescription: {
     fontSize: 15,
     lineHeight: 22,
-    color: theme.colors.text.secondary,
-    marginBottom: 24,
+    color: '#E5E5EA',
+    marginBottom: 12,
+    fontFamily: 'System',
+  },
+  whatYouFeelContainer: {
+    backgroundColor: 'rgba(255, 149, 0, 0.1)',
+    borderRadius: 12,
+    padding: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: '#FF9500',
+  },
+  whatYouFeelLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FF9500',
+    marginBottom: 6,
+    fontFamily: 'System',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  whatYouFeelText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#E5E5EA',
+    fontFamily: 'System',
+  },
+  sessionsRequired: {
+    fontSize: 13,
+    color: '#8E8E93',
+    fontStyle: 'italic',
+    fontFamily: 'System',
   },
   placeholderCard: {
     backgroundColor: theme.colors.surface,

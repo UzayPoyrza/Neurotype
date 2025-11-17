@@ -74,14 +74,11 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
   const route = useRoute<ModuleDetailRouteProp>();
   const navigation = useNavigation<ModuleDetailNavigationProp>();
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
-  const { prerenderedModuleBackgrounds } = require('../store/useStore');
+  const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   
   const { moduleId } = route.params;
   const module = mentalHealthModules.find(m => m.id === moduleId);
   const likedSessionIds = useStore(state => state.likedSessionIds);
-  
-  // Local background color for this screen only
-  const [localBackgroundColor, setLocalBackgroundColor] = useState('#f2f2f7');
   
   // Message state for "Added to Liked meditations" or "Removed from Liked meditations"
   const [showAddedMessage, setShowAddedMessage] = useState(false);
@@ -154,14 +151,6 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
     setCurrentScreen('module-detail');
   }, [setCurrentScreen]);
 
-  // Set local background color based on module
-  useEffect(() => {
-    if (module) {
-      const moduleColor = prerenderedModuleBackgrounds[moduleId] || module.color;
-      setLocalBackgroundColor(moduleColor);
-    }
-  }, [module, moduleId, prerenderedModuleBackgrounds]);
-
   // Restore screen context when component unmounts
   useEffect(() => {
     return () => {
@@ -224,7 +213,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: localBackgroundColor }]}>
+    <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>

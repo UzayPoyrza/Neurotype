@@ -763,6 +763,24 @@ export const MeditationPlayerScreen: React.FC = () => {
     setIsConfirming(false);
     setCountdown(0);
     
+    // Reset bar to default immediately to prevent bugs if user drags while message is showing
+    setHasUserInteracted(false);
+    hasUserInteractedValue.value = false;
+    setCurrentEmotionalLabel('');
+    setProgressBarColor('rgba(255, 255, 255, 0.8)');
+    setConfirmedEmotionalState('');
+    setLockedPosition(null);
+    
+    // Reset thumb to center position immediately
+    if (actualEmotionalBarWidth > 0) {
+      const centerPosition = actualEmotionalBarWidth / 2;
+      emotionalThumbPosition.value = centerPosition;
+    }
+    
+    // Reset animations
+    countdownProgressAnim.setValue(0);
+    countdownScaleAnim.setValue(1);
+    
     // Then show confirmation message after a brief delay
     setTimeout(() => {
       setShowConfirmationMessage(true);
@@ -780,20 +798,6 @@ export const MeditationPlayerScreen: React.FC = () => {
         }),
       ]).start(() => {
         setShowConfirmationMessage(false);
-        
-        // Reset all states after confirmation message disappears
-        setHasUserInteracted(false);
-        hasUserInteractedValue.value = false;
-        setCurrentEmotionalLabel('');
-        setProgressBarColor('rgba(255, 255, 255, 0.8)');
-        setConfirmedEmotionalState('');
-        setLockedPosition(null);
-        
-        // Reset thumb to center position
-        if (actualEmotionalBarWidth > 0) {
-          const centerPosition = actualEmotionalBarWidth / 2;
-          emotionalThumbPosition.value = centerPosition;
-        }
       });
     }, 200); // Small delay to ensure countdown disappears first
     
@@ -815,6 +819,22 @@ export const MeditationPlayerScreen: React.FC = () => {
     setIsConfirming(false);
     setCountdown(0);
     
+    // Reset bar to default immediately to prevent bugs if user drags while message is showing
+    setConfirmedEmotionalState('');
+    setLockedPosition(null);
+    countdownProgressAnim.setValue(0);
+    countdownScaleAnim.setValue(1);
+    setHasUserInteracted(false);
+    hasUserInteractedValue.value = false;
+    setCurrentEmotionalLabel('');
+    setProgressBarColor('rgba(255, 255, 255, 0.8)');
+    
+    // Reset thumb to center position immediately
+    if (actualEmotionalBarWidth > 0) {
+      const centerPosition = actualEmotionalBarWidth / 2;
+      emotionalThumbPosition.value = centerPosition;
+    }
+    
     // Show canceled message
     setShowCanceledMessage(true);
     Animated.sequence([
@@ -831,22 +851,6 @@ export const MeditationPlayerScreen: React.FC = () => {
       }),
     ]).start(() => {
       setShowCanceledMessage(false);
-      
-      // Reset to default state after message disappears
-      setConfirmedEmotionalState('');
-      setLockedPosition(null);
-      countdownProgressAnim.setValue(0);
-      countdownScaleAnim.setValue(1);
-      setHasUserInteracted(false);
-      hasUserInteractedValue.value = false;
-      setCurrentEmotionalLabel('');
-      setProgressBarColor('rgba(255, 255, 255, 0.8)');
-      
-      // Reset thumb to center position
-      if (actualEmotionalBarWidth > 0) {
-        const centerPosition = actualEmotionalBarWidth / 2;
-        emotionalThumbPosition.value = centerPosition;
-      }
     });
   };
   

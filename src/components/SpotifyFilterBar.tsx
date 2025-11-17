@@ -356,8 +356,8 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.sm,
     borderRadius: theme.borders.radius.xxl,
     backgroundColor: theme.colors.filter.inactive,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.filter.border,
+    borderWidth: theme.borders.width.thin,
+    borderColor: '#8e8e93',
     minHeight: 36,
     ...theme.shadows.small,
   },
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
     color: theme.colors.filter.inactive,
   },
   badge: {
-    backgroundColor: theme.colors.filter.badge,
+    backgroundColor: '#e5e5ea',
     borderRadius: theme.borders.radius.xl,
     minWidth: 18,
     height: 18,
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: theme.typography.sizes.xs,
     fontWeight: theme.typography.weights.bold,
-    color: theme.colors.filter.active,
+    color: '#1d1d1f',
     fontFamily: theme.typography.fontFamily,
   },
   backChip: {
@@ -394,8 +394,8 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.sm,
     borderRadius: theme.borders.radius.xxl,
     backgroundColor: theme.colors.background,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.filter.border,
+    borderWidth: theme.borders.width.thin,
+    borderColor: '#8e8e93',
     minHeight: 36,
     ...theme.shadows.small,
   },
@@ -412,8 +412,8 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.sm,
     borderRadius: theme.borders.radius.xxl,
     backgroundColor: theme.colors.filter.inactive,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.filter.border,
+    borderWidth: theme.borders.width.thin,
+    borderColor: '#8e8e93',
     minHeight: 36,
     ...theme.shadows.small,
   },
@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
     color: theme.colors.filter.inactive,
   },
   optionBadge: {
-    backgroundColor: theme.colors.filter.badge,
+    backgroundColor: '#e5e5ea',
     borderRadius: theme.borders.radius.xl,
     minWidth: 16,
     height: 16,
@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
   optionBadgeText: {
     fontSize: theme.typography.sizes.xs,
     fontWeight: theme.typography.weights.bold,
-    color: theme.colors.filter.active,
+    color: '#1d1d1f',
     fontFamily: theme.typography.fontFamily,
   },
 }); 

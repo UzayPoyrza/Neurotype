@@ -554,10 +554,25 @@ export const MeditationPlayerScreen: React.FC = () => {
     }
   };
 
+  // Helper function to hide dark mode message
+  const hideDarkModeMessage = () => {
+    if (showDarkModeMessage) {
+      darkModeMessageAnim.stopAnimation(() => {
+        darkModeMessageAnim.setValue(0);
+        setShowDarkModeMessage(false);
+      });
+    }
+  };
+
   const handleScreenTap = () => {
     // Only allow dark mode toggle when playing, not when paused
     if (playerState !== 'playing') {
       return;
+    }
+    
+    // Hide dark mode message if exiting dark mode
+    if (isDarkMode) {
+      hideDarkModeMessage();
     }
     
     // Toggle dark mode when tapping anywhere on the screen

@@ -757,41 +757,43 @@ export const MeditationPlayerScreen: React.FC = () => {
       addEmotionalFeedbackEntry(feedbackEntry);
     }
     
-    // Show confirmation message
-    setShowConfirmationMessage(true);
-    Animated.sequence([
-      Animated.timing(confirmationMessageAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.delay(2000),
-      Animated.timing(confirmationMessageAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setShowConfirmationMessage(false);
-    });
+    // First hide the countdown
+    setIsConfirming(false);
+    setCountdown(0);
     
-    // Reset all states after a brief delay
+    // Then show confirmation message after a brief delay
     setTimeout(() => {
-      setIsConfirming(false);
-      setCountdown(0);
-      setHasUserInteracted(false);
-      hasUserInteractedValue.value = false;
-      setCurrentEmotionalLabel('');
-      setProgressBarColor('rgba(255, 255, 255, 0.8)');
-      setConfirmedEmotionalState('');
-      setLockedPosition(null);
-      
-      // Reset thumb to center position
-      if (actualEmotionalBarWidth > 0) {
-        const centerPosition = actualEmotionalBarWidth / 2;
-        emotionalThumbPosition.value = centerPosition;
-      }
-    }, 500);
+      setShowConfirmationMessage(true);
+      Animated.sequence([
+        Animated.timing(confirmationMessageAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.delay(2000),
+        Animated.timing(confirmationMessageAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setShowConfirmationMessage(false);
+        
+        // Reset all states after confirmation message disappears
+        setHasUserInteracted(false);
+        hasUserInteractedValue.value = false;
+        setCurrentEmotionalLabel('');
+        setProgressBarColor('rgba(255, 255, 255, 0.8)');
+        setConfirmedEmotionalState('');
+        setLockedPosition(null);
+        
+        // Reset thumb to center position
+        if (actualEmotionalBarWidth > 0) {
+          const centerPosition = actualEmotionalBarWidth / 2;
+          emotionalThumbPosition.value = centerPosition;
+        }
+      });
+    }, 200); // Small delay to ensure countdown disappears first
     
     console.log('Emotional state confirmed:', confirmedEmotionalState);
   };
@@ -1794,21 +1796,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(46, 213, 115, 0.2)',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderWidth: 1,
     borderColor: 'rgba(46, 213, 115, 0.4)',
   },
   confirmationMessageIcon: {
-    fontSize: 18,
+    fontSize: 14,
     color: '#2ed573',
     fontWeight: '700',
-    marginRight: 8,
+    marginRight: 6,
   },
   confirmationMessageText: {
     color: '#ffffff',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
   },
   actionButtonsSection: {

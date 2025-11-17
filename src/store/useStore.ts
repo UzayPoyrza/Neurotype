@@ -20,6 +20,124 @@ export const createSubtleBackground = (moduleColor: string): string => {
   return `rgb(${mixedR}, ${mixedG}, ${mixedB})`;
 };
 
+// Helper function to convert RGB to HSL
+const rgbToHsl = (r: number, g: number, b: number): [number, number, number] => {
+  r /= 255;
+  g /= 255;
+  b /= 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0, s = 0;
+  const l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+      case g: h = ((b - r) / d + 2) / 6; break;
+      case b: h = ((r - g) / d + 4) / 6; break;
+    }
+  }
+  return [h * 360, s * 100, l * 100];
+};
+
+// Helper function to convert HSL to RGB
+const hslToRgb = (h: number, s: number, l: number): [number, number, number] => {
+  h /= 360;
+  s /= 100;
+  l /= 100;
+  let r, g, b;
+
+  if (s === 0) {
+    r = g = b = l;
+  } else {
+    const hue2rgb = (p: number, q: number, t: number) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1/6) return p + (q - p) * 6 * t;
+      if (t < 1/2) return q;
+      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      return p;
+    };
+
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1/3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1/3);
+  }
+
+  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+};
+
+// Helper function to create subtle completion background color using color theory
+// Uses a very neutral, desaturated approach that works with all module colors
+// For red backgrounds, uses a neutral warm tone; for others, a very subtle cool-neutral
+export const createCompletionBackground = (moduleColor: string, moduleBackground: string): string => {
+  // Convert module color hex to RGB
+  const hex = moduleColor.replace('#', '');
+  const moduleR = parseInt(hex.substr(0, 2), 16);
+  const moduleG = parseInt(hex.substr(2, 2), 16);
+  const moduleB = parseInt(hex.substr(4, 2), 16);
+  
+  // Convert to HSL for easier manipulation
+  const [h, s, l] = rgbToHsl(moduleR, moduleG, moduleB);
+  
+  // Determine if this is a warm color (red/orange) that needs special handling
+  const isWarmColor = h >= 0 && h <= 60 || h >= 300 && h <= 360; // Red, orange, yellow, magenta
+  
+  let adjustedHue: number;
+  let adjustedSaturation: number;
+  
+  if (isWarmColor) {
+    // For warm colors (like red), use a very neutral warm beige tone
+    // This avoids the red-green complementary clash
+    // Use a neutral warm hue around 30-40 degrees (warm beige/cream)
+    adjustedHue = 35;
+    // Very low saturation for neutrality
+    adjustedSaturation = 8;
+  } else {
+    // For cool colors, use a very desaturated neutral-cool tone
+    // Slight shift toward a neutral cool gray-green (around 150-160 degrees)
+    adjustedHue = 155;
+    // Very low saturation for subtlety
+    adjustedSaturation = 6;
+  }
+  
+  // Very high lightness for subtlety (96-97%)
+  const adjustedLightness = 96.5;
+  
+  // Convert back to RGB
+  const [r, g, b] = hslToRgb(adjustedHue, adjustedSaturation, adjustedLightness);
+  
+  return `rgb(${r}, ${g}, ${b})`;
+};
+
+// Helper function to create completion button color (slightly darker/more saturated)
+export const createCompletionButtonColor = (moduleColor: string): string => {
+  const hex = moduleColor.replace('#', '');
+  const moduleR = parseInt(hex.substr(0, 2), 16);
+  const moduleG = parseInt(hex.substr(2, 2), 16);
+  const moduleB = parseInt(hex.substr(4, 2), 16);
+  
+  const [h, s, l] = rgbToHsl(moduleR, moduleG, moduleB);
+  
+  // Shift toward green more (30% shift) for button
+  const greenHue = 120;
+  const adjustedHue = h + (greenHue - h) * 0.30;
+  
+  // More saturated for button
+  const adjustedSaturation = Math.min(100, s * 1.3);
+  
+  // Medium lightness for button visibility
+  const adjustedLightness = Math.min(85, l * 1.2 + 15);
+  
+  const [r, g, b] = hslToRgb(adjustedHue, adjustedSaturation, adjustedLightness);
+  
+  return `rgb(${r}, ${g}, ${b})`;
+};
+
 // Pre-calculate all module background colors for instant switching
 export const prerenderedModuleBackgrounds: Record<string, string> = {};
 mentalHealthModules.forEach(module => {
@@ -96,6 +214,22 @@ const buildInitialStoreData = () => {
     likedSessionIds: [] as string[],
     isTransitioning: false,
     emotionalFeedbackHistory: emotionalFeedbackHistorySeed.map(entry => ({ ...entry })),
+    // Placeholder data: some completed sessions for different modules (using today's date)
+    completedTodaySessions: (() => {
+      const today = new Date().toISOString().split('T')[0];
+      return {
+        // Anxiety module - recommended session completed
+        [`anxiety-${today}`]: ['1'],
+        // Focus module - recommended and one alternative completed
+        [`focus-${today}`]: ['2', '5'],
+        // Sleep module - one alternative completed (not recommended)
+        [`sleep-${today}`]: ['10'],
+        // Stress module - recommended completed
+        [`stress-${today}`]: ['11'],
+        // Mindfulness module - two sessions completed (recommended + one alternative)
+        [`mindfulness-${today}`]: ['12', '13'],
+      } as Record<string, string[]>;
+    })(),
   };
 };
 
@@ -116,6 +250,7 @@ interface AppState {
   likedSessionIds: string[];
   isTransitioning: boolean;
   emotionalFeedbackHistory: EmotionalFeedbackEntry[];
+  completedTodaySessions: Record<string, string[]>; // Key: "moduleId-date", Value: array of session IDs
   addSessionDelta: (delta: SessionDelta) => void;
   setFilters: (filters: FilterState) => void;
   toggleReminder: () => void;
@@ -134,6 +269,8 @@ interface AppState {
   setIsTransitioning: (isTransitioning: boolean) => void;
   addEmotionalFeedbackEntry: (entry: EmotionalFeedbackEntry) => void;
   removeEmotionalFeedbackEntry: (entryId: string) => void;
+  markSessionCompletedToday: (moduleId: string, sessionId: string, date?: string) => void;
+  isSessionCompletedToday: (moduleId: string, sessionId: string, date?: string) => boolean;
   resetAppData: () => void;
 }
 
@@ -214,6 +351,32 @@ export const useStore = create<AppState>((set, get) => ({
     set((state) => ({
       emotionalFeedbackHistory: state.emotionalFeedbackHistory.filter(entry => entry.id !== entryId)
     })),
+
+  markSessionCompletedToday: (moduleId: string, sessionId: string, date?: string) => {
+    const today = date || new Date().toISOString().split('T')[0];
+    const key = `${moduleId}-${today}`;
+    set((state) => {
+      const completed = state.completedTodaySessions[key] || [];
+      if (!completed.includes(sessionId)) {
+        return {
+          completedTodaySessions: {
+            ...state.completedTodaySessions,
+            [key]: [...completed, sessionId]
+          }
+        };
+      }
+      return state;
+    });
+  },
+
+  isSessionCompletedToday: (moduleId: string, sessionId: string, date?: string): boolean => {
+    const today = date || new Date().toISOString().split('T')[0];
+    const key = `${moduleId}-${today}`;
+    const state = get();
+    const completed = state.completedTodaySessions[key] || [];
+    // Check both with and without -today suffix
+    return completed.includes(sessionId) || completed.includes(sessionId.replace('-today', ''));
+  },
 
   resetAppData: () => {
     const defaults = buildInitialStoreData();

@@ -683,9 +683,8 @@ const styles = StyleSheet.create({
     marginLeft: 0,
   },
   titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
     gap: 8,
   },
   sessionTitle: {

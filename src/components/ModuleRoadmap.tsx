@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Session } from '../types';
 import { MentalHealthModule } from '../data/modules';
 import { mockSessions } from '../data/mockData';
-import { useStore } from '../store/useStore';
+import { useStore, createCompletionBackground } from '../store/useStore';
 import { theme } from '../styles/theme';
 
 type TodayStackParamList = {
@@ -195,6 +195,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
 }) => {
   const navigation = useNavigation<ModuleRoadmapNavigationProp>();
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
+  const isSessionCompletedToday = useStore(state => state.isSessionCompletedToday);
   const scrollViewRef = useRef<ScrollView>(null);
   const pulseAnim = useRef(new Animated.Value(0)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
@@ -209,6 +210,8 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   const scrollArrowOpacity = useRef(new Animated.Value(1)).current;
   const scrollViewWidth = useRef(0);
 
+  const userProgress = useStore(state => state.userProgress);
+  
   const roadmapData = useMemo(() => {
     const relevantGoals = {
       anxiety: ['anxiety'],
@@ -228,45 +231,58 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
     const goals = relevantGoals[module.id as keyof typeof relevantGoals] || ['focus'];
     const moduleSessions = mockSessions.filter(session => goals.includes(session.goal));
 
-    const completedCount = Math.min(6, Math.max(2, moduleSessions.length > 3 ? moduleSessions.length - 4 : 3));
-    const todayCount = Math.min(3, Math.max(1, moduleSessions.length - completedCount));
+    // Get actual completed sessions for this module from userProgress
+    const actualCompletedSessions: CompletedMeditation[] = userProgress.sessionDeltas
+      .filter(delta => delta.moduleId === module.id)
+      .map(delta => {
+        const session = mockSessions.find(s => s.id === delta.sessionId);
+        if (!session) return null;
+        return {
+          id: `${module.id}-completed-${delta.sessionId}-${delta.date}`,
+          session: {
+            ...session,
+            id: delta.sessionId,
+          },
+          completedDate: new Date(delta.date),
+        };
+      })
+      .filter((item): item is CompletedMeditation => item !== null)
+      .sort((a, b) => b.completedDate.getTime() - a.completedDate.getTime())
+      .slice(0, 6); // Limit to 6 most recent
 
-    const completedSessions: CompletedMeditation[] = [];
-    for (let i = 0; i < completedCount && i < moduleSessions.length; i++) {
-      const session = moduleSessions[i];
-      const completedDate = new Date();
-      completedDate.setDate(completedDate.getDate() - (completedCount - i));
+    // Use actual completed sessions if available, otherwise use empty array
+    const completedSessions = actualCompletedSessions;
 
-      completedSessions.push({
-        id: `${module.id}-completed-${session.id}-${i}`,
-        session: {
-          ...session,
-          id: `${session.id}-completed-${i}`,
-        },
-        completedDate,
-      });
-    }
+    const todayCount = Math.min(3, Math.max(1, moduleSessions.length - completedSessions.length));
 
     const todaySessions = moduleSessions
-      .slice(completedCount, completedCount + todayCount)
+      .slice(completedSessions.length, completedSessions.length + todayCount)
       .map((session, idx) => ({
         ...session,
         id: `${session.id}-today-${idx}`,
       }));
 
-    const tomorrowCandidate = moduleSessions[completedCount + todayCount];
+    const tomorrowCandidate = moduleSessions[completedSessions.length + todayCount];
+    
+    // Always create a tomorrow session - use a placeholder if none available
+    const tomorrowSession = tomorrowCandidate
+      ? {
+          ...tomorrowCandidate,
+          id: `${tomorrowCandidate.id}-tomorrow`,
+        }
+      : moduleSessions.length > 0
+      ? {
+          ...moduleSessions[0],
+          id: `${moduleSessions[0].id}-tomorrow-placeholder`,
+        }
+      : undefined;
 
     return {
       completedSessions,
       todaySessions,
-      tomorrowSession: tomorrowCandidate
-        ? {
-            ...tomorrowCandidate,
-            id: `${tomorrowCandidate.id}-tomorrow`,
-          }
-        : undefined,
+      tomorrowSession,
     };
-  }, [module]);
+  }, [module, userProgress]);
 
   const { completedSessions, todaySessions, tomorrowSession } = roadmapData;
   const todayRecommendedSessionId = todaySessions[0]?.id;
@@ -390,10 +406,6 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
 
 
   const renderCompletedMeditations = () => {
-    if (!completedSessions.length) {
-      return null;
-    }
-
     const formatDate = (date: Date) => {
       const today = new Date();
       const yesterday = new Date(today);
@@ -418,32 +430,72 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recent Sessions</Text>
           <Text style={styles.sectionSubtitle}>
-            {completedSessions.length} completed {completedSessions.length === 1 ? 'session' : 'sessions'}
+            {completedSessions.length > 0 
+              ? `${completedSessions.length} completed ${completedSessions.length === 1 ? 'session' : 'sessions'}`
+              : 'Your completed meditations will appear here'}
           </Text>
         </View>
-        <View style={styles.completedScrollContainer}>
-          <ScrollView
-            ref={completedScrollRef}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.completedScrollContent}
-            bounces={false}
-            onScroll={(event) => {
-              const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-              const isAtEnd = contentOffset.x + layoutMeasurement.width >= contentSize.width - 10;
-              const hasOverflow = contentSize.width > layoutMeasurement.width;
-              
-              if (isAtEnd || !hasOverflow) {
-                if (showScrollArrow) {
+        {completedSessions.length === 0 ? (
+          <View style={[styles.tomorrowCard, styles.tomorrowCardLocked]}>
+            <View style={styles.tomorrowHeader}>
+              <View style={[styles.tomorrowIcon, styles.tomorrowIconLocked, { backgroundColor: '#D1D1D6' }]}>
+                <Text style={styles.tomorrowIconText}>🔒</Text>
+              </View>
+              <View style={styles.tomorrowLockedContent}>
+                <Text style={styles.tomorrowLockedTitle}>Complete a meditation</Text>
+                <Text style={styles.tomorrowLockedDescription}>
+                  Finish a session to see it here
+                </Text>
+              </View>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.completedScrollContainer}>
+            <ScrollView
+              ref={completedScrollRef}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.completedScrollContent}
+              bounces={false}
+              onScroll={(event) => {
+                const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+                const isAtEnd = contentOffset.x + layoutMeasurement.width >= contentSize.width - 10;
+                const hasOverflow = contentSize.width > layoutMeasurement.width;
+                
+                if (isAtEnd || !hasOverflow) {
+                  if (showScrollArrow) {
+                    setShowScrollArrow(false);
+                    Animated.timing(scrollArrowOpacity, {
+                      toValue: 0,
+                      duration: 300,
+                      useNativeDriver: true,
+                    }).start();
+                  }
+                } else {
+                  if (!showScrollArrow) {
+                    setShowScrollArrow(true);
+                    Animated.timing(scrollArrowOpacity, {
+                      toValue: 1,
+                      duration: 300,
+                      useNativeDriver: true,
+                    }).start();
+                  }
+                }
+              }}
+              onLayout={(event) => {
+                scrollViewWidth.current = event.nativeEvent.layout.width;
+              }}
+              onContentSizeChange={(contentWidth, contentHeight) => {
+                // Check if there's overflow on content size change
+                const hasOverflow = contentWidth > scrollViewWidth.current;
+                if (!hasOverflow && showScrollArrow) {
                   setShowScrollArrow(false);
                   Animated.timing(scrollArrowOpacity, {
                     toValue: 0,
                     duration: 300,
                     useNativeDriver: true,
                   }).start();
-                }
-              } else {
-                if (!showScrollArrow) {
+                } else if (hasOverflow && !showScrollArrow) {
                   setShowScrollArrow(true);
                   Animated.timing(scrollArrowOpacity, {
                     toValue: 1,
@@ -451,66 +503,44 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
                     useNativeDriver: true,
                   }).start();
                 }
-              }
-            }}
-            onLayout={(event) => {
-              scrollViewWidth.current = event.nativeEvent.layout.width;
-            }}
-            onContentSizeChange={(contentWidth, contentHeight) => {
-              // Check if there's overflow on content size change
-              const hasOverflow = contentWidth > scrollViewWidth.current;
-              if (!hasOverflow && showScrollArrow) {
-                setShowScrollArrow(false);
-                Animated.timing(scrollArrowOpacity, {
-                  toValue: 0,
-                  duration: 300,
-                  useNativeDriver: true,
-                }).start();
-              } else if (hasOverflow && !showScrollArrow) {
-                setShowScrollArrow(true);
-                Animated.timing(scrollArrowOpacity, {
-                  toValue: 1,
-                  duration: 300,
-                  useNativeDriver: true,
-                }).start();
-              }
-            }}
-            scrollEventThrottle={16}
-          >
-            {completedSessions.map(item => (
-              <TouchableOpacity
-                key={item.id}
-                style={styles.completedCard}
-                onPress={() => navigation.navigate('MeditationDetail', { sessionId: item.session.id })}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.completedTitle} numberOfLines={2}>
-                  {item.session.title}
-                </Text>
-                <Text style={styles.completedMeta}>
-                  {item.session.durationMin} min • {item.session.modality}
-                </Text>
-                <Text style={styles.completedDate}>{formatDate(item.completedDate)}</Text>
-                <View style={[styles.completedBadge, { backgroundColor: module.color }]}>
-                  <Text style={styles.completedBadgeIcon}>✓</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-          {completedSessions.length > 0 && (
-            <Animated.View
-              style={[
-                styles.scrollArrow,
-                {
-                  opacity: scrollArrowOpacity,
-                },
-              ]}
-              pointerEvents="none"
+              }}
+              scrollEventThrottle={16}
             >
-              <Text style={styles.scrollArrowText}>›</Text>
-            </Animated.View>
-          )}
-        </View>
+              {completedSessions.map(item => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.completedCard}
+                  onPress={() => navigation.navigate('MeditationDetail', { sessionId: item.session.id })}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.completedTitle} numberOfLines={2}>
+                    {item.session.title}
+                  </Text>
+                  <Text style={styles.completedMeta}>
+                    {item.session.durationMin} min • {item.session.modality}
+                  </Text>
+                  <Text style={styles.completedDate}>{formatDate(item.completedDate)}</Text>
+                  <View style={[styles.completedBadge, { backgroundColor: module.color }]}>
+                    <Text style={styles.completedBadgeIcon}>✓</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            {completedSessions.length > 0 && (
+              <Animated.View
+                style={[
+                  styles.scrollArrow,
+                  {
+                    opacity: scrollArrowOpacity,
+                  },
+                ]}
+                pointerEvents="none"
+              >
+                <Text style={styles.scrollArrowText}>›</Text>
+              </Animated.View>
+            )}
+          </View>
+        )}
       </View>
     );
   };
@@ -522,6 +552,16 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
     if (!recommendedSession) {
       return null;
     }
+
+    // Check if this session is completed (remove -today suffix to get original ID)
+    const originalSessionId = recommendedSession.id.split('-today')[0];
+    const isCompleted = isSessionCompletedToday(module.id, originalSessionId) || todayCompleted;
+    
+    // Get completion background color
+    const completionBackgroundColor = createCompletionBackground(
+      module.color,
+      globalBackgroundColor
+    );
 
     const scale = pulseAnim.interpolate({
       inputRange: [0, 1],
@@ -561,14 +601,12 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
               activeOpacity={0.85}
               style={[
                 styles.todayCard,
-                { borderColor: module.color, backgroundColor: '#F7F9FF' },
+                { 
+                  borderColor: module.color, 
+                  backgroundColor: isCompleted ? completionBackgroundColor : '#F7F9FF' 
+                },
               ]}
             >
-              {todayCompleted && (
-                <View style={[styles.todayCardCheckmark, { backgroundColor: module.color }]}>
-                  <Text style={styles.todayCardCheckmarkIcon}>✓</Text>
-                </View>
-              )}
               <View style={styles.todayCardHeader}>
                 <Text style={styles.todayCardDuration}>
                   {recommendedSession.durationMin} min • {recommendedSession.modality}
@@ -580,13 +618,21 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
               >
                 {recommendedSession.title}
               </Text>
-              <View style={styles.todayCardFooter}>
-                <Text style={styles.todayCardCTA}>{todayCompleted ? 'Replay session' : 'Begin session'}</Text>
-                <View style={[styles.todayPlayButton, { backgroundColor: module.color }]}>
-                  <Text style={styles.todayPlayIcon}>▶</Text>
-                </View>
+              <View style={[styles.todayCardFooter, isCompleted && styles.todayCardFooterCompleted]}>
+                {isCompleted ? (
+                  <View style={styles.todayCompletedButton}>
+                    <Text style={styles.todayCompletedCheckmark}>✓</Text>
+                  </View>
+                ) : (
+                  <>
+                    <Text style={styles.todayCardCTA}>Begin session</Text>
+                    <View style={[styles.todayPlayButton, { backgroundColor: module.color }]}>
+                      <Text style={styles.todayPlayIcon}>▶</Text>
+                    </View>
+                  </>
+                )}
               </View>
-              <Text style={[styles.recommendedCopy, { color: module.color }]}>
+              <Text style={styles.recommendedCopy}>
                 Recommended for you today
               </Text>
             </TouchableOpacity>
@@ -597,11 +643,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   };
 
   const renderTomorrowPreview = () => {
-    if (!tomorrowSession) {
-      return null;
-    }
-
-    // Locked version when today is not completed
+    // Always show locked version when today is not completed
     if (!todayCompleted) {
       return (
         <View
@@ -631,7 +673,11 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
       );
     }
 
-    // Preview version when today is completed
+    // Preview version when today is completed - only show if tomorrowSession exists
+    if (!tomorrowSession) {
+      return null;
+    }
+
     const glow = glowAnim.interpolate({
       inputRange: [0, 1],
       outputRange: [0.85, 1],
@@ -688,7 +734,6 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   }, []);
 
   const renderTimelinePage = () => {
-    const userProgress = useStore(state => state.userProgress);
     const totalSessions = userProgress.sessionDeltas.length;
     
     // Calculate progress for each milestone based on sessions completed
@@ -1145,6 +1190,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
     padding: 14,
+    paddingBottom: 12,
     borderWidth: 2,
     borderColor: '#F2F2F7',
     position: 'relative',
@@ -1204,6 +1250,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: 12,
+    marginBottom: 0,
+  },
+  todayCardFooterCompleted: {
+    justifyContent: 'flex-end',
   },
   todayCardCTA: {
     fontSize: 15,
@@ -1230,16 +1280,36 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
     marginLeft: 1,
   },
+  todayCompletedButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#34c759',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  todayCompletedCheckmark: {
+    fontSize: 18,
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
   recommendedCopy: {
-    marginTop: 8,
+    marginTop: 0,
     fontSize: 12,
     fontWeight: '600',
+    color: '#1D1D1F',
     fontFamily: 'System',
   },
   tomorrowCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
     padding: 18,
+    paddingVertical: 24,
     borderWidth: 1,
     borderColor: '#E5E5EA',
     shadowColor: '#000',
@@ -1252,7 +1322,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginBottom: 14,
+    marginBottom: 0,
   },
   tomorrowIcon: {
     width: 40,
@@ -1293,6 +1363,8 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     borderColor: '#D1D1D6',
     borderStyle: 'dashed',
+    justifyContent: 'center',
+    minHeight: 100,
   },
   tomorrowIconLocked: {
     backgroundColor: '#D1D1D6',

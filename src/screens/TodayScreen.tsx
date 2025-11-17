@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Animated, Dimensions, TouchableOpac
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Session } from '../types';
-import { useStore, prerenderedModuleBackgrounds } from '../store/useStore';
+import { useStore, prerenderedModuleBackgrounds, createCompletionBackground } from '../store/useStore';
 import { mockSessions } from '../data/mockData';
 import { mentalHealthModules } from '../data/modules';
 import { theme } from '../styles/theme';
@@ -30,7 +30,7 @@ type TodayScreenNavigationProp = StackNavigationProp<TodayStackParamList, 'Today
 
 export const TodayScreen: React.FC = () => {
   const navigation = useNavigation<TodayScreenNavigationProp>();
-  const { setActiveSession, setGlobalBackgroundColor, setCurrentScreen, setTodayModuleId } = useStore();
+  const { setActiveSession, setGlobalBackgroundColor, setCurrentScreen, setTodayModuleId, markSessionCompletedToday, isSessionCompletedToday } = useStore();
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const userProgress = useStore(state => state.userProgress);
   
@@ -174,6 +174,18 @@ export const TodayScreen: React.FC = () => {
 
   const todaySessions = getTodaySessions();
   const recommendedSession = todaySessions.find(s => s.isRecommended) || todaySessions[0];
+  
+  // Check if recommended session is completed
+  const isRecommendedCompleted = isSessionCompletedToday(
+    selectedModuleId, 
+    recommendedSession.id.replace('-today', '')
+  );
+  
+  // Get subtle completion background color that works with module color
+  const completionBackgroundColor = createCompletionBackground(
+    selectedModule.color,
+    globalBackgroundColor
+  );
 
   const moduleSessionsForRoadmap = useMemo(() => {
     const relevantGoals = {
@@ -195,9 +207,19 @@ export const TodayScreen: React.FC = () => {
     return mockSessions.filter(session => goals.includes(session.goal));
   }, [selectedModule]);
 
+  // Get actual completed sessions for this module from user progress
   const completedPreviewSessions = useMemo(() => {
-    return moduleSessionsForRoadmap.slice(0, 3);
-  }, [moduleSessionsForRoadmap]);
+    const moduleCompletedSessions = userProgress.sessionDeltas
+      .filter(delta => delta.moduleId === selectedModuleId)
+      .map(delta => {
+        const session = mockSessions.find(s => s.id === delta.sessionId);
+        return session ? { ...session, completedDate: delta.date } : null;
+      })
+      .filter((session): session is NonNullable<typeof session> => session !== null)
+      .slice(0, 3);
+    
+    return moduleCompletedSessions;
+  }, [userProgress.sessionDeltas, selectedModuleId]);
 
   const upcomingPreviewSessions = useMemo(() => {
     const todayIds = todaySessions.map(session => session.id.replace('-today', ''));
@@ -205,6 +227,14 @@ export const TodayScreen: React.FC = () => {
       .filter(session => !todayIds.includes(session.id))
       .slice(0, 2);
   }, [moduleSessionsForRoadmap, todaySessions]);
+  
+  // Check if today's meditation is completed
+  const isTodayCompleted = useMemo(() => {
+    return todaySessions.some(session => {
+      const originalSessionId = session.id.replace('-today', '');
+      return isSessionCompletedToday(selectedModuleId, originalSessionId);
+    });
+  }, [todaySessions, selectedModuleId, isSessionCompletedToday]);
 
   // Calculate timeline progress for preview
   const timelineProgress = useMemo(() => {
@@ -291,6 +321,12 @@ export const TodayScreen: React.FC = () => {
   };
 
   const handleRatingSubmit = (rating: number) => {
+    // Mark session as completed in store
+    if (selectedSession) {
+      const originalSessionId = selectedSession.id.replace('-today', '');
+      markSessionCompletedToday(selectedModuleId, originalSessionId);
+    }
+    
     // Mark today as completed and trigger unlock animation
     setTodayCompleted(true);
     setTriggerUnlock(true);
@@ -566,7 +602,7 @@ export const TodayScreen: React.FC = () => {
             >
               <TouchableOpacity
                 style={[styles.recommendedSession, { 
-                  backgroundColor: todayCompleted ? '#e8f5e8' : '#ffffff'
+                  backgroundColor: (todayCompleted || isRecommendedCompleted) ? completionBackgroundColor : '#ffffff'
                 }]}
                 onPress={() => handleSessionSelect(recommendedSession)}
                 onPressIn={handleHeroCardPressIn}
@@ -589,13 +625,13 @@ export const TodayScreen: React.FC = () => {
                   </View>
                 </View>
 
-                <View style={[styles.sessionPlayButton, { backgroundColor: selectedModule.color }]}>
-                  <Text style={styles.sessionPlayText}>▶</Text>
-                </View>
-
-                {todayCompleted && (
-                  <View style={styles.sessionCompletedBadge}>
-                    <Text style={styles.sessionCompletedText}>✓</Text>
+                {(todayCompleted || isRecommendedCompleted) ? (
+                  <View style={[styles.sessionPlayButton, styles.sessionCompletedButton]}>
+                    <Text style={styles.sessionCompletedCheckmark}>✓</Text>
+                  </View>
+                ) : (
+                  <View style={[styles.sessionPlayButton, { backgroundColor: selectedModule.color }]}>
+                    <Text style={styles.sessionPlayText}>▶</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -608,24 +644,46 @@ export const TodayScreen: React.FC = () => {
             </View>
             
             <View style={styles.alternativeSessionsList}>
-              {todaySessions.filter(s => !s.isRecommended).map((session) => (
-                <TouchableOpacity
-                  key={session.id}
-                  style={styles.alternativeSession}
-                  onPress={() => handleSessionSelect(session)}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.alternativeSessionContent}>
-                    <Text style={styles.alternativeSessionTitle}>{session.title}</Text>
-                    <Text style={styles.alternativeSessionMeta}>
-                      {session.durationMin} min • {session.modality}
-                    </Text>
-                  </View>
-                  <View style={styles.alternativeSessionPlayButton}>
-                    <Text style={styles.alternativeSessionPlayText}>▶</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
+              {todaySessions.filter(s => !s.isRecommended).map((session) => {
+                const originalSessionId = session.id.replace('-today', '');
+                const isCompleted = isSessionCompletedToday(selectedModuleId, originalSessionId);
+                
+                return (
+                  <TouchableOpacity
+                    key={session.id}
+                    style={[
+                      styles.alternativeSession,
+                      isCompleted && {
+                        ...styles.alternativeSessionCompleted,
+                        backgroundColor: completionBackgroundColor
+                      }
+                    ]}
+                    onPress={() => handleSessionSelect(session)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.alternativeSessionContent}>
+                      <Text style={[
+                        styles.alternativeSessionTitle,
+                        isCompleted && styles.alternativeSessionTitleCompleted
+                      ]}>
+                        {session.title}
+                      </Text>
+                      <Text style={styles.alternativeSessionMeta}>
+                        {session.durationMin} min • {session.modality}
+                      </Text>
+                    </View>
+                    {isCompleted ? (
+                      <View style={[styles.alternativeSessionPlayButton, styles.alternativeSessionCompletedButton]}>
+                        <Text style={styles.alternativeSessionCompletedCheckmark}>✓</Text>
+                      </View>
+                    ) : (
+                      <View style={styles.alternativeSessionPlayButton}>
+                        <Text style={styles.alternativeSessionPlayTextUncompleted}>▶</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </MergedCard.Section>
         </MergedCard>
@@ -666,23 +724,50 @@ export const TodayScreen: React.FC = () => {
               <View style={styles.progressPreviewTimeline}>
                 <View style={styles.progressPreviewColumn}>
                   <Text style={styles.progressPreviewSectionLabel}>Completed</Text>
-                  {completedPreviewSessions.map((session, index) => (
-                    <View key={session.id} style={styles.progressPreviewItem}>
-                      <View style={styles.progressPreviewItemIcon}>
-                        <Text style={styles.progressPreviewItemIconText}>✓</Text>
+                  {completedPreviewSessions.map((session, index) => {
+                    // Calculate days ago from completion date
+                    const completedDate = new Date((session as any).completedDate);
+                    const today = new Date();
+                    const daysDiff = Math.floor((today.getTime() - completedDate.getTime()) / (1000 * 60 * 60 * 24));
+                    
+                    let dateLabel: string;
+                    if (daysDiff === 0) {
+                      dateLabel = 'Today';
+                    } else if (daysDiff === 1) {
+                      dateLabel = 'Yesterday';
+                    } else if (daysDiff === 2) {
+                      dateLabel = '2 days ago';
+                    } else {
+                      dateLabel = completedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    }
+                    
+                    return (
+                      <View key={session.id} style={styles.progressPreviewItem}>
+                        <View style={styles.progressPreviewItemIcon}>
+                          <Text style={styles.progressPreviewItemIconText}>✓</Text>
+                        </View>
+                        <View style={styles.progressPreviewItemBody}>
+                          <Text style={styles.progressPreviewItemTitle} numberOfLines={1}>
+                            {session.title}
+                          </Text>
+                          <Text style={styles.progressPreviewItemMeta}>
+                            {dateLabel}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                  {completedPreviewSessions.length === 0 && (
+                    <View style={styles.progressPreviewLockedState}>
+                      <View style={[styles.progressPreviewItemIcon, styles.progressPreviewItemIconLocked]}>
+                        <Text style={styles.progressPreviewLockIconText}>🔒</Text>
                       </View>
                       <View style={styles.progressPreviewItemBody}>
-                        <Text style={styles.progressPreviewItemTitle} numberOfLines={1}>
-                          {session.title}
-                        </Text>
-                        <Text style={styles.progressPreviewItemMeta}>
-                          {formatCompletedLabel(index)}
+                        <Text style={styles.progressPreviewLockedText}>
+                          Complete a meditation to see it here
                         </Text>
                       </View>
                     </View>
-                  ))}
-                  {completedPreviewSessions.length === 0 && (
-                    <Text style={styles.progressPreviewEmptyText}>Start your first session</Text>
                   )}
                 </View>
 
@@ -690,23 +775,38 @@ export const TodayScreen: React.FC = () => {
 
                 <View style={styles.progressPreviewColumn}>
                   <Text style={styles.progressPreviewSectionLabel}>Coming Up</Text>
-                  {upcomingPreviewSessions.map(session => (
-                    <View key={session.id} style={styles.progressPreviewItem}>
-                      <View style={[styles.progressPreviewItemIcon, styles.progressPreviewItemIconUpcoming]}>
-                        <Text style={[styles.progressPreviewItemIconText, styles.progressPreviewItemIconUpcomingText]}>▶</Text>
+                  {!isTodayCompleted ? (
+                    <View style={styles.progressPreviewLockedState}>
+                      <View style={[styles.progressPreviewItemIcon, styles.progressPreviewItemIconLocked]}>
+                        <Text style={styles.progressPreviewLockIconText}>🔒</Text>
                       </View>
                       <View style={styles.progressPreviewItemBody}>
-                        <Text style={styles.progressPreviewItemTitle} numberOfLines={1}>
-                          {session.title}
-                        </Text>
-                        <Text style={styles.progressPreviewItemMeta}>
-                          {session.durationMin} min • {session.modality}
+                        <Text style={styles.progressPreviewLockedText}>
+                          Finish today's meditation to preview tomorrow
                         </Text>
                       </View>
                     </View>
-                  ))}
-                  {upcomingPreviewSessions.length === 0 && (
-                    <Text style={styles.progressPreviewEmptyText}>Explore the roadmap for more</Text>
+                  ) : (
+                    <>
+                      {upcomingPreviewSessions.map(session => (
+                        <View key={session.id} style={styles.progressPreviewItem}>
+                          <View style={[styles.progressPreviewItemIcon, styles.progressPreviewItemIconUpcoming]}>
+                            <Text style={[styles.progressPreviewItemIconText, styles.progressPreviewItemIconUpcomingText]}>▶</Text>
+                          </View>
+                          <View style={styles.progressPreviewItemBody}>
+                            <Text style={styles.progressPreviewItemTitle} numberOfLines={1}>
+                              {session.title}
+                            </Text>
+                            <Text style={styles.progressPreviewItemMeta}>
+                              {session.durationMin} min • {session.modality}
+                            </Text>
+                          </View>
+                        </View>
+                      ))}
+                      {upcomingPreviewSessions.length === 0 && (
+                        <Text style={styles.progressPreviewLockedText}>Explore the roadmap for more</Text>
+                      )}
+                    </>
                   )}
                 </View>
               </View>
@@ -923,32 +1023,31 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 2,
   },
-  sessionCompletedBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+  sessionCompletedButton: {
     backgroundColor: '#34c759',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
-  sessionCompletedText: {
-    fontSize: 12,
-    fontWeight: 'bold',
+  sessionCompletedCheckmark: {
+    fontSize: 18,
     color: '#ffffff',
+    fontWeight: 'bold',
   },
   alternativeSessionsList: {
-    paddingHorizontal: 16,
     paddingBottom: 20,
   },
   alternativeSession: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f2f2f7',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginHorizontal: 16,
+    marginVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  alternativeSessionCompleted: {
+    borderColor: 'transparent',
   },
   alternativeSessionContent: {
     flex: 1,
@@ -960,20 +1059,37 @@ const styles = StyleSheet.create({
     color: '#000000',
     marginBottom: 2,
   },
+  alternativeSessionTitleCompleted: {
+    color: '#1d1d1f',
+    opacity: 0.8,
+  },
   alternativeSessionMeta: {
     fontSize: 13,
     color: '#8e8e93',
     fontWeight: '400',
   },
   alternativeSessionPlayButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#f2f2f7',
     justifyContent: 'center',
     alignItems: 'center',
   },
   alternativeSessionPlayText: {
+    fontSize: 14,
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+  alternativeSessionCompletedButton: {
+    backgroundColor: '#34c759',
+  },
+  alternativeSessionCompletedCheckmark: {
+    fontSize: 16,
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
+  alternativeSessionPlayTextUncompleted: {
     fontSize: 12,
     color: '#000000',
     fontWeight: 'bold',
@@ -1065,6 +1181,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#ffffff',
   },
+  progressPreviewLockIconText: {
+    fontSize: 20,
+  },
   progressPreviewItemBody: {
     flex: 1,
   },
@@ -1077,10 +1196,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#8e8e93',
   },
-  progressPreviewEmptyText: {
+  progressPreviewLockedState: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  progressPreviewItemIconLocked: {
+    backgroundColor: '#f2f2f7',
+    borderWidth: 0,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  progressPreviewLockedText: {
     fontSize: 12,
     color: '#8e8e93',
-    marginTop: 4,
+    lineHeight: 16,
+    marginTop: 2,
   },
   progressPreviewDivider: {
     width: 1,

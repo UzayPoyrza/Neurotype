@@ -181,7 +181,7 @@ export const TodayScreen: React.FC = () => {
     recommendedSession.id.replace('-today', '')
   );
   
-  // Get completion background color that contrasts with module background
+  // Get subtle completion background color that works with module color
   const completionBackgroundColor = createCompletionBackground(
     selectedModule.color,
     globalBackgroundColor

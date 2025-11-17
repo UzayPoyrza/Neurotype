@@ -71,8 +71,9 @@ const hslToRgb = (h: number, s: number, l: number): [number, number, number] => 
   return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
 };
 
-// Helper function to create completion background color using color theory
-// Uses analogous color harmony - shifts hue slightly toward green while maintaining module color harmony
+// Helper function to create subtle completion background color using color theory
+// Uses a very neutral, desaturated approach that works with all module colors
+// For red backgrounds, uses a neutral warm tone; for others, a very subtle cool-neutral
 export const createCompletionBackground = (moduleColor: string, moduleBackground: string): string => {
   // Convert module color hex to RGB
   const hex = moduleColor.replace('#', '');
@@ -83,16 +84,29 @@ export const createCompletionBackground = (moduleColor: string, moduleBackground
   // Convert to HSL for easier manipulation
   const [h, s, l] = rgbToHsl(moduleR, moduleG, moduleB);
   
-  // Shift hue slightly toward green (120 degrees) for completion indication
-  // Use 15% shift toward green to maintain harmony with module color
-  const greenHue = 120;
-  const adjustedHue = h + (greenHue - h) * 0.15;
+  // Determine if this is a warm color (red/orange) that needs special handling
+  const isWarmColor = h >= 0 && h <= 60 || h >= 300 && h <= 360; // Red, orange, yellow, magenta
   
-  // Increase saturation slightly for more vibrancy (but not too much)
-  const adjustedSaturation = Math.min(100, s * 1.1);
+  let adjustedHue: number;
+  let adjustedSaturation: number;
   
-  // Increase lightness significantly for a light, airy completion feel
-  const adjustedLightness = Math.min(95, l * 1.4 + 20);
+  if (isWarmColor) {
+    // For warm colors (like red), use a very neutral warm beige tone
+    // This avoids the red-green complementary clash
+    // Use a neutral warm hue around 30-40 degrees (warm beige/cream)
+    adjustedHue = 35;
+    // Very low saturation for neutrality
+    adjustedSaturation = 8;
+  } else {
+    // For cool colors, use a very desaturated neutral-cool tone
+    // Slight shift toward a neutral cool gray-green (around 150-160 degrees)
+    adjustedHue = 155;
+    // Very low saturation for subtlety
+    adjustedSaturation = 6;
+  }
+  
+  // Very high lightness for subtlety (96-97%)
+  const adjustedLightness = 96.5;
   
   // Convert back to RGB
   const [r, g, b] = hslToRgb(adjustedHue, adjustedSaturation, adjustedLightness);

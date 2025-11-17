@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Session } from '../types';
 import { theme } from '../styles/theme';
 import { useStore } from '../store/useStore';
+import { HeartIcon, HeartOutlineIcon } from './icons/PlayerIcons';
 
 interface SessionCardProps {
   session: Session;
@@ -89,9 +90,11 @@ export const SessionCard: React.FC<SessionCardProps> = ({
             style={styles.heartButton}
             onPress={handleFavoritePress}
           >
-            <Text style={styles.heartIcon}>
-              {isFavorited ? '❤️' : '🤍'}
-            </Text>
+            {isFavorited ? (
+              <HeartIcon size={22} color="#ff6b6b" />
+            ) : (
+              <HeartOutlineIcon size={22} color="#8e8e93" />
+            )}
           </TouchableOpacity>
           <View style={styles.durationBadge}>
             <Text style={styles.durationText}>{session.durationMin}m</Text>
@@ -211,9 +214,6 @@ const styles = StyleSheet.create({
     minHeight: 36,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  heartIcon: {
-    fontSize: 22,
   },
   durationBadge: {
     backgroundColor: '#007AFF',

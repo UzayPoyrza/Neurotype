@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Animated, Dimensions, TouchableOpac
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Session } from '../types';
-import { useStore, prerenderedModuleBackgrounds, createCompletionBackground } from '../store/useStore';
+import { useStore, prerenderedModuleBackgrounds } from '../store/useStore';
 import { mockSessions } from '../data/mockData';
 import { mentalHealthModules } from '../data/modules';
 import { theme } from '../styles/theme';
@@ -181,12 +181,6 @@ export const TodayScreen: React.FC = () => {
     recommendedSession.id.replace('-today', '')
   );
   
-  // Get subtle completion background color that works with module color
-  const completionBackgroundColor = createCompletionBackground(
-    selectedModule.color,
-    globalBackgroundColor
-  );
-
   const moduleSessionsForRoadmap = useMemo(() => {
     const relevantGoals = {
       'anxiety': ['anxiety'],
@@ -602,7 +596,7 @@ export const TodayScreen: React.FC = () => {
             >
               <TouchableOpacity
                 style={[styles.recommendedSession, { 
-                  backgroundColor: (todayCompleted || isRecommendedCompleted) ? completionBackgroundColor : '#ffffff'
+                  backgroundColor: (todayCompleted || isRecommendedCompleted) ? '#f2f2f7' : '#ffffff'
                 }]}
                 onPress={() => handleSessionSelect(recommendedSession)}
                 onPressIn={handleHeroCardPressIn}
@@ -655,7 +649,7 @@ export const TodayScreen: React.FC = () => {
                       styles.alternativeSession,
                       isCompleted && {
                         ...styles.alternativeSessionCompleted,
-                        backgroundColor: completionBackgroundColor
+                        backgroundColor: '#f2f2f7'
                       }
                     ]}
                     onPress={() => handleSessionSelect(session)}

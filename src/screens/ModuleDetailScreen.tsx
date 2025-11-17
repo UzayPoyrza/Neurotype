@@ -1,5 +1,5 @@
-import React, { useMemo, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import React, { useMemo, useEffect, useState, useRef } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Animated } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { SessionCard } from '../components/SessionCard';
@@ -32,6 +32,46 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
   
   // Local background color for this screen only
   const [localBackgroundColor, setLocalBackgroundColor] = useState('#f2f2f7');
+  
+  // Message state for "Added to Liked meditations"
+  const [showAddedMessage, setShowAddedMessage] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const handleLike = () => {
+    setShowAddedMessage(true);
+    // Fade in
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+    
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    // Fade out after 2 seconds
+    timeoutRef.current = setTimeout(() => {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        setShowAddedMessage(false);
+      });
+    }, 2000);
+  };
+  
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   // Set screen context when component mounts
   useEffect(() => {
@@ -139,6 +179,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
               session={item}
               onStart={() => handleSessionStart(item)}
               variant="list"
+              onLike={handleLike}
             />
           )}
           keyExtractor={(item) => item.id}
@@ -163,6 +204,26 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
           </View>
         )}
       </View>
+      
+      {/* Added to Liked meditations message */}
+      {showAddedMessage && (
+        <Animated.View 
+          style={[
+            styles.addedMessage,
+            {
+              opacity: fadeAnim,
+              transform: [{
+                translateY: fadeAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [20, 0],
+                }),
+              }],
+            },
+          ]}
+        >
+          <Text style={styles.addedMessageText}>Added to Liked meditations</Text>
+        </Animated.View>
+      )}
     </View>
   );
 };
@@ -300,5 +361,28 @@ const styles = StyleSheet.create({
     fontSize: 19,
     fontWeight: '600',
     color: '#000000',
+  },
+  addedMessage: {
+    position: 'absolute',
+    bottom: 100,
+    left: 20,
+    right: 20,
+    backgroundColor: '#000000',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 1000,
+  },
+  addedMessageText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Session } from '../types';
 import { theme } from '../styles/theme';
@@ -9,12 +9,14 @@ interface SessionCardProps {
   session: Session;
   onStart: () => void;
   variant?: 'recommended' | 'list';
+  onLike?: () => void;
 }
 
 export const SessionCard: React.FC<SessionCardProps> = ({ 
   session, 
   onStart, 
-  variant = 'list' 
+  variant = 'list',
+  onLike
 }) => {
   const toggleLikedSession = useStore(state => state.toggleLikedSession);
   const likedSessionIds = useStore(state => state.likedSessionIds);
@@ -56,7 +58,13 @@ export const SessionCard: React.FC<SessionCardProps> = ({
 
   const handleFavoritePress = (e: any) => {
     e.stopPropagation(); // Prevent triggering onStart
+    const wasFavorited = isFavorited;
     toggleLikedSession(session.id);
+    
+    // Show message only when liking (not unliking)
+    if (!wasFavorited && onLike) {
+      onLike();
+    }
   };
 
   return (

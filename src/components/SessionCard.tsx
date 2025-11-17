@@ -91,9 +91,9 @@ export const SessionCard: React.FC<SessionCardProps> = ({
             onPress={handleFavoritePress}
           >
             {isFavorited ? (
-              <HeartIcon size={22} color="#ff6b6b" />
+              <HeartIcon size={28} color="#ff6b6b" />
             ) : (
-              <HeartOutlineIcon size={22} color="#8e8e93" />
+              <HeartOutlineIcon size={28} color="#8e8e93" />
             )}
           </TouchableOpacity>
           <View style={styles.durationBadge}>

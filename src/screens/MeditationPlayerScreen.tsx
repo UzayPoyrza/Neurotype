@@ -47,6 +47,7 @@ export const MeditationPlayerScreen: React.FC = () => {
   const { activeSession, setActiveSession, isTransitioning, setIsTransitioning } = useStore();
   const toggleLikedSession = useStore((state: any) => state.toggleLikedSession);
   const likedSessionIds = useStore((state: any) => state.likedSessionIds);
+  const addEmotionalFeedbackEntry = useStore((state: any) => state.addEmotionalFeedbackEntry);
   const isLiked = activeSession ? likedSessionIds.includes(activeSession.id) : false;
   const [showTutorial, setShowTutorial] = useState(false);
   const [emotionalRating, setEmotionalRating] = useState(5);
@@ -101,6 +102,11 @@ export const MeditationPlayerScreen: React.FC = () => {
   const [confirmedEmotionalState, setConfirmedEmotionalState] = useState('');
   const [lockedPosition, setLockedPosition] = useState<number | null>(null);
   const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownProgressAnim = useRef(new Animated.Value(0)).current;
+  const countdownScaleAnim = useRef(new Animated.Value(1)).current;
+  const confirmationMessageAnim = useRef(new Animated.Value(0)).current;
+  const [showConfirmationMessage, setShowConfirmationMessage] = useState(false);
+  const pulseAnimationRef = useRef<Animated.CompositeAnimation | null>(null);
   
   // Options menu state
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
@@ -687,10 +693,42 @@ export const MeditationPlayerScreen: React.FC = () => {
     setCountdown(3);
     setConfirmedEmotionalState(label);
     
+    // Reset and animate countdown progress
+    countdownProgressAnim.setValue(0);
+    countdownScaleAnim.setValue(1);
+    
+    // Animate progress bar from 0 to 1 over 3 seconds
+    Animated.timing(countdownProgressAnim, {
+      toValue: 1,
+      duration: 3000,
+      useNativeDriver: false,
+    }).start();
+    
+    // Pulse animation for countdown number
+    pulseAnimationRef.current = Animated.loop(
+      Animated.sequence([
+        Animated.timing(countdownScaleAnim, {
+          toValue: 1.15,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(countdownScaleAnim, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulseAnimationRef.current.start();
+    
     countdownTimerRef.current = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
           // Countdown finished, confirm the selection
+          if (pulseAnimationRef.current) {
+            pulseAnimationRef.current.stop();
+            pulseAnimationRef.current = null;
+          }
           confirmEmotionalState();
           return 0;
         }
@@ -707,21 +745,53 @@ export const MeditationPlayerScreen: React.FC = () => {
       countdownTimerRef.current = null;
     }
     
-    // Reset all states
-    setIsConfirming(false);
-    setCountdown(0);
-    setHasUserInteracted(false);
-    hasUserInteractedValue.value = false;
-    setCurrentEmotionalLabel('');
-    setProgressBarColor('rgba(255, 255, 255, 0.8)');
-    setConfirmedEmotionalState('');
-    setLockedPosition(null);
-    
-    // Reset thumb to center position
-    if (actualEmotionalBarWidth > 0) {
-      const centerPosition = actualEmotionalBarWidth / 2;
-      emotionalThumbPosition.value = centerPosition;
+    // Save emotional feedback to store
+    if (activeSession && confirmedEmotionalState) {
+      const feedbackEntry = {
+        id: `feedback-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        sessionId: activeSession.id,
+        label: confirmedEmotionalState as any,
+        timestampSeconds: currentTime,
+        date: new Date().toISOString(),
+      };
+      addEmotionalFeedbackEntry(feedbackEntry);
     }
+    
+    // Show confirmation message
+    setShowConfirmationMessage(true);
+    Animated.sequence([
+      Animated.timing(confirmationMessageAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.delay(2000),
+      Animated.timing(confirmationMessageAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setShowConfirmationMessage(false);
+    });
+    
+    // Reset all states after a brief delay
+    setTimeout(() => {
+      setIsConfirming(false);
+      setCountdown(0);
+      setHasUserInteracted(false);
+      hasUserInteractedValue.value = false;
+      setCurrentEmotionalLabel('');
+      setProgressBarColor('rgba(255, 255, 255, 0.8)');
+      setConfirmedEmotionalState('');
+      setLockedPosition(null);
+      
+      // Reset thumb to center position
+      if (actualEmotionalBarWidth > 0) {
+        const centerPosition = actualEmotionalBarWidth / 2;
+        emotionalThumbPosition.value = centerPosition;
+      }
+    }, 500);
     
     console.log('Emotional state confirmed:', confirmedEmotionalState);
   };
@@ -732,10 +802,18 @@ export const MeditationPlayerScreen: React.FC = () => {
       clearInterval(countdownTimerRef.current);
       countdownTimerRef.current = null;
     }
+    if (pulseAnimationRef.current) {
+      pulseAnimationRef.current.stop();
+      pulseAnimationRef.current = null;
+    }
     setIsConfirming(false);
     setCountdown(0);
     setConfirmedEmotionalState('');
     setLockedPosition(null);
+    
+    // Reset animations
+    countdownProgressAnim.setValue(0);
+    countdownScaleAnim.setValue(1);
     
     // Reset to default state
     setHasUserInteracted(false);
@@ -1102,19 +1180,8 @@ export const MeditationPlayerScreen: React.FC = () => {
         >
           <Text style={styles.emotionalFeedbackTitle}>How do you feel?</Text>
           
-          {/* Confirm Button */}
-          {isConfirming && (
-            <View style={styles.confirmButtonContainer}>
-              <TouchableOpacity style={styles.confirmButton}>
-                <Text style={styles.confirmButtonText}>
-                  Confirming in {countdown}...
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
-          
           <View style={styles.emotionalProgressContainer}>
-            {/* Dynamic Indicator - always rendered but only visible when user has interacted */}
+            {/* Mood Indicator - Always visible */}
             <View style={styles.emotionalIndicator}>
               <Text style={[
                 styles.emotionalIndicatorText,
@@ -1123,6 +1190,79 @@ export const MeditationPlayerScreen: React.FC = () => {
                 {currentEmotionalLabel || 'Okay'}
               </Text>
             </View>
+            
+            {/* Countdown - Absolutely positioned overlay, doesn't affect layout */}
+            {isConfirming && (
+              <View style={styles.countdownOverlay}>
+                <View style={styles.countdownContainer}>
+                  <View style={styles.countdownCircleContainer}>
+                    {/* Background circle */}
+                    <View style={styles.countdownCircleBackground} />
+                    {/* Animated progress ring */}
+                    <Animated.View
+                      style={[
+                        styles.countdownProgressRing,
+                        {
+                          opacity: countdownProgressAnim.interpolate({
+                            inputRange: [0, 0.01, 1],
+                            outputRange: [0, 1, 1],
+                          }),
+                          transform: [
+                            {
+                              rotate: countdownProgressAnim.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: ['0deg', '360deg'],
+                              }),
+                            },
+                          ],
+                        },
+                      ]}
+                    />
+                    {/* Countdown number */}
+                    <Animated.View
+                      style={[
+                        styles.countdownNumberContainer,
+                        {
+                          transform: [{ scale: countdownScaleAnim }],
+                        },
+                      ]}
+                    >
+                      <Text style={styles.countdownNumber}>{countdown}</Text>
+                    </Animated.View>
+                  </View>
+                  <Text style={styles.countdownLabel}>
+                    Confirming...
+                  </Text>
+                </View>
+              </View>
+            )}
+            
+            {/* Confirmation Message - Absolutely positioned overlay */}
+            {showConfirmationMessage && (
+              <Animated.View
+                style={[
+                  styles.confirmationMessageOverlay,
+                  {
+                    opacity: confirmationMessageAnim,
+                    transform: [
+                      {
+                        scale: confirmationMessageAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.9, 1],
+                        }),
+                      },
+                    ],
+                  },
+                ]}
+              >
+                <View style={styles.confirmationMessageContainer}>
+                  <Text style={styles.confirmationMessageIcon}>✓</Text>
+                  <Text style={styles.confirmationMessageText}>
+                    Saved! View in Profile
+                  </Text>
+                </View>
+              </Animated.View>
+            )}
             
             {/* Progress Bar */}
             <View 
@@ -1495,6 +1635,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
+    overflow: 'hidden', // Ensure overlays stay within bounds
   },
   darkModeEmotionalSection: {
     borderWidth: 0,
@@ -1510,10 +1651,6 @@ const styles = StyleSheet.create({
   emotionalProgressContainer: {
     width: '100%',
     paddingHorizontal: 8,
-  },
-  emotionalIndicator: {
-    alignItems: 'center',
-    marginBottom: 12,
   },
   emotionalIndicatorText: {
     color: '#ffffff',
@@ -1572,60 +1709,101 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textAlign: 'center',
   },
-  countdownContainer: {
+  emotionalIndicator: {
     alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 16,
+    marginBottom: 12,
+    minHeight: 24, // Reserve space to prevent layout shift
   },
-  countdownText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '500',
-    textAlign: 'center',
-    backgroundColor: 'transparent',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 0,
-  },
-  countdownTextClean: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontSize: 14,
-    fontWeight: '400',
-    textAlign: 'center',
-    marginTop: 8,
-    marginBottom: 16,
-  },
-  confirmButtonContainer: {
+  countdownOverlay: {
     position: 'absolute',
-    bottom: -2,
+    top: 0,
     left: 0,
     right: 0,
-    height: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    pointerEvents: 'none',
+  },
+  countdownContainer: {
+    alignItems: 'center',
+  },
+  countdownCircleContainer: {
+    width: 40,
+    height: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 5,
-    pointerEvents: 'box-none',
+    marginBottom: 4,
+    position: 'relative',
   },
-  confirmButton: {
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-    borderRadius: 25,
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    marginHorizontal: 16,
-    borderWidth: 0,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-    pointerEvents: 'auto',
+  countdownCircleBackground: {
+    position: 'absolute',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
-  confirmButtonText: {
+  countdownProgressRing: {
+    position: 'absolute',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderTopColor: '#ffffff',
+    borderRightColor: '#ffffff',
+    borderBottomColor: 'transparent',
+    borderLeftColor: 'transparent',
+  },
+  countdownNumberContainer: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  countdownNumber: {
     color: '#ffffff',
     fontSize: 14,
+    fontWeight: '700',
+  },
+  countdownLabel: {
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontSize: 11,
     fontWeight: '500',
     textAlign: 'center',
+  },
+  confirmationMessageOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    pointerEvents: 'none',
+  },
+  confirmationMessageContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(46, 213, 115, 0.2)',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(46, 213, 115, 0.4)',
+  },
+  confirmationMessageIcon: {
+    fontSize: 18,
+    color: '#2ed573',
+    fontWeight: '700',
+    marginRight: 8,
+  },
+  confirmationMessageText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   actionButtonsSection: {
     position: 'absolute',

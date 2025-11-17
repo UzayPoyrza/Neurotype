@@ -207,9 +207,19 @@ export const TodayScreen: React.FC = () => {
     return mockSessions.filter(session => goals.includes(session.goal));
   }, [selectedModule]);
 
+  // Get actual completed sessions for this module from user progress
   const completedPreviewSessions = useMemo(() => {
-    return moduleSessionsForRoadmap.slice(0, 3);
-  }, [moduleSessionsForRoadmap]);
+    const moduleCompletedSessions = userProgress.sessionDeltas
+      .filter(delta => delta.moduleId === selectedModuleId)
+      .map(delta => {
+        const session = mockSessions.find(s => s.id === delta.sessionId);
+        return session ? { ...session, completedDate: delta.date } : null;
+      })
+      .filter((session): session is NonNullable<typeof session> => session !== null)
+      .slice(0, 3);
+    
+    return moduleCompletedSessions;
+  }, [userProgress.sessionDeltas, selectedModuleId]);
 
   const upcomingPreviewSessions = useMemo(() => {
     const todayIds = todaySessions.map(session => session.id.replace('-today', ''));
@@ -217,6 +227,14 @@ export const TodayScreen: React.FC = () => {
       .filter(session => !todayIds.includes(session.id))
       .slice(0, 2);
   }, [moduleSessionsForRoadmap, todaySessions]);
+  
+  // Check if today's meditation is completed
+  const isTodayCompleted = useMemo(() => {
+    return todaySessions.some(session => {
+      const originalSessionId = session.id.replace('-today', '');
+      return isSessionCompletedToday(selectedModuleId, originalSessionId);
+    });
+  }, [todaySessions, selectedModuleId, isSessionCompletedToday]);
 
   // Calculate timeline progress for preview
   const timelineProgress = useMemo(() => {
@@ -706,23 +724,50 @@ export const TodayScreen: React.FC = () => {
               <View style={styles.progressPreviewTimeline}>
                 <View style={styles.progressPreviewColumn}>
                   <Text style={styles.progressPreviewSectionLabel}>Completed</Text>
-                  {completedPreviewSessions.map((session, index) => (
-                    <View key={session.id} style={styles.progressPreviewItem}>
-                      <View style={styles.progressPreviewItemIcon}>
-                        <Text style={styles.progressPreviewItemIconText}>✓</Text>
+                  {completedPreviewSessions.map((session, index) => {
+                    // Calculate days ago from completion date
+                    const completedDate = new Date((session as any).completedDate);
+                    const today = new Date();
+                    const daysDiff = Math.floor((today.getTime() - completedDate.getTime()) / (1000 * 60 * 60 * 24));
+                    
+                    let dateLabel: string;
+                    if (daysDiff === 0) {
+                      dateLabel = 'Today';
+                    } else if (daysDiff === 1) {
+                      dateLabel = 'Yesterday';
+                    } else if (daysDiff === 2) {
+                      dateLabel = '2 days ago';
+                    } else {
+                      dateLabel = completedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    }
+                    
+                    return (
+                      <View key={session.id} style={styles.progressPreviewItem}>
+                        <View style={styles.progressPreviewItemIcon}>
+                          <Text style={styles.progressPreviewItemIconText}>✓</Text>
+                        </View>
+                        <View style={styles.progressPreviewItemBody}>
+                          <Text style={styles.progressPreviewItemTitle} numberOfLines={1}>
+                            {session.title}
+                          </Text>
+                          <Text style={styles.progressPreviewItemMeta}>
+                            {dateLabel}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                  {completedPreviewSessions.length === 0 && (
+                    <View style={styles.progressPreviewLockedState}>
+                      <View style={[styles.progressPreviewItemIcon, styles.progressPreviewItemIconLocked]}>
+                        <Text style={styles.progressPreviewLockIconText}>🔒</Text>
                       </View>
                       <View style={styles.progressPreviewItemBody}>
-                        <Text style={styles.progressPreviewItemTitle} numberOfLines={1}>
-                          {session.title}
-                        </Text>
-                        <Text style={styles.progressPreviewItemMeta}>
-                          {formatCompletedLabel(index)}
+                        <Text style={styles.progressPreviewLockedText}>
+                          Complete a meditation to see it here
                         </Text>
                       </View>
                     </View>
-                  ))}
-                  {completedPreviewSessions.length === 0 && (
-                    <Text style={styles.progressPreviewEmptyText}>Start your first session</Text>
                   )}
                 </View>
 
@@ -730,23 +775,38 @@ export const TodayScreen: React.FC = () => {
 
                 <View style={styles.progressPreviewColumn}>
                   <Text style={styles.progressPreviewSectionLabel}>Coming Up</Text>
-                  {upcomingPreviewSessions.map(session => (
-                    <View key={session.id} style={styles.progressPreviewItem}>
-                      <View style={[styles.progressPreviewItemIcon, styles.progressPreviewItemIconUpcoming]}>
-                        <Text style={[styles.progressPreviewItemIconText, styles.progressPreviewItemIconUpcomingText]}>▶</Text>
+                  {!isTodayCompleted ? (
+                    <View style={styles.progressPreviewLockedState}>
+                      <View style={[styles.progressPreviewItemIcon, styles.progressPreviewItemIconLocked]}>
+                        <Text style={styles.progressPreviewLockIconText}>🔒</Text>
                       </View>
                       <View style={styles.progressPreviewItemBody}>
-                        <Text style={styles.progressPreviewItemTitle} numberOfLines={1}>
-                          {session.title}
-                        </Text>
-                        <Text style={styles.progressPreviewItemMeta}>
-                          {session.durationMin} min • {session.modality}
+                        <Text style={styles.progressPreviewLockedText}>
+                          Finish today's meditation to preview tomorrow
                         </Text>
                       </View>
                     </View>
-                  ))}
-                  {upcomingPreviewSessions.length === 0 && (
-                    <Text style={styles.progressPreviewEmptyText}>Explore the roadmap for more</Text>
+                  ) : (
+                    <>
+                      {upcomingPreviewSessions.map(session => (
+                        <View key={session.id} style={styles.progressPreviewItem}>
+                          <View style={[styles.progressPreviewItemIcon, styles.progressPreviewItemIconUpcoming]}>
+                            <Text style={[styles.progressPreviewItemIconText, styles.progressPreviewItemIconUpcomingText]}>▶</Text>
+                          </View>
+                          <View style={styles.progressPreviewItemBody}>
+                            <Text style={styles.progressPreviewItemTitle} numberOfLines={1}>
+                              {session.title}
+                            </Text>
+                            <Text style={styles.progressPreviewItemMeta}>
+                              {session.durationMin} min • {session.modality}
+                            </Text>
+                          </View>
+                        </View>
+                      ))}
+                      {upcomingPreviewSessions.length === 0 && (
+                        <Text style={styles.progressPreviewLockedText}>Explore the roadmap for more</Text>
+                      )}
+                    </>
                   )}
                 </View>
               </View>
@@ -1121,6 +1181,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#ffffff',
   },
+  progressPreviewLockIconText: {
+    fontSize: 20,
+  },
   progressPreviewItemBody: {
     flex: 1,
   },
@@ -1133,10 +1196,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#8e8e93',
   },
-  progressPreviewEmptyText: {
+  progressPreviewLockedState: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  progressPreviewItemIconLocked: {
+    backgroundColor: '#f2f2f7',
+    borderWidth: 0,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  progressPreviewLockedText: {
     fontSize: 12,
     color: '#8e8e93',
-    marginTop: 4,
+    lineHeight: 16,
+    marginTop: 2,
   },
   progressPreviewDivider: {
     width: 1,

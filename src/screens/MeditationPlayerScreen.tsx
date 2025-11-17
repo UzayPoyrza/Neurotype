@@ -106,6 +106,8 @@ export const MeditationPlayerScreen: React.FC = () => {
   const countdownScaleAnim = useRef(new Animated.Value(1)).current;
   const confirmationMessageAnim = useRef(new Animated.Value(0)).current;
   const [showConfirmationMessage, setShowConfirmationMessage] = useState(false);
+  const canceledMessageAnim = useRef(new Animated.Value(0)).current;
+  const [showCanceledMessage, setShowCanceledMessage] = useState(false);
   const pulseAnimationRef = useRef<Animated.CompositeAnimation | null>(null);
   
   // Options menu state
@@ -399,8 +401,8 @@ export const MeditationPlayerScreen: React.FC = () => {
     } else if (playerState === 'playing') {
       setPlayerState('paused');
       audioPlayerRef.current.pause();
-      // Cancel emotional feedback countdown when pausing
-      cancelCountdown();
+      // Cancel emotional feedback countdown silently when pausing
+      cancelCountdownSilently();
       // Animate emotional feedback bar out
       Animated.timing(emotionalFeedbackOpacity, {
         toValue: 0,
@@ -798,8 +800,58 @@ export const MeditationPlayerScreen: React.FC = () => {
     console.log('Emotional state confirmed:', confirmedEmotionalState);
   };
 
-  // Cancel countdown (when user moves the bar or pauses)
+  // Cancel countdown (when user clicks X button)
   const cancelCountdown = () => {
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+      countdownTimerRef.current = null;
+    }
+    if (pulseAnimationRef.current) {
+      pulseAnimationRef.current.stop();
+      pulseAnimationRef.current = null;
+    }
+    
+    // Hide countdown
+    setIsConfirming(false);
+    setCountdown(0);
+    
+    // Show canceled message
+    setShowCanceledMessage(true);
+    Animated.sequence([
+      Animated.timing(canceledMessageAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.delay(1500),
+      Animated.timing(canceledMessageAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setShowCanceledMessage(false);
+      
+      // Reset to default state after message disappears
+      setConfirmedEmotionalState('');
+      setLockedPosition(null);
+      countdownProgressAnim.setValue(0);
+      countdownScaleAnim.setValue(1);
+      setHasUserInteracted(false);
+      hasUserInteractedValue.value = false;
+      setCurrentEmotionalLabel('');
+      setProgressBarColor('rgba(255, 255, 255, 0.8)');
+      
+      // Reset thumb to center position
+      if (actualEmotionalBarWidth > 0) {
+        const centerPosition = actualEmotionalBarWidth / 2;
+        emotionalThumbPosition.value = centerPosition;
+      }
+    });
+  };
+  
+  // Cancel countdown silently (when user moves the bar or pauses)
+  const cancelCountdownSilently = () => {
     if (countdownTimerRef.current) {
       clearInterval(countdownTimerRef.current);
       countdownTimerRef.current = null;
@@ -909,6 +961,11 @@ export const MeditationPlayerScreen: React.FC = () => {
       confirmationMessageAnim.setValue(0);
       setShowConfirmationMessage(false);
     });
+    // Also hide canceled message if showing
+    canceledMessageAnim.stopAnimation(() => {
+      canceledMessageAnim.setValue(0);
+      setShowCanceledMessage(false);
+    });
   };
 
   // Emotional feedback gesture handler
@@ -953,9 +1010,9 @@ export const MeditationPlayerScreen: React.FC = () => {
           return;
         }
         
-        // Cancel countdown if user moves the bar
+        // Cancel countdown silently if user moves the bar
         if (isConfirming) {
-          runOnJS(cancelCountdown)();
+          runOnJS(cancelCountdownSilently)();
         }
         
         // Calculate new position with strict clamping using actual measured width
@@ -1287,9 +1344,22 @@ export const MeditationPlayerScreen: React.FC = () => {
                         <Text style={styles.countdownNumber}>{countdown}</Text>
                       </Animated.View>
                     </View>
-                    <Text style={styles.countdownLabel}>
-                      Confirming...
-                    </Text>
+                    <View style={styles.countdownLabelContainer}>
+                      <Text style={styles.countdownLabel}>
+                        Confirming...
+                      </Text>
+                      <TouchableOpacity
+                        style={styles.cancelButton}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          cancelCountdown();
+                        }}
+                        hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.cancelButtonText}>×</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </View>
               )}
@@ -1316,6 +1386,33 @@ export const MeditationPlayerScreen: React.FC = () => {
                     <Text style={styles.confirmationMessageIcon}>✓</Text>
                     <Text style={styles.confirmationMessageText}>
                       Saved! View in Profile
+                    </Text>
+                  </View>
+                </Animated.View>
+              )}
+              
+              {/* Canceled Message - Positioned between Bad and Great */}
+              {showCanceledMessage && (
+                <Animated.View
+                  style={[
+                    styles.confirmationMessageOverlayBetweenLabels,
+                    {
+                      opacity: canceledMessageAnim,
+                      transform: [
+                        {
+                          scale: canceledMessageAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0.9, 1],
+                          }),
+                        },
+                      ],
+                    },
+                  ]}
+                >
+                  <View style={styles.canceledMessageContainer}>
+                    <Text style={styles.canceledMessageIcon}>×</Text>
+                    <Text style={styles.canceledMessageText}>
+                      Canceled
                     </Text>
                   </View>
                 </Animated.View>
@@ -1738,10 +1835,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    top: -10, // Position slightly above the labels
+    top: -14, // Position higher above the labels
     alignItems: 'center',
     justifyContent: 'center',
-    pointerEvents: 'none',
+    pointerEvents: 'box-none', // Allow clicks on children but not on container
   },
   countdownContainer: {
     alignItems: 'center',
@@ -1788,11 +1885,35 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
+  countdownLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    gap: 10,
+    marginTop: -6, // Move up more
+  },
   countdownLabel: {
     color: 'rgba(255, 255, 255, 0.85)',
     fontSize: 11,
     fontWeight: '500',
     textAlign: 'center',
+    marginTop: 1, // Align with button
+  },
+  cancelButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  cancelButtonText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '600',
+    lineHeight: 18,
   },
   confirmationMessageOverlayBetweenLabels: {
     position: 'absolute',
@@ -1821,6 +1942,28 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   confirmationMessageText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  canceledMessageContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 71, 87, 0.2)',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 71, 87, 0.4)',
+  },
+  canceledMessageIcon: {
+    fontSize: 14,
+    color: '#ff4757',
+    fontWeight: '700',
+    marginRight: 6,
+  },
+  canceledMessageText: {
     color: '#ffffff',
     fontSize: 12,
     fontWeight: '600',

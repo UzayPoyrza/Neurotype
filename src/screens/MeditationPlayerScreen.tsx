@@ -10,6 +10,7 @@ import {
   SafeAreaView,
   Vibration,
   ActivityIndicator,
+  Switch,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -1246,18 +1247,12 @@ export const MeditationPlayerScreen: React.FC = () => {
                   <Text style={styles.optionsMenuLabel}>Sleep Mode</Text>
                   <Text style={styles.optionsMenuDescription}>Automatically pause when you fall asleep</Text>
                 </View>
-                <TouchableOpacity
-                  style={[
-                    styles.optionsMenuToggle,
-                    sleepModeEnabled && styles.optionsMenuToggleActive
-                  ]}
-                  onPress={() => setSleepModeEnabled(!sleepModeEnabled)}
-                >
-                  <View style={[
-                    styles.optionsMenuToggleThumb,
-                    sleepModeEnabled && styles.optionsMenuToggleThumbActive
-                  ]} />
-                </TouchableOpacity>
+                <Switch
+                  value={sleepModeEnabled}
+                  onValueChange={setSleepModeEnabled}
+                  trackColor={{ false: '#e0e0e0', true: '#007AFF' }}
+                  thumbColor="#ffffff"
+                />
               </View>
 
               {/* Download Toggle */}
@@ -1266,18 +1261,12 @@ export const MeditationPlayerScreen: React.FC = () => {
                   <Text style={styles.optionsMenuLabel}>Download</Text>
                   <Text style={styles.optionsMenuDescription}>Download for offline listening</Text>
                 </View>
-                <TouchableOpacity
-                  style={[
-                    styles.optionsMenuToggle,
-                    downloadEnabled && styles.optionsMenuToggleActive
-                  ]}
-                  onPress={() => setDownloadEnabled(!downloadEnabled)}
-                >
-                  <View style={[
-                    styles.optionsMenuToggleThumb,
-                    downloadEnabled && styles.optionsMenuToggleThumbActive
-                  ]} />
-                </TouchableOpacity>
+                <Switch
+                  value={downloadEnabled}
+                  onValueChange={setDownloadEnabled}
+                  trackColor={{ false: '#e0e0e0', true: '#007AFF' }}
+                  thumbColor="#ffffff"
+                />
               </View>
 
               {/* Idle Timer Toggle */}
@@ -1286,24 +1275,18 @@ export const MeditationPlayerScreen: React.FC = () => {
                   <Text style={styles.optionsMenuLabel}>Auto Dark Mode</Text>
                   <Text style={styles.optionsMenuDescription}>Automatically activate dark mode after 10 seconds of inactivity</Text>
                 </View>
-                <TouchableOpacity
-                  style={[
-                    styles.optionsMenuToggle,
-                    idleTimerEnabled && styles.optionsMenuToggleActive
-                  ]}
-                  onPress={() => {
-                    setIdleTimerEnabled(!idleTimerEnabled);
+                <Switch
+                  value={idleTimerEnabled}
+                  onValueChange={(value) => {
+                    setIdleTimerEnabled(value);
                     // Clear timer if disabling
-                    if (idleTimerEnabled) {
+                    if (!value) {
                       clearIdleTimer();
                     }
                   }}
-                >
-                  <View style={[
-                    styles.optionsMenuToggleThumb,
-                    idleTimerEnabled && styles.optionsMenuToggleThumbActive
-                  ]} />
-                </TouchableOpacity>
+                  trackColor={{ false: '#e0e0e0', true: '#007AFF' }}
+                  thumbColor="#ffffff"
+                />
               </View>
             </View>
           </Animated.View>
@@ -1751,31 +1734,6 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.6)',
     fontSize: 14,
     fontWeight: '400',
-  },
-  optionsMenuToggle: {
-    width: 50,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    paddingHorizontal: 2,
-  },
-  optionsMenuToggleActive: {
-    backgroundColor: '#4CAF50',
-  },
-  optionsMenuToggleThumb: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: '#ffffff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  optionsMenuToggleThumbActive: {
-    transform: [{ translateX: 20 }],
   },
   hiddenElement: {
     opacity: 0,

@@ -1044,7 +1044,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: '#f2f2f7',
+    borderColor: '#e0e0e0',
   },
   alternativeSessionCompleted: {
     borderColor: 'transparent',

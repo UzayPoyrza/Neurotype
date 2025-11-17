@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Animated, Dimensions, TouchableOpac
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Session } from '../types';
-import { useStore, prerenderedModuleBackgrounds, createCompletionBackground, createCompletionButtonColor } from '../store/useStore';
+import { useStore, prerenderedModuleBackgrounds, createCompletionBackground } from '../store/useStore';
 import { mockSessions } from '../data/mockData';
 import { mentalHealthModules } from '../data/modules';
 import { theme } from '../styles/theme';
@@ -186,9 +186,6 @@ export const TodayScreen: React.FC = () => {
     selectedModule.color,
     globalBackgroundColor
   );
-  
-  // Get completion button color (for checkmark button)
-  const completionButtonColor = createCompletionButtonColor(selectedModule.color);
 
   const moduleSessionsForRoadmap = useMemo(() => {
     const relevantGoals = {
@@ -611,8 +608,8 @@ export const TodayScreen: React.FC = () => {
                 </View>
 
                 {(todayCompleted || isRecommendedCompleted) ? (
-                  <View style={[styles.sessionPlayButton, { backgroundColor: completionButtonColor }]}>
-                    <Text style={styles.sessionPlayText}>✓</Text>
+                  <View style={[styles.sessionPlayButton, styles.sessionCompletedButton]}>
+                    <Text style={styles.sessionCompletedCheckmark}>✓</Text>
                   </View>
                 ) : (
                   <View style={[styles.sessionPlayButton, { backgroundColor: selectedModule.color }]}>
@@ -658,8 +655,8 @@ export const TodayScreen: React.FC = () => {
                       </Text>
                     </View>
                     {isCompleted ? (
-                      <View style={[styles.alternativeSessionPlayButton, { backgroundColor: completionButtonColor }]}>
-                        <Text style={styles.alternativeSessionPlayText}>✓</Text>
+                      <View style={[styles.alternativeSessionPlayButton, styles.alternativeSessionCompletedButton]}>
+                        <Text style={styles.alternativeSessionCompletedCheckmark}>✓</Text>
                       </View>
                     ) : (
                       <View style={styles.alternativeSessionPlayButton}>
@@ -966,6 +963,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 2,
   },
+  sessionCompletedButton: {
+    backgroundColor: '#34c759',
+  },
+  sessionCompletedCheckmark: {
+    fontSize: 18,
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
   alternativeSessionsList: {
     paddingBottom: 20,
   },
@@ -1015,6 +1020,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#ffffff',
     fontWeight: '600',
+  },
+  alternativeSessionCompletedButton: {
+    backgroundColor: '#34c759',
+  },
+  alternativeSessionCompletedCheckmark: {
+    fontSize: 16,
+    color: '#ffffff',
+    fontWeight: 'bold',
   },
   alternativeSessionPlayTextUncompleted: {
     fontSize: 12,

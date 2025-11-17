@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Session } from '../types';
 import { MentalHealthModule } from '../data/modules';
 import { mockSessions } from '../data/mockData';
-import { useStore } from '../store/useStore';
+import { useStore, createCompletionBackground } from '../store/useStore';
 import { theme } from '../styles/theme';
 
 type TodayStackParamList = {
@@ -195,6 +195,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
 }) => {
   const navigation = useNavigation<ModuleRoadmapNavigationProp>();
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
+  const isSessionCompletedToday = useStore(state => state.isSessionCompletedToday);
   const scrollViewRef = useRef<ScrollView>(null);
   const pulseAnim = useRef(new Animated.Value(0)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
@@ -552,6 +553,16 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
       return null;
     }
 
+    // Check if this session is completed (remove -today suffix to get original ID)
+    const originalSessionId = recommendedSession.id.split('-today')[0];
+    const isCompleted = isSessionCompletedToday(module.id, originalSessionId) || todayCompleted;
+    
+    // Get completion background color
+    const completionBackgroundColor = createCompletionBackground(
+      module.color,
+      globalBackgroundColor
+    );
+
     const scale = pulseAnim.interpolate({
       inputRange: [0, 1],
       outputRange: [1, 1.04],
@@ -590,14 +601,12 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
               activeOpacity={0.85}
               style={[
                 styles.todayCard,
-                { borderColor: module.color, backgroundColor: '#F7F9FF' },
+                { 
+                  borderColor: module.color, 
+                  backgroundColor: isCompleted ? completionBackgroundColor : '#F7F9FF' 
+                },
               ]}
             >
-              {todayCompleted && (
-                <View style={[styles.todayCardCheckmark, { backgroundColor: module.color }]}>
-                  <Text style={styles.todayCardCheckmarkIcon}>✓</Text>
-                </View>
-              )}
               <View style={styles.todayCardHeader}>
                 <Text style={styles.todayCardDuration}>
                   {recommendedSession.durationMin} min • {recommendedSession.modality}
@@ -609,13 +618,21 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
               >
                 {recommendedSession.title}
               </Text>
-              <View style={styles.todayCardFooter}>
-                <Text style={styles.todayCardCTA}>{todayCompleted ? 'Replay session' : 'Begin session'}</Text>
-                <View style={[styles.todayPlayButton, { backgroundColor: module.color }]}>
-                  <Text style={styles.todayPlayIcon}>▶</Text>
-                </View>
+              <View style={[styles.todayCardFooter, isCompleted && styles.todayCardFooterCompleted]}>
+                {isCompleted ? (
+                  <View style={styles.todayCompletedButton}>
+                    <Text style={styles.todayCompletedCheckmark}>✓</Text>
+                  </View>
+                ) : (
+                  <>
+                    <Text style={styles.todayCardCTA}>Begin session</Text>
+                    <View style={[styles.todayPlayButton, { backgroundColor: module.color }]}>
+                      <Text style={styles.todayPlayIcon}>▶</Text>
+                    </View>
+                  </>
+                )}
               </View>
-              <Text style={[styles.recommendedCopy, { color: module.color }]}>
+              <Text style={styles.recommendedCopy}>
                 Recommended for you today
               </Text>
             </TouchableOpacity>
@@ -1173,6 +1190,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
     padding: 14,
+    paddingBottom: 12,
     borderWidth: 2,
     borderColor: '#F2F2F7',
     position: 'relative',
@@ -1232,6 +1250,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: 12,
+    marginBottom: 0,
+  },
+  todayCardFooterCompleted: {
+    justifyContent: 'flex-end',
   },
   todayCardCTA: {
     fontSize: 15,
@@ -1258,10 +1280,29 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
     marginLeft: 1,
   },
+  todayCompletedButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#34c759',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  todayCompletedCheckmark: {
+    fontSize: 18,
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
   recommendedCopy: {
-    marginTop: 8,
+    marginTop: 0,
     fontSize: 12,
     fontWeight: '600',
+    color: '#1D1D1F',
     fontFamily: 'System',
   },
   tomorrowCard: {

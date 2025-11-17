@@ -109,6 +109,8 @@ export const MeditationPlayerScreen: React.FC = () => {
   const canceledMessageAnim = useRef(new Animated.Value(0)).current;
   const [showCanceledMessage, setShowCanceledMessage] = useState(false);
   const pulseAnimationRef = useRef<Animated.CompositeAnimation | null>(null);
+  const darkModeMessageAnim = useRef(new Animated.Value(0)).current;
+  const [showDarkModeMessage, setShowDarkModeMessage] = useState(false);
   
   // Options menu state
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
@@ -490,6 +492,26 @@ export const MeditationPlayerScreen: React.FC = () => {
   // Function to activate dark mode with animation
   const activateDarkMode = (newDarkMode: boolean) => {
     setIsDarkMode(newDarkMode);
+    
+    // Show dark mode message when entering dark mode
+    if (newDarkMode) {
+      setShowDarkModeMessage(true);
+      Animated.sequence([
+        Animated.timing(darkModeMessageAnim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.delay(1500),
+        Animated.timing(darkModeMessageAnim, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setShowDarkModeMessage(false);
+      });
+    }
     
     // Smooth fade animations
     Animated.parallel([
@@ -1448,6 +1470,31 @@ export const MeditationPlayerScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
+      {/* Dark Mode Message */}
+      {showDarkModeMessage && (
+        <Animated.View
+          style={[
+            styles.darkModeMessageOverlay,
+            {
+              opacity: darkModeMessageAnim,
+              transform: [
+                {
+                  translateY: darkModeMessageAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [-20, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <View style={styles.darkModeMessageContainer}>
+            <Text style={styles.darkModeMessageIcon}>🌙</Text>
+            <Text style={styles.darkModeMessageText}>Dark Mode</Text>
+          </View>
+        </Animated.View>
+      )}
+
       {/* Transition Overlay - Always present to prevent glitch */}
       <Animated.View 
         style={[
@@ -2106,6 +2153,42 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     height: '100%',
+  },
+  darkModeMessageOverlay: {
+    position: 'absolute',
+    top: '40%',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 5000,
+    pointerEvents: 'none',
+  },
+  darkModeMessageContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 12,
+  },
+  darkModeMessageIcon: {
+    fontSize: 20,
+    marginRight: 10,
+  },
+  darkModeMessageText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
 });
 

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Animated, Dimensions, TouchableOpac
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Session } from '../types';
-import { useStore, prerenderedModuleBackgrounds } from '../store/useStore';
+import { useStore, prerenderedModuleBackgrounds, createCompletionBackground, createCompletionButtonColor } from '../store/useStore';
 import { mockSessions } from '../data/mockData';
 import { mentalHealthModules } from '../data/modules';
 import { theme } from '../styles/theme';
@@ -30,7 +30,7 @@ type TodayScreenNavigationProp = StackNavigationProp<TodayStackParamList, 'Today
 
 export const TodayScreen: React.FC = () => {
   const navigation = useNavigation<TodayScreenNavigationProp>();
-  const { setActiveSession, setGlobalBackgroundColor, setCurrentScreen, setTodayModuleId } = useStore();
+  const { setActiveSession, setGlobalBackgroundColor, setCurrentScreen, setTodayModuleId, markSessionCompletedToday, isSessionCompletedToday } = useStore();
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const userProgress = useStore(state => state.userProgress);
   
@@ -174,6 +174,21 @@ export const TodayScreen: React.FC = () => {
 
   const todaySessions = getTodaySessions();
   const recommendedSession = todaySessions.find(s => s.isRecommended) || todaySessions[0];
+  
+  // Check if recommended session is completed
+  const isRecommendedCompleted = isSessionCompletedToday(
+    selectedModuleId, 
+    recommendedSession.id.replace('-today', '')
+  );
+  
+  // Get completion background color that contrasts with module background
+  const completionBackgroundColor = createCompletionBackground(
+    selectedModule.color,
+    globalBackgroundColor
+  );
+  
+  // Get completion button color (for checkmark button)
+  const completionButtonColor = createCompletionButtonColor(selectedModule.color);
 
   const moduleSessionsForRoadmap = useMemo(() => {
     const relevantGoals = {
@@ -291,6 +306,12 @@ export const TodayScreen: React.FC = () => {
   };
 
   const handleRatingSubmit = (rating: number) => {
+    // Mark session as completed in store
+    if (selectedSession) {
+      const originalSessionId = selectedSession.id.replace('-today', '');
+      markSessionCompletedToday(selectedModuleId, originalSessionId);
+    }
+    
     // Mark today as completed and trigger unlock animation
     setTodayCompleted(true);
     setTriggerUnlock(true);
@@ -566,7 +587,7 @@ export const TodayScreen: React.FC = () => {
             >
               <TouchableOpacity
                 style={[styles.recommendedSession, { 
-                  backgroundColor: todayCompleted ? '#e8f5e8' : '#ffffff'
+                  backgroundColor: (todayCompleted || isRecommendedCompleted) ? completionBackgroundColor : '#ffffff'
                 }]}
                 onPress={() => handleSessionSelect(recommendedSession)}
                 onPressIn={handleHeroCardPressIn}
@@ -589,13 +610,13 @@ export const TodayScreen: React.FC = () => {
                   </View>
                 </View>
 
-                <View style={[styles.sessionPlayButton, { backgroundColor: selectedModule.color }]}>
-                  <Text style={styles.sessionPlayText}>▶</Text>
-                </View>
-
-                {todayCompleted && (
-                  <View style={styles.sessionCompletedBadge}>
-                    <Text style={styles.sessionCompletedText}>✓</Text>
+                {(todayCompleted || isRecommendedCompleted) ? (
+                  <View style={[styles.sessionPlayButton, { backgroundColor: completionButtonColor }]}>
+                    <Text style={styles.sessionPlayText}>✓</Text>
+                  </View>
+                ) : (
+                  <View style={[styles.sessionPlayButton, { backgroundColor: selectedModule.color }]}>
+                    <Text style={styles.sessionPlayText}>▶</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -608,24 +629,46 @@ export const TodayScreen: React.FC = () => {
             </View>
             
             <View style={styles.alternativeSessionsList}>
-              {todaySessions.filter(s => !s.isRecommended).map((session) => (
-                <TouchableOpacity
-                  key={session.id}
-                  style={styles.alternativeSession}
-                  onPress={() => handleSessionSelect(session)}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.alternativeSessionContent}>
-                    <Text style={styles.alternativeSessionTitle}>{session.title}</Text>
-                    <Text style={styles.alternativeSessionMeta}>
-                      {session.durationMin} min • {session.modality}
-                    </Text>
-                  </View>
-                  <View style={styles.alternativeSessionPlayButton}>
-                    <Text style={styles.alternativeSessionPlayText}>▶</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
+              {todaySessions.filter(s => !s.isRecommended).map((session) => {
+                const originalSessionId = session.id.replace('-today', '');
+                const isCompleted = isSessionCompletedToday(selectedModuleId, originalSessionId);
+                
+                return (
+                  <TouchableOpacity
+                    key={session.id}
+                    style={[
+                      styles.alternativeSession,
+                      isCompleted && {
+                        ...styles.alternativeSessionCompleted,
+                        backgroundColor: completionBackgroundColor
+                      }
+                    ]}
+                    onPress={() => handleSessionSelect(session)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.alternativeSessionContent}>
+                      <Text style={[
+                        styles.alternativeSessionTitle,
+                        isCompleted && styles.alternativeSessionTitleCompleted
+                      ]}>
+                        {session.title}
+                      </Text>
+                      <Text style={styles.alternativeSessionMeta}>
+                        {session.durationMin} min • {session.modality}
+                      </Text>
+                    </View>
+                    {isCompleted ? (
+                      <View style={[styles.alternativeSessionPlayButton, { backgroundColor: completionButtonColor }]}>
+                        <Text style={styles.alternativeSessionPlayText}>✓</Text>
+                      </View>
+                    ) : (
+                      <View style={styles.alternativeSessionPlayButton}>
+                        <Text style={styles.alternativeSessionPlayTextUncompleted}>▶</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </MergedCard.Section>
         </MergedCard>
@@ -923,32 +966,23 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 2,
   },
-  sessionCompletedBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#34c759',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  sessionCompletedText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#ffffff',
-  },
   alternativeSessionsList: {
-    paddingHorizontal: 16,
     paddingBottom: 20,
   },
   alternativeSession: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f2f2f7',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginHorizontal: 16,
+    marginVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#f2f2f7',
+  },
+  alternativeSessionCompleted: {
+    borderColor: 'transparent',
   },
   alternativeSessionContent: {
     flex: 1,
@@ -960,20 +994,29 @@ const styles = StyleSheet.create({
     color: '#000000',
     marginBottom: 2,
   },
+  alternativeSessionTitleCompleted: {
+    color: '#1d1d1f',
+    opacity: 0.8,
+  },
   alternativeSessionMeta: {
     fontSize: 13,
     color: '#8e8e93',
     fontWeight: '400',
   },
   alternativeSessionPlayButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#f2f2f7',
     justifyContent: 'center',
     alignItems: 'center',
   },
   alternativeSessionPlayText: {
+    fontSize: 14,
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+  alternativeSessionPlayTextUncompleted: {
     fontSize: 12,
     color: '#000000',
     fontWeight: 'bold',

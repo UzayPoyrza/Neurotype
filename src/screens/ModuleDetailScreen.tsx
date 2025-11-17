@@ -33,24 +33,34 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
   // Local background color for this screen only
   const [localBackgroundColor, setLocalBackgroundColor] = useState('#f2f2f7');
   
-  // Message state for "Added to Liked meditations"
+  // Message state for "Added to Liked meditations" or "Removed from Liked meditations"
   const [showAddedMessage, setShowAddedMessage] = useState(false);
+  const [isLikedAction, setIsLikedAction] = useState(true); // true = added, false = removed
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  const handleLike = () => {
+  const handleLike = (isLiked: boolean) => {
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    // Stop any ongoing animation
+    fadeAnim.stopAnimation();
+    
+    // Reset animation value
+    fadeAnim.setValue(0);
+    
+    // Set the action type and show message
+    setIsLikedAction(isLiked);
     setShowAddedMessage(true);
-    // Fade in
+    
+    // Fade in animation
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 300,
       useNativeDriver: true,
     }).start();
-    
-    // Clear any existing timeout
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
     
     // Fade out after 2 seconds
     timeoutRef.current = setTimeout(() => {
@@ -205,7 +215,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
         )}
       </View>
       
-      {/* Added to Liked meditations message */}
+      {/* Added/Removed from Liked meditations message */}
       {showAddedMessage && (
         <Animated.View 
           style={[
@@ -221,7 +231,9 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
             },
           ]}
         >
-          <Text style={styles.addedMessageText}>Added to Liked meditations</Text>
+          <Text style={styles.addedMessageText}>
+            {isLikedAction ? 'Added to Liked meditations' : 'Removed from Liked meditations'}
+          </Text>
         </Animated.View>
       )}
     </View>

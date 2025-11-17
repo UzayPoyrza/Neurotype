@@ -1835,7 +1835,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    top: -14, // Position higher above the labels
+    top: -10, // Position slightly above the labels
     alignItems: 'center',
     justifyContent: 'center',
     pointerEvents: 'box-none', // Allow clicks on children but not on container
@@ -1887,17 +1887,15 @@ const styles = StyleSheet.create({
   },
   countdownLabelContainer: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    marginTop: -6, // Move up more
   },
   countdownLabel: {
     color: 'rgba(255, 255, 255, 0.85)',
     fontSize: 11,
     fontWeight: '500',
     textAlign: 'center',
-    marginTop: 1, // Align with button
   },
   cancelButton: {
     width: 24,
@@ -1908,6 +1906,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
+    marginTop: -4, // Move only the button up slightly
   },
   cancelButtonText: {
     color: '#ffffff',

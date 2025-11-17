@@ -392,6 +392,8 @@ export const MeditationPlayerScreen: React.FC = () => {
     } else if (playerState === 'playing') {
       setPlayerState('paused');
       audioPlayerRef.current.pause();
+      // Cancel emotional feedback countdown when pausing
+      cancelCountdown();
       // Animate emotional feedback bar out
       Animated.timing(emotionalFeedbackOpacity, {
         toValue: 0,
@@ -723,7 +725,7 @@ export const MeditationPlayerScreen: React.FC = () => {
     console.log('Emotional state confirmed:', confirmedEmotionalState);
   };
 
-  // Cancel countdown (when user moves the bar)
+  // Cancel countdown (when user moves the bar or pauses)
   const cancelCountdown = () => {
     if (countdownTimerRef.current) {
       clearInterval(countdownTimerRef.current);
@@ -733,6 +735,18 @@ export const MeditationPlayerScreen: React.FC = () => {
     setCountdown(0);
     setConfirmedEmotionalState('');
     setLockedPosition(null);
+    
+    // Reset to default state
+    setHasUserInteracted(false);
+    hasUserInteractedValue.value = false;
+    setCurrentEmotionalLabel('');
+    setProgressBarColor('rgba(255, 255, 255, 0.8)');
+    
+    // Reset thumb to center position
+    if (actualEmotionalBarWidth > 0) {
+      const centerPosition = actualEmotionalBarWidth / 2;
+      emotionalThumbPosition.value = centerPosition;
+    }
   };
 
   // Helper function to interpolate between colors for smooth transitions

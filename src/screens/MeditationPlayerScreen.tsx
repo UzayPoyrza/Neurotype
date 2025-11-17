@@ -1191,78 +1191,6 @@ export const MeditationPlayerScreen: React.FC = () => {
               </Text>
             </View>
             
-            {/* Countdown - Absolutely positioned overlay, doesn't affect layout */}
-            {isConfirming && (
-              <View style={styles.countdownOverlay}>
-                <View style={styles.countdownContainer}>
-                  <View style={styles.countdownCircleContainer}>
-                    {/* Background circle */}
-                    <View style={styles.countdownCircleBackground} />
-                    {/* Animated progress ring */}
-                    <Animated.View
-                      style={[
-                        styles.countdownProgressRing,
-                        {
-                          opacity: countdownProgressAnim.interpolate({
-                            inputRange: [0, 0.01, 1],
-                            outputRange: [0, 1, 1],
-                          }),
-                          transform: [
-                            {
-                              rotate: countdownProgressAnim.interpolate({
-                                inputRange: [0, 1],
-                                outputRange: ['0deg', '360deg'],
-                              }),
-                            },
-                          ],
-                        },
-                      ]}
-                    />
-                    {/* Countdown number */}
-                    <Animated.View
-                      style={[
-                        styles.countdownNumberContainer,
-                        {
-                          transform: [{ scale: countdownScaleAnim }],
-                        },
-                      ]}
-                    >
-                      <Text style={styles.countdownNumber}>{countdown}</Text>
-                    </Animated.View>
-                  </View>
-                  <Text style={styles.countdownLabel}>
-                    Confirming...
-                  </Text>
-                </View>
-              </View>
-            )}
-            
-            {/* Confirmation Message - Absolutely positioned overlay */}
-            {showConfirmationMessage && (
-              <Animated.View
-                style={[
-                  styles.confirmationMessageOverlay,
-                  {
-                    opacity: confirmationMessageAnim,
-                    transform: [
-                      {
-                        scale: confirmationMessageAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [0.9, 1],
-                        }),
-                      },
-                    ],
-                  },
-                ]}
-              >
-                <View style={styles.confirmationMessageContainer}>
-                  <Text style={styles.confirmationMessageIcon}>✓</Text>
-                  <Text style={styles.confirmationMessageText}>
-                    Saved! View in Profile
-                  </Text>
-                </View>
-              </Animated.View>
-            )}
             
             {/* Progress Bar */}
             <View 
@@ -1305,6 +1233,80 @@ export const MeditationPlayerScreen: React.FC = () => {
             {/* End Labels */}
             <View style={styles.emotionalEndLabels}>
               <Text style={styles.emotionalEndLabel}>Bad</Text>
+              
+              {/* Countdown - Positioned between Bad and Great */}
+              {isConfirming && (
+                <View style={styles.countdownOverlayBetweenLabels}>
+                  <View style={styles.countdownContainer}>
+                    <View style={styles.countdownCircleContainer}>
+                      {/* Background circle */}
+                      <View style={styles.countdownCircleBackground} />
+                      {/* Animated progress ring */}
+                      <Animated.View
+                        style={[
+                          styles.countdownProgressRing,
+                          {
+                            opacity: countdownProgressAnim.interpolate({
+                              inputRange: [0, 0.01, 1],
+                              outputRange: [0, 1, 1],
+                            }),
+                            transform: [
+                              {
+                                rotate: countdownProgressAnim.interpolate({
+                                  inputRange: [0, 1],
+                                  outputRange: ['0deg', '360deg'],
+                                }),
+                              },
+                            ],
+                          },
+                        ]}
+                      />
+                      {/* Countdown number */}
+                      <Animated.View
+                        style={[
+                          styles.countdownNumberContainer,
+                          {
+                            transform: [{ scale: countdownScaleAnim }],
+                          },
+                        ]}
+                      >
+                        <Text style={styles.countdownNumber}>{countdown}</Text>
+                      </Animated.View>
+                    </View>
+                    <Text style={styles.countdownLabel}>
+                      Confirming...
+                    </Text>
+                  </View>
+                </View>
+              )}
+              
+              {/* Confirmation Message - Positioned between Bad and Great */}
+              {showConfirmationMessage && (
+                <Animated.View
+                  style={[
+                    styles.confirmationMessageOverlayBetweenLabels,
+                    {
+                      opacity: confirmationMessageAnim,
+                      transform: [
+                        {
+                          scale: confirmationMessageAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0.9, 1],
+                          }),
+                        },
+                      ],
+                    },
+                  ]}
+                >
+                  <View style={styles.confirmationMessageContainer}>
+                    <Text style={styles.confirmationMessageIcon}>✓</Text>
+                    <Text style={styles.confirmationMessageText}>
+                      Saved! View in Profile
+                    </Text>
+                  </View>
+                </Animated.View>
+              )}
+              
               <Text style={styles.emotionalEndLabel}>Great</Text>
             </View>
           </View>
@@ -1701,7 +1703,10 @@ const styles = StyleSheet.create({
   emotionalEndLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 10,
+    position: 'relative',
+    minHeight: 60, // Reserve space for countdown/confirmation
   },
   emotionalEndLabel: {
     color: 'rgba(255, 255, 255, 0.7)',
@@ -1714,11 +1719,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     minHeight: 24, // Reserve space to prevent layout shift
   },
-  countdownOverlay: {
+  countdownOverlayBetweenLabels: {
     position: 'absolute',
-    top: 0,
     left: 0,
     right: 0,
+    top: 0,
+    bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
     pointerEvents: 'none',
@@ -1774,11 +1780,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textAlign: 'center',
   },
-  confirmationMessageOverlay: {
+  confirmationMessageOverlayBetweenLabels: {
     position: 'absolute',
-    top: 0,
     left: 0,
     right: 0,
+    top: 0,
+    bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
     pointerEvents: 'none',

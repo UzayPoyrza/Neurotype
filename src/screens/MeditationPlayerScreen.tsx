@@ -2156,7 +2156,7 @@ const styles = StyleSheet.create({
   },
   darkModeMessageOverlay: {
     position: 'absolute',
-    top: '40%',
+    top: 60, // Position at top bar area (SafeArea + padding)
     left: 0,
     right: 0,
     alignItems: 'center',

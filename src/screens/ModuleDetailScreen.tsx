@@ -3,11 +3,11 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Animated } from 're
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { SessionCard } from '../components/SessionCard';
+import { Session } from '../types';
 import { mockSessions } from '../data/mockData';
 import { mentalHealthModules } from '../data/modules';
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
-import { Session } from '../types';
 
 type ExploreStackParamList = {
   ExploreMain: undefined;
@@ -19,6 +19,56 @@ type ModuleDetailRouteProp = RouteProp<ExploreStackParamList, 'ModuleDetail'>;
 type ModuleDetailNavigationProp = StackNavigationProp<ExploreStackParamList, 'ModuleDetail'>;
 
 interface ModuleDetailScreenProps {}
+
+// Animated wrapper for SessionCard to handle removal animation
+const AnimatedSessionCard: React.FC<{
+  session: Session;
+  onStart: () => void;
+  variant: 'list';
+  onLike: (isLiked: boolean) => void;
+  isRemoving: boolean;
+}> = ({ session, onStart, variant, onLike, isRemoving }) => {
+  const opacity = useRef(new Animated.Value(1)).current;
+  const translateX = useRef(new Animated.Value(0)).current;
+  
+  useEffect(() => {
+    if (isRemoving) {
+      // Animate out: fade and slide to the right
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateX, {
+          toValue: 300,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      // Reset for new items
+      opacity.setValue(1);
+      translateX.setValue(0);
+    }
+  }, [isRemoving]);
+  
+  return (
+    <Animated.View
+      style={{
+        opacity,
+        transform: [{ translateX }],
+      }}
+    >
+      <SessionCard
+        session={session}
+        onStart={onStart}
+        variant={variant}
+        onLike={onLike}
+      />
+    </Animated.View>
+  );
+};
 
 export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
   const route = useRoute<ModuleDetailRouteProp>();
@@ -39,7 +89,10 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  const handleLike = (isLiked: boolean) => {
+  // Track sessions that are being removed (for animation)
+  const [removingSessionIds, setRemovingSessionIds] = useState<Set<string>>(new Set());
+  
+  const handleLike = (isLiked: boolean, sessionId?: string) => {
     // Clear any existing timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -54,6 +107,19 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
     // Set the action type and show message
     setIsLikedAction(isLiked);
     setShowAddedMessage(true);
+    
+    // If unliking and we're in the liked meditations module, animate removal
+    if (!isLiked && moduleId === 'liked-meditations' && sessionId) {
+      setRemovingSessionIds(prev => new Set(prev).add(sessionId));
+      // Remove from removing set after animation completes
+      setTimeout(() => {
+        setRemovingSessionIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(sessionId);
+          return newSet;
+        });
+      }, 300);
+    }
     
     // Fade in animation
     Animated.timing(fadeAnim, {
@@ -107,7 +173,9 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
   const moduleSessions = useMemo(() => {
     // Handle liked meditations case
     if (moduleId === 'liked-meditations') {
-      return mockSessions.filter(session => likedSessionIds.includes(session.id));
+      return mockSessions.filter(session => 
+        likedSessionIds.includes(session.id) || removingSessionIds.has(session.id)
+      );
     }
     
     if (!module) return [];
@@ -133,7 +201,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
     return mockSessions.filter(session => 
       relevantGoals.includes(session.goal)
     );
-  }, [moduleId, module, likedSessionIds]);
+  }, [moduleId, module, likedSessionIds, removingSessionIds]);
 
   const handleSessionStart = (session: Session) => {
     // Navigate to MeditationDetail screen instead of setting active session
@@ -184,14 +252,18 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
       <View style={styles.content}>
         <FlatList
           data={moduleSessions}
-          renderItem={({ item }) => (
-            <SessionCard
-              session={item}
-              onStart={() => handleSessionStart(item)}
-              variant="list"
-              onLike={handleLike}
-            />
-          )}
+          renderItem={({ item }) => {
+            const isRemoving = removingSessionIds.has(item.id);
+            return (
+              <AnimatedSessionCard
+                session={item}
+                onStart={() => handleSessionStart(item)}
+                variant="list"
+                onLike={(isLiked) => handleLike(isLiked, item.id)}
+                isRemoving={isRemoving}
+              />
+            );
+          }}
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContainer}

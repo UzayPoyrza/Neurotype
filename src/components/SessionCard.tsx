@@ -9,7 +9,7 @@ interface SessionCardProps {
   session: Session;
   onStart: () => void;
   variant?: 'recommended' | 'list';
-  onLike?: (isLiked: boolean) => void;
+  onLike?: (isLiked: boolean, sessionId?: string) => void;
 }
 
 export const SessionCard: React.FC<SessionCardProps> = ({ 
@@ -63,7 +63,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
     
     // Show message for both like and unlike actions
     if (onLike) {
-      onLike(!wasFavorited); // true if liked, false if unliked
+      onLike(!wasFavorited, session.id); // true if liked, false if unliked, pass sessionId
     }
   };
 

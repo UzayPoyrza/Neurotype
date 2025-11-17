@@ -262,16 +262,24 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
       }));
 
     const tomorrowCandidate = moduleSessions[completedSessions.length + todayCount];
+    
+    // Always create a tomorrow session - use a placeholder if none available
+    const tomorrowSession = tomorrowCandidate
+      ? {
+          ...tomorrowCandidate,
+          id: `${tomorrowCandidate.id}-tomorrow`,
+        }
+      : moduleSessions.length > 0
+      ? {
+          ...moduleSessions[0],
+          id: `${moduleSessions[0].id}-tomorrow-placeholder`,
+        }
+      : undefined;
 
     return {
       completedSessions,
       todaySessions,
-      tomorrowSession: tomorrowCandidate
-        ? {
-            ...tomorrowCandidate,
-            id: `${tomorrowCandidate.id}-tomorrow`,
-          }
-        : undefined,
+      tomorrowSession,
     };
   }, [module, userProgress]);
 
@@ -618,11 +626,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   };
 
   const renderTomorrowPreview = () => {
-    if (!tomorrowSession) {
-      return null;
-    }
-
-    // Locked version when today is not completed
+    // Always show locked version when today is not completed
     if (!todayCompleted) {
       return (
         <View
@@ -652,7 +656,11 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
       );
     }
 
-    // Preview version when today is completed
+    // Preview version when today is completed - only show if tomorrowSession exists
+    if (!tomorrowSession) {
+      return null;
+    }
+
     const glow = glowAnim.interpolate({
       inputRange: [0, 1],
       outputRange: [0.85, 1],

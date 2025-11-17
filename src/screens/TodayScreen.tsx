@@ -32,6 +32,7 @@ export const TodayScreen: React.FC = () => {
   const navigation = useNavigation<TodayScreenNavigationProp>();
   const { setActiveSession, setGlobalBackgroundColor, setCurrentScreen, setTodayModuleId } = useStore();
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
+  const userProgress = useStore(state => state.userProgress);
   
   // Module and session state management
   const [selectedModuleId, setSelectedModuleId] = useState('anxiety'); // Default to anxiety
@@ -204,6 +205,50 @@ export const TodayScreen: React.FC = () => {
       .filter(session => !todayIds.includes(session.id))
       .slice(0, 2);
   }, [moduleSessionsForRoadmap, todaySessions]);
+
+  // Calculate timeline progress for preview
+  const timelineProgress = useMemo(() => {
+    const totalSessions = userProgress.sessionDeltas.length;
+    
+    const milestones = [
+      { sessionsRequired: 7, timeRange: '0–1 Week' },
+      { sessionsRequired: 28, timeRange: '2–4 Weeks' },
+      { sessionsRequired: 56, timeRange: '6–8 Weeks' },
+      { sessionsRequired: 90, timeRange: '3 Months' },
+      { sessionsRequired: 180, timeRange: '6 Months' },
+      { sessionsRequired: 365, timeRange: '1 Year' },
+    ];
+    
+    // Find current milestone - the one the user is working towards
+    let nextMilestone = milestones[0];
+    let isCompleted = false;
+    
+    for (let i = 0; i < milestones.length; i++) {
+      if (totalSessions < milestones[i].sessionsRequired) {
+        nextMilestone = milestones[i];
+        break;
+      }
+      // If we've completed all milestones, use the last one
+      if (i === milestones.length - 1 && totalSessions >= milestones[i].sessionsRequired) {
+        nextMilestone = milestones[i];
+        isCompleted = true;
+      }
+    }
+    
+    const progress = isCompleted 
+      ? 100 
+      : Math.min(100, (totalSessions / nextMilestone.sessionsRequired) * 100);
+    const sessionsRemaining = isCompleted 
+      ? 0 
+      : Math.max(0, nextMilestone.sessionsRequired - totalSessions);
+    
+    return {
+      totalSessions,
+      nextMilestone,
+      progress,
+      sessionsRemaining,
+    };
+  }, [userProgress]);
 
   const formatCompletedLabel = useCallback((index: number) => {
     if (index === 0) return 'Yesterday';
@@ -666,6 +711,34 @@ export const TodayScreen: React.FC = () => {
                 </View>
               </View>
 
+              {/* Timeline Progress Preview */}
+              <View style={styles.progressPreviewTimelineSection}>
+                <View style={styles.progressPreviewTimelineHeader}>
+                  <Text style={styles.progressPreviewTimelineLabel}>Neuroadaptation</Text>
+                  <Text style={[styles.progressPreviewTimelineProgress, { color: selectedModule.color }]}>
+                    {Math.round(timelineProgress.progress)}%
+                  </Text>
+                </View>
+                <View style={styles.progressPreviewTimelineBarContainer}>
+                  <View style={styles.progressPreviewTimelineBarTrack}>
+                    <View 
+                      style={[
+                        styles.progressPreviewTimelineBarFill,
+                        {
+                          width: `${timelineProgress.progress}%`,
+                          backgroundColor: selectedModule.color,
+                        }
+                      ]} 
+                    />
+                  </View>
+                </View>
+                <Text style={styles.progressPreviewTimelineText}>
+                  {timelineProgress.sessionsRemaining > 0 
+                    ? `${timelineProgress.sessionsRemaining} more sessions to ${timelineProgress.nextMilestone.timeRange}`
+                    : `Completed ${timelineProgress.nextMilestone.timeRange} milestone`}
+                </Text>
+              </View>
+
               <View style={styles.progressPreviewFooter}>
                 <Text style={styles.progressPreviewFooterText}>
                   Tap to open your full progress path
@@ -1036,6 +1109,45 @@ const styles = StyleSheet.create({
   progressPreviewFooterArrow: {
     fontSize: 20,
     fontWeight: '600',
+  },
+  progressPreviewTimelineSection: {
+    marginTop: 16,
+    marginBottom: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#f2f2f7',
+  },
+  progressPreviewTimelineHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  progressPreviewTimelineLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1d1d1f',
+  },
+  progressPreviewTimelineProgress: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  progressPreviewTimelineBarContainer: {
+    marginBottom: 6,
+  },
+  progressPreviewTimelineBarTrack: {
+    height: 6,
+    backgroundColor: '#e5e5ea',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressPreviewTimelineBarFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  progressPreviewTimelineText: {
+    fontSize: 12,
+    color: '#8e8e93',
   },
   bottomSpacing: {
     height: 120,

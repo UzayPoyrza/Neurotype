@@ -202,13 +202,13 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   settingSection: {
-    marginBottom: 32,
+    marginBottom: 12,
   },
   sectionTitle: {
     fontSize: 22,
     fontWeight: '700',
     color: '#000000',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   settingItem: {
     backgroundColor: '#ffffff',

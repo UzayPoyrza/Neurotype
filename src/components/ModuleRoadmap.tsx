@@ -1,27 +1,26 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, Animated, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, Animated, TouchableOpacity, Dimensions, LayoutChangeEvent, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Session } from '../types';
 import { MentalHealthModule } from '../data/modules';
 import { mockSessions } from '../data/mockData';
-import { theme } from '../styles/theme';
 import { useStore } from '../store/useStore';
+import { theme } from '../styles/theme';
 
-interface MeditationHistoryItem {
+type TodayStackParamList = {
+  TodayMain: undefined;
+  Roadmap: undefined;
+  MeditationDetail: { sessionId: string };
+};
+
+type ModuleRoadmapNavigationProp = StackNavigationProp<TodayStackParamList>;
+
+interface CompletedMeditation {
   id: string;
   session: Session;
   completedDate: Date;
-  status: 'completed' | 'available' | 'suggested';
-  isToday?: boolean;
-  isRecommended?: boolean;
-}
-
-interface TodaySection {
-  id: string;
-  sessions: Session[];
-  status: 'available' | 'completed';
-  isToday: true;
-  recommendedSessionId: string;
 }
 
 interface ModuleRoadmapProps {
@@ -33,6 +32,159 @@ interface ModuleRoadmapProps {
   onBackPress?: () => void;
 }
 
+type TabType = 'timeline' | 'overview';
+
+interface Milestone {
+  id: string;
+  title: string;
+  timeRange: string;
+  sessionsRequired: number;
+  description: string;
+  whatYouFeel: string;
+}
+
+interface NeuroadaptationCardProps {
+  milestone: Milestone;
+  progress: number;
+  isUnlocked: boolean;
+  isPartiallyComplete: boolean;
+  totalSessions: number;
+  index: number;
+  accentColor: string;
+}
+
+const NeuroadaptationCard: React.FC<NeuroadaptationCardProps> = ({
+  milestone,
+  progress,
+  isUnlocked,
+  isPartiallyComplete,
+  totalSessions,
+  index,
+  accentColor,
+}) => {
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const cardOpacity = useRef(new Animated.Value(0)).current;
+  const cardScale = useRef(new Animated.Value(0.95)).current;
+
+  useEffect(() => {
+    // Stagger card animations
+    Animated.parallel([
+      Animated.timing(cardOpacity, {
+        toValue: 1,
+        duration: 400,
+        delay: index * 100,
+        useNativeDriver: true,
+      }),
+      Animated.spring(cardScale, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        delay: index * 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Animate progress bar
+    Animated.timing(progressAnim, {
+      toValue: progress / 100,
+      duration: 1200,
+      delay: 300 + index * 100,
+      useNativeDriver: false,
+    }).start();
+  }, [progress, index, cardOpacity, cardScale, progressAnim]);
+
+  const progressWidth = progressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+    extrapolate: 'clamp',
+  });
+
+  const progressOpacity = progressAnim.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [0.3, 0.7, 1],
+    extrapolate: 'clamp',
+  });
+
+  // Convert hex to RGB for rgba colors
+  const hexToRgb = (hex: string) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result
+      ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16),
+        }
+      : { r: 255, g: 107, b: 107 }; // Default to red
+  };
+
+  const rgb = hexToRgb(accentColor);
+  const lightColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.1)`;
+  const borderColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.4)`;
+
+  return (
+    <Animated.View
+      style={[
+        styles.neuroCard,
+        {
+          opacity: cardOpacity,
+          transform: [{ scale: cardScale }],
+          borderLeftWidth: 3,
+          borderLeftColor: borderColor,
+        },
+      ]}
+    >
+      <View style={styles.neuroCardHeader}>
+        <View style={styles.neuroCardTitleRow}>
+          <Text style={styles.neuroCardTitle}>{milestone.title}</Text>
+          {isUnlocked && (
+            <View style={[styles.checkmarkBadge, { backgroundColor: accentColor }]}>
+              <Text style={styles.checkmarkText}>✓</Text>
+            </View>
+          )}
+        </View>
+        <Text style={styles.neuroCardTimeRange}>{milestone.timeRange}</Text>
+      </View>
+
+      <View style={styles.progressBarContainer}>
+        <View style={styles.progressBarTrack}>
+          <Animated.View
+            style={[
+              styles.progressBarFill,
+              {
+                width: progressWidth,
+                opacity: progressOpacity,
+                backgroundColor: accentColor,
+              },
+            ]}
+          />
+        </View>
+        <Text style={[styles.progressPercentage, { color: accentColor }]}>
+          {Math.round(progress)}%
+        </Text>
+      </View>
+
+      <Text style={styles.neuroCardDescription}>{milestone.description}</Text>
+
+      {isPartiallyComplete || isUnlocked ? (
+        <View style={[
+          styles.whatYouFeelContainer,
+          {
+            borderLeftColor: accentColor,
+            backgroundColor: lightColor,
+          }
+        ]}>
+          <Text style={[styles.whatYouFeelLabel, { color: accentColor }]}>What you feel:</Text>
+          <Text style={styles.whatYouFeelText}>{milestone.whatYouFeel}</Text>
+        </View>
+      ) : (
+        <Text style={styles.sessionsRequired}>
+          {milestone.sessionsRequired - totalSessions} more sessions to unlock
+        </Text>
+      )}
+    </Animated.View>
+  );
+};
+
 export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   module,
   todayCompleted = false,
@@ -41,93 +193,155 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   onSessionSelect,
   onBackPress,
 }) => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<ModuleRoadmapNavigationProp>();
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const scrollViewRef = useRef<ScrollView>(null);
   const pulseAnim = useRef(new Animated.Value(0)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
+  const [scrollViewHeight, setScrollViewHeight] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
+  const [activeTab, setActiveTab] = useState<TabType>('timeline');
+  const screenWidth = Dimensions.get('window').width;
+  const scrollX = useRef(new Animated.Value(0)).current; // Initialize to timeline tab position
+  const horizontalScrollRef = useRef<ScrollView>(null);
+  const completedScrollRef = useRef<ScrollView>(null);
+  const [showScrollArrow, setShowScrollArrow] = useState(true);
+  const scrollArrowOpacity = useRef(new Animated.Value(1)).current;
+  const scrollViewWidth = useRef(0);
 
-  // Generate meditation history based on module
-  const generateMeditationHistory = (): (MeditationHistoryItem | TodaySection)[] => {
-    const items: (MeditationHistoryItem | TodaySection)[] = [];
-    
-    // Filter sessions relevant to this module
-    const getModuleSessions = () => {
-      const relevantGoals = {
-        'anxiety': ['anxiety'],
-        'adhd': ['focus'],
-        'depression': ['sleep', 'focus'],
-        'bipolar': ['anxiety', 'sleep'],
-        'panic': ['anxiety'],
-        'ptsd': ['anxiety', 'sleep'],
-        'stress': ['anxiety', 'focus'],
-        'sleep': ['sleep'],
-        'focus': ['focus'],
-        'emotional-regulation': ['anxiety', 'focus'],
-        'mindfulness': ['focus', 'sleep'],
-        'self-compassion': ['sleep', 'focus'],
-      };
-      
-      const goals = relevantGoals[module.id as keyof typeof relevantGoals] || ['focus'];
-      return mockSessions.filter(session => goals.includes(session.goal));
+  const roadmapData = useMemo(() => {
+    const relevantGoals = {
+      anxiety: ['anxiety'],
+      adhd: ['focus'],
+      depression: ['sleep', 'focus'],
+      bipolar: ['anxiety', 'sleep'],
+      panic: ['anxiety'],
+      ptsd: ['anxiety', 'sleep'],
+      stress: ['anxiety', 'focus'],
+      sleep: ['sleep'],
+      focus: ['focus'],
+      'emotional-regulation': ['anxiety', 'focus'],
+      mindfulness: ['focus', 'sleep'],
+      'self-compassion': ['sleep', 'focus'],
     };
 
-    const moduleSessions = getModuleSessions();
-    const completedCount = 3; // Simulate 3 completed meditations
-    
-    // Add completed meditations
-    for (let i = 0; i < completedCount; i++) {
-      const session = moduleSessions[i % moduleSessions.length];
+    const goals = relevantGoals[module.id as keyof typeof relevantGoals] || ['focus'];
+    const moduleSessions = mockSessions.filter(session => goals.includes(session.goal));
+
+    const completedCount = Math.min(6, Math.max(2, moduleSessions.length > 3 ? moduleSessions.length - 4 : 3));
+    const todayCount = Math.min(3, Math.max(1, moduleSessions.length - completedCount));
+
+    const completedSessions: CompletedMeditation[] = [];
+    for (let i = 0; i < completedCount && i < moduleSessions.length; i++) {
+      const session = moduleSessions[i];
       const completedDate = new Date();
       completedDate.setDate(completedDate.getDate() - (completedCount - i));
-      
-      items.push({
-        id: `${module.id}-completed-${i}`,
+
+      completedSessions.push({
+        id: `${module.id}-completed-${session.id}-${i}`,
         session: {
           ...session,
           id: `${session.id}-completed-${i}`,
         },
         completedDate,
-        status: 'completed',
-      } as MeditationHistoryItem);
+      });
     }
+
+    const todaySessions = moduleSessions
+      .slice(completedCount, completedCount + todayCount)
+      .map((session, idx) => ({
+        ...session,
+        id: `${session.id}-today-${idx}`,
+      }));
+
+    const tomorrowCandidate = moduleSessions[completedCount + todayCount];
+
+    return {
+      completedSessions,
+      todaySessions,
+      tomorrowSession: tomorrowCandidate
+        ? {
+            ...tomorrowCandidate,
+            id: `${tomorrowCandidate.id}-tomorrow`,
+          }
+        : undefined,
+    };
+  }, [module]);
+
+  const { completedSessions, todaySessions, tomorrowSession } = roadmapData;
+  const todayRecommendedSessionId = todaySessions[0]?.id;
+  
+  const titleText = `${module.title} Journey`;
+  // Use smaller font for longer titles
+  // <= 20 chars: 30px, 21-24 chars: 26px, > 24 chars: 22px
+  const titleFontSize = titleText.length > 24 ? 22 : titleText.length > 20 ? 26 : 30;
+
+  const handleTabChange = (tab: TabType) => {
+    const tabIndex = tab === 'timeline' ? 0 : 1;
     
-    // Add Today's section
-    const todaySessions = moduleSessions.slice(0, 3);
-    const recommendedSession = todaySessions[0];
+    // Scroll to the appropriate page
+    horizontalScrollRef.current?.scrollTo({
+      x: tabIndex * screenWidth,
+      animated: true,
+    });
     
-    items.push({
-      id: `${module.id}-today`,
-      sessions: todaySessions.map((s, idx) => ({
-        ...s,
-        id: `${s.id}-today-${idx}`,
-        title: idx === 0 ? `${s.title} (Recommended)` : s.title,
-      })),
-      status: todayCompleted ? 'completed' : 'available',
-      isToday: true,
-      recommendedSessionId: recommendedSession.id,
-    } as TodaySection);
-    
-    // Add suggested meditations for exploration
-    for (let i = completedCount + 3; i < Math.min(completedCount + 6, moduleSessions.length); i++) {
-      const session = moduleSessions[i % moduleSessions.length];
-      
-      items.push({
-        id: `${module.id}-suggested-${i}`,
-        session: {
-          ...session,
-          id: `${session.id}-suggested-${i}`,
-        },
-        completedDate: new Date(),
-        status: 'suggested',
-      } as MeditationHistoryItem);
-    }
-    
-    return items;
+    setActiveTab(tab);
   };
 
-  const meditationHistory = generateMeditationHistory();
-  const todayIndex = meditationHistory.findIndex(item => item.isToday);
+  const handleScroll = (event: any) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    
+    // Update scrollX animated value for tab indicator
+    scrollX.setValue(offsetX);
+    
+    const tabIndex = Math.round(offsetX / screenWidth);
+    
+    // Update active tab based on scroll position
+    const newTab = tabIndex === 0 ? 'timeline' : 'overview';
+    if (newTab !== activeTab) {
+      setActiveTab(newTab);
+    }
+  };
+
+  const handleScrollEnd = (event: any) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const maxScrollX = screenWidth; // Maximum scroll position (Overview page)
+    
+    // Check if we're at the left edge (Timeline page) and scrolled beyond it
+    if (offsetX < -30) {
+      // Navigate back
+      if (onBackPress) {
+        onBackPress();
+      } else {
+        navigation.goBack();
+      }
+      return;
+    }
+    
+    // Check if we're at the right edge (Overview page) and scrolled beyond it
+    if (offsetX > maxScrollX + 30) {
+      // Snap back to the Overview page
+      horizontalScrollRef.current?.scrollTo({
+        x: maxScrollX,
+        animated: true,
+      });
+    }
+  };
+
+  const handleMomentumScrollEnd = (event: any) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    
+    // Check if we're at the left edge (Timeline page) and scrolled beyond it
+    if (offsetX < -30) {
+      // Navigate back
+      if (onBackPress) {
+        onBackPress();
+      } else {
+        navigation.goBack();
+      }
+    }
+  };
+
 
   useEffect(() => {
     // Pulse animation for today's node
@@ -169,533 +383,838 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
     glow();
   }, [glowAnim]);
 
-  useEffect(() => {
-    // Auto-scroll to today's level
-    const timer = setTimeout(() => {
-      if (scrollViewRef.current && todayIndex !== -1) {
-        const nodeHeight = 120;
-        const screenHeight = Dimensions.get('window').height;
-        const scrollToY = Math.max(0, (todayIndex * nodeHeight) - (screenHeight / 2) + 60);
-        
-        scrollViewRef.current.scrollTo({
-          y: scrollToY,
-          animated: true,
-        });
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [todayIndex]);
+  const completedSectionY = useRef(0);
+  const todaySectionY = useRef(0);
+  const tomorrowSectionY = useRef(0);
 
 
-  const renderMeditationItem = (item: MeditationHistoryItem | TodaySection, index: number) => {
-    if (item.isToday && 'sessions' in item) {
-      return renderTodaySection(item as TodaySection, index);
+
+  const renderCompletedMeditations = () => {
+    if (!completedSessions.length) {
+      return null;
     }
-    return renderHistoryItem(item as MeditationHistoryItem, index);
-  };
 
-  const renderHistoryItem = (item: MeditationHistoryItem, index: number) => {
-    const isCompleted = item.status === 'completed';
-    const isSuggested = item.status === 'suggested';
-    const isAvailable = item.status === 'available';
-    
     const formatDate = (date: Date) => {
       const today = new Date();
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
-      
+
       if (date.toDateString() === today.toDateString()) {
         return 'Today';
-      } else if (date.toDateString() === yesterday.toDateString()) {
-        return 'Yesterday';
-      } else {
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       }
+      if (date.toDateString() === yesterday.toDateString()) {
+        return 'Yesterday';
+      }
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     };
-    
+
     return (
-      <TouchableOpacity
-        onPress={() => onSessionSelect?.(item.session)}
-        disabled={isSuggested}
-        activeOpacity={0.7}
-        style={[
-          styles.meditationHistoryCard,
-          isCompleted && styles.meditationHistoryCardCompleted,
-          isSuggested && styles.meditationHistoryCardSuggested,
-          isAvailable && styles.meditationHistoryCardAvailable,
-        ]}
+      <View
+        style={[styles.section, styles.sectionFirst]}
+        onLayout={event => {
+          completedSectionY.current = event.nativeEvent.layout.y;
+        }}
       >
-        {/* Status Indicator */}
-        <View style={[
-          styles.meditationStatusIndicator,
-          { backgroundColor: isCompleted ? '#34C759' : isAvailable ? module.color : '#8E8E93' }
-        ]}>
-          <Text style={styles.meditationStatusIcon}>
-            {isCompleted ? '✓' : isAvailable ? '▶' : '✨'}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Recent Sessions</Text>
+          <Text style={styles.sectionSubtitle}>
+            {completedSessions.length} completed {completedSessions.length === 1 ? 'session' : 'sessions'}
           </Text>
         </View>
-
-        {/* Meditation Content */}
-        <View style={styles.meditationContent}>
-          <Text style={[
-            styles.meditationTitle,
-            isSuggested && styles.meditationTitleSuggested,
-          ]} numberOfLines={2}>
-            {item.session.title}
-          </Text>
-          
-          <View style={styles.meditationMeta}>
-            <Text style={[
-              styles.meditationDuration,
-              isSuggested && styles.meditationMetaSuggested,
-            ]}>
-              {item.session.durationMin} min • {item.session.modality}
-            </Text>
-            
-            {isCompleted && (
-              <Text style={styles.meditationDate}>
-                {formatDate(item.completedDate)}
-              </Text>
-            )}
-            
-            {isSuggested && (
-              <Text style={styles.meditationSuggestedLabel}>
-                Explore
-              </Text>
-            )}
-          </View>
+        <View style={styles.completedScrollContainer}>
+          <ScrollView
+            ref={completedScrollRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.completedScrollContent}
+            bounces={false}
+            onScroll={(event) => {
+              const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+              const isAtEnd = contentOffset.x + layoutMeasurement.width >= contentSize.width - 10;
+              const hasOverflow = contentSize.width > layoutMeasurement.width;
+              
+              if (isAtEnd || !hasOverflow) {
+                if (showScrollArrow) {
+                  setShowScrollArrow(false);
+                  Animated.timing(scrollArrowOpacity, {
+                    toValue: 0,
+                    duration: 300,
+                    useNativeDriver: true,
+                  }).start();
+                }
+              } else {
+                if (!showScrollArrow) {
+                  setShowScrollArrow(true);
+                  Animated.timing(scrollArrowOpacity, {
+                    toValue: 1,
+                    duration: 300,
+                    useNativeDriver: true,
+                  }).start();
+                }
+              }
+            }}
+            onLayout={(event) => {
+              scrollViewWidth.current = event.nativeEvent.layout.width;
+            }}
+            onContentSizeChange={(contentWidth, contentHeight) => {
+              // Check if there's overflow on content size change
+              const hasOverflow = contentWidth > scrollViewWidth.current;
+              if (!hasOverflow && showScrollArrow) {
+                setShowScrollArrow(false);
+                Animated.timing(scrollArrowOpacity, {
+                  toValue: 0,
+                  duration: 300,
+                  useNativeDriver: true,
+                }).start();
+              } else if (hasOverflow && !showScrollArrow) {
+                setShowScrollArrow(true);
+                Animated.timing(scrollArrowOpacity, {
+                  toValue: 1,
+                  duration: 300,
+                  useNativeDriver: true,
+                }).start();
+              }
+            }}
+            scrollEventThrottle={16}
+          >
+            {completedSessions.map(item => (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.completedCard}
+                onPress={() => navigation.navigate('MeditationDetail', { sessionId: item.session.id })}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.completedTitle} numberOfLines={2}>
+                  {item.session.title}
+                </Text>
+                <Text style={styles.completedMeta}>
+                  {item.session.durationMin} min • {item.session.modality}
+                </Text>
+                <Text style={styles.completedDate}>{formatDate(item.completedDate)}</Text>
+                <View style={[styles.completedBadge, { backgroundColor: module.color }]}>
+                  <Text style={styles.completedBadgeIcon}>✓</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+          {completedSessions.length > 0 && (
+            <Animated.View
+              style={[
+                styles.scrollArrow,
+                {
+                  opacity: scrollArrowOpacity,
+                },
+              ]}
+              pointerEvents="none"
+            >
+              <Text style={styles.scrollArrowText}>›</Text>
+            </Animated.View>
+          )}
         </View>
-
-        {/* Action Icon */}
-        <View style={styles.meditationAction}>
-          {isCompleted && (
-            <Text style={styles.meditationCompletedIcon}>🎉</Text>
-          )}
-          
-          {isAvailable && (
-            <View style={[styles.meditationPlayButton, { backgroundColor: module.color }]}>
-              <Text style={styles.meditationPlayIcon}>▶</Text>
-            </View>
-          )}
-          
-          {isSuggested && (
-            <Text style={styles.meditationExploreIcon}>🔍</Text>
-          )}
-        </View>
-      </TouchableOpacity>
+      </View>
     );
   };
 
-  const renderTodaySection = (section: TodaySection, index: number) => {
-    const isCompleted = section.status === 'completed';
+  const renderTodayPlan = () => {
+    // Only show the recommended session
+    const recommendedSession = todaySessions.find(session => session.id === todayRecommendedSessionId);
+    
+    if (!recommendedSession) {
+      return null;
+    }
+
+    const scale = pulseAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [1, 1.04],
+    });
+    const shadowOpacity = pulseAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.12, 0.3],
+    });
 
     return (
-      <View style={styles.todaySection}>
-        {/* Today Header */}
-        <View style={styles.todaySectionHeader}>
-          <View style={[styles.todaySectionIcon, { backgroundColor: module.color }]}>
-            <Text style={styles.todaySectionIconText}>🌟</Text>
-          </View>
-          <View style={styles.todaySectionHeaderText}>
-            <Text style={styles.todaySectionTitle}>Today's Focus</Text>
-            <Text style={styles.todaySectionSubtitle}>Choose your next meditation</Text>
-          </View>
+      <View
+        style={styles.section}
+        onLayout={event => {
+          todaySectionY.current = event.nativeEvent.layout.y;
+        }}
+      >
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Today's Plan</Text>
+          <Text style={styles.sectionSubtitle}>
+            {todayCompleted ? 'You finished today\'s check-in 🎉' : 'Your recommended meditation for today'}
+          </Text>
         </View>
-
-        {/* Today Sessions */}
-        <View style={styles.todaySessions}>
-          {section.sessions.map((session, idx) => {
-            const isRecommended = session.id.includes(section.recommendedSessionId);
-            
-            return (
-              <TouchableOpacity
-                key={session.id}
-                onPress={() => onSessionSelect?.(session)}
-                activeOpacity={0.7}
-                style={[
-                  styles.todaySessionCard,
-                  isRecommended && styles.todaySessionCardRecommended,
-                ]}
-              >
-                {/* Recommended Badge */}
-                {isRecommended && (
-                  <View style={[styles.recommendedBadge, { backgroundColor: module.color }]}>
-                    <Text style={styles.recommendedBadgeText}>★</Text>
-                  </View>
-                )}
-
-                {/* Session Content */}
-                <View style={styles.todaySessionContent}>
-                  <Text style={[
-                    styles.todaySessionTitle,
-                    isRecommended && { color: module.color }
-                  ]} numberOfLines={2}>
-                    {session.title.replace(' (Recommended)', '')}
-                  </Text>
-                  
-                  <Text style={styles.todaySessionMeta}>
-                    {session.durationMin} min • {session.modality}
-                  </Text>
-                  
-                  {isRecommended && (
-                    <Text style={[styles.recommendedLabel, { color: module.color }]}>
-                      Recommended for you
-                    </Text>
-                  )}
+        <View style={styles.todayList}>
+          <Animated.View
+            style={[
+              styles.todayCardWrapper,
+              {
+                transform: [{ scale }],
+                shadowOpacity,
+                shadowColor: module.color,
+              },
+            ]}
+          >
+            <TouchableOpacity
+              onPress={() => navigation.navigate('MeditationDetail', { sessionId: recommendedSession.id })}
+              activeOpacity={0.85}
+              style={[
+                styles.todayCard,
+                { borderColor: module.color, backgroundColor: '#F7F9FF' },
+              ]}
+            >
+              {todayCompleted && (
+                <View style={[styles.todayCardCheckmark, { backgroundColor: module.color }]}>
+                  <Text style={styles.todayCardCheckmarkIcon}>✓</Text>
                 </View>
-
-                {/* Play Button */}
+              )}
+              <View style={styles.todayCardHeader}>
+                <Text style={styles.todayCardDuration}>
+                  {recommendedSession.durationMin} min • {recommendedSession.modality}
+                </Text>
+              </View>
+              <Text
+                style={[styles.todayCardTitle, { color: module.color }]}
+                numberOfLines={2}
+              >
+                {recommendedSession.title}
+              </Text>
+              <View style={styles.todayCardFooter}>
+                <Text style={styles.todayCardCTA}>{todayCompleted ? 'Replay session' : 'Begin session'}</Text>
                 <View style={[styles.todayPlayButton, { backgroundColor: module.color }]}>
                   <Text style={styles.todayPlayIcon}>▶</Text>
                 </View>
-              </TouchableOpacity>
-            );
-          })}
+              </View>
+              <Text style={[styles.recommendedCopy, { color: module.color }]}>
+                Recommended for you today
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
         </View>
       </View>
     );
   };
 
-  return (
-    <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
-      {/* Navigation Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBackPress || (() => navigation.goBack())} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{module.title} Journey</Text>
-      </View>
+  const renderTomorrowPreview = () => {
+    if (!tomorrowSession) {
+      return null;
+    }
 
-      {/* Meditation History */}
-      <ScrollView
-        ref={scrollViewRef}
-        style={[styles.meditationHistoryScroll, { backgroundColor: globalBackgroundColor }]}
-        contentContainerStyle={styles.meditationHistoryContent}
-        showsVerticalScrollIndicator={false}
-        bounces={true}
-      >
-        <View style={styles.meditationHistoryList}>
-          {meditationHistory.map((item, index) => (
-            <View key={item.id} style={styles.meditationHistoryItem}>
-              {renderMeditationItem(item, index)}
-              {index < meditationHistory.length - 1 && (
-                <View style={styles.meditationHistorySeparator} />
-              )}
+    // Locked version when today is not completed
+    if (!todayCompleted) {
+      return (
+        <View
+          style={styles.section}
+          onLayout={event => {
+            tomorrowSectionY.current = event.nativeEvent.layout.y;
+          }}
+        >
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Tomorrow</Text>
+            <Text style={styles.sectionSubtitle}>Finish today's meditation to unlock</Text>
+          </View>
+          <View style={[styles.tomorrowCard, styles.tomorrowCardLocked]}>
+            <View style={styles.tomorrowHeader}>
+              <View style={[styles.tomorrowIcon, styles.tomorrowIconLocked, { backgroundColor: '#D1D1D6' }]}>
+                <Text style={styles.tomorrowIconText}>🔒</Text>
+              </View>
+              <View style={styles.tomorrowLockedContent}>
+                <Text style={styles.tomorrowLockedTitle}>Locked</Text>
+                <Text style={styles.tomorrowLockedDescription}>
+                  Complete today's sessions to see what's coming next
+                </Text>
+              </View>
             </View>
-          ))}
+          </View>
+        </View>
+      );
+    }
+
+    // Preview version when today is completed
+    const glow = glowAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.85, 1],
+    });
+
+    return (
+      <Animated.View
+        style={[
+          styles.section,
+          {
+            opacity: glow,
+          },
+        ]}
+        onLayout={event => {
+          tomorrowSectionY.current = event.nativeEvent.layout.y;
+        }}
+      >
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Tomorrow</Text>
+          <Text style={styles.sectionSubtitle}>Preview of what's coming next</Text>
+        </View>
+        <View style={styles.tomorrowCard}>
+          <View style={styles.tomorrowHeader}>
+            <View style={[styles.tomorrowIcon, { backgroundColor: module.color }]}>
+              <Text style={styles.tomorrowIconText}>➡︎</Text>
+            </View>
+            <View>
+              <Text style={styles.tomorrowLabel}>Up next</Text>
+              <Text style={styles.tomorrowTitle} numberOfLines={1}>
+                {tomorrowSession.title}
+              </Text>
+            </View>
+          </View>
+          <Text style={styles.tomorrowMeta}>
+            {tomorrowSession.durationMin} min • {tomorrowSession.modality}
+          </Text>
+          <Text style={styles.tomorrowDescription}>
+            Keep momentum going tomorrow to stay aligned with your {module.title} path.
+          </Text>
+        </View>
+      </Animated.View>
+    );
+  };
+
+  // Layout handlers
+  const handleScrollViewLayout = useCallback((event: LayoutChangeEvent) => {
+    const { height } = event.nativeEvent.layout;
+    setScrollViewHeight(height);
+  }, []);
+
+  const handleContentLayout = useCallback((event: LayoutChangeEvent) => {
+    const { height } = event.nativeEvent.layout;
+    setContentHeight(height);
+  }, []);
+
+  const renderTimelinePage = () => {
+    const userProgress = useStore(state => state.userProgress);
+    const totalSessions = userProgress.sessionDeltas.length;
+    
+    // Calculate progress for each milestone based on sessions completed
+    const milestones = [
+      {
+        id: 'week1',
+        title: 'Reduced amygdala activity',
+        timeRange: '0–1 Week',
+        sessionsRequired: 7,
+        description: 'Lower acute stress reactivity. Heart rate decreases, parasympathetic activation increases. Improved attention for short periods.',
+        whatYouFeel: 'Slight calm after sessions, more aware of anxious thoughts, some restlessness (very normal at start)',
+      },
+      {
+        id: 'weeks2-4',
+        title: 'Increased prefrontal cortex regulation',
+        timeRange: '2–4 Weeks',
+        sessionsRequired: 28,
+        description: 'Better impulse control & emotional regulation. Reduced cortisol baseline levels. Thicker hippocampal gray matter begins.',
+        whatYouFeel: 'Anxiety decreases slightly but consistently, better sleep onset, you notice reactions before they happen, mood is more stable',
+      },
+      {
+        id: 'weeks6-8',
+        title: 'Amygdala density reduction',
+        timeRange: '6–8 Weeks',
+        sessionsRequired: 56,
+        description: 'Amygdala shrinks in density. Hippocampus increases (memory + learning). Default Mode Network activity decreases → Less rumination.',
+        whatYouFeel: 'Noticeably lower anxiety baseline, stress hits you less intensely, emotional resilience increases, mind wandering drops',
+      },
+      {
+        id: '3months',
+        title: 'Stronger frontal-limbic connectivity',
+        timeRange: '3 Months',
+        sessionsRequired: 90,
+        description: 'You regulate emotions automatically. Significant improvements in working memory. Lower blood pressure in many adults.',
+        whatYouFeel: 'Anxiety triggers don\'t hit as hard, you handle conflict more smoothly, you recover from stress much faster',
+      },
+      {
+        id: '6months',
+        title: 'Permanent structural changes',
+        timeRange: '6 Months',
+        sessionsRequired: 180,
+        description: 'Permanent structural changes in prefrontal cortex, anterior cingulate cortex, and insula. DMN quieting becomes your default.',
+        whatYouFeel: 'Overall anxiety level drops 30–40% on average, you begin feeling "centered" most days, your mind feels clearer',
+      },
+      {
+        id: '1year',
+        title: 'Deep neural transformation',
+        timeRange: '1 Year',
+        sessionsRequired: 365,
+        description: 'Gamma-wave activity increases. Massive increases in cortical thickness. Stronger white-matter pathways for emotional regulation.',
+        whatYouFeel: 'Deep, stable calm under most conditions, fast recovery from stress, very strong "observer mind" — thoughts don\'t control you anymore',
+      },
+    ];
+
+    return (
+      <ScrollView 
+        style={[styles.page, { width: screenWidth }]} 
+        contentContainerStyle={styles.timelinePageContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.timelineContainer}>
+          {milestones.map((milestone, index) => {
+            const progress = Math.min(100, (totalSessions / milestone.sessionsRequired) * 100);
+            const isUnlocked = totalSessions >= milestone.sessionsRequired;
+            const isPartiallyComplete = totalSessions > 0 && totalSessions < milestone.sessionsRequired;
+            
+            return (
+              <NeuroadaptationCard
+                key={milestone.id}
+                milestone={milestone}
+                progress={progress}
+                isUnlocked={isUnlocked}
+                isPartiallyComplete={isPartiallyComplete}
+                totalSessions={totalSessions}
+                index={index}
+                accentColor={module.color}
+              />
+            );
+          })}
         </View>
       </ScrollView>
+    );
+  };
+
+  const renderOverviewPage = () => (
+    <ScrollView
+      ref={scrollViewRef}
+      style={[styles.page, { width: screenWidth }]}
+      contentContainerStyle={styles.bodyContent}
+      showsVerticalScrollIndicator={false}
+      bounces={false}
+      onLayout={handleScrollViewLayout}
+      onContentSizeChange={(width, height) => {
+        setContentHeight(height);
+      }}
+    >
+      <View style={styles.contentWrapper} onLayout={handleContentLayout}>
+        <View style={[styles.summaryCard, { borderColor: module.color }]}>
+          <Text style={styles.summaryTitle}>{module.title} Progress</Text>
+          <View style={styles.summaryStatsRow}>
+            <View style={styles.summaryStat}>
+              <Text style={styles.summaryStatValue}>{completedSessions.length}</Text>
+              <Text style={styles.summaryStatLabel}>Completed</Text>
+            </View>
+            <View style={styles.summaryDivider} />
+            <View style={styles.summaryStat}>
+              <Text style={styles.summaryStatValue}>{todaySessions.length}</Text>
+              <Text style={styles.summaryStatLabel}>Today</Text>
+            </View>
+          </View>
+        </View>
+        {renderCompletedMeditations()}
+        {renderTodayPlan()}
+        {renderTomorrowPreview()}
+      </View>
+    </ScrollView>
+  );
+
+  return (
+    <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+      
+      <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+        {/* Sticky Header */}
+        <View style={styles.stickyHeader}>
+          <View style={styles.headerContent}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={onBackPress || (() => navigation.goBack())}
+            >
+              <Text style={styles.backButtonText}>←</Text>
+            </TouchableOpacity>
+            <Text style={styles.headerTitle} numberOfLines={1} ellipsizeMode="tail">{titleText}</Text>
+            <View style={styles.headerActions} />
+          </View>
+          
+          {/* Tabs in Header */}
+          <View style={styles.tabsContainer}>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'timeline' && styles.activeTab]}
+              onPress={() => handleTabChange('timeline')}
+            >
+              <Text style={[styles.tabText, activeTab === 'timeline' && styles.activeTabText]}>
+                Neuroadaptation
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'overview' && styles.activeTab]}
+              onPress={() => handleTabChange('overview')}
+            >
+              <Text style={[styles.tabText, activeTab === 'overview' && styles.activeTabText]}>
+                Overview
+              </Text>
+            </TouchableOpacity>
+            
+            {/* Animated Indicator */}
+            <Animated.View 
+              style={[
+                styles.tabIndicator,
+                {
+                  width: screenWidth / 2,
+                  transform: [{
+                    translateX: scrollX.interpolate({
+                      inputRange: [0, screenWidth],
+                      outputRange: [
+                        0, // First tab: indicator starts at left edge of screen
+                        screenWidth / 2, // Second tab: indicator extends to right edge of screen
+                      ],
+                      extrapolate: 'clamp',
+                    })
+                  }]
+                }
+              ]} 
+            />
+          </View>
+        </View>
+
+        {/* Horizontal ScrollView for pages */}
+        <ScrollView
+          ref={horizontalScrollRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onScroll={handleScroll}
+          onScrollEndDrag={handleScrollEnd}
+          onMomentumScrollEnd={handleMomentumScrollEnd}
+          scrollEventThrottle={16}
+          style={styles.horizontalScrollView}
+          bounces={false}
+        >
+          {/* Timeline Page */}
+          {renderTimelinePage()}
+          
+          {/* Overview Page */}
+          {renderOverviewPage()}
+        </ScrollView>
+      </SafeAreaView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  // Container & Layout
   container: {
     flex: 1,
+    backgroundColor: theme.health.container.backgroundColor,
   },
-  
-  // Navigation Header
-  header: {
-    backgroundColor: '#FFFFFF',
-    paddingTop: 60,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  backButton: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#f2f2f7',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    marginBottom: 16,
-  },
-  backButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#007AFF',
-    fontFamily: 'System',
-  },
-  headerTitle: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#000000',
-    textAlign: 'center',
-    fontFamily: 'System',
-  },
-  
-  
-  // Meditation History Scroll & Content
-  meditationHistoryScroll: {
+  safeArea: {
     flex: 1,
   },
-  meditationHistoryContent: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 40,
+  stickyHeader: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    zIndex: 100,
+    paddingTop: 52, // Status bar height
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
   },
-  meditationHistoryList: {
-    gap: 16,
-  },
-  meditationHistoryItem: {
-    width: '100%',
-  },
-  meditationHistorySeparator: {
-    height: 1,
-    backgroundColor: '#E5E5E7',
-    marginVertical: 8,
-  },
-  
-  // Meditation History Cards
-  meditationHistoryCard: {
-    width: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    height: 44, // Fixed height to prevent layout shifts
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backButtonText: {
+    color: '#007AFF',
+    fontSize: 24,
+    fontWeight: '400',
+  },
+  headerTitle: {
+    color: theme.colors.text.primary,
+    fontSize: 17,
+    fontWeight: '600',
+    flex: 1,
+    textAlign: 'center',
+    marginHorizontal: 16,
+  },
+  headerActions: {
+    width: 40,
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    backgroundColor: 'transparent',
+    paddingHorizontal: 0,
+    height: 44, // Fixed height to prevent layout shifts
+  },
+  tab: {
+    width: '50%',
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  activeTab: {
+    // Active tab styling handled by text color
+  },
+  tabText: {
+    fontSize: 15,
+    fontWeight: '400',
+    color: theme.colors.text.secondary,
+  },
+  activeTabText: {
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  tabIndicator: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    height: 2,
+    backgroundColor: '#007AFF',
+    borderRadius: 1,
+  },
+  horizontalScrollView: {
+    flex: 1,
+  },
+  page: {
+    flex: 1,
+  },
+  pageContent: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 100,
+  },
+  bodyContent: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 96,
+  },
+  contentWrapper: {
+    flexDirection: 'column',
+  },
+  summaryCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 2,
+  },
+  summaryTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1D1D1F',
+    fontFamily: 'System',
+  },
+  summaryStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  summaryStat: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  summaryStatValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1D1D1F',
+    fontFamily: 'System',
+  },
+  summaryStatLabel: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#8E8E93',
+    fontFamily: 'System',
+  },
+  summaryDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: '#E5E5EA',
+  },
+  section: {
+    width: '100%',
+    marginTop: 20,
+  },
+  sectionFirst: {
+    marginTop: 12,
+  },
+  sectionHeader: {
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1D1D1F',
+    fontFamily: 'System',
+  },
+  sectionSubtitle: {
+    marginTop: 4,
+    fontSize: 14,
+    color: '#8E8E93',
+    fontFamily: 'System',
+  },
+  completedScrollContainer: {
+    position: 'relative',
+  },
+  completedScrollContent: {
+    paddingRight: 12,
+    gap: 12,
+  },
+  scrollArrow: {
+    position: 'absolute',
+    right: -2,
+    top: '50%',
+    marginTop: -20,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    zIndex: 10,
+    paddingRight: 0,
+  },
+  scrollArrowText: {
+    fontSize: 40,
+    color: '#000000',
+    fontWeight: '300',
+  },
+  completedCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 8,
+    width: 160,
+    height: 120,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 2,
-    borderColor: '#F2F2F7',
-  },
-  meditationHistoryCardCompleted: {
-    borderColor: '#34C759',
-    backgroundColor: '#F0F9F0',
-  },
-  meditationHistoryCardSuggested: {
-    borderColor: '#8E8E93',
-    backgroundColor: '#F8F9FA',
-  },
-  meditationHistoryCardAvailable: {
-    borderColor: '#007AFF',
-    backgroundColor: '#F8F9FF',
-  },
-  
-  // Status Indicators
-  meditationStatusIndicator: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
+    shadowRadius: 8,
     elevation: 2,
-  },
-  meditationStatusIcon: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    fontFamily: 'System',
-  },
-  
-  // Meditation Content
-  meditationContent: {
-    flex: 1,
-    marginRight: 16,
-  },
-  meditationTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1D1D1F',
-    marginBottom: 8,
-    lineHeight: 22,
-    fontFamily: 'System',
-  },
-  meditationTitleSuggested: {
-    color: '#8E8E93',
-  },
-  meditationMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-  },
-  meditationDuration: {
-    fontSize: 14,
-    color: '#8E8E93',
-    fontFamily: 'System',
-    marginRight: 16,
-  },
-  meditationMetaSuggested: {
-    color: '#C7C7CC',
-  },
-  meditationDate: {
-    fontSize: 12,
-    color: '#34C759',
-    fontWeight: '500',
-    fontFamily: 'System',
-  },
-  meditationSuggestedLabel: {
-    fontSize: 12,
-    color: '#8E8E93',
-    fontWeight: '500',
-    fontFamily: 'System',
-  },
-  
-  // Action Icons
-  meditationAction: {
-    alignItems: 'center',
-  },
-  meditationCompletedIcon: {
-    fontSize: 24,
-  },
-  meditationPlayButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  meditationPlayIcon: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontFamily: 'System',
-    marginLeft: 1,
-  },
-  meditationExploreIcon: {
-    fontSize: 20,
-    color: '#8E8E93',
-  },
-  
-  // Today Section
-  todaySection: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 4,
-    borderWidth: 2,
-    borderColor: '#007AFF',
-  },
-  todaySectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  todaySectionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  todaySectionIconText: {
-    fontSize: 20,
-  },
-  todaySectionHeaderText: {
-    flex: 1,
-  },
-  todaySectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1D1D1F',
-    marginBottom: 4,
-    fontFamily: 'System',
-  },
-  todaySectionSubtitle: {
-    fontSize: 14,
-    color: '#8E8E93',
-    fontFamily: 'System',
-  },
-  
-  // Today Sessions
-  todaySessions: {
-    gap: 12,
-  },
-  todaySessionCard: {
-    backgroundColor: '#F8F9FA',
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#F2F2F7',
+    justifyContent: 'space-between',
     position: 'relative',
   },
-  todaySessionCardRecommended: {
-    backgroundColor: '#F8F9FF',
-    borderColor: '#007AFF',
-  },
-  recommendedBadge: {
-    position: 'absolute',
-    top: -8,
-    right: 12,
+  completedBadge: {
     width: 20,
     height: 20,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+  },
+  completedBadgeIcon: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  completedTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1C1C1E',
+    lineHeight: 19,
+    marginBottom: 2,
+    fontFamily: 'System',
+  },
+  completedMeta: {
+    fontSize: 12,
+    color: '#8E8E93',
+    marginBottom: 2,
+    fontFamily: 'System',
+  },
+  completedDate: {
+    fontSize: 12,
+    color: '#34C759',
+    fontWeight: '600',
+    fontFamily: 'System',
+  },
+  todayList: {
+    gap: 10,
+  },
+  todayCardWrapper: {
+    borderRadius: 18,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+    shadowOpacity: 0.12,
+    elevation: 4,
+  },
+  todayCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 14,
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: '#F2F2F7',
+    position: 'relative',
+  },
+  todayCardCheckmark: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 3,
   },
-  recommendedBadgeText: {
-    fontSize: 10,
+  todayCardCheckmarkIcon: {
+    fontSize: 16,
     color: '#FFFFFF',
     fontWeight: '700',
     fontFamily: 'System',
   },
-  todaySessionContent: {
-    flex: 1,
-    marginRight: 12,
+  todayCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
   },
-  todaySessionTitle: {
+  todayCardBadge: {
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  todayCardBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    fontFamily: 'System',
+  },
+  todayCardDuration: {
+    fontSize: 13,
+    color: '#8E8E93',
+    fontFamily: 'System',
+  },
+  todayCardTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#1D1D1F',
+    fontFamily: 'System',
+  },
+  todayCardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 12,
+  },
+  todayCardCTA: {
     fontSize: 15,
     fontWeight: '600',
     color: '#1D1D1F',
-    marginBottom: 4,
-    lineHeight: 20,
-    fontFamily: 'System',
-  },
-  todaySessionMeta: {
-    fontSize: 13,
-    color: '#8E8E93',
-    marginBottom: 6,
-    fontFamily: 'System',
-  },
-  recommendedLabel: {
-    fontSize: 11,
-    fontWeight: '600',
     fontFamily: 'System',
   },
   todayPlayButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -705,10 +1224,281 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   todayPlayIcon: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#FFFFFF',
     fontWeight: '700',
     fontFamily: 'System',
     marginLeft: 1,
+  },
+  recommendedCopy: {
+    marginTop: 8,
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: 'System',
+  },
+  tomorrowCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 1,
+  },
+  tomorrowHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 14,
+  },
+  tomorrowIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tomorrowIconText: {
+    fontSize: 20,
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  tomorrowLabel: {
+    fontSize: 13,
+    color: '#8E8E93',
+    fontFamily: 'System',
+  },
+  tomorrowTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#1D1D1F',
+    fontFamily: 'System',
+  },
+  tomorrowMeta: {
+    fontSize: 13,
+    color: '#8E8E93',
+    marginBottom: 10,
+    fontFamily: 'System',
+  },
+  tomorrowDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#636366',
+    fontFamily: 'System',
+  },
+  tomorrowCardLocked: {
+    opacity: 0.6,
+    borderColor: '#D1D1D6',
+    borderStyle: 'dashed',
+  },
+  tomorrowIconLocked: {
+    backgroundColor: '#D1D1D6',
+  },
+  tomorrowLockedContent: {
+    flex: 1,
+  },
+  tomorrowLockedTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#8E8E93',
+    fontFamily: 'System',
+    marginBottom: 4,
+  },
+  tomorrowLockedDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#8E8E93',
+    fontFamily: 'System',
+  },
+  timelinePageContent: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 85,
+  },
+  timelineContainer: {
+    width: '100%',
+  },
+  timelineTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#1D1D1F',
+    marginBottom: 8,
+    fontFamily: 'System',
+  },
+  timelineSubtitle: {
+    fontSize: 16,
+    lineHeight: 22,
+    color: '#8E8E93',
+    marginBottom: 24,
+    fontFamily: 'System',
+  },
+  timelineStats: {
+    flexDirection: 'row',
+    marginBottom: 24,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    marginRight: 12,
+  },
+  statValue: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#1D1D1F',
+    fontFamily: 'System',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 13,
+    color: '#8E8E93',
+    fontWeight: '500',
+    fontFamily: 'System',
+  },
+  neuroCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  neuroCardHeader: {
+    marginBottom: 16,
+  },
+  neuroCardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  neuroCardTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1D1D1F',
+    fontFamily: 'System',
+    flex: 1,
+  },
+  checkmarkBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  checkmarkText: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontFamily: 'System',
+  },
+  neuroCardTimeRange: {
+    fontSize: 14,
+    color: '#8E8E93',
+    fontWeight: '500',
+    fontFamily: 'System',
+  },
+  progressBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  progressBarTrack: {
+    flex: 1,
+    height: 8,
+    backgroundColor: '#E5E5EA',
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginRight: 12,
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  progressPercentage: {
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: 'System',
+    minWidth: 50,
+    textAlign: 'right',
+  },
+  neuroCardDescription: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#636366',
+    marginBottom: 12,
+    fontFamily: 'System',
+  },
+  whatYouFeelContainer: {
+    borderRadius: 12,
+    padding: 12,
+    borderLeftWidth: 3,
+  },
+  whatYouFeelLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 6,
+    fontFamily: 'System',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  whatYouFeelText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#636366',
+    fontFamily: 'System',
+  },
+  sessionsRequired: {
+    fontSize: 13,
+    color: '#8E8E93',
+    fontStyle: 'italic',
+    fontFamily: 'System',
+  },
+  placeholderCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+    minHeight: 300,
+  },
+  placeholderIcon: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  placeholderTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+    marginBottom: 12,
+  },
+  placeholderText: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: theme.colors.text.secondary,
+    textAlign: 'center',
   },
 });

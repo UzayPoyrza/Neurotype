@@ -1798,7 +1798,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    top: -8, // Position slightly above the labels
+    top: 4, // Position slightly below the labels
     alignItems: 'center',
     justifyContent: 'center',
     pointerEvents: 'none',

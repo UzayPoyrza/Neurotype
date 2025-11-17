@@ -1748,7 +1748,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
-    overflow: 'hidden', // Ensure overlays stay within bounds
+    overflow: 'visible', // Allow overlays to extend beyond bounds
+    zIndex: 150, // Ensure section is above dark mode overlay
   },
   darkModeEmotionalSection: {
     borderWidth: 0,
@@ -1819,6 +1820,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     paddingTop: 8,
     paddingBottom: 8,
+    zIndex: 200, // Ensure labels container is above dark mode overlay
   },
   emotionalEndLabel: {
     color: 'rgba(255, 255, 255, 0.7)',
@@ -1839,6 +1841,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     pointerEvents: 'box-none', // Allow clicks on children but not on container
+    zIndex: 300, // Ensure it's above dark mode overlay
+    elevation: 10, // Android elevation
   },
   countdownContainer: {
     alignItems: 'center',
@@ -1922,6 +1926,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     pointerEvents: 'none',
+    zIndex: 300, // Ensure it's above dark mode overlay
+    elevation: 10, // Android elevation
   },
   confirmationMessageContainer: {
     flexDirection: 'row',

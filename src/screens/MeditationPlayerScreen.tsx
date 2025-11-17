@@ -1703,10 +1703,11 @@ const styles = StyleSheet.create({
   emotionalEndLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingHorizontal: 10,
     position: 'relative',
-    minHeight: 60, // Reserve space for countdown/confirmation
+    paddingTop: 8,
+    paddingBottom: 8,
   },
   emotionalEndLabel: {
     color: 'rgba(255, 255, 255, 0.7)',
@@ -1723,8 +1724,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    top: 0,
-    bottom: 0,
+    top: -10, // Position slightly above the labels
     alignItems: 'center',
     justifyContent: 'center',
     pointerEvents: 'none',
@@ -1784,8 +1784,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    top: 0,
-    bottom: 0,
+    top: -8, // Position slightly above the labels
     alignItems: 'center',
     justifyContent: 'center',
     pointerEvents: 'none',

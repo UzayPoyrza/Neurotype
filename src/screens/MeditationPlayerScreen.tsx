@@ -111,6 +111,10 @@ export const MeditationPlayerScreen: React.FC = () => {
   const pulseAnimationRef = useRef<Animated.CompositeAnimation | null>(null);
   const darkModeMessageAnim = useRef(new Animated.Value(0)).current;
   const [showDarkModeMessage, setShowDarkModeMessage] = useState(false);
+  const likedMessageAnim = useRef(new Animated.Value(0)).current;
+  const [showLikedMessage, setShowLikedMessage] = useState(false);
+  const [isLikedAction, setIsLikedAction] = useState(true); // true = added, false = removed
+  const likedMessageTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Options menu state
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
@@ -466,7 +470,41 @@ export const MeditationPlayerScreen: React.FC = () => {
 
   const handleLike = () => {
     if (activeSession) {
+      const wasLiked = isLiked;
       toggleLikedSession(activeSession.id);
+      
+      // Clear any existing timeout
+      if (likedMessageTimeoutRef.current) {
+        clearTimeout(likedMessageTimeoutRef.current);
+      }
+      
+      // Stop any ongoing animation
+      likedMessageAnim.stopAnimation();
+      
+      // Reset animation value
+      likedMessageAnim.setValue(0);
+      
+      // Set the action type (opposite of what it was)
+      setIsLikedAction(!wasLiked);
+      setShowLikedMessage(true);
+      
+      // Fade in animation
+      Animated.timing(likedMessageAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+      
+      // Fade out after 2 seconds
+      likedMessageTimeoutRef.current = setTimeout(() => {
+        Animated.timing(likedMessageAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }).start(() => {
+          setShowLikedMessage(false);
+        });
+      }, 2000);
     }
   };
 
@@ -1510,6 +1548,32 @@ export const MeditationPlayerScreen: React.FC = () => {
         </Animated.View>
       )}
 
+      {/* Liked/Unliked Message */}
+      {showLikedMessage && (
+        <Animated.View
+          style={[
+            styles.likedMessageOverlay,
+            {
+              opacity: likedMessageAnim,
+              transform: [
+                {
+                  translateY: likedMessageAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [-20, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <View style={styles.likedMessageContainer}>
+            <Text style={styles.likedMessageText}>
+              {isLikedAction ? 'Added to Liked meditations' : 'Removed from Liked meditations'}
+            </Text>
+          </View>
+        </Animated.View>
+      )}
+
       {/* Transition Overlay - Always present to prevent glitch */}
       <Animated.View 
         style={[
@@ -2204,6 +2268,34 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     letterSpacing: 0.5,
+  },
+  likedMessageOverlay: {
+    position: 'absolute',
+    top: 130, // Position at top bar area (same as dark mode message)
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 5000,
+    pointerEvents: 'none',
+  },
+  likedMessageContainer: {
+    backgroundColor: '#000000',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 12,
+  },
+  likedMessageText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '600',
   },
 });
 

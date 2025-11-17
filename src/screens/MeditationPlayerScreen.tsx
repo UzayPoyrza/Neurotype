@@ -902,6 +902,15 @@ export const MeditationPlayerScreen: React.FC = () => {
     }
   };
 
+  // Helper function to hide confirmation message
+  const hideConfirmationMessage = () => {
+    // Stop any ongoing animation and hide the message
+    confirmationMessageAnim.stopAnimation(() => {
+      confirmationMessageAnim.setValue(0);
+      setShowConfirmationMessage(false);
+    });
+  };
+
   // Emotional feedback gesture handler
   const emotionalGestureHandler = Gesture.Pan()
     .onStart(() => {
@@ -911,6 +920,9 @@ export const MeditationPlayerScreen: React.FC = () => {
           console.log('Emotional bar width not measured yet, ignoring gesture');
           return;
         }
+        
+        // Hide confirmation message if it's showing
+        runOnJS(hideConfirmationMessage)();
         
         emotionalIsDragging.value = true;
         emotionalStartPosition.value = emotionalThumbPosition.value;

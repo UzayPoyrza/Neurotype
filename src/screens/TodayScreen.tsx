@@ -948,6 +948,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
+    marginLeft: 8,
   },
   recommendedBadgeText: {
     fontSize: 12,
@@ -1003,7 +1004,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
   },
   sessionMetaText: {
     fontSize: 13,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, TextInput, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { theme } from '../styles/theme';
@@ -23,10 +23,13 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   onBlur,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
+  const inputRef = useRef<TextInput>(null);
 
   const handleClear = () => {
     onChangeText('');
     onClear?.();
+    // Blur the input when clearing to deactivate search
+    inputRef.current?.blur();
   };
 
   return (
@@ -48,6 +51,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       
       {/* Search Input */}
       <TextInput
+        ref={inputRef}
         style={styles.input}
         placeholder={placeholder}
         placeholderTextColor={theme.colors.secondary}

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Image, Animated, StatusBar } from 'react-native';
 import { theme } from '../styles/theme';
 
@@ -8,122 +8,58 @@ interface SplashScreenProps {
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const cursorAnim = useRef(new Animated.Value(1)).current;
-  const [currentText, setCurrentText] = useState('');
-  const [textIndex, setTextIndex] = useState(0);
-  const [isTypingComplete, setIsTypingComplete] = useState(false);
-  const [showCursor, setShowCursor] = useState(true);
-  const [isTyping, setIsTyping] = useState(false);
-  
-  const fullText = 'Neurotype';
 
   useEffect(() => {
-    // Quick fade in animation
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+    // Delay before starting fade-in (blank space)
+    const fadeInDelay = setTimeout(() => {
+      // Smooth fade in animation for icon and text (slower)
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }).start();
+    }, 400); // Blank space for 400ms
 
-    // Blinking cursor animation with better mobile support
-    const blinkCursor = () => {
-      const blinkLoop = Animated.loop(
-        Animated.sequence([
-          Animated.timing(cursorAnim, {
-            toValue: 0,
-            duration: 400,
-            useNativeDriver: false, // Changed to false for better mobile support
-          }),
-          Animated.timing(cursorAnim, {
-            toValue: 1,
-            duration: 400,
-            useNativeDriver: false, // Changed to false for better mobile support
-          }),
-        ])
-      );
-      blinkLoop.start();
-      return blinkLoop;
+    // Transition to home screen after showing content
+    const timer = setTimeout(() => {
+      onFinish();
+    }, 1900); // Total: 400ms blank + 600ms fade-in + 400ms display
+
+    return () => {
+      clearTimeout(fadeInDelay);
+      clearTimeout(timer);
     };
-
-    let blinkAnimation = blinkCursor();
-
-    // Start typing sequence
-    const startTyping = () => {
-      setIsTyping(true);
-      // Stop blinking and keep cursor solid during typing
-      blinkAnimation.stop();
-      cursorAnim.setValue(1);
-      
-      let index = 0;
-      const typeInterval = setInterval(() => {
-        if (index < fullText.length) {
-          setCurrentText(fullText.substring(0, index + 1));
-          index++;
-        } else {
-          clearInterval(typeInterval);
-          setIsTypingComplete(true);
-          setIsTyping(false);
-          
-          // Start blinking again after typing
-          blinkAnimation = blinkCursor();
-          
-          // Blink cursor a few more times, then hide it
-          setTimeout(() => {
-            blinkAnimation.stop();
-            setShowCursor(false);
-            // Transition to home screen
-            setTimeout(() => {
-              onFinish();
-            }, 900); 
-          }, 600);
-        }
-      }, 60); // Faster typing speed (was 100ms, now 60ms)
-    };
-
-    // Start typing after initial cursor blinks
-    setTimeout(startTyping, 800);
-
-  }, []); // Empty dependency array to prevent re-runs
+  }, []);
 
   return (
     <>
       <StatusBar hidden={true} />
       <View style={styles.container}>
-      <Animated.View 
-        style={[
-          styles.content,
-          {
-            opacity: fadeAnim,
-          }
-        ]}
-      >
-        {/* App Icon */}
-        <View style={styles.iconContainer}>
-          <Image 
-            source={require('../../assets/icon_no_background.png')}
-            style={styles.icon}
-            resizeMode="contain"
-          />
-        </View>
+        <Animated.View 
+          style={[
+            styles.content,
+            {
+              opacity: fadeAnim,
+            }
+          ]}
+        >
+          {/* App Icon */}
+          <View style={styles.iconContainer}>
+            <Image 
+              source={require('../../assets/icon_no_background.png')}
+              style={styles.icon}
+              resizeMode="contain"
+            />
+          </View>
 
-        {/* Typing Text */}
-        <View style={styles.textContainer}>
-          <Text style={styles.handwritingText}>
-            {currentText}
-            {showCursor && !isTyping && (
-              <Animated.Text style={[styles.cursor, { opacity: cursorAnim }]}>
-                |
-              </Animated.Text>
-            )}
-            {showCursor && isTyping && (
-              <Text style={styles.cursor}>
-                |
-              </Text>
-            )}
-          </Text>
-        </View>
-      </Animated.View>
-    </View>
+          {/* Text */}
+          <View style={styles.textContainer}>
+            <Text style={styles.handwritingText}>
+              Neurotype
+            </Text>
+          </View>
+        </Animated.View>
+      </View>
     </>
   );
 };
@@ -165,10 +101,5 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.15)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
-  },
-  cursor: {
-    fontSize: 48,
-    color: '#3f3f3d',
-    fontWeight: 'bold',
   },
 });

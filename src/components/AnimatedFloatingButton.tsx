@@ -106,27 +106,30 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
         }),
       ]).start();
     } else {
-      Animated.parallel([
-        Animated.timing(buttonWidth, {
-          toValue: buttonSize,
-          duration: 300,
-          useNativeDriver: false, // Width animation requires layout driver
-        }),
-        Animated.timing(buttonTranslateX, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: false, // Match the width animation driver for perfect sync
-        }),
+      // Hide text first, then collapse button width
+      Animated.sequence([
         Animated.timing(textOpacity, {
           toValue: 0,
-          duration: 150,
+          duration: 100,
           useNativeDriver: true,
         }),
-        Animated.timing(iconScale, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
+        Animated.parallel([
+          Animated.timing(buttonWidth, {
+            toValue: buttonSize,
+            duration: 300,
+            useNativeDriver: false, // Width animation requires layout driver
+          }),
+          Animated.timing(buttonTranslateX, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: false, // Match the width animation driver for perfect sync
+          }),
+          Animated.timing(iconScale, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]),
       ]).start();
     }
   }, [isPillMode, isLeftSide]);

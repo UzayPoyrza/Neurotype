@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Animated, Dimensions, TouchableOpac
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Session } from '../types';
-import { useStore, prerenderedModuleBackgrounds, createCompletionBackground } from '../store/useStore';
+import { useStore, prerenderedModuleBackgrounds } from '../store/useStore';
 import { mockSessions } from '../data/mockData';
 import { mentalHealthModules } from '../data/modules';
 import { theme } from '../styles/theme';
@@ -53,6 +53,9 @@ export const TodayScreen: React.FC = () => {
   const [hasReachedBottom, setHasReachedBottom] = useState(false);
   const [showInfoBox, setShowInfoBox] = useState(false);
   const [infoButtonActive, setInfoButtonActive] = useState(false);
+  const [showModuleToast, setShowModuleToast] = useState(false);
+  const [toastModuleName, setToastModuleName] = useState('');
+  const prevModuleIdRef = useRef<string | null>(null);
   
   // Animation refs - simplified to avoid native driver conflicts
   const heroCardScale = useRef(new Animated.Value(1)).current;
@@ -61,6 +64,8 @@ export const TodayScreen: React.FC = () => {
   const roadmapCardScale = useRef(new Animated.Value(1)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const moduleButtonFade = useRef(new Animated.Value(1)).current;
+  const toastAnim = useRef(new Animated.Value(0)).current;
+  const floatingButtonOffset = useRef(new Animated.Value(0)).current;
   
   const selectedModule = mentalHealthModules.find(m => m.id === selectedModuleId) || mentalHealthModules[0];
   
@@ -69,6 +74,64 @@ export const TodayScreen: React.FC = () => {
     const subtleColor = prerenderedModuleBackgrounds[selectedModuleId] || prerenderedModuleBackgrounds['anxiety'];
     setGlobalBackgroundColor(subtleColor);
     setTodayModuleId(selectedModuleId);
+    
+    // Show toast notification when module changes (not on initial mount)
+    if (prevModuleIdRef.current !== null && prevModuleIdRef.current !== selectedModuleId) {
+      const newModule = mentalHealthModules.find(m => m.id === selectedModuleId);
+      if (newModule) {
+        // Stop any existing animations
+        toastAnim.stopAnimation();
+        floatingButtonOffset.stopAnimation();
+        
+        // Reset animations
+        toastAnim.setValue(0);
+        floatingButtonOffset.setValue(0);
+        
+        setToastModuleName(newModule.title);
+        setShowModuleToast(true);
+        
+        // Animate toast in and move floating button up
+        Animated.parallel([
+          Animated.sequence([
+            Animated.timing(toastAnim, {
+              toValue: 1,
+              duration: 300,
+              useNativeDriver: true,
+            }),
+            Animated.delay(2000),
+            Animated.timing(toastAnim, {
+              toValue: 0,
+              duration: 300,
+              useNativeDriver: true,
+            }),
+          ]),
+          Animated.sequence([
+            Animated.timing(floatingButtonOffset, {
+              toValue: -40, // Move button up 40px
+              duration: 300,
+              useNativeDriver: true,
+            }),
+            Animated.delay(2000),
+            Animated.timing(floatingButtonOffset, {
+              toValue: 0, // Move button back down
+              duration: 300,
+              useNativeDriver: true,
+            }),
+          ]),
+        ]).start(() => {
+          setShowModuleToast(false);
+        });
+      }
+    }
+    
+    // Update previous module ID ref
+    prevModuleIdRef.current = selectedModuleId;
+    
+    // Cleanup animation on unmount
+    return () => {
+      toastAnim.stopAnimation();
+      floatingButtonOffset.stopAnimation();
+    };
   }, [selectedModuleId, setGlobalBackgroundColor, setTodayModuleId]);
 
   // Set screen context when component mounts or updates
@@ -181,12 +244,6 @@ export const TodayScreen: React.FC = () => {
     recommendedSession.id.replace('-today', '')
   );
   
-  // Get subtle completion background color that works with module color
-  const completionBackgroundColor = createCompletionBackground(
-    selectedModule.color,
-    globalBackgroundColor
-  );
-
   const moduleSessionsForRoadmap = useMemo(() => {
     const relevantGoals = {
       'anxiety': ['anxiety'],
@@ -602,7 +659,7 @@ export const TodayScreen: React.FC = () => {
             >
               <TouchableOpacity
                 style={[styles.recommendedSession, { 
-                  backgroundColor: (todayCompleted || isRecommendedCompleted) ? completionBackgroundColor : '#ffffff'
+                  backgroundColor: (todayCompleted || isRecommendedCompleted) ? '#f2f2f7' : '#ffffff'
                 }]}
                 onPress={() => handleSessionSelect(recommendedSession)}
                 onPressIn={handleHeroCardPressIn}
@@ -655,7 +712,7 @@ export const TodayScreen: React.FC = () => {
                       styles.alternativeSession,
                       isCompleted && {
                         ...styles.alternativeSessionCompleted,
-                        backgroundColor: completionBackgroundColor
+                        backgroundColor: '#f2f2f7'
                       }
                     ]}
                     onPress={() => handleSessionSelect(session)}
@@ -886,13 +943,25 @@ export const TodayScreen: React.FC = () => {
       />
 
       {/* Animated Floating Button - Fixed to Screen */}
-      <AnimatedFloatingButton
-        backgroundColor={selectedModule.color}
-        onPress={() => setShowModuleModal(true)}
-        isPillMode={isPillMode}
-        onScroll={(scrollY) => setScrollY(scrollY)}
-        onDragStart={handleDragStart}
-      />
+      <Animated.View
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          pointerEvents: 'box-none',
+          transform: [{ translateY: floatingButtonOffset }],
+        }}
+      >
+        <AnimatedFloatingButton
+          backgroundColor={selectedModule.color}
+          onPress={() => setShowModuleModal(true)}
+          isPillMode={isPillMode}
+          onScroll={(scrollY) => setScrollY(scrollY)}
+          onDragStart={handleDragStart}
+        />
+      </Animated.View>
 
       {/* Info Box */}
       <InfoBox
@@ -902,6 +971,28 @@ export const TodayScreen: React.FC = () => {
         content="Our Today page uses evidence-based approaches to mental wellness. Each session is designed using proven techniques from cognitive behavioral therapy, mindfulness research, and neuroscience. Personalized recommendations adapt to your progress and preferences, helping you build sustainable mental health habits."
         position={{ top: 105, right: 20 }}
       />
+
+      {/* Module Switch Toast */}
+      {showModuleToast && (
+        <Animated.View
+          style={[
+            styles.toastContainer,
+            {
+              opacity: toastAnim,
+              transform: [{
+                translateY: toastAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [20, 0],
+                }),
+              }],
+            },
+          ]}
+        >
+          <Text style={styles.toastText}>
+            Switched to <Text style={styles.toastModuleName}>{toastModuleName}</Text> module
+          </Text>
+        </Animated.View>
+      )}
     </>
   );
 };
@@ -1313,5 +1404,35 @@ const styles = StyleSheet.create({
   },
   infoButtonTextActive: {
     color: '#007AFF',
+  },
+  toastContainer: {
+    position: 'absolute',
+    bottom: 90,
+    left: 20,
+    right: 20,
+    backgroundColor: '#000000',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 1000,
+  },
+  toastContent: {
+    // Not needed - styles are on container
+  },
+  toastText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  toastModuleName: {
+    fontWeight: '600',
+    color: '#ffffff',
   },
 }); 

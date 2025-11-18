@@ -18,8 +18,7 @@ import { TutorialPlayerScreen } from './src/screens/TutorialPlayerScreen';
 import { ModuleDetailScreen } from './src/screens/ModuleDetailScreen';
 import { MeditationDetailScreen } from './src/screens/MeditationDetailScreen';
 import { SplashScreen } from './src/screens/SplashScreen';
-import { LoginScreen } from './src/screens/LoginScreen';
-import { RegisterScreen } from './src/screens/RegisterScreen';
+import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { useStore } from './src/store/useStore';
 
 const Tab = createBottomTabNavigator();
@@ -224,39 +223,26 @@ const ProfileStackNavigator = () => {
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [showRegister, setShowRegister] = useState(false);
   const activeSession = useStore(state => state.activeSession);
+  const hasCompletedOnboarding = useStore(state => state.hasCompletedOnboarding);
 
   const handleSplashFinish = () => {
     setShowSplash(false);
   };
 
-  const handleLogin = () => {
-    setIsLoggedIn(true);
-  };
-
-  const handleRegister = () => {
-    setIsLoggedIn(true);
-  };
-
-  const handleShowRegister = () => {
-    setShowRegister(true);
-  };
-
-  const handleBackToLogin = () => {
-    setShowRegister(false);
+  const handleOnboardingFinish = () => {
+    useStore.setState({ 
+      hasCompletedOnboarding: true,
+      isLoggedIn: true 
+    });
   };
 
   if (showSplash) {
     return <SplashScreen onFinish={handleSplashFinish} />;
   }
 
-  if (!isLoggedIn) {
-    if (showRegister) {
-      return <RegisterScreen onRegister={handleRegister} onBackToLogin={handleBackToLogin} />;
-    }
-    return <LoginScreen onLogin={handleLogin} onRegister={handleShowRegister} />;
+  if (!hasCompletedOnboarding) {
+    return <OnboardingScreen onFinish={handleOnboardingFinish} />;
   }
 
   return (

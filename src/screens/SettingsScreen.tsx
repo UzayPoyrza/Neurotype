@@ -144,6 +144,35 @@ export const SettingsScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Logout */}
+        <View style={styles.settingSection}>
+          <TouchableOpacity 
+            style={styles.logoutButton} 
+            onPress={() => {
+              Alert.alert(
+                'Logout',
+                'Are you sure you want to logout?',
+                [
+                  {
+                    text: 'Cancel',
+                    style: 'cancel',
+                  },
+                  {
+                    text: 'Logout',
+                    style: 'destructive',
+                    onPress: () => {
+                      useStore.getState().logout();
+                    },
+                  },
+                ],
+                { cancelable: true }
+              );
+            }}
+          >
+            <Text style={styles.logoutButtonText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </View>
   );
@@ -367,5 +396,25 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     color: '#ffffff',
+  },
+  logoutButton: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    marginHorizontal: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    borderWidth: 1.5,
+    borderColor: '#ff3b30',
+  },
+  logoutButtonText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#ff3b30',
   },
 });

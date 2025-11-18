@@ -1410,7 +1410,7 @@ const HowToUsePage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
             <Text style={styles.stepTitle}>We Learn What Works for You</Text>
           </View>
           <Text style={styles.stepDescription}>
-            After you complete a session, rate how effective it was. Your feedback is one of the datapoints to find the perfect meditation for your brain.
+            After you complete a session, <Text style={styles.stepHighlight}>rate</Text> how effective it was. Your feedback helps us find the perfect meditation for your goal.
           </Text>
         </Animated.View>
 

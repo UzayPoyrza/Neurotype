@@ -7,6 +7,8 @@ interface Slider0to10Props {
   label?: string;
   showLabels?: boolean;
   variant?: 'pill' | 'bar';
+  numberColor?: string;
+  activeNumberColor?: string;
 }
 
 const BAR_KNOB_SIZE = 26;
@@ -18,6 +20,8 @@ export const Slider0to10: React.FC<Slider0to10Props> = ({
   label,
   showLabels = true,
   variant = 'pill',
+  numberColor,
+  activeNumberColor,
 }) => {
   const numbers = Array.from({ length: 11 }, (_, i) => i);
   const [trackWidth, setTrackWidth] = useState(0);
@@ -165,6 +169,8 @@ export const Slider0to10: React.FC<Slider0to10Props> = ({
                 style={[
                   styles.barNumberText,
                   value === number ? styles.barNumberTextActive : undefined,
+                  numberColor && value !== number ? { color: numberColor } : undefined,
+                  activeNumberColor && value === number ? { color: activeNumberColor } : undefined,
                 ]}
               >
                 {number}

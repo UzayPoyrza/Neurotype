@@ -1012,18 +1012,20 @@ const ChangeButtonDemoPage: React.FC<{
   );
 };
 
-// Callout Component for Instructions
+// Callout Component for Instructions - Badge style with pulsing animation
 const InstructionCallout: React.FC<{
   text: string;
-  position: 'top' | 'bottom' | 'left' | 'right';
   delay?: number;
   isActive?: boolean;
-}> = ({ text, position, delay = 0, isActive = true }) => {
+}> = ({ text, delay = 0, isActive = true }) => {
   const opacity = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(0.8)).current;
+  const pulseScale = useRef(new Animated.Value(1)).current;
+  const pulseAnimationRef = useRef<Animated.CompositeAnimation | null>(null);
 
   useEffect(() => {
     if (isActive) {
+      // Initial fade in and scale
       Animated.parallel([
         Animated.timing(opacity, {
           toValue: 1,
@@ -1038,37 +1040,64 @@ const InstructionCallout: React.FC<{
           delay: delay,
           useNativeDriver: true,
         }),
-      ]).start();
-    }
-  }, [isActive, delay]);
+      ]).start(() => {
+        // Start pulsing animation after initial animation - subtle pulse
+        const createPulseAnimation = () => {
+          return Animated.sequence([
+            Animated.timing(pulseScale, {
+              toValue: 1.06,
+              duration: 1200,
+              easing: Easing.out(Easing.ease),
+              useNativeDriver: true,
+            }),
+            Animated.timing(pulseScale, {
+              toValue: 1,
+              duration: 1200,
+              easing: Easing.in(Easing.ease),
+              useNativeDriver: true,
+            }),
+          ]);
+        };
 
-  const getArrowStyle = () => {
-    switch (position) {
-      case 'top':
-        return styles.calloutArrowTop;
-      case 'bottom':
-        return styles.calloutArrowBottom;
-      case 'left':
-        return styles.calloutArrowLeft;
-      case 'right':
-        return styles.calloutArrowRight;
-      default:
-        return styles.calloutArrowBottom;
+        const startPulse = () => {
+          pulseAnimationRef.current = createPulseAnimation();
+          pulseAnimationRef.current.start(() => {
+            if (isActive) {
+              startPulse(); // Loop the animation
+            }
+          });
+        };
+
+        startPulse();
+      });
+    } else {
+      // Stop animation when not active
+      if (pulseAnimationRef.current) {
+        pulseAnimationRef.current.stop();
+      }
+      opacity.setValue(0);
+      scale.setValue(0.8);
+      pulseScale.setValue(1);
     }
-  };
+
+    return () => {
+      if (pulseAnimationRef.current) {
+        pulseAnimationRef.current.stop();
+      }
+    };
+  }, [isActive, delay]);
 
   return (
     <Animated.View
       style={[
-        styles.instructionCallout,
-        getArrowStyle(),
+        styles.instructionBadge,
         {
           opacity,
-          transform: [{ scale }],
+          transform: [{ scale: Animated.multiply(scale, pulseScale) }],
         },
       ]}
     >
-      <Text style={styles.instructionCalloutText}>{text}</Text>
+      <Text style={styles.instructionBadgeText}>{text}</Text>
     </Animated.View>
   );
 };
@@ -1210,13 +1239,12 @@ const HowToUsePage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
 
           {/* Recommended Session Demo */}
           <View style={styles.demoRecommendedSessionWrapper}>
-            <InstructionCallout
-              text="This is your personalized recommendation - tailored just for you!"
-              position="top"
-              delay={1000}
-              isActive={isActive}
-            />
             <View style={[styles.demoRecommendedSession, { borderColor: selectedModule.color + '40' }]}>
+              <InstructionCallout
+                text="Your personalized pick"
+                delay={1000}
+                isActive={isActive}
+              />
               <View style={styles.demoSessionContent}>
               <Text style={styles.demoSessionTitle}>{demoRecommendedSession.title}</Text>
               <Text style={styles.demoSessionSubtitle}>
@@ -1265,15 +1293,14 @@ const HowToUsePage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
           <View style={styles.demoAlternativesList}>
             {demoAlternativeSessions.map((session, index) => (
               <View key={session.id} style={styles.demoAlternativeSessionWrapper}>
-                {index === 0 && (
-                  <InstructionCallout
-                    text="Choose any option that feels right for you right now"
-                    position="left"
-                    delay={1400}
-                    isActive={isActive}
-                  />
-                )}
                 <View style={styles.demoAlternativeSession}>
+                  {index === 0 && (
+                    <InstructionCallout
+                      text="Pick what feels right"
+                      delay={1400}
+                      isActive={isActive}
+                    />
+                  )}
                   <View style={styles.demoAlternativeContent}>
                   <Text style={styles.demoAlternativeTitle}>{session.title}</Text>
                   <Text style={styles.demoAlternativeMeta}>
@@ -2251,6 +2278,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 2,
+    position: 'relative',
   },
   demoSessionContent: {
     flex: 1,
@@ -2320,6 +2348,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9f9fb',
     borderWidth: 1,
     borderColor: '#e0e0e0',
+    position: 'relative',
   },
   demoAlternativeContent: {
     flex: 1,
@@ -2393,45 +2422,29 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#007AFF',
   },
-  instructionCallout: {
+  instructionBadge: {
     position: 'absolute',
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    maxWidth: 200,
-    zIndex: 10,
+    bottom: 10,
+    right: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    zIndex: 100,
+    borderWidth: 1.5,
+    borderColor: '#007AFF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 5,
+    elevation: 3,
   },
-  instructionCalloutText: {
-    fontSize: 13,
+  instructionBadgeText: {
+    fontSize: 10,
     fontWeight: '600',
-    color: '#ffffff',
-    lineHeight: 18,
-  },
-  calloutArrowTop: {
-    bottom: 0,
-    left: 20,
-    transform: [{ translateY: -80 }],
-  },
-  calloutArrowBottom: {
-    top: 0,
-    left: 20,
-    transform: [{ translateY: 80 }],
-  },
-  calloutArrowLeft: {
-    right: 0,
-    top: 10,
-    transform: [{ translateX: -220 }],
-  },
-  calloutArrowRight: {
-    left: 0,
-    top: 10,
-    transform: [{ translateX: 220 }],
+    color: '#007AFF',
+    lineHeight: 12,
+    letterSpacing: 0.2,
   },
   explanationBox: {
     backgroundColor: '#f9f9fb',

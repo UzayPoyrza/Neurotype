@@ -325,13 +325,13 @@ const SelectModulePage: React.FC<{
                         <Text style={styles.moduleCategoryText}>{module.category}</Text>
                       </View>
                     </View>
-                    {isSelected && (
-                      <View style={styles.checkmarkContainer}>
-                        <Text style={styles.checkmark}>✓</Text>
-                      </View>
-                    )}
                   </View>
                   <Text style={styles.moduleDescription}>{module.description}</Text>
+                  {isSelected && (
+                    <View style={styles.checkmarkContainer}>
+                      <Text style={styles.checkmark}>✓</Text>
+                    </View>
+                  )}
                 </View>
               </TouchableOpacity>
             );
@@ -1177,10 +1177,11 @@ const styles = StyleSheet.create({
   },
   moduleCardContent: {
     padding: 16,
+    position: 'relative',
   },
   moduleCardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     alignItems: 'flex-start',
     marginBottom: 8,
   },
@@ -1213,13 +1214,15 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   checkmarkContainer: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
     width: 24,
     height: 24,
     borderRadius: 12,
     backgroundColor: '#007AFF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 8,
   },
   checkmark: {
     fontSize: 16,

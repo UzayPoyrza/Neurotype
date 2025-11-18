@@ -1526,7 +1526,8 @@ const LoginPage: React.FC<{
             },
           ]}
         >
-          <Text style={styles.loginBackgroundText}>That's everything.{'\n'}Time to get started on your journey.</Text>
+          <Text style={styles.loginBackgroundTextLarge} numberOfLines={1}>That's everything.</Text>
+          <Text style={styles.loginBackgroundTextSmall}>Time to get started on your journey.</Text>
         </Animated.View>
 
         {/* Social Login Buttons - Positioned at bottom */}
@@ -2283,19 +2284,29 @@ const styles = StyleSheet.create({
   },
   loginBackgroundTextContainer: {
     position: 'absolute',
-    top: 100,
+    top: 140,
     left: 0,
     right: 0,
     paddingHorizontal: 20,
     zIndex: 0,
   },
-  loginBackgroundText: {
-    fontSize: 48,
+  loginBackgroundTextLarge: {
+    fontSize: 46,
     fontWeight: '700',
     color: '#000000',
-    textAlign: 'center',
+    textAlign: 'left',
     lineHeight: 56,
-    opacity: 0.15,
+    marginBottom: 16,
+    paddingLeft: 8,
+    flexShrink: 0,
+  },
+  loginBackgroundTextSmall: {
+    fontSize: 30,
+    fontWeight: '700',
+    color: '#000000',
+    textAlign: 'left',
+    lineHeight: 48,
+    paddingLeft: 8,
   },
   loginTitleContainer: {
     alignItems: 'center',
@@ -2322,24 +2333,30 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: 16,
-    paddingBottom: 40,
+    paddingHorizontal: 0,
+    paddingBottom: 0,
     zIndex: 1,
   },
   loginButtonsBox: {
     backgroundColor: '#ffffff',
-    borderRadius: 20,
+    borderRadius: 24,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
     paddingHorizontal: 24,
     paddingTop: 24,
-    paddingBottom: 28,
+    paddingBottom: 50,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 8,
-    borderWidth: 1,
+    borderWidth: 0,
+    borderTopWidth: 1,
     borderColor: '#e5e5ea',
-    minHeight: 280,
+    width: '100%',
+    minHeight: '50%',
   },
   loginBoxSubtitle: {
     fontSize: 16,

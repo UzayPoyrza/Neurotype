@@ -632,7 +632,8 @@ const ChangeButtonDemoPage: React.FC<{
   onModuleChange?: (moduleId: string) => void;
   onShowModal?: () => void;
   previousModuleId?: string | null;
-}> = ({ selectedModule, isActive, onModuleChange, onShowModal, previousModuleId }) => {
+  onShowCongratulations?: (show: boolean) => void;
+}> = ({ selectedModule, isActive, onModuleChange, onShowModal, previousModuleId, onShowCongratulations }) => {
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const hasAnimated = useRef(false);
   const [isPillMode, setIsPillMode] = useState(false);
@@ -673,6 +674,9 @@ const ChangeButtonDemoPage: React.FC<{
       // Module has changed for the first time, show congratulations
       hasShownCongratulations.current = true;
       setShowCongratulations(true);
+      if (onShowCongratulations) {
+        onShowCongratulations(true);
+      }
       // Hide and reset instruction text if it was showing
       if (showInstructionText) {
         setShowInstructionText(false);
@@ -869,6 +873,9 @@ const ChangeButtonDemoPage: React.FC<{
   const handleCongratulationsComplete = () => {
     // Hide the congratulations overlay
     setShowCongratulations(false);
+    if (onShowCongratulations) {
+      onShowCongratulations(false);
+    }
     // Show instructional text after a short delay
     setTimeout(() => {
       setShowInstructionText(true);
@@ -1008,13 +1015,6 @@ const ChangeButtonDemoPage: React.FC<{
         )}
       </View>
 
-      {/* Congratulations Overlay */}
-      <CongratulationsOverlay
-        visible={showCongratulations}
-        moduleTitle={selectedModuleData.title}
-        moduleColor={selectedModuleData.color}
-        onComplete={handleCongratulationsComplete}
-      />
       </View>
     </View>
   );
@@ -1778,6 +1778,8 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   const [demoModuleId, setDemoModuleId] = useState<string | null>(null);
   const previousDemoModuleId = useRef<string | null>(null);
   const [hasClickedChangeButton, setHasClickedChangeButton] = useState(false);
+  const [showCongratulations, setShowCongratulations] = useState(false);
+  const [congratulationsModule, setCongratulationsModule] = useState<{ title: string; color: string } | null>(null);
 
   const TOTAL_PAGES = 6;
 
@@ -1921,6 +1923,15 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
               }, 100);
             }}
             previousModuleId={previousDemoModuleId.current}
+            onShowCongratulations={(show) => {
+              setShowCongratulations(show);
+              if (show) {
+                const module = mentalHealthModules.find(m => m.id === (demoModuleId || selectedModule || 'anxiety'));
+                if (module) {
+                  setCongratulationsModule({ title: module.title, color: module.color });
+                }
+              }
+            }}
           />
           <HowToUsePage isActive={currentPage === 3} />
           <LoginPage 
@@ -1952,6 +1963,19 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
           </Animated.View>
         )}
       </View>
+
+      {/* Congratulations Overlay - Rendered at root level to cover entire screen */}
+      {showCongratulations && congratulationsModule && (
+        <CongratulationsOverlay
+          visible={showCongratulations}
+          moduleTitle={congratulationsModule.title}
+          moduleColor={congratulationsModule.color}
+          onComplete={() => {
+            setShowCongratulations(false);
+            setCongratulationsModule(null);
+          }}
+        />
+      )}
 
       {/* Module Grid Modal */}
       {currentPage === 2 && (
@@ -2561,7 +2585,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    zIndex: 1000,
+    zIndex: 10000,
+    width: '100%',
+    height: '100%',
   },
   confettiContainer: {
     position: 'absolute',

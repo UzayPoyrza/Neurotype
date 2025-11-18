@@ -947,8 +947,13 @@ const ChangeButtonDemoPage: React.FC<{
           >
             <TouchableOpacity
               style={styles.demoChangeButtonContent}
-              onPress={() => onShowModal?.()}
+              onPress={() => {
+                if (onShowModal) {
+                  onShowModal();
+                }
+              }}
               activeOpacity={0.8}
+              disabled={false}
             >
               <View style={styles.demoChangeButtonInner}>
                 <Animated.View
@@ -1772,6 +1777,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   const [showModuleModal, setShowModuleModal] = useState(false);
   const [demoModuleId, setDemoModuleId] = useState<string | null>(null);
   const previousDemoModuleId = useRef<string | null>(null);
+  const [hasClickedChangeButton, setHasClickedChangeButton] = useState(false);
 
   const TOTAL_PAGES = 6;
 
@@ -1806,6 +1812,11 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
           useNativeDriver: true,
         }),
       ]).start();
+    }
+    
+    // Reset change button click state when leaving page 2
+    if (currentPage !== 2) {
+      setHasClickedChangeButton(false);
     }
   }, [currentPage]);
 
@@ -1861,12 +1872,14 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   const getButtonText = () => {
     if (currentPage === 0) return 'Continue';
     if (currentPage === 1) return selectedModule ? 'Continue' : 'Select a module';
+    if (currentPage === 2) return hasClickedChangeButton ? 'Continue' : 'Click the change button';
     if (currentPage === TOTAL_PAGES - 1) return 'Get Started';
     return 'Continue';
   };
 
   const canProceed = () => {
     if (currentPage === 1 && !selectedModule) return false;
+    if (currentPage === 2 && !hasClickedChangeButton) return false;
     return true;
   };
 
@@ -1900,7 +1913,10 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
             selectedModule={demoModuleId || selectedModule || 'anxiety'}
             isActive={currentPage === 2}
             onModuleChange={handleDemoModuleChange}
-            onShowModal={() => setShowModuleModal(true)}
+            onShowModal={() => {
+              setHasClickedChangeButton(true);
+              setShowModuleModal(true);
+            }}
             previousModuleId={previousDemoModuleId.current}
           />
           <HowToUsePage isActive={currentPage === 3} />

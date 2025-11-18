@@ -1888,6 +1888,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
           onScroll={handleScroll}
           scrollEventThrottle={16}
           style={styles.scrollView}
+          scrollEnabled={false}
         >
           <WelcomePage />
           <SelectModulePage 
@@ -1910,20 +1911,6 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
           <PremiumFeaturesPage isActive={currentPage === 5} />
         </ScrollView>
 
-        {currentPage !== 4 && (
-          <View style={styles.pageIndicators}>
-            {Array.from({ length: TOTAL_PAGES }).map((_, index) => (
-              <View 
-                key={index} 
-                style={[
-                  styles.indicator, 
-                  currentPage === index && styles.indicatorActive,
-                  index > 0 && { marginLeft: 8 }
-                ]} 
-              />
-            ))}
-          </View>
-        )}
 
         {currentPage !== 4 && (
           <Animated.View

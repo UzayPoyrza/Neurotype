@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Image, Animated, StatusBar, TouchableOpacity, ScrollView, Dimensions, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../styles/theme';
 import { mentalHealthModules, MentalHealthModule } from '../data/modules';
 import { prerenderedModuleBackgrounds } from '../store/useStore';
@@ -185,6 +186,10 @@ const SelectModulePage: React.FC<{
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleTranslateY = useRef(new Animated.Value(20)).current;
   const hasAnimated = useRef(false);
+  const [showScrollArrow, setShowScrollArrow] = useState(true);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const arrowOpacity = useRef(new Animated.Value(1)).current;
+  const [scrollViewHeight, setScrollViewHeight] = useState(0);
 
   useEffect(() => {
     if (isActive && !hasAnimated.current) {
@@ -206,6 +211,68 @@ const SelectModulePage: React.FC<{
     }
   }, [isActive]);
 
+  const handleScroll = (event: any) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const isAtBottom = contentOffset.y + layoutMeasurement.height >= contentSize.height - 20;
+    const isScrollable = contentSize.height > layoutMeasurement.height;
+    
+    if (!isScrollable) {
+      // Content fits on screen, hide arrow
+      if (showScrollArrow) {
+        setShowScrollArrow(false);
+        Animated.timing(arrowOpacity, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+      }
+      return;
+    }
+    
+    if (isAtBottom && showScrollArrow) {
+      setShowScrollArrow(false);
+      Animated.timing(arrowOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else if (!isAtBottom && !showScrollArrow) {
+      setShowScrollArrow(true);
+      Animated.timing(arrowOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  };
+
+  const handleContentSizeChange = (contentWidth: number, contentHeight: number) => {
+    // Check if content is scrollable when content size changes
+    if (scrollViewHeight > 0) {
+      const isScrollable = contentHeight > scrollViewHeight;
+      if (!isScrollable && showScrollArrow) {
+        setShowScrollArrow(false);
+        Animated.timing(arrowOpacity, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+      } else if (isScrollable && !showScrollArrow && contentHeight > scrollViewHeight) {
+        setShowScrollArrow(true);
+        Animated.timing(arrowOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+      }
+    }
+  };
+
+  const handleScrollViewLayout = (event: any) => {
+    const { height } = event.nativeEvent.layout;
+    setScrollViewHeight(height);
+  };
+
   return (
     <View style={styles.page}>
       <Animated.View
@@ -221,46 +288,70 @@ const SelectModulePage: React.FC<{
         <Text style={styles.subtitle}>Choose a module to get started</Text>
       </Animated.View>
 
-      <ScrollView 
-        style={styles.modulesScrollView}
-        contentContainerStyle={styles.modulesContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        {[...mentalHealthModules]
-          .sort((a, b) => a.title.localeCompare(b.title))
-          .map((module) => {
-          const isSelected = selectedModule === module.id;
-          
-          return (
-            <TouchableOpacity
-              key={module.id}
-              style={[
-                styles.moduleCard,
-                isSelected && styles.moduleCardSelected,
-              ]}
-              onPress={() => onSelectModule(module.id)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.moduleCardContent}>
-                <View style={styles.moduleCardHeader}>
-                  <View style={styles.moduleTitleContainer}>
-                    <Text style={styles.moduleTitle}>{module.title}</Text>
-                    <View style={[styles.moduleCategoryBadge, { backgroundColor: module.color }]}>
-                      <Text style={styles.moduleCategoryText}>{module.category}</Text>
+      <View style={styles.modulesWrapper}>
+        <ScrollView 
+          ref={scrollViewRef}
+          style={styles.modulesScrollView}
+          contentContainerStyle={styles.modulesContainer}
+          showsVerticalScrollIndicator={false}
+          onScroll={handleScroll}
+          onContentSizeChange={handleContentSizeChange}
+          onLayout={handleScrollViewLayout}
+          scrollEventThrottle={16}
+        >
+          {[...mentalHealthModules]
+            .sort((a, b) => a.title.localeCompare(b.title))
+            .map((module) => {
+            const isSelected = selectedModule === module.id;
+            
+            return (
+              <TouchableOpacity
+                key={module.id}
+                style={[
+                  styles.moduleCard,
+                  isSelected && styles.moduleCardSelected,
+                ]}
+                onPress={() => onSelectModule(module.id)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.moduleCardContent}>
+                  <View style={styles.moduleCardHeader}>
+                    <View style={styles.moduleTitleContainer}>
+                      <Text style={styles.moduleTitle}>{module.title}</Text>
+                      <View style={[styles.moduleCategoryBadge, { backgroundColor: module.color }]}>
+                        <Text style={styles.moduleCategoryText}>{module.category}</Text>
+                      </View>
                     </View>
+                    {isSelected && (
+                      <View style={styles.checkmarkContainer}>
+                        <Text style={styles.checkmark}>✓</Text>
+                      </View>
+                    )}
                   </View>
-                  {isSelected && (
-                    <View style={styles.checkmarkContainer}>
-                      <Text style={styles.checkmark}>✓</Text>
-                    </View>
-                  )}
+                  <Text style={styles.moduleDescription}>{module.description}</Text>
                 </View>
-                <Text style={styles.moduleDescription}>{module.description}</Text>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+        
+        <Animated.View 
+          style={[
+            styles.scrollArrowContainer,
+            { opacity: arrowOpacity }
+          ]}
+          pointerEvents="none"
+        >
+          <LinearGradient
+            colors={['transparent', 'rgba(242, 242, 247, 0.8)', 'rgba(242, 242, 247, 1)']}
+            style={styles.scrollArrowGradient}
+          >
+            <View style={styles.scrollArrow}>
+              <Text style={styles.scrollArrowText}>⌄</Text>
+            </View>
+          </LinearGradient>
+        </Animated.View>
+      </View>
     </View>
   );
 };
@@ -917,11 +1008,44 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     textAlign: 'center',
   },
+  modulesWrapper: {
+    flex: 1,
+    position: 'relative',
+  },
   modulesScrollView: {
     flex: 1,
   },
   modulesContainer: {
     paddingHorizontal: 0,
+    paddingBottom: 40,
+  },
+  scrollArrowContainer: {
+    position: 'absolute',
+    bottom: -70,
+    left: 0,
+    right: 0,
+    height: 80,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    backgroundColor: 'transparent',
+  },
+  scrollArrowGradient: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: 20,
+  },
+  scrollArrow: {
+    width: 40,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scrollArrowText: {
+    fontSize: 24,
+    color: '#8e8e93',
+    fontWeight: '200',
   },
   moduleCard: {
     borderRadius: 16,

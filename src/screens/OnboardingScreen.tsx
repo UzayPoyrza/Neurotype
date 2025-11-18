@@ -1914,8 +1914,11 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
             isActive={currentPage === 2}
             onModuleChange={handleDemoModuleChange}
             onShowModal={() => {
-              setHasClickedChangeButton(true);
               setShowModuleModal(true);
+              // Activate continue button after 100ms delay
+              setTimeout(() => {
+                setHasClickedChangeButton(true);
+              }, 100);
             }}
             previousModuleId={previousDemoModuleId.current}
           />

@@ -53,6 +53,9 @@ export const TodayScreen: React.FC = () => {
   const [hasReachedBottom, setHasReachedBottom] = useState(false);
   const [showInfoBox, setShowInfoBox] = useState(false);
   const [infoButtonActive, setInfoButtonActive] = useState(false);
+  const [showModuleToast, setShowModuleToast] = useState(false);
+  const [toastModuleName, setToastModuleName] = useState('');
+  const prevModuleIdRef = useRef<string | null>(null);
   
   // Animation refs - simplified to avoid native driver conflicts
   const heroCardScale = useRef(new Animated.Value(1)).current;
@@ -61,6 +64,7 @@ export const TodayScreen: React.FC = () => {
   const roadmapCardScale = useRef(new Animated.Value(1)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const moduleButtonFade = useRef(new Animated.Value(1)).current;
+  const toastAnim = useRef(new Animated.Value(0)).current;
   
   const selectedModule = mentalHealthModules.find(m => m.id === selectedModuleId) || mentalHealthModules[0];
   
@@ -69,6 +73,46 @@ export const TodayScreen: React.FC = () => {
     const subtleColor = prerenderedModuleBackgrounds[selectedModuleId] || prerenderedModuleBackgrounds['anxiety'];
     setGlobalBackgroundColor(subtleColor);
     setTodayModuleId(selectedModuleId);
+    
+    // Show toast notification when module changes (not on initial mount)
+    if (prevModuleIdRef.current !== null && prevModuleIdRef.current !== selectedModuleId) {
+      const newModule = mentalHealthModules.find(m => m.id === selectedModuleId);
+      if (newModule) {
+        // Stop any existing animation
+        toastAnim.stopAnimation();
+        
+        // Reset animation
+        toastAnim.setValue(0);
+        
+        setToastModuleName(newModule.title);
+        setShowModuleToast(true);
+        
+        // Animate toast in with smooth timing animation (similar to dark mode popup)
+        Animated.sequence([
+          Animated.timing(toastAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.delay(2000),
+          Animated.timing(toastAnim, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          setShowModuleToast(false);
+        });
+      }
+    }
+    
+    // Update previous module ID ref
+    prevModuleIdRef.current = selectedModuleId;
+    
+    // Cleanup animation on unmount
+    return () => {
+      toastAnim.stopAnimation();
+    };
   }, [selectedModuleId, setGlobalBackgroundColor, setTodayModuleId]);
 
   // Set screen context when component mounts or updates
@@ -896,6 +940,39 @@ export const TodayScreen: React.FC = () => {
         content="Our Today page uses evidence-based approaches to mental wellness. Each session is designed using proven techniques from cognitive behavioral therapy, mindfulness research, and neuroscience. Personalized recommendations adapt to your progress and preferences, helping you build sustainable mental health habits."
         position={{ top: 105, right: 20 }}
       />
+
+      {/* Module Switch Toast */}
+      {showModuleToast && (
+        <Animated.View
+          style={[
+            styles.toastContainer,
+            {
+              opacity: toastAnim,
+              transform: [
+                {
+                  translateY: toastAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [-20, 0],
+                  }),
+                },
+                {
+                  scale: toastAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.9, 1],
+                  }),
+                },
+              ],
+            },
+          ]}
+          pointerEvents="none"
+        >
+          <View style={styles.toastContent}>
+            <Text style={styles.toastText}>
+              Switched to <Text style={styles.toastModuleName}>{toastModuleName}</Text> module
+            </Text>
+          </View>
+        </Animated.View>
+      )}
     </>
   );
 };
@@ -1307,5 +1384,41 @@ const styles = StyleSheet.create({
   },
   infoButtonTextActive: {
     color: '#007AFF',
+  },
+  toastContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2000,
+    pointerEvents: 'none',
+  },
+  toastContent: {
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    borderRadius: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 10,
+    minWidth: 200,
+    alignItems: 'center',
+  },
+  toastText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#ffffff',
+    letterSpacing: 0.5,
+  },
+  toastModuleName: {
+    fontWeight: '600',
+    color: '#ffffff',
   },
 }); 

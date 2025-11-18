@@ -1456,16 +1456,18 @@ const LoginPage: React.FC<{
   const buttonsTranslateY = useRef(new Animated.Value(30)).current;
   const hasAnimated = useRef(false);
   const [typingText, setTypingText] = useState('');
+  const [showCursor, setShowCursor] = useState(false);
   const typingComplete = useRef(false);
   const typingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const cursorHideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const cursorOpacity = useRef(new Animated.Value(1)).current;
   
   const fullText = "Time to get started on your journey.";
   
   // Blinking cursor animation
   useEffect(() => {
-    if (isActive) {
+    if (isActive && showCursor) {
       const blinkAnimation = Animated.loop(
         Animated.sequence([
           Animated.timing(cursorOpacity, {
@@ -1486,7 +1488,7 @@ const LoginPage: React.FC<{
         cursorOpacity.setValue(1);
       };
     }
-  }, [isActive]);
+  }, [isActive, showCursor]);
 
   useEffect(() => {
     if (isActive && !hasAnimated.current) {
@@ -1514,6 +1516,7 @@ const LoginPage: React.FC<{
 
       // Start typing animation after title appears
       typingTimeoutRef.current = setTimeout(() => {
+        setShowCursor(true);
         let currentIndex = 0;
         typingIntervalRef.current = setInterval(() => {
           if (currentIndex < fullText.length) {
@@ -1525,6 +1528,10 @@ const LoginPage: React.FC<{
               typingIntervalRef.current = null;
             }
             typingComplete.current = true;
+            // Hide cursor after a short delay
+            cursorHideTimeoutRef.current = setTimeout(() => {
+              setShowCursor(false);
+            }, 800); // Hide cursor 800ms after typing completes
           }
         }, 50); // 50ms per character for smooth typing
       }, 800);
@@ -1549,6 +1556,7 @@ const LoginPage: React.FC<{
       // Reset when page becomes inactive
       hasAnimated.current = false;
       setTypingText('');
+      setShowCursor(false);
       typingComplete.current = false;
     }
     
@@ -1561,6 +1569,10 @@ const LoginPage: React.FC<{
       if (typingIntervalRef.current) {
         clearInterval(typingIntervalRef.current);
         typingIntervalRef.current = null;
+      }
+      if (cursorHideTimeoutRef.current) {
+        clearTimeout(cursorHideTimeoutRef.current);
+        cursorHideTimeoutRef.current = null;
       }
     };
   }, [isActive, fullText]);
@@ -1599,7 +1611,7 @@ const LoginPage: React.FC<{
           <Text style={styles.loginBackgroundTextLarge} numberOfLines={1}>That's everything.</Text>
           <Text style={styles.loginBackgroundTextSmall}>
             {typingText}
-            {!typingComplete.current && (
+            {showCursor && (
               <Animated.Text style={[styles.typingCursor, { opacity: cursorOpacity }]}>|</Animated.Text>
             )}
           </Text>

@@ -1134,7 +1134,10 @@ const StickerBadge: React.FC<{
 };
 
 // How to Use App Page
-const HowToUsePage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
+const HowToUsePage: React.FC<{ 
+  isActive: boolean;
+  onScrollStateChange?: (hasScrolled: boolean) => void;
+}> = ({ isActive, onScrollStateChange }) => {
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleTranslateY = useRef(new Animated.Value(20)).current;
   const demoOpacity = useRef(new Animated.Value(0)).current;
@@ -1145,6 +1148,11 @@ const HowToUsePage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
   const hasAnimated = useRef(false);
   const [feedbackRating, setFeedbackRating] = useState(5);
   const sliderAnimationRef = useRef<NodeJS.Timeout | null>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [hasScrolled, setHasScrolled] = useState(false);
+  const scrollIndicatorOpacity = useRef(new Animated.Value(1)).current;
+  const scrollIndicatorTranslateY = useRef(new Animated.Value(0)).current;
+  const arrowPulseY = useRef(new Animated.Value(0)).current;
   
   // Slider demo animation
   const startSliderDemo = useCallback(() => {
@@ -1257,19 +1265,73 @@ const HowToUsePage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
       });
     }
 
+    // Start arrow pulse animation
+    if (isActive && !hasScrolled) {
+      const pulseAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(arrowPulseY, {
+            toValue: 8,
+            duration: 800,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(arrowPulseY, {
+            toValue: 0,
+            duration: 800,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      pulseAnimation.start();
+      
+      return () => {
+        pulseAnimation.stop();
+      };
+    }
+
     return () => {
       if (sliderAnimationRef.current) {
         clearTimeout(sliderAnimationRef.current);
       }
     };
-  }, [isActive, startSliderDemo]);
+  }, [isActive, startSliderDemo, hasScrolled]);
+
+  const handleScroll = (event: any) => {
+    const { contentOffset } = event.nativeEvent;
+    const scrollThreshold = 50; // Consider scrolled if moved more than 50px
+    
+    if (contentOffset.y > scrollThreshold && !hasScrolled) {
+      setHasScrolled(true);
+      if (onScrollStateChange) {
+        onScrollStateChange(true);
+      }
+      // Hide scroll indicator
+      Animated.parallel([
+        Animated.timing(scrollIndicatorOpacity, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scrollIndicatorTranslateY, {
+          toValue: -20,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  };
 
   return (
-    <ScrollView 
-      style={styles.page} 
-      contentContainerStyle={styles.howToUseScrollContent}
-      showsVerticalScrollIndicator={false}
-    >
+    <View style={styles.page}>
+      <ScrollView 
+        ref={scrollViewRef}
+        style={styles.page} 
+        contentContainerStyle={styles.howToUseScrollContent}
+        showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
       <View style={styles.pageBackground}>
         <Animated.View
           style={[
@@ -1446,7 +1508,39 @@ const HowToUsePage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
         </View>
       </Animated.View>
       </View>
-    </ScrollView>
+      </ScrollView>
+      
+      {/* Scroll Indicator */}
+      {!hasScrolled && (
+        <Animated.View
+          style={[
+            styles.scrollIndicatorContainer,
+            {
+              opacity: scrollIndicatorOpacity,
+              transform: [{ translateY: scrollIndicatorTranslateY }],
+            },
+          ]}
+        >
+          <View style={styles.scrollIndicator}>
+            <Text style={styles.scrollIndicatorText}>Scroll down</Text>
+            <Animated.View
+              style={[
+                styles.scrollIndicatorArrow,
+                {
+                  transform: [
+                    {
+                      translateY: arrowPulseY,
+                    },
+                  ],
+                },
+              ]}
+            >
+              <Text style={styles.scrollIndicatorArrowText}>↓</Text>
+            </Animated.View>
+          </View>
+        </Animated.View>
+      )}
+    </View>
   );
 };
 
@@ -1778,6 +1872,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   const [demoModuleId, setDemoModuleId] = useState<string | null>(null);
   const previousDemoModuleId = useRef<string | null>(null);
   const [hasClickedChangeButton, setHasClickedChangeButton] = useState(false);
+  const [hasScrolledOnHowToUse, setHasScrolledOnHowToUse] = useState(false);
   const [showCongratulations, setShowCongratulations] = useState(false);
   const [congratulationsModule, setCongratulationsModule] = useState<{ title: string; color: string } | null>(null);
 
@@ -1819,6 +1914,10 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
     // Reset change button click state when leaving page 2
     if (currentPage !== 2) {
       setHasClickedChangeButton(false);
+    }
+    // Reset scroll state when leaving page 3
+    if (currentPage !== 3) {
+      setHasScrolledOnHowToUse(false);
     }
   }, [currentPage]);
 
@@ -1875,6 +1974,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
     if (currentPage === 0) return 'Continue';
     if (currentPage === 1) return selectedModule ? 'Continue' : 'Select a module';
     if (currentPage === 2) return hasClickedChangeButton ? 'Continue' : 'Click the change button';
+    if (currentPage === 3) return hasScrolledOnHowToUse ? 'Continue' : 'Scroll down';
     if (currentPage === TOTAL_PAGES - 1) return 'Get Started';
     return 'Continue';
   };
@@ -1882,6 +1982,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   const canProceed = () => {
     if (currentPage === 1 && !selectedModule) return false;
     if (currentPage === 2 && !hasClickedChangeButton) return false;
+    if (currentPage === 3 && !hasScrolledOnHowToUse) return false;
     return true;
   };
 
@@ -1933,7 +2034,14 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
               }
             }}
           />
-          <HowToUsePage isActive={currentPage === 3} />
+          <HowToUsePage 
+            isActive={currentPage === 3}
+            onScrollStateChange={(hasScrolled) => {
+              if (currentPage === 3) {
+                setHasScrolledOnHowToUse(hasScrolled);
+              }
+            }}
+          />
           <LoginPage 
             isActive={currentPage === 4}
             onLogin={handleLogin}
@@ -2656,7 +2764,40 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   howToUseScrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 20,
+  },
+  scrollIndicatorContainer: {
+    position: 'absolute',
+    bottom: 100,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    pointerEvents: 'none',
+  },
+  scrollIndicator: {
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scrollIndicatorText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+    marginRight: 8,
+  },
+  scrollIndicatorArrow: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scrollIndicatorArrowText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '300',
   },
   demoTodayContainer: {
     flex: 1,

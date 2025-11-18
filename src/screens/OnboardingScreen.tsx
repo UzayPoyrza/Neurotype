@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Image, Animated, StatusBar, TouchableOpacity, ScrollView, Dimensions, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Path } from 'react-native-svg';
 import { theme } from '../styles/theme';
 import { mentalHealthModules, MentalHealthModule } from '../data/modules';
 import { prerenderedModuleBackgrounds } from '../store/useStore';
@@ -367,8 +368,16 @@ const ChangeButtonDemoPage: React.FC<{
 }> = ({ selectedModule, isActive, onModuleChange, onShowModal }) => {
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const hasAnimated = useRef(false);
+  const [isPillMode, setIsPillMode] = useState(false);
+  
+  // Button animation values
+  const buttonWidth = useRef(new Animated.Value(80)).current; // Larger initial size
+  const textOpacity = useRef(new Animated.Value(0)).current;
+  const iconScale = useRef(new Animated.Value(1)).current;
+  const buttonTranslateX = useRef(new Animated.Value(0)).current;
 
   const selectedModuleData = mentalHealthModules.find(m => m.id === selectedModule) || mentalHealthModules[0];
+  const buttonColor = selectedModuleData.color;
 
   useEffect(() => {
     if (isActive && !hasAnimated.current) {
@@ -379,8 +388,38 @@ const ChangeButtonDemoPage: React.FC<{
         delay: 200,
         useNativeDriver: true,
       }).start();
+
+      // Trigger pill animation after 2 seconds
+      setTimeout(() => {
+        setIsPillMode(true);
+      }, 2000);
     }
   }, [isActive]);
+
+  // Animate to pill mode
+  useEffect(() => {
+    if (isPillMode) {
+      const pillWidth = 200; // Larger pill width for demo
+      Animated.parallel([
+        Animated.timing(buttonWidth, {
+          toValue: pillWidth,
+          duration: 300,
+          useNativeDriver: false,
+        }),
+        Animated.timing(textOpacity, {
+          toValue: 1,
+          duration: 200,
+          delay: 150,
+          useNativeDriver: true,
+        }),
+        Animated.timing(iconScale, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [isPillMode]);
 
   return (
     <View style={styles.page}>
@@ -406,6 +445,63 @@ const ChangeButtonDemoPage: React.FC<{
           </View>
           <Text style={styles.demoModuleDescription}>{selectedModuleData.description}</Text>
         </View>
+
+        {/* Demo Change Button - Large, non-draggable */}
+        <Animated.View
+          style={[
+            styles.demoChangeButtonContainer,
+            {
+              transform: [{ translateX: buttonTranslateX }],
+            }
+          ]}
+        >
+          <Animated.View
+            style={[
+              styles.demoChangeButtonBackground,
+              {
+                backgroundColor: buttonColor,
+                width: buttonWidth,
+              }
+            ]}
+          >
+            <TouchableOpacity
+              style={styles.demoChangeButtonContent}
+              onPress={() => onShowModal?.()}
+              activeOpacity={0.8}
+            >
+              <View style={styles.demoChangeButtonInner}>
+                <Animated.View
+                  style={[
+                    styles.demoChangeIconContainer,
+                    {
+                      transform: [{ scale: iconScale }],
+                      right: 16,
+                    }
+                  ]}
+                >
+                  <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+                    <Path
+                      d="M12 6V3L8 7l4 4V8c3.31 0 6 2.69 6 6 0 .34-.03.67-.08 1h2.02c.04-.33.06-.66.06-1 0-4.42-3.58-8-8-8zM6 12c0-.34.03-.67.08-1H2.06c-.04.33-.06.66-.06 1 0 4.42 3.58 8 8 8v3l4-4-4-4v3c-3.31 0-6-2.69-6-6z"
+                      fill="#ffffff"
+                    />
+                  </Svg>
+                </Animated.View>
+                
+                <Animated.View
+                  style={[
+                    styles.demoChangeTextContainer,
+                    {
+                      opacity: textOpacity,
+                      right: 60,
+                    }
+                  ]}
+                >
+                  <Text style={styles.demoChangeText}>Change</Text>
+                </Animated.View>
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
+        </Animated.View>
       </View>
     </View>
   );
@@ -838,20 +934,6 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
         </Animated.View>
       </View>
 
-      {/* Draggable Change Button - Only visible on page 2 */}
-      {currentPage === 2 && (() => {
-        const activeModuleId = demoModuleId || selectedModule || 'anxiety';
-        const activeModule = mentalHealthModules.find(m => m.id === activeModuleId);
-        const buttonColor = activeModule?.color || '#007AFF';
-        return (
-          <AnimatedFloatingButton
-            backgroundColor={buttonColor}
-            onPress={() => setShowModuleModal(true)}
-            isPillMode={false}
-          />
-        );
-      })()}
-
       {/* Module Grid Modal */}
       {currentPage === 2 && (
         <ModuleGridModal
@@ -1091,16 +1173,17 @@ const styles = StyleSheet.create({
   },
   demoContainer: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     paddingHorizontal: 0,
+    paddingTop: 40,
   },
   demoModuleCard: {
     padding: 20,
     borderRadius: 16,
     backgroundColor: '#ffffff',
     width: '100%',
-    marginBottom: 30,
+    marginBottom: 40,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -1134,6 +1217,53 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: '#8e8e93',
     lineHeight: 22,
+  },
+  demoChangeButtonContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  demoChangeButtonBackground: {
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  demoChangeButtonContent: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  demoChangeButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    height: '100%',
+    position: 'relative',
+  },
+  demoChangeIconContainer: {
+    width: 48,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'absolute',
+  },
+  demoChangeTextContainer: {
+    position: 'absolute',
+    height: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  demoChangeText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#ffffff',
   },
   stepsContainer: {
     flex: 1,

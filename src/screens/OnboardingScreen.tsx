@@ -1446,15 +1446,16 @@ const LoginPage: React.FC<{
   isActive: boolean;
   onLogin: () => void;
 }> = ({ isActive, onLogin }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const titleOpacity = useRef(new Animated.Value(0)).current;
-  const formOpacity = useRef(new Animated.Value(0)).current;
+  const titleTranslateY = useRef(new Animated.Value(20)).current;
+  const modalOpacity = useRef(new Animated.Value(0)).current;
+  const modalTranslateY = useRef(new Animated.Value(50)).current;
   const hasAnimated = useRef(false);
 
   useEffect(() => {
     if (isActive && !hasAnimated.current) {
       hasAnimated.current = true;
+      // Animate title
       Animated.parallel([
         Animated.timing(titleOpacity, {
           toValue: 1,
@@ -1462,89 +1463,142 @@ const LoginPage: React.FC<{
           delay: 200,
           useNativeDriver: true,
         }),
-        Animated.timing(formOpacity, {
-          toValue: 1,
+        Animated.timing(titleTranslateY, {
+          toValue: 0,
           duration: 600,
-          delay: 400,
+          delay: 200,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      // Animate modal sliding up
+      Animated.parallel([
+        Animated.timing(modalOpacity, {
+          toValue: 1,
+          duration: 500,
+          delay: 600,
+          useNativeDriver: true,
+        }),
+        Animated.spring(modalTranslateY, {
+          toValue: 0,
+          tension: 50,
+          friction: 8,
+          delay: 600,
           useNativeDriver: true,
         }),
       ]).start();
     }
   }, [isActive]);
 
-  const handleLogin = () => {
-    if (email.trim() && password.trim()) {
-      onLogin();
-    }
+  const handleGoogleSignIn = async () => {
+    // TODO: Implement Google sign in
+    // For now, just proceed
+    onLogin();
+  };
+
+  const handleAppleSignIn = async () => {
+    // TODO: Implement Apple sign in
+    // For now, just proceed
+    onLogin();
+  };
+
+  const handleSignIn = () => {
+    // TODO: Navigate to sign in screen or show sign in modal
+    // For now, just proceed
+    onLogin();
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.page}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <Animated.View
-        style={[
-          styles.titleContainer,
-          {
-            opacity: titleOpacity,
-          },
-        ]}
+    <View style={styles.loginPage}>
+      <LinearGradient
+        colors={['#1a1a1a', '#2d2d2d', '#3a3a3a']}
+        style={styles.loginBackground}
       >
-        <Text style={styles.title}>Login to Get Started</Text>
-        <Text style={styles.subtitle}>Sign in to sync your progress across devices</Text>
-      </Animated.View>
-
-      <Animated.View
-        style={[
-          styles.loginForm,
-          {
-            opacity: formOpacity,
-          },
-        ]}
-      >
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Email</Text>
-          <TextInput
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            placeholder="Enter your email"
-            placeholderTextColor="#8e8e93"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Password</Text>
-          <TextInput
-            style={styles.input}
-            value={password}
-            onChangeText={setPassword}
-            placeholder="Enter your password"
-            placeholderTextColor="#8e8e93"
-            secureTextEntry
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-        </View>
-
-        <TouchableOpacity 
-          style={[styles.loginButton, (!email.trim() || !password.trim()) && styles.loginButtonDisabled]}
-          onPress={handleLogin}
-          disabled={!email.trim() || !password.trim()}
-          activeOpacity={0.7}
+        <Animated.View
+          style={[
+            styles.loginTitleContainer,
+            {
+              opacity: titleOpacity,
+              transform: [{ translateY: titleTranslateY }],
+            },
+          ]}
         >
-          <Text style={styles.loginButtonText}>Login</Text>
-        </TouchableOpacity>
+          <Text style={styles.loginTitle}>Get started on your journey</Text>
+          <Text style={styles.loginSubtitle}>Your personalized plan is ready for you</Text>
+        </Animated.View>
 
-        <TouchableOpacity style={styles.skipLoginButton} onPress={onLogin} activeOpacity={0.7}>
-          <Text style={styles.skipLoginText}>Skip for now</Text>
-        </TouchableOpacity>
-      </Animated.View>
-    </KeyboardAvoidingView>
+        {/* Create Account Modal */}
+        <Animated.View
+          style={[
+            styles.createAccountModal,
+            {
+              opacity: modalOpacity,
+              transform: [{ translateY: modalTranslateY }],
+            },
+          ]}
+        >
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Create Account</Text>
+            <TouchableOpacity 
+              style={styles.modalCloseButton}
+              onPress={onLogin}
+              activeOpacity={0.7}
+            >
+              <View style={styles.modalCloseCircle}>
+                <Text style={styles.modalCloseText}>×</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.modalDescription}>
+            Almost done! Just need an account to save your plan so you can start practicing.
+          </Text>
+
+          {/* Google Sign In Button */}
+          <TouchableOpacity 
+            style={styles.socialButton}
+            onPress={handleGoogleSignIn}
+            activeOpacity={0.8}
+          >
+            <View style={styles.socialButtonContent}>
+              <View style={styles.googleIconContainer}>
+                <View style={styles.googleIcon}>
+                  <Text style={styles.googleIconText}>G</Text>
+                </View>
+              </View>
+              <Text style={styles.socialButtonText}>Continue with Google</Text>
+              <View style={styles.socialButtonArrow}>
+                <Text style={styles.socialButtonArrowText}>›</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          {/* Apple Sign In Button */}
+          <TouchableOpacity 
+            style={[styles.socialButton, styles.appleButton]}
+            onPress={handleAppleSignIn}
+            activeOpacity={0.8}
+          >
+            <View style={styles.socialButtonContent}>
+              <Text style={styles.appleIcon}>🍎</Text>
+              <Text style={[styles.socialButtonText, styles.appleButtonText]}>Continue with Apple</Text>
+              <View style={styles.socialButtonArrow}>
+                <Text style={[styles.socialButtonArrowText, styles.appleArrowText]}>›</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          {/* Sign In Link */}
+          <View style={styles.signInLinkContainer}>
+            <Text style={styles.signInLinkText}>Already have an account? </Text>
+            <TouchableOpacity onPress={handleSignIn} activeOpacity={0.7}>
+              <Text style={styles.signInLink}>Sign In</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      </LinearGradient>
+    </View>
   );
 };
 
@@ -2163,43 +2217,167 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: '#8e8e93',
   },
-  loginForm: {
+  loginPage: {
+    width: SCREEN_WIDTH,
+    flex: 1,
+  },
+  loginBackground: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  loginTitleContainer: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 0,
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 100,
   },
-  inputContainer: {
-    marginBottom: 20,
+  loginTitle: {
+    fontSize: 34,
+    fontWeight: '700',
+    color: '#ffffff',
+    textAlign: 'center',
+    marginBottom: 12,
+    lineHeight: 40,
   },
-  inputLabel: {
+  loginSubtitle: {
+    fontSize: 20,
+    fontWeight: '400',
+    color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
+    lineHeight: 28,
+  },
+  createAccountModal: {
+    backgroundColor: '#1a1a1a',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 40,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  modalCloseButton: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCloseCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCloseText: {
+    fontSize: 20,
+    fontWeight: '300',
+    color: '#ffffff',
+    lineHeight: 20,
+  },
+  modalDescription: {
+    fontSize: 16,
+    fontWeight: '400',
+    color: 'rgba(255, 255, 255, 0.7)',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  socialButton: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  socialButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  googleIconContainer: {
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  googleIcon: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#4285F4',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  googleIconText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  appleIcon: {
+    fontSize: 20,
+    marginRight: 0,
+  },
+  socialButtonText: {
+    flex: 1,
     fontSize: 17,
     fontWeight: '600',
     color: '#000000',
-    marginBottom: 8,
+    marginLeft: 12,
   },
-  input: {
-    ...theme.health.inputField,
-    fontSize: 17,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+  socialButtonArrow: {
+    width: 24,
+    alignItems: 'flex-end',
   },
-  loginButton: {
-    ...theme.health.button,
-    marginTop: 8,
+  socialButtonArrowText: {
+    fontSize: 24,
+    fontWeight: '300',
+    color: '#000000',
   },
-  loginButtonDisabled: {
-    backgroundColor: '#c7c7cc',
+  appleButton: {
+    backgroundColor: '#000000',
   },
-  loginButtonText: {
-    ...theme.health.buttonText,
+  appleButtonText: {
+    color: '#ffffff',
   },
-  skipLoginButton: {
+  appleArrowText: {
+    color: '#ffffff',
+  },
+  signInLinkContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: 24,
   },
-  skipLoginText: {
-    fontSize: 17,
-    color: '#8e8e93',
+  signInLinkText: {
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.7)',
+  },
+  signInLink: {
+    fontSize: 15,
+    color: '#ffffff',
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
   premiumFeaturesContainer: {
     flex: 1,

@@ -1012,11 +1012,92 @@ const ChangeButtonDemoPage: React.FC<{
   );
 };
 
+// Callout Component for Instructions
+const InstructionCallout: React.FC<{
+  text: string;
+  position: 'top' | 'bottom' | 'left' | 'right';
+  delay?: number;
+  isActive?: boolean;
+}> = ({ text, position, delay = 0, isActive = true }) => {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(0.8)).current;
+
+  useEffect(() => {
+    if (isActive) {
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 500,
+          delay: delay,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scale, {
+          toValue: 1,
+          tension: 50,
+          friction: 7,
+          delay: delay,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [isActive, delay]);
+
+  const getArrowStyle = () => {
+    switch (position) {
+      case 'top':
+        return styles.calloutArrowTop;
+      case 'bottom':
+        return styles.calloutArrowBottom;
+      case 'left':
+        return styles.calloutArrowLeft;
+      case 'right':
+        return styles.calloutArrowRight;
+      default:
+        return styles.calloutArrowBottom;
+    }
+  };
+
+  return (
+    <Animated.View
+      style={[
+        styles.instructionCallout,
+        getArrowStyle(),
+        {
+          opacity,
+          transform: [{ scale }],
+        },
+      ]}
+    >
+      <Text style={styles.instructionCalloutText}>{text}</Text>
+    </Animated.View>
+  );
+};
+
 // How to Use App Page
 const HowToUsePage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleTranslateY = useRef(new Animated.Value(20)).current;
+  const demoOpacity = useRef(new Animated.Value(0)).current;
+  const demoTranslateY = useRef(new Animated.Value(20)).current;
+  const step1Opacity = useRef(new Animated.Value(0)).current;
+  const step2Opacity = useRef(new Animated.Value(0)).current;
+  const step3Opacity = useRef(new Animated.Value(0)).current;
   const hasAnimated = useRef(false);
+  
+  // Get a sample module and sessions for demo
+  const selectedModule = mentalHealthModules.find(m => m.id === 'anxiety') || mentalHealthModules[0];
+  const demoRecommendedSession = {
+    id: 'demo-1',
+    title: 'Ocean Waves Meditation',
+    durationMin: 5,
+    modality: 'sound',
+    goal: 'anxiety',
+    adaptiveReason: 'Based on your recent progress',
+  };
+  const demoAlternativeSessions = [
+    { id: 'demo-2', title: 'Mountain Visualization', durationMin: 6, modality: 'visualization' },
+    { id: 'demo-3', title: 'Body Scan Journey', durationMin: 8, modality: 'somatic' },
+  ];
 
   useEffect(() => {
     if (isActive && !hasAnimated.current) {
@@ -1034,12 +1115,46 @@ const HowToUsePage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
           delay: 200,
           useNativeDriver: true,
         }),
+        Animated.timing(demoOpacity, {
+          toValue: 1,
+          duration: 600,
+          delay: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(demoTranslateY, {
+          toValue: 0,
+          duration: 600,
+          delay: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(step1Opacity, {
+          toValue: 1,
+          duration: 600,
+          delay: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(step2Opacity, {
+          toValue: 1,
+          duration: 600,
+          delay: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(step3Opacity, {
+          toValue: 1,
+          duration: 600,
+          delay: 1200,
+          useNativeDriver: true,
+        }),
       ]).start();
     }
   }, [isActive]);
 
   return (
-    <View style={styles.page}>
+    <ScrollView 
+      style={styles.page} 
+      contentContainerStyle={styles.howToUseScrollContent}
+      showsVerticalScrollIndicator={false}
+    >
       <Animated.View
         style={[
           styles.titleContainer,
@@ -1050,38 +1165,162 @@ const HowToUsePage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
         ]}
       >
         <Text style={styles.title}>How to Use the App</Text>
+        <Text style={styles.subtitle}>Here's where to find your daily meditation</Text>
       </Animated.View>
 
-      <View style={styles.stepsContainer}>
-        <FeaturePoint
-          icon="📅"
-          title="Daily Recommendations"
-          description="Each day, you'll receive personalized meditation sessions tailored to your goals."
-          delay={400}
-          isActive={isActive}
-        />
-        <View style={styles.arrowContainer}>
-          <Text style={styles.arrow}>↓</Text>
+      {/* Step 1: Find Today's Focus */}
+      <Animated.View
+        style={[
+          styles.stepContainer,
+          { opacity: step1Opacity },
+        ]}
+      >
+        <View style={styles.stepHeader}>
+          <View style={styles.stepNumber}>
+            <Text style={styles.stepNumberText}>1</Text>
+          </View>
+          <Text style={styles.stepTitle}>Find Your Daily Meditation</Text>
         </View>
-        <FeaturePoint
-          icon="✅"
-          title="Complete & Rate"
-          description="Complete your sessions and rate their effectiveness to help us learn what works best for you."
-          delay={600}
-          isActive={isActive}
-        />
-        <View style={styles.arrowContainer}>
-          <Text style={styles.arrow}>↓</Text>
+        <Text style={styles.stepDescription}>
+          Open the <Text style={styles.stepHighlight}>Today</Text> tab and look for <Text style={styles.stepHighlight}>Today's Focus</Text>
+        </Text>
+      </Animated.View>
+
+      <Animated.View
+        style={[
+          styles.demoTodayContainer,
+          {
+            opacity: demoOpacity,
+            transform: [{ translateY: demoTranslateY }],
+          },
+        ]}
+      >
+        {/* Today's Focus Section */}
+        <View style={styles.demoCard}>
+          <View style={styles.demoCardHeader}>
+            <Text style={styles.demoCardTitle}>🧘‍♀️ Today's Focus</Text>
+            <View style={[styles.demoModuleBadge, { backgroundColor: selectedModule.color }]}>
+              <Text style={styles.demoModuleBadgeText}>{selectedModule.title}</Text>
+            </View>
+          </View>
+          
+          <Text style={styles.demoFocusSubtitle}>
+            Personalized for your {selectedModule.title.toLowerCase()} journey
+          </Text>
+
+          {/* Recommended Session Demo */}
+          <View style={styles.demoRecommendedSessionWrapper}>
+            <InstructionCallout
+              text="This is your personalized recommendation - tailored just for you!"
+              position="top"
+              delay={1000}
+              isActive={isActive}
+            />
+            <View style={[styles.demoRecommendedSession, { borderColor: selectedModule.color + '40' }]}>
+              <View style={styles.demoSessionContent}>
+              <Text style={styles.demoSessionTitle}>{demoRecommendedSession.title}</Text>
+              <Text style={styles.demoSessionSubtitle}>
+                {demoRecommendedSession.adaptiveReason}
+              </Text>
+              <View style={styles.demoSessionMetaContainer}>
+                <Text style={styles.demoSessionMeta}>
+                  {demoRecommendedSession.durationMin} min • {demoRecommendedSession.modality}
+                </Text>
+                <View style={styles.demoRecommendedBadge}>
+                  <Text style={styles.demoRecommendedBadgeText}>Recommended</Text>
+                </View>
+              </View>
+            </View>
+            <View style={[styles.demoSessionPlayButton, { backgroundColor: selectedModule.color }]}>
+              <Text style={styles.demoSessionPlayText}>▶</Text>
+            </View>
+            </View>
+          </View>
         </View>
-        <FeaturePoint
-          icon="🎯"
-          title="More Tailored"
-          description="Your recommendations become increasingly personalized based on your progress and feedback."
-          delay={800}
-          isActive={isActive}
-        />
-      </View>
-    </View>
+
+        {/* Step 2: Other Options */}
+        <Animated.View
+          style={[
+            styles.stepContainer,
+            { opacity: step2Opacity, marginTop: 24 },
+          ]}
+        >
+          <View style={styles.stepHeader}>
+            <View style={styles.stepNumber}>
+              <Text style={styles.stepNumberText}>2</Text>
+            </View>
+            <Text style={styles.stepTitle}>Not Feeling It? Try Other Options</Text>
+          </View>
+          <Text style={styles.stepDescription}>
+            If the recommended session doesn't match your mood, scroll down to see <Text style={styles.stepHighlight}>Other Options</Text>
+          </Text>
+        </Animated.View>
+
+        {/* Other Options Section */}
+        <View style={styles.demoCard}>
+          <View style={styles.demoCardHeader}>
+            <Text style={styles.demoCardTitle}>💡 Other Options</Text>
+          </View>
+          
+          <View style={styles.demoAlternativesList}>
+            {demoAlternativeSessions.map((session, index) => (
+              <View key={session.id} style={styles.demoAlternativeSessionWrapper}>
+                {index === 0 && (
+                  <InstructionCallout
+                    text="Choose any option that feels right for you right now"
+                    position="left"
+                    delay={1400}
+                    isActive={isActive}
+                  />
+                )}
+                <View style={styles.demoAlternativeSession}>
+                  <View style={styles.demoAlternativeContent}>
+                  <Text style={styles.demoAlternativeTitle}>{session.title}</Text>
+                  <Text style={styles.demoAlternativeMeta}>
+                    {session.durationMin} min • {session.modality}
+                  </Text>
+                </View>
+                <View style={styles.demoAlternativePlayButton}>
+                  <Text style={styles.demoAlternativePlayText}>▶</Text>
+                </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* Step 3: How We Tailor */}
+        <Animated.View
+          style={[
+            styles.stepContainer,
+            { opacity: step3Opacity, marginTop: 24 },
+          ]}
+        >
+          <View style={styles.stepHeader}>
+            <View style={styles.stepNumber}>
+              <Text style={styles.stepNumberText}>3</Text>
+            </View>
+            <Text style={styles.stepTitle}>We Learn What Works for You</Text>
+          </View>
+          <Text style={styles.stepDescription}>
+            After you complete a session, rate how effective it was. We use your feedback to make tomorrow's recommendations even better!
+          </Text>
+        </Animated.View>
+
+        {/* Explanation Card */}
+        <View style={styles.demoExplanationCard}>
+          <View style={styles.explanationBox}>
+            <Text style={styles.explanationIcon}>📊</Text>
+            <View style={styles.explanationContent}>
+              <Text style={styles.explanationTitle}>Your Feedback Shapes Your Experience</Text>
+              <Text style={styles.explanationText}>
+                Every time you complete and rate a session, our system learns what works best for you. The more you use the app, the more personalized your recommendations become.
+              </Text>
+            </View>
+          </View>
+        </View>
+      </Animated.View>
+    </ScrollView>
   );
 };
 
@@ -1955,5 +2194,270 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
     fontWeight: '400',
+  },
+  howToUseScrollContent: {
+    paddingBottom: 100,
+  },
+  demoTodayContainer: {
+    flex: 1,
+    paddingHorizontal: 0,
+  },
+  demoCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  demoCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  demoCardTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000000',
+  },
+  demoModuleBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  demoModuleBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  demoFocusSubtitle: {
+    fontSize: 15,
+    color: '#8e8e93',
+    fontWeight: '400',
+    marginBottom: 16,
+  },
+  demoRecommendedSessionWrapper: {
+    position: 'relative',
+    marginTop: 8,
+  },
+  demoRecommendedSession: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 2,
+  },
+  demoSessionContent: {
+    flex: 1,
+    marginRight: 16,
+  },
+  demoSessionTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 4,
+  },
+  demoSessionSubtitle: {
+    fontSize: 15,
+    color: '#8e8e93',
+    fontWeight: '400',
+    marginBottom: 8,
+    fontStyle: 'italic',
+  },
+  demoSessionMetaContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  demoSessionMeta: {
+    fontSize: 13,
+    color: '#8e8e93',
+    fontWeight: '400',
+  },
+  demoSessionPlayButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  demoSessionPlayText: {
+    fontSize: 16,
+    color: '#ffffff',
+    fontWeight: 'bold',
+    marginLeft: 2,
+  },
+  demoRecommendedBadge: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  demoRecommendedBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  demoAlternativesList: {
+    paddingTop: 8,
+  },
+  demoAlternativeSessionWrapper: {
+    position: 'relative',
+    marginVertical: 4,
+  },
+  demoAlternativeSession: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: '#f9f9fb',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  demoAlternativeContent: {
+    flex: 1,
+    marginRight: 16,
+  },
+  demoAlternativeTitle: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#000000',
+    marginBottom: 2,
+  },
+  demoAlternativeMeta: {
+    fontSize: 13,
+    color: '#8e8e93',
+    fontWeight: '400',
+  },
+  demoAlternativePlayButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f2f2f7',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  demoAlternativePlayText: {
+    fontSize: 12,
+    color: '#000000',
+    fontWeight: 'bold',
+    marginLeft: 1,
+  },
+  demoExplanationCard: {
+    marginTop: 8,
+    paddingHorizontal: 0,
+  },
+  stepContainer: {
+    marginBottom: 20,
+    paddingHorizontal: 0,
+  },
+  stepHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  stepNumber: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  stepNumberText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  stepTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000000',
+    flex: 1,
+  },
+  stepDescription: {
+    fontSize: 15,
+    color: '#8e8e93',
+    lineHeight: 22,
+    marginLeft: 44,
+  },
+  stepHighlight: {
+    fontWeight: '600',
+    color: '#007AFF',
+  },
+  instructionCallout: {
+    position: 'absolute',
+    backgroundColor: '#007AFF',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    maxWidth: 200,
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  instructionCalloutText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#ffffff',
+    lineHeight: 18,
+  },
+  calloutArrowTop: {
+    bottom: 0,
+    left: 20,
+    transform: [{ translateY: -80 }],
+  },
+  calloutArrowBottom: {
+    top: 0,
+    left: 20,
+    transform: [{ translateY: 80 }],
+  },
+  calloutArrowLeft: {
+    right: 0,
+    top: 10,
+    transform: [{ translateX: -220 }],
+  },
+  calloutArrowRight: {
+    left: 0,
+    top: 10,
+    transform: [{ translateX: 220 }],
+  },
+  explanationBox: {
+    backgroundColor: '#f9f9fb',
+    borderRadius: 16,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#e5e5ea',
+  },
+  explanationIcon: {
+    fontSize: 32,
+    marginRight: 16,
+  },
+  explanationContent: {
+    flex: 1,
+  },
+  explanationTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 8,
+  },
+  explanationText: {
+    fontSize: 15,
+    color: '#8e8e93',
+    lineHeight: 22,
   },
 });

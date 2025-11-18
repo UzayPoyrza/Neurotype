@@ -65,6 +65,7 @@ export const TodayScreen: React.FC = () => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const moduleButtonFade = useRef(new Animated.Value(1)).current;
   const toastAnim = useRef(new Animated.Value(0)).current;
+  const floatingButtonOffset = useRef(new Animated.Value(0)).current;
   
   const selectedModule = mentalHealthModules.find(m => m.id === selectedModuleId) || mentalHealthModules[0];
   
@@ -78,28 +79,45 @@ export const TodayScreen: React.FC = () => {
     if (prevModuleIdRef.current !== null && prevModuleIdRef.current !== selectedModuleId) {
       const newModule = mentalHealthModules.find(m => m.id === selectedModuleId);
       if (newModule) {
-        // Stop any existing animation
+        // Stop any existing animations
         toastAnim.stopAnimation();
+        floatingButtonOffset.stopAnimation();
         
-        // Reset animation
+        // Reset animations
         toastAnim.setValue(0);
+        floatingButtonOffset.setValue(0);
         
         setToastModuleName(newModule.title);
         setShowModuleToast(true);
         
-        // Animate toast in with smooth timing animation (similar to dark mode popup)
-        Animated.sequence([
-          Animated.timing(toastAnim, {
-            toValue: 1,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-          Animated.delay(2000),
-          Animated.timing(toastAnim, {
-            toValue: 0,
-            duration: 300,
-            useNativeDriver: true,
-          }),
+        // Animate toast in and move floating button up
+        Animated.parallel([
+          Animated.sequence([
+            Animated.timing(toastAnim, {
+              toValue: 1,
+              duration: 300,
+              useNativeDriver: true,
+            }),
+            Animated.delay(2000),
+            Animated.timing(toastAnim, {
+              toValue: 0,
+              duration: 300,
+              useNativeDriver: true,
+            }),
+          ]),
+          Animated.sequence([
+            Animated.timing(floatingButtonOffset, {
+              toValue: -40, // Move button up 40px
+              duration: 300,
+              useNativeDriver: true,
+            }),
+            Animated.delay(2000),
+            Animated.timing(floatingButtonOffset, {
+              toValue: 0, // Move button back down
+              duration: 300,
+              useNativeDriver: true,
+            }),
+          ]),
         ]).start(() => {
           setShowModuleToast(false);
         });
@@ -112,6 +130,7 @@ export const TodayScreen: React.FC = () => {
     // Cleanup animation on unmount
     return () => {
       toastAnim.stopAnimation();
+      floatingButtonOffset.stopAnimation();
     };
   }, [selectedModuleId, setGlobalBackgroundColor, setTodayModuleId]);
 
@@ -924,13 +943,25 @@ export const TodayScreen: React.FC = () => {
       />
 
       {/* Animated Floating Button - Fixed to Screen */}
-      <AnimatedFloatingButton
-        backgroundColor={selectedModule.color}
-        onPress={() => setShowModuleModal(true)}
-        isPillMode={isPillMode}
-        onScroll={(scrollY) => setScrollY(scrollY)}
-        onDragStart={handleDragStart}
-      />
+      <Animated.View
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          pointerEvents: 'box-none',
+          transform: [{ translateY: floatingButtonOffset }],
+        }}
+      >
+        <AnimatedFloatingButton
+          backgroundColor={selectedModule.color}
+          onPress={() => setShowModuleModal(true)}
+          isPillMode={isPillMode}
+          onScroll={(scrollY) => setScrollY(scrollY)}
+          onDragStart={handleDragStart}
+        />
+      </Animated.View>
 
       {/* Info Box */}
       <InfoBox

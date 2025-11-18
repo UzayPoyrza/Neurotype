@@ -1121,8 +1121,6 @@ const StickerBadge: React.FC<{
       <View style={styles.stickerBadgeInner}>
         <Text style={styles.stickerBadgeText}>{text}</Text>
       </View>
-      {/* Sticker shine effect */}
-      <View style={styles.stickerShine} />
     </Animated.View>
   );
 };

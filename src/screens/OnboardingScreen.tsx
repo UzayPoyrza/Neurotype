@@ -443,23 +443,24 @@ const ChangeButtonDemoPage: React.FC<{
       ]).start(() => {
         // After expanding, collapse back after 2 seconds
         animationTimeoutRef.current = setTimeout(() => {
-          Animated.parallel([
+          // Hide text immediately before collapsing
+          Animated.timing(textOpacity, {
+            toValue: 0,
+            duration: 100,
+            useNativeDriver: true,
+          }).start(() => {
+            // Then collapse the button width
             Animated.timing(buttonWidth, {
               toValue: 80,
               duration: 300,
               useNativeDriver: false,
-            }),
-            Animated.timing(textOpacity, {
-              toValue: 0,
-              duration: 150,
-              useNativeDriver: true,
-            }),
-          ]).start(() => {
-            setIsPillMode(false);
-            // Restart the cycle after collapsing
-            animationTimeoutRef.current = setTimeout(() => {
-              startAnimationCycle();
-            }, 1000);
+            }).start(() => {
+              setIsPillMode(false);
+              // Restart the cycle after collapsing
+              animationTimeoutRef.current = setTimeout(() => {
+                startAnimationCycle();
+              }, 1000);
+            });
           });
         }, 2000);
       });

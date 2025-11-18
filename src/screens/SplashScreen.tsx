@@ -18,12 +18,12 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
         duration: 600,
         useNativeDriver: true,
       }).start();
-    }, 400); // Blank space for 600ms
+    }, 400); // Blank space for 400ms
 
     // Transition to home screen after showing content
     const timer = setTimeout(() => {
       onFinish();
-    }, 2200); // Total: 600ms blank + 900ms fade-in + 700ms display
+    }, 1900); // Total: 400ms blank + 600ms fade-in + 400ms display
 
     return () => {
       clearTimeout(fadeInDelay);

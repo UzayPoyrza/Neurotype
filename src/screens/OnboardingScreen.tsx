@@ -2274,6 +2274,7 @@ const styles = StyleSheet.create({
   },
   loginTitleContainer: {
     alignItems: 'center',
+    marginTop: 220,
     marginBottom: 32,
   },
   loginTitle: {

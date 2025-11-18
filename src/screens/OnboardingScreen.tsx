@@ -533,7 +533,7 @@ const ChangeButtonDemoPage: React.FC<{
                     }
                   ]}
                 >
-                  <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+                  <Svg width={32} height={32} viewBox="0 0 24 24" fill="none">
                     <Path
                       d="M12 6V3L8 7l4 4V8c3.31 0 6 2.69 6 6 0 .34-.03.67-.08 1h2.02c.04-.33.06-.66.06-1 0-4.42-3.58-8-8-8zM6 12c0-.34.03-.67.08-1H2.06c-.04.33-.06.66-.06 1 0 4.42 3.58 8 8 8v3l4-4-4-4v3c-3.31 0-6-2.69-6-6z"
                       fill="#ffffff"

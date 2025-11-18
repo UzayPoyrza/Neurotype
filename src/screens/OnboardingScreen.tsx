@@ -2284,7 +2284,7 @@ const styles = StyleSheet.create({
   },
   loginBackgroundTextContainer: {
     position: 'absolute',
-    top: 140,
+    top: 320,
     left: 0,
     right: 0,
     paddingHorizontal: 20,

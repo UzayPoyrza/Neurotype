@@ -1455,10 +1455,46 @@ const LoginPage: React.FC<{
   const buttonsOpacity = useRef(new Animated.Value(0)).current;
   const buttonsTranslateY = useRef(new Animated.Value(30)).current;
   const hasAnimated = useRef(false);
+  const [typingText, setTypingText] = useState('');
+  const typingComplete = useRef(false);
+  const typingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const cursorOpacity = useRef(new Animated.Value(1)).current;
+  
+  const fullText = "Time to get started on your journey.";
+  
+  // Blinking cursor animation
+  useEffect(() => {
+    if (isActive) {
+      const blinkAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(cursorOpacity, {
+            toValue: 0,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(cursorOpacity, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      blinkAnimation.start();
+      return () => {
+        blinkAnimation.stop();
+        cursorOpacity.setValue(1);
+      };
+    }
+  }, [isActive]);
 
   useEffect(() => {
     if (isActive && !hasAnimated.current) {
       hasAnimated.current = true;
+      // Reset typing state
+      setTypingText('');
+      typingComplete.current = false;
+      
       // Animate title
       Animated.parallel([
         Animated.timing(titleOpacity, {
@@ -1476,6 +1512,23 @@ const LoginPage: React.FC<{
         }),
       ]).start();
 
+      // Start typing animation after title appears
+      typingTimeoutRef.current = setTimeout(() => {
+        let currentIndex = 0;
+        typingIntervalRef.current = setInterval(() => {
+          if (currentIndex < fullText.length) {
+            setTypingText(fullText.substring(0, currentIndex + 1));
+            currentIndex++;
+          } else {
+            if (typingIntervalRef.current) {
+              clearInterval(typingIntervalRef.current);
+              typingIntervalRef.current = null;
+            }
+            typingComplete.current = true;
+          }
+        }, 50); // 50ms per character for smooth typing
+      }, 800);
+
       // Animate buttons sliding up
       Animated.parallel([
         Animated.timing(buttonsOpacity, {
@@ -1492,8 +1545,25 @@ const LoginPage: React.FC<{
           useNativeDriver: true,
         }),
       ]).start();
+    } else if (!isActive) {
+      // Reset when page becomes inactive
+      hasAnimated.current = false;
+      setTypingText('');
+      typingComplete.current = false;
     }
-  }, [isActive]);
+    
+    return () => {
+      // Cleanup on unmount or when isActive changes
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
+      if (typingIntervalRef.current) {
+        clearInterval(typingIntervalRef.current);
+        typingIntervalRef.current = null;
+      }
+    };
+  }, [isActive, fullText]);
 
   const handleGoogleSignIn = async () => {
     // TODO: Implement Google sign in
@@ -1527,7 +1597,12 @@ const LoginPage: React.FC<{
           ]}
         >
           <Text style={styles.loginBackgroundTextLarge} numberOfLines={1}>That's everything.</Text>
-          <Text style={styles.loginBackgroundTextSmall}>Time to get started on your journey.</Text>
+          <Text style={styles.loginBackgroundTextSmall}>
+            {typingText}
+            {!typingComplete.current && (
+              <Animated.Text style={[styles.typingCursor, { opacity: cursorOpacity }]}>|</Animated.Text>
+            )}
+          </Text>
         </Animated.View>
 
         {/* Social Login Buttons - Positioned at bottom */}
@@ -2307,6 +2382,12 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     lineHeight: 48,
     paddingLeft: 8,
+  },
+  typingCursor: {
+    fontSize: 30,
+    fontWeight: '700',
+    color: '#000000',
+    opacity: 1,
   },
   loginTitleContainer: {
     alignItems: 'center',

@@ -369,6 +369,7 @@ const ChangeButtonDemoPage: React.FC<{
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const hasAnimated = useRef(false);
   const [isPillMode, setIsPillMode] = useState(false);
+  const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Button animation values
   const buttonWidth = useRef(new Animated.Value(80)).current; // Larger initial size
@@ -378,6 +379,24 @@ const ChangeButtonDemoPage: React.FC<{
 
   const selectedModuleData = mentalHealthModules.find(m => m.id === selectedModule) || mentalHealthModules[0];
   const buttonColor = selectedModuleData.color;
+
+  const startAnimationCycle = () => {
+    // Clear any existing timeout
+    if (animationTimeoutRef.current) {
+      clearTimeout(animationTimeoutRef.current);
+    }
+
+    // Reset to initial state
+    setIsPillMode(false);
+    buttonWidth.setValue(80);
+    textOpacity.setValue(0);
+    iconScale.setValue(1);
+
+    // Trigger pill animation after 2 seconds
+    animationTimeoutRef.current = setTimeout(() => {
+      setIsPillMode(true);
+    }, 2000);
+  };
 
   useEffect(() => {
     if (isActive && !hasAnimated.current) {
@@ -389,12 +408,16 @@ const ChangeButtonDemoPage: React.FC<{
         useNativeDriver: true,
       }).start();
 
-      // Trigger pill animation after 2 seconds
-      setTimeout(() => {
-        setIsPillMode(true);
-      }, 2000);
+      startAnimationCycle();
     }
   }, [isActive]);
+
+  // Restart animation when module changes
+  useEffect(() => {
+    if (isActive && hasAnimated.current) {
+      startAnimationCycle();
+    }
+  }, [selectedModule]);
 
   // Animate to pill mode
   useEffect(() => {
@@ -417,9 +440,40 @@ const ChangeButtonDemoPage: React.FC<{
           duration: 300,
           useNativeDriver: true,
         }),
-      ]).start();
+      ]).start(() => {
+        // After expanding, collapse back after 2 seconds
+        animationTimeoutRef.current = setTimeout(() => {
+          Animated.parallel([
+            Animated.timing(buttonWidth, {
+              toValue: 80,
+              duration: 300,
+              useNativeDriver: false,
+            }),
+            Animated.timing(textOpacity, {
+              toValue: 0,
+              duration: 150,
+              useNativeDriver: true,
+            }),
+          ]).start(() => {
+            setIsPillMode(false);
+            // Restart the cycle after collapsing
+            animationTimeoutRef.current = setTimeout(() => {
+              startAnimationCycle();
+            }, 1000);
+          });
+        }, 2000);
+      });
     }
   }, [isPillMode]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (animationTimeoutRef.current) {
+        clearTimeout(animationTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <View style={styles.page}>
@@ -1261,7 +1315,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   demoChangeText: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '700',
     color: '#ffffff',
   },

@@ -2764,11 +2764,11 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   howToUseScrollContent: {
-    paddingBottom: 20,
+    paddingBottom: 0,
   },
   scrollIndicatorContainer: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 60,
     left: 0,
     right: 0,
     alignItems: 'center',

@@ -633,7 +633,8 @@ const ChangeButtonDemoPage: React.FC<{
   onShowModal?: () => void;
   previousModuleId?: string | null;
   onShowCongratulations?: (show: boolean) => void;
-}> = ({ selectedModule, isActive, onModuleChange, onShowModal, previousModuleId, onShowCongratulations }) => {
+  onCongratulationsComplete?: (handler: () => void) => void;
+}> = ({ selectedModule, isActive, onModuleChange, onShowModal, previousModuleId, onShowCongratulations, onCongratulationsComplete }) => {
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const hasAnimated = useRef(false);
   const [isPillMode, setIsPillMode] = useState(false);
@@ -871,11 +872,6 @@ const ChangeButtonDemoPage: React.FC<{
   }, []);
 
   const handleCongratulationsComplete = () => {
-    // Hide the congratulations overlay
-    setShowCongratulations(false);
-    if (onShowCongratulations) {
-      onShowCongratulations(false);
-    }
     // Show instructional text after a short delay
     setTimeout(() => {
       setShowInstructionText(true);
@@ -894,6 +890,13 @@ const ChangeButtonDemoPage: React.FC<{
       ]).start();
     }, 300);
   };
+
+  // Expose handleCongratulationsComplete to parent
+  useEffect(() => {
+    if (onCongratulationsComplete) {
+      onCongratulationsComplete(handleCongratulationsComplete);
+    }
+  }, [onCongratulationsComplete]);
 
   return (
     <View style={styles.page}>
@@ -1880,6 +1883,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   const [hasScrolledOnHowToUse, setHasScrolledOnHowToUse] = useState(false);
   const [showCongratulations, setShowCongratulations] = useState(false);
   const [congratulationsModule, setCongratulationsModule] = useState<{ title: string; color: string } | null>(null);
+  const onCongratulationsCompleteRef = useRef<(() => void) | null>(null);
 
   const TOTAL_PAGES = 6;
 
@@ -2038,6 +2042,9 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
                 }
               }
             }}
+            onCongratulationsComplete={(handler) => {
+              onCongratulationsCompleteRef.current = handler;
+            }}
           />
           <HowToUsePage 
             isActive={currentPage === 3}
@@ -2086,6 +2093,10 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
           onComplete={() => {
             setShowCongratulations(false);
             setCongratulationsModule(null);
+            // Call the handler from ChangeButtonDemoPage to show instructional text
+            if (onCongratulationsCompleteRef.current) {
+              onCongratulationsCompleteRef.current();
+            }
           }}
         />
       )}

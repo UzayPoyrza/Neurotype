@@ -5,6 +5,8 @@ import { theme } from '../styles/theme';
 import { mentalHealthModules, MentalHealthModule } from '../data/modules';
 import { prerenderedModuleBackgrounds } from '../store/useStore';
 import { useStore } from '../store/useStore';
+import { AnimatedFloatingButton } from '../components/AnimatedFloatingButton';
+import { ModuleGridModal } from '../components/ModuleGridModal';
 
 interface OnboardingScreenProps {
   onFinish: () => void;
@@ -360,12 +362,10 @@ const SelectModulePage: React.FC<{
 const ChangeButtonDemoPage: React.FC<{ 
   selectedModule: string | null;
   isActive: boolean;
-}> = ({ selectedModule, isActive }) => {
+  onModuleChange?: (moduleId: string) => void;
+  onShowModal?: () => void;
+}> = ({ selectedModule, isActive, onModuleChange, onShowModal }) => {
   const titleOpacity = useRef(new Animated.Value(0)).current;
-  const buttonOpacity = useRef(new Animated.Value(0)).current;
-  const buttonTranslateX = useRef(new Animated.Value(-50)).current;
-  const arrowOpacity = useRef(new Animated.Value(0)).current;
-  const arrowTranslateX = useRef(new Animated.Value(-20)).current;
   const hasAnimated = useRef(false);
 
   const selectedModuleData = mentalHealthModules.find(m => m.id === selectedModule) || mentalHealthModules[0];
@@ -373,44 +373,12 @@ const ChangeButtonDemoPage: React.FC<{
   useEffect(() => {
     if (isActive && !hasAnimated.current) {
       hasAnimated.current = true;
-      
       Animated.timing(titleOpacity, {
         toValue: 1,
         duration: 600,
         delay: 200,
         useNativeDriver: true,
       }).start();
-
-      setTimeout(() => {
-        Animated.parallel([
-          Animated.timing(buttonOpacity, {
-            toValue: 1,
-            duration: 600,
-            useNativeDriver: true,
-          }),
-          Animated.spring(buttonTranslateX, {
-            toValue: 0,
-            tension: 50,
-            friction: 7,
-            useNativeDriver: true,
-          }),
-        ]).start();
-
-        setTimeout(() => {
-          Animated.parallel([
-            Animated.timing(arrowOpacity, {
-              toValue: 1,
-              duration: 400,
-              useNativeDriver: true,
-            }),
-            Animated.timing(arrowTranslateX, {
-              toValue: 0,
-              duration: 400,
-              useNativeDriver: true,
-            }),
-          ]).start();
-        }, 300);
-      }, 800);
     }
   }, [isActive]);
 
@@ -438,32 +406,6 @@ const ChangeButtonDemoPage: React.FC<{
           </View>
           <Text style={styles.demoModuleDescription}>{selectedModuleData.description}</Text>
         </View>
-
-        <Animated.View
-          style={[
-            styles.changeButtonDemo,
-            {
-              opacity: buttonOpacity,
-              transform: [{ translateX: buttonTranslateX }],
-            },
-          ]}
-        >
-          <TouchableOpacity style={styles.changeButton} activeOpacity={0.7}>
-            <Text style={styles.changeButtonText}>Change</Text>
-          </TouchableOpacity>
-        </Animated.View>
-
-        <Animated.View
-          style={[
-            styles.arrowDemo,
-            {
-              opacity: arrowOpacity,
-              transform: [{ translateX: arrowTranslateX }],
-            },
-          ]}
-        >
-          <Text style={styles.arrowDemoText}>→</Text>
-        </Animated.View>
       </View>
     </View>
   );
@@ -731,6 +673,8 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   const buttonOpacity = useRef(new Animated.Value(0)).current;
   const buttonScale = useRef(new Animated.Value(0.95)).current;
   const setTodayModuleId = useStore(state => state.setTodayModuleId);
+  const [showModuleModal, setShowModuleModal] = useState(false);
+  const [demoModuleId, setDemoModuleId] = useState<string | null>(null);
 
   const TOTAL_PAGES = 6;
 
@@ -801,6 +745,11 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
     setSelectedModule(moduleId);
   };
 
+  const handleDemoModuleChange = (moduleId: string) => {
+    setDemoModuleId(moduleId);
+    setSelectedModule(moduleId);
+  };
+
   const handleLogin = () => {
     handleFinish();
   };
@@ -843,8 +792,10 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
             isActive={currentPage === 1}
           />
           <ChangeButtonDemoPage 
-            selectedModule={selectedModule || 'anxiety'}
+            selectedModule={demoModuleId || selectedModule || 'anxiety'}
             isActive={currentPage === 2}
+            onModuleChange={handleDemoModuleChange}
+            onShowModal={() => setShowModuleModal(true)}
           />
           <HowToUsePage isActive={currentPage === 3} />
           <LoginPage 
@@ -886,6 +837,31 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
           </TouchableOpacity>
         </Animated.View>
       </View>
+
+      {/* Draggable Change Button - Only visible on page 2 */}
+      {currentPage === 2 && (() => {
+        const activeModuleId = demoModuleId || selectedModule || 'anxiety';
+        const activeModule = mentalHealthModules.find(m => m.id === activeModuleId);
+        const buttonColor = activeModule?.color || '#007AFF';
+        return (
+          <AnimatedFloatingButton
+            backgroundColor={buttonColor}
+            onPress={() => setShowModuleModal(true)}
+            isPillMode={false}
+          />
+        );
+      })()}
+
+      {/* Module Grid Modal */}
+      {currentPage === 2 && (
+        <ModuleGridModal
+          modules={mentalHealthModules}
+          selectedModuleId={demoModuleId || selectedModule || 'anxiety'}
+          isVisible={showModuleModal}
+          onModuleSelect={handleDemoModuleChange}
+          onClose={() => setShowModuleModal(false)}
+        />
+      )}
     </>
   );
 };
@@ -1158,22 +1134,6 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: '#8e8e93',
     lineHeight: 22,
-  },
-  changeButtonDemo: {
-    marginBottom: 20,
-  },
-  changeButton: {
-    ...theme.health.button,
-  },
-  changeButtonText: {
-    ...theme.health.buttonText,
-  },
-  arrowDemo: {
-    marginTop: 10,
-  },
-  arrowDemoText: {
-    fontSize: 32,
-    color: '#007AFF',
   },
   stepsContainer: {
     flex: 1,

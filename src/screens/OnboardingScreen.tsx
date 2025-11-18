@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Image, Animated, StatusBar, TouchableOpacity, ScrollView, Dimensions, TextInput, KeyboardAvoidingView, Platform, Easing } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import { theme } from '../styles/theme';
 import { mentalHealthModules, MentalHealthModule } from '../data/modules';
@@ -199,6 +200,10 @@ const SelectModulePage: React.FC<{
   useEffect(() => {
     if (isActive && !hasAnimated.current) {
       hasAnimated.current = true;
+      // Reset scroll arrow state when page first becomes active
+      setShowScrollArrow(true);
+      arrowOpacity.setValue(1);
+      
       Animated.parallel([
         Animated.timing(titleOpacity, {
           toValue: 1,
@@ -213,6 +218,9 @@ const SelectModulePage: React.FC<{
           useNativeDriver: true,
         }),
       ]).start();
+    } else if (!isActive) {
+      // Reset when page becomes inactive
+      hasAnimated.current = false;
     }
   }, [isActive]);
 
@@ -221,33 +229,23 @@ const SelectModulePage: React.FC<{
     const isAtBottom = contentOffset.y + layoutMeasurement.height >= contentSize.height - 20;
     const isScrollable = contentSize.height > layoutMeasurement.height;
     
-    if (!isScrollable) {
-      // Content fits on screen, hide arrow
-      if (showScrollArrow) {
+    // Only hide arrow when scrolled to bottom, not when content fits on screen
+    if (isScrollable) {
+      if (isAtBottom && showScrollArrow) {
         setShowScrollArrow(false);
         Animated.timing(arrowOpacity, {
           toValue: 0,
           duration: 300,
           useNativeDriver: true,
         }).start();
+      } else if (!isAtBottom && !showScrollArrow) {
+        setShowScrollArrow(true);
+        Animated.timing(arrowOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
       }
-      return;
-    }
-    
-    if (isAtBottom && showScrollArrow) {
-      setShowScrollArrow(false);
-      Animated.timing(arrowOpacity, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else if (!isAtBottom && !showScrollArrow) {
-      setShowScrollArrow(true);
-      Animated.timing(arrowOpacity, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
     }
   };
 
@@ -255,20 +253,16 @@ const SelectModulePage: React.FC<{
     // Check if content is scrollable when content size changes
     if (scrollViewHeight > 0) {
       const isScrollable = contentHeight > scrollViewHeight;
-      if (!isScrollable && showScrollArrow) {
-        setShowScrollArrow(false);
-        Animated.timing(arrowOpacity, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }).start();
-      } else if (isScrollable && !showScrollArrow && contentHeight > scrollViewHeight) {
-        setShowScrollArrow(true);
-        Animated.timing(arrowOpacity, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }).start();
+      if (isScrollable) {
+        // Show arrow if content is scrollable (will be hidden by handleScroll if at bottom)
+        if (!showScrollArrow) {
+          setShowScrollArrow(true);
+          Animated.timing(arrowOpacity, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }).start();
+        }
       }
     }
   };
@@ -341,19 +335,25 @@ const SelectModulePage: React.FC<{
           })}
         </ScrollView>
         
-        <Animated.View 
-          style={[
-            styles.scrollArrowContainer,
-            { opacity: arrowOpacity }
-          ]}
-          pointerEvents="none"
-        >
-          <View style={styles.scrollArrowGradient}>
-            <View style={styles.scrollArrow}>
-              <Text style={styles.scrollArrowText}>⌄</Text>
-            </View>
-          </View>
-        </Animated.View>
+        {showScrollArrow && (
+          <Animated.View 
+            style={[
+              styles.scrollArrowContainer,
+              { opacity: arrowOpacity }
+            ]}
+            pointerEvents="none"
+          >
+            <LinearGradient
+              colors={['rgba(242, 242, 247, 0)', 'rgba(242, 242, 247, 0.4)', 'rgba(242, 242, 247, 0.8)', 'rgba(242, 242, 247, 1)']}
+              locations={[0, 0.3, 0.7, 1]}
+              style={styles.scrollArrowGradient}
+            >
+              <View style={styles.scrollArrow}>
+                <Text style={styles.scrollArrowText}>⌄</Text>
+              </View>
+            </LinearGradient>
+          </Animated.View>
+        )}
       </View>
       </View>
     </View>
@@ -1214,6 +1214,12 @@ const HowToUsePage: React.FC<{
   useEffect(() => {
     if (isActive && !hasAnimated.current) {
       hasAnimated.current = true;
+      // Reset scroll indicator state when page first becomes active
+      setHasScrolled(false);
+      scrollIndicatorOpacity.setValue(1);
+      scrollIndicatorTranslateY.setValue(0);
+      arrowPulseY.setValue(0);
+      
       Animated.parallel([
         Animated.timing(titleOpacity, {
           toValue: 1,
@@ -1263,6 +1269,9 @@ const HowToUsePage: React.FC<{
           startSliderDemo();
         }
       });
+    } else if (!isActive) {
+      // Reset when page becomes inactive
+      hasAnimated.current = false;
     }
 
     // Start arrow pulse animation
@@ -2269,13 +2278,14 @@ const styles = StyleSheet.create({
   },
   scrollArrowContainer: {
     position: 'absolute',
-    bottom: -70,
+    bottom: 0,
     left: 0,
     right: 0,
     height: 80,
     alignItems: 'center',
     justifyContent: 'flex-end',
     backgroundColor: 'transparent',
+    zIndex: 10,
   },
   scrollArrowGradient: {
     width: '100%',
@@ -2293,8 +2303,8 @@ const styles = StyleSheet.create({
   },
   scrollArrowText: {
     fontSize: 24,
-    color: 'rgba(255, 255, 255, 0.6)',
-    fontWeight: '200',
+    color: 'rgba(0, 0, 0, 0.4)',
+    fontWeight: '300',
   },
   moduleCard: {
     borderRadius: 16,
@@ -2768,7 +2778,7 @@ const styles = StyleSheet.create({
   },
   scrollIndicatorContainer: {
     position: 'absolute',
-    bottom: 60,
+    bottom: 10,
     left: 0,
     right: 0,
     alignItems: 'center',

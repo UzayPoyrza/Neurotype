@@ -1678,13 +1678,6 @@ const LoginPage: React.FC<{
               </View>
             </TouchableOpacity>
 
-            {/* Sign In Link */}
-            <View style={styles.signInLinkContainer}>
-              <Text style={styles.signInLinkText}>Already have an account? </Text>
-              <TouchableOpacity onPress={handleSignIn} activeOpacity={0.7}>
-                <Text style={styles.signInLink}>Sign In</Text>
-              </TouchableOpacity>
-            </View>
           </Animated.View>
         </View>
       </View>

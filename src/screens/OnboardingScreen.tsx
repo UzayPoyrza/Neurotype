@@ -376,6 +376,10 @@ const ChangeButtonDemoPage: React.FC<{
   const textOpacity = useRef(new Animated.Value(0)).current;
   const iconScale = useRef(new Animated.Value(1)).current;
   const buttonTranslateX = useRef(new Animated.Value(0)).current;
+  
+  // Arrow animation values
+  const arrowOpacity = useRef(new Animated.Value(0)).current;
+  const arrowTranslateY = useRef(new Animated.Value(8)).current; // Start slightly down for bounce effect
 
   const selectedModuleData = mentalHealthModules.find(m => m.id === selectedModule) || mentalHealthModules[0];
   const buttonColor = selectedModuleData.color;
@@ -408,6 +412,39 @@ const ChangeButtonDemoPage: React.FC<{
         useNativeDriver: true,
       }).start();
 
+      // Animate arrow in
+      setTimeout(() => {
+        Animated.parallel([
+          Animated.timing(arrowOpacity, {
+            toValue: 1,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+          Animated.timing(arrowTranslateY, {
+            toValue: 0,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          // Start pulsing animation after fade in
+          const pulseAnimation = Animated.loop(
+            Animated.sequence([
+              Animated.timing(arrowTranslateY, {
+                toValue: -8,
+                duration: 800,
+                useNativeDriver: true,
+              }),
+              Animated.timing(arrowTranslateY, {
+                toValue: 0,
+                duration: 800,
+                useNativeDriver: true,
+              }),
+            ])
+          );
+          pulseAnimation.start();
+        });
+      }, 800);
+
       startAnimationCycle();
     }
   }, [isActive]);
@@ -415,6 +452,41 @@ const ChangeButtonDemoPage: React.FC<{
   // Restart animation when module changes
   useEffect(() => {
     if (isActive && hasAnimated.current) {
+      // Reset arrow animation
+      arrowOpacity.setValue(0);
+      arrowTranslateY.setValue(8);
+      
+      setTimeout(() => {
+        Animated.parallel([
+          Animated.timing(arrowOpacity, {
+            toValue: 1,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+          Animated.timing(arrowTranslateY, {
+            toValue: 0,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          const pulseAnimation = Animated.loop(
+            Animated.sequence([
+              Animated.timing(arrowTranslateY, {
+                toValue: -8,
+                duration: 800,
+                useNativeDriver: true,
+              }),
+              Animated.timing(arrowTranslateY, {
+                toValue: 0,
+                duration: 800,
+                useNativeDriver: true,
+              }),
+            ])
+          );
+          pulseAnimation.start();
+        });
+      }, 300);
+      
       startAnimationCycle();
     }
   }, [selectedModule]);
@@ -500,6 +572,19 @@ const ChangeButtonDemoPage: React.FC<{
           </View>
           <Text style={styles.demoModuleDescription}>{selectedModuleData.description}</Text>
         </View>
+
+        {/* Animated Arrow pointing to button */}
+        <Animated.View
+          style={[
+            styles.arrowPointer,
+            {
+              opacity: arrowOpacity,
+              transform: [{ translateY: arrowTranslateY }],
+            }
+          ]}
+        >
+          <Text style={styles.arrowPointerText}>↓</Text>
+        </Animated.View>
 
         {/* Demo Change Button - Large, non-draggable */}
         <Animated.View
@@ -1231,18 +1316,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   demoContainer: {
-    flex: 1,
-    justifyContent: 'flex-start',
+    width: '100%',
     alignItems: 'center',
     paddingHorizontal: 0,
     paddingTop: 40,
+    paddingBottom: 20,
   },
   demoModuleCard: {
     padding: 20,
     borderRadius: 16,
     backgroundColor: '#ffffff',
     width: '100%',
-    marginBottom: 40,
+    marginBottom: 30,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -1276,6 +1361,16 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: '#8e8e93',
     lineHeight: 22,
+  },
+  arrowPointer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  arrowPointerText: {
+    fontSize: 32,
+    color: '#007AFF',
+    fontWeight: '300',
   },
   demoChangeButtonContainer: {
     alignItems: 'center',

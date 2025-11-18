@@ -226,7 +226,9 @@ const SelectModulePage: React.FC<{
         contentContainerStyle={styles.modulesContainer}
         showsVerticalScrollIndicator={false}
       >
-        {mentalHealthModules.slice(0, 6).map((module) => {
+        {[...mentalHealthModules]
+          .sort((a, b) => a.title.localeCompare(b.title))
+          .map((module) => {
           const isSelected = selectedModule === module.id;
           
           return (

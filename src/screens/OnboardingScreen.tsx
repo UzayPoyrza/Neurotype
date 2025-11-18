@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Image, Animated, StatusBar, TouchableOpacity, ScrollView, Dimensions, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { View, Text, StyleSheet, Image, Animated, StatusBar, TouchableOpacity, ScrollView, Dimensions, TextInput, KeyboardAvoidingView, Platform, Easing } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import { theme } from '../styles/theme';
@@ -377,12 +377,79 @@ const ChangeButtonDemoPage: React.FC<{
   const iconScale = useRef(new Animated.Value(1)).current;
   const buttonTranslateX = useRef(new Animated.Value(0)).current;
   
-  // Arrow animation values
+  // Arrow animation values - use refs to persist across re-renders
   const arrowOpacity = useRef(new Animated.Value(0)).current;
-  const arrowTranslateY = useRef(new Animated.Value(8)).current; // Start slightly down for bounce effect
+  const arrowTranslateY = useRef(new Animated.Value(8)).current;
+  const pulseAnimationRef = useRef<Animated.CompositeAnimation | null>(null);
+  const arrowAnimationStartedRef = useRef(false); // Track if animation has been started
+  const isAnimatingRef = useRef(false); // Track if currently animating to prevent interruptions
 
   const selectedModuleData = mentalHealthModules.find(m => m.id === selectedModule) || mentalHealthModules[0];
   const buttonColor = selectedModuleData.color;
+
+  const startArrowAnimation = useCallback(() => {
+    // Only start once, never restart
+    if (arrowAnimationStartedRef.current) {
+      return; // Animation already started, never restart
+    }
+    
+    arrowAnimationStartedRef.current = true;
+    
+    // Reset initial values only on first start
+    arrowOpacity.setValue(0);
+    arrowTranslateY.setValue(8);
+    
+    // Fade in and move to center
+    Animated.parallel([
+      Animated.timing(arrowOpacity, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(arrowTranslateY, {
+        toValue: 0,
+        duration: 400,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      // Only start pulse if it's not already running
+      if (pulseAnimationRef.current || isAnimatingRef.current) {
+        return;
+      }
+      
+      isAnimatingRef.current = true;
+      
+      // Create butter-smooth continuous animation
+      // Use a simple alternating pattern that never resets
+      let isGoingUp = false; // Track direction
+      
+      const animateCycle = () => {
+        // Alternate between going up (-8) and down (0)
+        const targetValue = isGoingUp ? 0 : -8;
+        isGoingUp = !isGoingUp; // Toggle for next cycle
+        
+        // Create smooth animation to target
+        const animation = Animated.timing(arrowTranslateY, {
+          toValue: targetValue,
+          duration: 1000,
+          easing: Easing.bezier(0.4, 0.0, 0.2, 1.0), // Material Design standard easing
+          useNativeDriver: true,
+        });
+        
+        // Start animation and immediately queue next cycle when done
+        animation.start(() => {
+          // Immediately start next cycle - no gap, no reset, seamless
+          if (isAnimatingRef.current) {
+            animateCycle();
+          }
+        });
+      };
+      
+      // Start the first cycle (going up to -8)
+      animateCycle();
+    });
+  }, [arrowOpacity, arrowTranslateY]);
 
   const startAnimationCycle = () => {
     // Clear any existing timeout
@@ -402,6 +469,18 @@ const ChangeButtonDemoPage: React.FC<{
     }, 2000);
   };
 
+  // Start arrow animation immediately on mount, independent of isActive
+  useEffect(() => {
+    // Start arrow animation once on mount - never restart
+    const timer = setTimeout(() => {
+      startArrowAnimation();
+    }, 800);
+    
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [startArrowAnimation]); // Only depend on startArrowAnimation, not isActive
+
   useEffect(() => {
     if (isActive && !hasAnimated.current) {
       hasAnimated.current = true;
@@ -412,81 +491,14 @@ const ChangeButtonDemoPage: React.FC<{
         useNativeDriver: true,
       }).start();
 
-      // Animate arrow in
-      setTimeout(() => {
-        Animated.parallel([
-          Animated.timing(arrowOpacity, {
-            toValue: 1,
-            duration: 400,
-            useNativeDriver: true,
-          }),
-          Animated.timing(arrowTranslateY, {
-            toValue: 0,
-            duration: 400,
-            useNativeDriver: true,
-          }),
-        ]).start(() => {
-          // Start pulsing animation after fade in
-          const pulseAnimation = Animated.loop(
-            Animated.sequence([
-              Animated.timing(arrowTranslateY, {
-                toValue: -8,
-                duration: 800,
-                useNativeDriver: true,
-              }),
-              Animated.timing(arrowTranslateY, {
-                toValue: 0,
-                duration: 800,
-                useNativeDriver: true,
-              }),
-            ])
-          );
-          pulseAnimation.start();
-        });
-      }, 800);
-
       startAnimationCycle();
     }
   }, [isActive]);
 
-  // Restart animation when module changes
+  // When module changes, only restart button animation, NOT arrow animation
   useEffect(() => {
     if (isActive && hasAnimated.current) {
-      // Reset arrow animation
-      arrowOpacity.setValue(0);
-      arrowTranslateY.setValue(8);
-      
-      setTimeout(() => {
-        Animated.parallel([
-          Animated.timing(arrowOpacity, {
-            toValue: 1,
-            duration: 400,
-            useNativeDriver: true,
-          }),
-          Animated.timing(arrowTranslateY, {
-            toValue: 0,
-            duration: 400,
-            useNativeDriver: true,
-          }),
-        ]).start(() => {
-          const pulseAnimation = Animated.loop(
-            Animated.sequence([
-              Animated.timing(arrowTranslateY, {
-                toValue: -8,
-                duration: 800,
-                useNativeDriver: true,
-              }),
-              Animated.timing(arrowTranslateY, {
-                toValue: 0,
-                duration: 800,
-                useNativeDriver: true,
-              }),
-            ])
-          );
-          pulseAnimation.start();
-        });
-      }, 300);
-      
+      // Don't restart arrow animation - let it continue smoothly
       startAnimationCycle();
     }
   }, [selectedModule]);
@@ -544,6 +556,9 @@ const ChangeButtonDemoPage: React.FC<{
     return () => {
       if (animationTimeoutRef.current) {
         clearTimeout(animationTimeoutRef.current);
+      }
+      if (pulseAnimationRef.current) {
+        pulseAnimationRef.current.stop();
       }
     };
   }, []);

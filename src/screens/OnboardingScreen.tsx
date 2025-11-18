@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Image, Animated, StatusBar, TouchableOpacity, ScrollView, Dimensions, TextInput, KeyboardAvoidingView, Platform, Easing } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import { theme } from '../styles/theme';
 import { mentalHealthModules, MentalHealthModule } from '../data/modules';
@@ -64,8 +63,8 @@ const FeaturePoint: React.FC<{
     >
       <FeatureIcon icon={icon} />
       <View style={styles.featureTextContainer}>
-        <Text style={styles.featureTitle}>{title}</Text>
-        <Text style={styles.featureDescription}>{description}</Text>
+        <Text style={styles.featureTitleLight}>{title}</Text>
+        <Text style={styles.featureDescriptionLight}>{description}</Text>
       </View>
     </Animated.View>
   );
@@ -121,62 +120,64 @@ const WelcomePage: React.FC = () => {
 
   return (
     <View style={styles.page}>
-      <Animated.View
-        style={[
-          styles.iconWrapper,
-          {
-            opacity: iconOpacity,
-            transform: [{ scale: iconScale }],
-          },
-        ]}
-      >
-        <View style={styles.iconContainer}>
-          <Image
-            source={require('../../assets/icon_no_background.png')}
-            style={styles.icon}
-            resizeMode="contain"
+      <View style={styles.pageBackground}>
+        <Animated.View
+          style={[
+            styles.iconWrapper,
+            {
+              opacity: iconOpacity,
+              transform: [{ scale: iconScale }],
+            },
+          ]}
+        >
+          <View style={styles.iconContainer}>
+            <Image
+              source={require('../../assets/icon_no_background.png')}
+              style={styles.icon}
+              resizeMode="contain"
+            />
+          </View>
+        </Animated.View>
+
+        <Animated.View
+          style={[
+            styles.titleContainer,
+            {
+              opacity: titleOpacity,
+              transform: [{ translateY: titleTranslateY }],
+            },
+          ]}
+        >
+          <Text style={styles.titleLight}>Welcome to Neurotype</Text>
+        </Animated.View>
+
+        <View style={styles.featuresContainer}>
+          <FeaturePoint
+            icon="🧠"
+            title="Personalized for Your Brain"
+            description="Discover meditation methods proven to work for your unique neurotype."
+            delay={900}
+          />
+          <FeaturePoint
+            icon="📊"
+            title="Track Your Progress"
+            description="See how meditation affects your anxiety, focus, and well-being over time."
+            delay={1100}
+          />
+          <FeaturePoint
+            icon="📚"
+            title="All Your Sessions in One Place"
+            description="Access guided meditations, modules, and techniques tailored to your goals."
+            delay={1300}
           />
         </View>
-      </Animated.View>
 
-      <Animated.View
-        style={[
-          styles.titleContainer,
-          {
-            opacity: titleOpacity,
-            transform: [{ translateY: titleTranslateY }],
-          },
-        ]}
-      >
-        <Text style={styles.title}>Welcome to Neurotype</Text>
-      </Animated.View>
-
-      <View style={styles.featuresContainer}>
-        <FeaturePoint
-          icon="🧠"
-          title="Personalized for Your Brain"
-          description="Discover meditation methods proven to work for your unique neurotype."
-          delay={900}
-        />
-        <FeaturePoint
-          icon="📊"
-          title="Track Your Progress"
-          description="See how meditation affects your anxiety, focus, and well-being over time."
-          delay={1100}
-        />
-        <FeaturePoint
-          icon="📚"
-          title="All Your Sessions in One Place"
-          description="Access guided meditations, modules, and techniques tailored to your goals."
-          delay={1300}
-        />
+        <Animated.View style={[styles.disclaimerContainer, { opacity: disclaimerOpacity }]}>
+          <Text style={styles.disclaimerTextLight}>
+            Your meditation data and progress are used to improve your personalized experience.
+          </Text>
+        </Animated.View>
       </View>
-
-      <Animated.View style={[styles.disclaimerContainer, { opacity: disclaimerOpacity }]}>
-        <Text style={styles.disclaimerText}>
-          Your meditation data and progress are used to improve your personalized experience.
-        </Text>
-      </Animated.View>
     </View>
   );
 };
@@ -279,18 +280,19 @@ const SelectModulePage: React.FC<{
 
   return (
     <View style={styles.page}>
-      <Animated.View
-        style={[
-          styles.titleContainer,
-          {
-            opacity: titleOpacity,
-            transform: [{ translateY: titleTranslateY }],
-          },
-        ]}
-      >
-        <Text style={styles.title}>Select Your Focus</Text>
-        <Text style={styles.subtitle}>Choose a module to get started</Text>
-      </Animated.View>
+      <View style={styles.pageBackground}>
+        <Animated.View
+          style={[
+            styles.titleContainer,
+            {
+              opacity: titleOpacity,
+              transform: [{ translateY: titleTranslateY }],
+            },
+          ]}
+        >
+          <Text style={styles.titleLight}>Select Your Focus</Text>
+          <Text style={styles.subtitleLight}>Choose a module to get started</Text>
+        </Animated.View>
 
       <View style={styles.modulesWrapper}>
         <ScrollView 
@@ -346,15 +348,13 @@ const SelectModulePage: React.FC<{
           ]}
           pointerEvents="none"
         >
-          <LinearGradient
-            colors={['transparent', 'rgba(242, 242, 247, 0.8)', 'rgba(242, 242, 247, 1)']}
-            style={styles.scrollArrowGradient}
-          >
+          <View style={styles.scrollArrowGradient}>
             <View style={styles.scrollArrow}>
               <Text style={styles.scrollArrowText}>⌄</Text>
             </View>
-          </LinearGradient>
+          </View>
         </Animated.View>
+      </View>
       </View>
     </View>
   );
@@ -890,17 +890,18 @@ const ChangeButtonDemoPage: React.FC<{
 
   return (
     <View style={styles.page}>
-      <Animated.View
-        style={[
-          styles.titleContainer,
-          {
-            opacity: titleOpacity,
-          },
-        ]}
-      >
-        <Text style={styles.title}>You Can Change Anytime</Text>
-        <Text style={styles.subtitle}>Tap the change button to switch modules</Text>
-      </Animated.View>
+      <View style={styles.pageBackground}>
+        <Animated.View
+          style={[
+            styles.titleContainer,
+            {
+              opacity: titleOpacity,
+            },
+          ]}
+        >
+          <Text style={styles.titleLight}>You Can Change Anytime</Text>
+          <Text style={styles.subtitleLight}>Tap the change button to switch modules</Text>
+        </Animated.View>
 
       <View style={styles.demoContainer}>
         <View style={styles.demoModuleCard}>
@@ -1009,6 +1010,7 @@ const ChangeButtonDemoPage: React.FC<{
         moduleColor={selectedModuleData.color}
         onComplete={handleCongratulationsComplete}
       />
+      </View>
     </View>
   );
 };
@@ -1263,18 +1265,19 @@ const HowToUsePage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
       contentContainerStyle={styles.howToUseScrollContent}
       showsVerticalScrollIndicator={false}
     >
-      <Animated.View
-        style={[
-          styles.titleContainer,
-          {
-            opacity: titleOpacity,
-            transform: [{ translateY: titleTranslateY }],
-          },
-        ]}
-      >
-        <Text style={styles.title}>How to Use the App</Text>
-        <Text style={styles.subtitle}>Here's where to find your daily meditation</Text>
-      </Animated.View>
+      <View style={styles.pageBackground}>
+        <Animated.View
+          style={[
+            styles.titleContainer,
+            {
+              opacity: titleOpacity,
+              transform: [{ translateY: titleTranslateY }],
+            },
+          ]}
+        >
+          <Text style={styles.titleLight}>How to Use the App</Text>
+          <Text style={styles.subtitleLight}>Here's where to find your daily meditation</Text>
+        </Animated.View>
 
       {/* Step 1: Find Today's Focus */}
       <Animated.View
@@ -1437,6 +1440,7 @@ const HowToUsePage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
           </View>
         </View>
       </Animated.View>
+      </View>
     </ScrollView>
   );
 };
@@ -1446,15 +1450,16 @@ const LoginPage: React.FC<{
   isActive: boolean;
   onLogin: () => void;
 }> = ({ isActive, onLogin }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const titleOpacity = useRef(new Animated.Value(0)).current;
-  const formOpacity = useRef(new Animated.Value(0)).current;
+  const titleTranslateY = useRef(new Animated.Value(20)).current;
+  const buttonsOpacity = useRef(new Animated.Value(0)).current;
+  const buttonsTranslateY = useRef(new Animated.Value(30)).current;
   const hasAnimated = useRef(false);
 
   useEffect(() => {
     if (isActive && !hasAnimated.current) {
       hasAnimated.current = true;
+      // Animate title
       Animated.parallel([
         Animated.timing(titleOpacity, {
           toValue: 1,
@@ -1462,89 +1467,135 @@ const LoginPage: React.FC<{
           delay: 200,
           useNativeDriver: true,
         }),
-        Animated.timing(formOpacity, {
+        Animated.timing(titleTranslateY, {
+          toValue: 0,
+          duration: 600,
+          delay: 200,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      // Animate buttons sliding up
+      Animated.parallel([
+        Animated.timing(buttonsOpacity, {
           toValue: 1,
           duration: 600,
-          delay: 400,
+          delay: 500,
+          useNativeDriver: true,
+        }),
+        Animated.spring(buttonsTranslateY, {
+          toValue: 0,
+          tension: 50,
+          friction: 8,
+          delay: 500,
           useNativeDriver: true,
         }),
       ]).start();
     }
   }, [isActive]);
 
-  const handleLogin = () => {
-    if (email.trim() && password.trim()) {
-      onLogin();
-    }
+  const handleGoogleSignIn = async () => {
+    // TODO: Implement Google sign in
+    // For now, just proceed
+    onLogin();
+  };
+
+  const handleAppleSignIn = async () => {
+    // TODO: Implement Apple sign in
+    // For now, just proceed
+    onLogin();
+  };
+
+  const handleSignIn = () => {
+    // TODO: Navigate to sign in screen or show sign in modal
+    // For now, just proceed
+    onLogin();
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.page}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <Animated.View
-        style={[
-          styles.titleContainer,
-          {
-            opacity: titleOpacity,
-          },
-        ]}
-      >
-        <Text style={styles.title}>Login to Get Started</Text>
-        <Text style={styles.subtitle}>Sign in to sync your progress across devices</Text>
-      </Animated.View>
-
-      <Animated.View
-        style={[
-          styles.loginForm,
-          {
-            opacity: formOpacity,
-          },
-        ]}
-      >
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Email</Text>
-          <TextInput
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            placeholder="Enter your email"
-            placeholderTextColor="#8e8e93"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Password</Text>
-          <TextInput
-            style={styles.input}
-            value={password}
-            onChangeText={setPassword}
-            placeholder="Enter your password"
-            placeholderTextColor="#8e8e93"
-            secureTextEntry
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-        </View>
-
-        <TouchableOpacity 
-          style={[styles.loginButton, (!email.trim() || !password.trim()) && styles.loginButtonDisabled]}
-          onPress={handleLogin}
-          disabled={!email.trim() || !password.trim()}
-          activeOpacity={0.7}
+    <View style={styles.loginPage}>
+      <View style={styles.loginBackground}>
+        <Animated.View
+          style={[
+            styles.loginTitleContainer,
+            {
+              opacity: titleOpacity,
+              transform: [{ translateY: titleTranslateY }],
+            },
+          ]}
         >
-          <Text style={styles.loginButtonText}>Login</Text>
-        </TouchableOpacity>
+          <Text style={styles.loginTitle}>Get started on your journey</Text>
+          <Text style={styles.loginSubtitle}>Create an account to save your progress and personalize your experience</Text>
+        </Animated.View>
 
-        <TouchableOpacity style={styles.skipLoginButton} onPress={onLogin} activeOpacity={0.7}>
-          <Text style={styles.skipLoginText}>Skip for now</Text>
-        </TouchableOpacity>
-      </Animated.View>
-    </KeyboardAvoidingView>
+        {/* Social Login Buttons */}
+        <Animated.View
+          style={[
+            styles.loginButtonsContainer,
+            {
+              opacity: buttonsOpacity,
+              transform: [{ translateY: buttonsTranslateY }],
+            },
+          ]}
+        >
+          {/* Google Sign In Button */}
+          <TouchableOpacity 
+            style={styles.socialButton}
+            onPress={handleGoogleSignIn}
+            activeOpacity={0.7}
+          >
+            <View style={styles.socialButtonContent}>
+              <View style={styles.googleIconContainer}>
+                <Svg width={20} height={20} viewBox="0 0 24 24">
+                  <Path
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    fill="#4285F4"
+                  />
+                  <Path
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    fill="#34A853"
+                  />
+                  <Path
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                    fill="#FBBC05"
+                  />
+                  <Path
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                    fill="#EA4335"
+                  />
+                </Svg>
+              </View>
+              <Text style={styles.socialButtonText}>Continue with Google</Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Apple Sign In Button */}
+          <TouchableOpacity 
+            style={[styles.socialButton, styles.appleButton]}
+            onPress={handleAppleSignIn}
+            activeOpacity={0.7}
+          >
+            <View style={styles.socialButtonContent}>
+              <View style={styles.appleIconContainer}>
+                <Svg width={20} height={20} viewBox="0 0 24 24" fill="#ffffff">
+                  <Path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C1.79 15.25 4.23 7.59 9.2 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+                </Svg>
+              </View>
+              <Text style={[styles.socialButtonText, styles.appleButtonText]}>Continue with Apple</Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Sign In Link */}
+          <View style={styles.signInLinkContainer}>
+            <Text style={styles.signInLinkText}>Already have an account? </Text>
+            <TouchableOpacity onPress={handleSignIn} activeOpacity={0.7}>
+              <Text style={styles.signInLink}>Sign In</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      </View>
+    </View>
   );
 };
 
@@ -1576,18 +1627,19 @@ const PremiumFeaturesPage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
 
   return (
     <View style={styles.page}>
-      <Animated.View
-        style={[
-          styles.titleContainer,
-          {
-            opacity: titleOpacity,
-            transform: [{ translateY: titleTranslateY }],
-          },
-        ]}
-      >
-        <Text style={styles.title}>Premium Features</Text>
-        <Text style={styles.subtitle}>Unlock the full potential</Text>
-      </Animated.View>
+      <View style={styles.pageBackground}>
+        <Animated.View
+          style={[
+            styles.titleContainer,
+            {
+              opacity: titleOpacity,
+              transform: [{ translateY: titleTranslateY }],
+            },
+          ]}
+        >
+          <Text style={styles.titleLight}>Premium Features</Text>
+          <Text style={styles.subtitleLight}>Unlock the full potential</Text>
+        </Animated.View>
 
       <View style={styles.premiumFeaturesContainer}>
         <FeaturePoint
@@ -1618,6 +1670,7 @@ const PremiumFeaturesPage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
           delay={1000}
           isActive={isActive}
         />
+      </View>
       </View>
     </View>
   );
@@ -1829,9 +1882,14 @@ const styles = StyleSheet.create({
   page: {
     width: SCREEN_WIDTH,
     flex: 1,
+  },
+  pageBackground: {
+    flex: 1,
+    width: '100%',
     paddingTop: 60,
     paddingBottom: 50,
     paddingHorizontal: 20,
+    backgroundColor: theme.health.container.backgroundColor,
   },
   skipButton: {
     position: 'absolute',
@@ -1877,10 +1935,25 @@ const styles = StyleSheet.create({
     ...theme.health.title,
     textAlign: 'center',
   },
+  titleLight: {
+    fontSize: 34,
+    fontWeight: '700',
+    color: '#000000',
+    textAlign: 'center',
+    lineHeight: 40,
+  },
   subtitle: {
     ...theme.health.subtitle,
     textAlign: 'center',
     marginTop: 4,
+  },
+  subtitleLight: {
+    fontSize: 20,
+    fontWeight: '400',
+    color: '#8e8e93',
+    textAlign: 'center',
+    marginTop: 4,
+    lineHeight: 28,
   },
   featuresContainer: {
     flex: 1,
@@ -1899,6 +1972,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
   featureIconContainer: {
     width: 44,
@@ -1920,7 +1995,18 @@ const styles = StyleSheet.create({
     color: '#000000',
     marginBottom: 4,
   },
+  featureTitleLight: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 4,
+  },
   featureDescription: {
+    fontSize: 15,
+    color: '#8e8e93',
+    lineHeight: 20,
+  },
+  featureDescriptionLight: {
     fontSize: 15,
     color: '#8e8e93',
     lineHeight: 20,
@@ -1931,6 +2017,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   disclaimerText: {
+    fontSize: 13,
+    color: '#8e8e93',
+    lineHeight: 18,
+    textAlign: 'center',
+  },
+  disclaimerTextLight: {
     fontSize: 13,
     color: '#8e8e93',
     lineHeight: 18,
@@ -1963,6 +2055,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-end',
     paddingBottom: 20,
+    backgroundColor: 'transparent',
   },
   scrollArrow: {
     width: 40,
@@ -1972,7 +2065,7 @@ const styles = StyleSheet.create({
   },
   scrollArrowText: {
     fontSize: 24,
-    color: '#8e8e93',
+    color: 'rgba(255, 255, 255, 0.6)',
     fontWeight: '200',
   },
   moduleCard: {
@@ -1984,6 +2077,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
   moduleCardSelected: {
     shadowOpacity: 0.15,
@@ -2063,6 +2158,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
   demoModuleHeader: {
     flexDirection: 'row',
@@ -2163,43 +2260,103 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: '#8e8e93',
   },
-  loginForm: {
+  loginPage: {
+    width: SCREEN_WIDTH,
     flex: 1,
-    justifyContent: 'center',
+  },
+  loginBackground: {
+    flex: 1,
+    width: '100%',
+    paddingTop: 60,
+    paddingBottom: 50,
+    paddingHorizontal: 20,
+    backgroundColor: '#f2f2f7',
+  },
+  loginTitleContainer: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  loginTitle: {
+    fontSize: 34,
+    fontWeight: '700',
+    color: '#000000',
+    textAlign: 'center',
+    lineHeight: 40,
+  },
+  loginSubtitle: {
+    fontSize: 20,
+    fontWeight: '400',
+    color: '#666666',
+    textAlign: 'center',
+    marginTop: 4,
+    lineHeight: 28,
+  },
+  loginButtonsContainer: {
     paddingHorizontal: 0,
+    paddingTop: 0,
   },
-  inputContainer: {
-    marginBottom: 20,
+  socialButton: {
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+    marginBottom: 16,
+    borderWidth: 1.5,
+    borderColor: '#e5e5ea',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    minHeight: 56,
   },
-  inputLabel: {
+  socialButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  googleIconContainer: {
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  appleIconContainer: {
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  socialButtonText: {
     fontSize: 17,
     fontWeight: '600',
     color: '#000000',
-    marginBottom: 8,
+    letterSpacing: -0.2,
   },
-  input: {
-    ...theme.health.inputField,
-    fontSize: 17,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+  appleButton: {
+    backgroundColor: '#000000',
+    borderColor: '#000000',
   },
-  loginButton: {
-    ...theme.health.button,
-    marginTop: 8,
+  appleButtonText: {
+    color: '#ffffff',
   },
-  loginButtonDisabled: {
-    backgroundColor: '#c7c7cc',
-  },
-  loginButtonText: {
-    ...theme.health.buttonText,
-  },
-  skipLoginButton: {
+  signInLinkContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: 24,
   },
-  skipLoginText: {
-    fontSize: 17,
-    color: '#8e8e93',
+  signInLinkText: {
+    fontSize: 15,
+    color: '#666666',
+  },
+  signInLink: {
+    fontSize: 15,
+    color: '#000000',
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
   premiumFeaturesContainer: {
     flex: 1,
@@ -2436,7 +2593,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 12,
     borderRadius: 12,
-    backgroundColor: '#f9f9fb',
+    backgroundColor: '#f2f2f7',
     borderWidth: 1,
     borderColor: '#e0e0e0',
     position: 'relative',
@@ -2558,7 +2715,7 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
     paddingHorizontal: 20,
     borderWidth: 1,
-    borderColor: '#e5e5ea',
+    borderColor: '#e0e0e0',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

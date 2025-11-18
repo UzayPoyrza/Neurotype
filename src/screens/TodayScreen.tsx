@@ -948,29 +948,18 @@ export const TodayScreen: React.FC = () => {
             styles.toastContainer,
             {
               opacity: toastAnim,
-              transform: [
-                {
-                  translateY: toastAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [-20, 0],
-                  }),
-                },
-                {
-                  scale: toastAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.9, 1],
-                  }),
-                },
-              ],
+              transform: [{
+                translateY: toastAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [20, 0],
+                }),
+              }],
             },
           ]}
-          pointerEvents="none"
         >
-          <View style={styles.toastContent}>
-            <Text style={styles.toastText}>
-              Switched to <Text style={styles.toastModuleName}>{toastModuleName}</Text> module
-            </Text>
-          </View>
+          <Text style={styles.toastText}>
+            Switched to <Text style={styles.toastModuleName}>{toastModuleName}</Text> module
+          </Text>
         </Animated.View>
       )}
     </>
@@ -1387,35 +1376,29 @@ const styles = StyleSheet.create({
   },
   toastContainer: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    bottom: 90,
+    left: 20,
+    right: 20,
+    backgroundColor: '#000000',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 2000,
-    pointerEvents: 'none',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 1000,
   },
   toastContent: {
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-    borderRadius: 14,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 10,
-    minWidth: 200,
-    alignItems: 'center',
+    // Not needed - styles are on container
   },
   toastText: {
-    fontSize: 16,
-    fontWeight: '500',
     color: '#ffffff',
-    letterSpacing: 0.5,
+    fontSize: 15,
+    fontWeight: '600',
   },
   toastModuleName: {
     fontWeight: '600',

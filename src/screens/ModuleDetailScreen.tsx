@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
   },
   addedMessage: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 80,
     left: 20,
     right: 20,
     backgroundColor: '#000000',

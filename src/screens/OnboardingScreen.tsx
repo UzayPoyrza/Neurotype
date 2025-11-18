@@ -1215,17 +1215,18 @@ const styles = StyleSheet.create({
   },
   checkmarkContainer: {
     position: 'absolute',
-    top: 12,
+    top: '50%',
     right: 12,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: '#007AFF',
     alignItems: 'center',
     justifyContent: 'center',
+    transform: [{ translateY: -14 }], // Half of height to center vertically
   },
   checkmark: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#ffffff',
     fontWeight: '600',
   },

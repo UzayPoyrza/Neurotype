@@ -231,6 +231,7 @@ const buildInitialStoreData = () => {
       } as Record<string, string[]>;
     })(),
     isLoggedIn: false,
+    hasCompletedOnboarding: false,
   };
 };
 
@@ -253,6 +254,7 @@ interface AppState {
   emotionalFeedbackHistory: EmotionalFeedbackEntry[];
   completedTodaySessions: Record<string, string[]>; // Key: "moduleId-date", Value: array of session IDs
   isLoggedIn: boolean;
+  hasCompletedOnboarding: boolean;
   addSessionDelta: (delta: SessionDelta) => void;
   setFilters: (filters: FilterState) => void;
   toggleReminder: () => void;
@@ -386,10 +388,15 @@ export const useStore = create<AppState>((set, get) => ({
     set((state) => ({
       ...defaults,
       currentScreen: state.currentScreen,
+      hasCompletedOnboarding: state.hasCompletedOnboarding, // Preserve onboarding state
     }));
   },
 
   logout: () => {
     set({ isLoggedIn: false });
+  },
+
+  completeOnboarding: () => {
+    set({ hasCompletedOnboarding: true });
   },
 })); 

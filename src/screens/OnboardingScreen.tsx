@@ -1149,10 +1149,9 @@ const HowToUsePage: React.FC<{
   const [feedbackRating, setFeedbackRating] = useState(5);
   const sliderAnimationRef = useRef<NodeJS.Timeout | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
-  const [hasScrolled, setHasScrolled] = useState(false);
-  const scrollIndicatorOpacity = useRef(new Animated.Value(1)).current;
-  const scrollIndicatorTranslateY = useRef(new Animated.Value(0)).current;
-  const arrowPulseY = useRef(new Animated.Value(0)).current;
+  const [showScrollArrow, setShowScrollArrow] = useState(true);
+  const arrowOpacity = useRef(new Animated.Value(1)).current;
+  const [scrollViewHeight, setScrollViewHeight] = useState(0);
   
   // Slider demo animation
   const startSliderDemo = useCallback(() => {
@@ -1214,11 +1213,9 @@ const HowToUsePage: React.FC<{
   useEffect(() => {
     if (isActive && !hasAnimated.current) {
       hasAnimated.current = true;
-      // Reset scroll indicator state when page first becomes active
-      setHasScrolled(false);
-      scrollIndicatorOpacity.setValue(1);
-      scrollIndicatorTranslateY.setValue(0);
-      arrowPulseY.setValue(0);
+      // Reset scroll arrow state when page first becomes active
+      setShowScrollArrow(true);
+      arrowOpacity.setValue(1);
       
       Animated.parallel([
         Animated.timing(titleOpacity, {
@@ -1274,61 +1271,68 @@ const HowToUsePage: React.FC<{
       hasAnimated.current = false;
     }
 
-    // Start arrow pulse animation
-    if (isActive && !hasScrolled) {
-      const pulseAnimation = Animated.loop(
-        Animated.sequence([
-          Animated.timing(arrowPulseY, {
-            toValue: 8,
-            duration: 800,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(arrowPulseY, {
-            toValue: 0,
-            duration: 800,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      pulseAnimation.start();
-      
-      return () => {
-        pulseAnimation.stop();
-      };
-    }
-
     return () => {
       if (sliderAnimationRef.current) {
         clearTimeout(sliderAnimationRef.current);
       }
     };
-  }, [isActive, startSliderDemo, hasScrolled]);
+  }, [isActive, startSliderDemo]);
 
   const handleScroll = (event: any) => {
-    const { contentOffset } = event.nativeEvent;
-    const scrollThreshold = 50; // Consider scrolled if moved more than 50px
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const isAtBottom = contentOffset.y + layoutMeasurement.height >= contentSize.height - 20;
+    const isScrollable = contentSize.height > layoutMeasurement.height;
     
-    if (contentOffset.y > scrollThreshold && !hasScrolled) {
-      setHasScrolled(true);
-      if (onScrollStateChange) {
-        onScrollStateChange(true);
-      }
-      // Hide scroll indicator
-      Animated.parallel([
-        Animated.timing(scrollIndicatorOpacity, {
+    // Only hide arrow when scrolled to bottom, not when content fits on screen
+    if (isScrollable) {
+      if (isAtBottom && showScrollArrow) {
+        setShowScrollArrow(false);
+        if (onScrollStateChange) {
+          onScrollStateChange(true);
+        }
+        Animated.timing(arrowOpacity, {
           toValue: 0,
           duration: 300,
           useNativeDriver: true,
-        }),
-        Animated.timing(scrollIndicatorTranslateY, {
-          toValue: -20,
+        }).start();
+      } else if (!isAtBottom && !showScrollArrow) {
+        setShowScrollArrow(true);
+        if (onScrollStateChange) {
+          onScrollStateChange(false);
+        }
+        Animated.timing(arrowOpacity, {
+          toValue: 1,
           duration: 300,
           useNativeDriver: true,
-        }),
-      ]).start();
+        }).start();
+      } else if (!isAtBottom && onScrollStateChange) {
+        // Still scrolling but not at bottom
+        onScrollStateChange(false);
+      }
     }
+  };
+
+  const handleContentSizeChange = (contentWidth: number, contentHeight: number) => {
+    // Check if content is scrollable when content size changes
+    if (scrollViewHeight > 0) {
+      const isScrollable = contentHeight > scrollViewHeight;
+      if (isScrollable) {
+        // Show arrow if content is scrollable (will be hidden by handleScroll if at bottom)
+        if (!showScrollArrow) {
+          setShowScrollArrow(true);
+          Animated.timing(arrowOpacity, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }).start();
+        }
+      }
+    }
+  };
+
+  const handleScrollViewLayout = (event: any) => {
+    const { height } = event.nativeEvent.layout;
+    setScrollViewHeight(height);
   };
 
   return (
@@ -1339,6 +1343,8 @@ const HowToUsePage: React.FC<{
         contentContainerStyle={styles.howToUseScrollContent}
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
+        onContentSizeChange={handleContentSizeChange}
+        onLayout={handleScrollViewLayout}
         scrollEventThrottle={16}
       >
       <View style={styles.pageBackground}>
@@ -1520,33 +1526,23 @@ const HowToUsePage: React.FC<{
       </ScrollView>
       
       {/* Scroll Indicator */}
-      {!hasScrolled && (
-        <Animated.View
+      {showScrollArrow && (
+        <Animated.View 
           style={[
-            styles.scrollIndicatorContainer,
-            {
-              opacity: scrollIndicatorOpacity,
-              transform: [{ translateY: scrollIndicatorTranslateY }],
-            },
+            styles.scrollArrowContainer,
+            { opacity: arrowOpacity }
           ]}
+          pointerEvents="none"
         >
-          <View style={styles.scrollIndicator}>
-            <Text style={styles.scrollIndicatorText}>Scroll down</Text>
-            <Animated.View
-              style={[
-                styles.scrollIndicatorArrow,
-                {
-                  transform: [
-                    {
-                      translateY: arrowPulseY,
-                    },
-                  ],
-                },
-              ]}
-            >
-              <Text style={styles.scrollIndicatorArrowText}>↓</Text>
-            </Animated.View>
-          </View>
+          <LinearGradient
+            colors={['rgba(242, 242, 247, 0)', 'rgba(242, 242, 247, 0.4)', 'rgba(242, 242, 247, 0.8)', 'rgba(242, 242, 247, 1)']}
+            locations={[0, 0.3, 0.7, 1]}
+            style={styles.scrollArrowGradient}
+          >
+            <View style={styles.scrollArrow}>
+              <Text style={styles.scrollArrowText}>⌄</Text>
+            </View>
+          </LinearGradient>
         </Animated.View>
       )}
     </View>

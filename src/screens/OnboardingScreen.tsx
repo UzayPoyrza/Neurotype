@@ -8,6 +8,7 @@ import { prerenderedModuleBackgrounds } from '../store/useStore';
 import { useStore } from '../store/useStore';
 import { AnimatedFloatingButton } from '../components/AnimatedFloatingButton';
 import { ModuleGridModal } from '../components/ModuleGridModal';
+import { Slider0to10 } from '../components/Slider0to10';
 
 interface OnboardingScreenProps {
   onFinish: () => void;
@@ -1135,6 +1136,50 @@ const HowToUsePage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
   const step2Opacity = useRef(new Animated.Value(0)).current;
   const step3Opacity = useRef(new Animated.Value(0)).current;
   const hasAnimated = useRef(false);
+  const [feedbackRating, setFeedbackRating] = useState(5);
+  const sliderAnimationRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Slider demo animation
+  const startSliderDemo = useCallback(() => {
+    // Reset to 0
+    setFeedbackRating(0);
+    
+    // Animate from 0 to 8 over 2 seconds, then back to 5
+    const animateSlider = () => {
+      // Go from 0 to 8
+      let currentValue = 0;
+      const interval = setInterval(() => {
+        currentValue += 0.5;
+        if (currentValue <= 8) {
+          setFeedbackRating(Math.round(currentValue));
+        } else {
+          clearInterval(interval);
+          // After reaching 8, wait a bit then go to 5
+          setTimeout(() => {
+            let value = 8;
+            const returnInterval = setInterval(() => {
+              value -= 0.3;
+              if (value >= 5) {
+                setFeedbackRating(Math.round(value));
+              } else {
+                clearInterval(returnInterval);
+                setFeedbackRating(5);
+                // Loop the animation
+                setTimeout(() => {
+                  startSliderDemo();
+                }, 1500);
+              }
+            }, 30);
+          }, 800);
+        }
+      }, 50);
+    };
+
+    // Start animation after a short delay
+    sliderAnimationRef.current = setTimeout(() => {
+      animateSlider();
+    }, 500);
+  }, []);
   
   // Get a sample module and sessions for demo
   const selectedModule = mentalHealthModules.find(m => m.id === 'anxiety') || mentalHealthModules[0];
@@ -1197,9 +1242,20 @@ const HowToUsePage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
           delay: 1200,
           useNativeDriver: true,
         }),
-      ]).start();
+      ]).start(() => {
+        // Start slider demo animation after step 3 appears
+        if (isActive) {
+          startSliderDemo();
+        }
+      });
     }
-  }, [isActive]);
+
+    return () => {
+      if (sliderAnimationRef.current) {
+        clearTimeout(sliderAnimationRef.current);
+      }
+    };
+  }, [isActive, startSliderDemo]);
 
   return (
     <ScrollView 
@@ -1354,19 +1410,29 @@ const HowToUsePage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
             <Text style={styles.stepTitle}>We Learn What Works for You</Text>
           </View>
           <Text style={styles.stepDescription}>
-            After you complete a session, rate how effective it was. We use your feedback to make tomorrow's recommendations even better!
+            After you complete a session, rate how effective it was. Your feedback is one of the datapoints to find the perfect meditation for your brain.
           </Text>
         </Animated.View>
 
-        {/* Explanation Card */}
+        {/* Feedback Card */}
         <View style={styles.demoExplanationCard}>
-          <View style={styles.explanationBox}>
-            <Text style={styles.explanationIcon}>📊</Text>
-            <View style={styles.explanationContent}>
-              <Text style={styles.explanationTitle}>Your Feedback Shapes Your Experience</Text>
-              <Text style={styles.explanationText}>
-                Every time you complete and rate a session, our system learns what works best for you. The more you use the app, the more personalized your recommendations become.
-              </Text>
+          <View style={styles.feedbackCard}>
+            <Text style={styles.feedbackCardTitle}>How was this meditation?</Text>
+            <Text style={styles.feedbackCardSubtitle}>Slide to rate your experience.</Text>
+            <View style={styles.feedbackSliderWrapper}>
+              <View style={styles.feedbackSliderContainer} pointerEvents="none">
+                <Slider0to10
+                  value={feedbackRating}
+                  onValueChange={() => {}} // Disabled for demo
+                  showLabels={false}
+                  variant="bar"
+                />
+                <View style={styles.feedbackSliderLabelsRow}>
+                  <Text style={[styles.feedbackSliderLabel, styles.feedbackSliderLabelLeft]}>Not great</Text>
+                  <Text style={[styles.feedbackSliderLabel, styles.feedbackSliderLabelCenter]}>Neutral</Text>
+                  <Text style={[styles.feedbackSliderLabel, styles.feedbackSliderLabelRight]}>Very good</Text>
+                </View>
+              </View>
             </View>
           </View>
         </View>
@@ -2486,31 +2552,65 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.4)',
     transform: [{ skewX: '-20deg' }],
   },
-  explanationBox: {
-    backgroundColor: '#f9f9fb',
-    borderRadius: 16,
-    padding: 20,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+  feedbackCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
     borderWidth: 1,
     borderColor: '#e5e5ea',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  explanationIcon: {
-    fontSize: 32,
-    marginRight: 16,
-  },
-  explanationContent: {
-    flex: 1,
-  },
-  explanationTitle: {
-    fontSize: 17,
-    fontWeight: '600',
+  feedbackCardTitle: {
+    fontSize: 20,
+    fontWeight: '700',
     color: '#000000',
+    textAlign: 'center',
     marginBottom: 8,
   },
-  explanationText: {
+  feedbackCardSubtitle: {
     fontSize: 15,
+    fontWeight: '500',
     color: '#8e8e93',
-    lineHeight: 22,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  feedbackSliderWrapper: {
+    backgroundColor: '#007AFF',
+    borderRadius: 16,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+  },
+  feedbackSliderContainer: {
+    alignItems: 'stretch',
+    gap: 8,
+  },
+  feedbackSliderLabelsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingHorizontal: 4,
+  },
+  feedbackSliderLabel: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 12,
+    fontWeight: '500',
+    flex: 1,
+  },
+  feedbackSliderLabelLeft: {
+    textAlign: 'left',
+  },
+  feedbackSliderLabelRight: {
+    textAlign: 'right',
+  },
+  feedbackSliderLabelCenter: {
+    textAlign: 'center',
+    color: '#ffffff',
+    fontWeight: '600',
   },
 });

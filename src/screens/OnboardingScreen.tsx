@@ -1017,7 +1017,7 @@ const styles = StyleSheet.create({
   },
   modulesContainer: {
     paddingHorizontal: 0,
-    paddingBottom: 40,
+    paddingBottom: 10,
   },
   scrollArrowContainer: {
     position: 'absolute',

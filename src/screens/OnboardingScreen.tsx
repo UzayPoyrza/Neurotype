@@ -359,23 +359,296 @@ const SelectModulePage: React.FC<{
   );
 };
 
+// Confetti Particle Component
+const ConfettiParticle: React.FC<{
+  index: number;
+  visible: boolean;
+  angle: number;
+  radius: number;
+  color: string;
+}> = ({ index, visible, angle, radius, color }) => {
+  const particleOpacity = useRef(new Animated.Value(0)).current;
+  const particleTranslateX = useRef(new Animated.Value(0)).current;
+  const particleTranslateY = useRef(new Animated.Value(0)).current;
+  const particleScale = useRef(new Animated.Value(0)).current;
+
+  const x = Math.cos((angle * Math.PI) / 180) * radius;
+  const y = Math.sin((angle * Math.PI) / 180) * radius;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(particleOpacity, {
+          toValue: 1,
+          duration: 300,
+          delay: index * 50,
+          useNativeDriver: true,
+        }),
+        Animated.timing(particleTranslateX, {
+          toValue: x,
+          duration: 800,
+          delay: index * 50,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(particleTranslateY, {
+          toValue: y,
+          duration: 800,
+          delay: index * 50,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.spring(particleScale, {
+          toValue: 1,
+          tension: 40,
+          friction: 7,
+          delay: index * 50,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      // Reset when not visible
+      particleOpacity.setValue(0);
+      particleTranslateX.setValue(0);
+      particleTranslateY.setValue(0);
+      particleScale.setValue(0);
+    }
+  }, [visible, x, y, index]);
+
+  return (
+    <Animated.View
+      style={{
+        position: 'absolute',
+        width: 12,
+        height: 12,
+        borderRadius: 6,
+        backgroundColor: color,
+        opacity: particleOpacity,
+        transform: [
+          { translateX: particleTranslateX },
+          { translateY: particleTranslateY },
+          { scale: particleScale },
+        ],
+      }}
+    />
+  );
+};
+
+// Congratulations Overlay Component
+const CongratulationsOverlay: React.FC<{
+  visible: boolean;
+  moduleTitle: string;
+  moduleColor: string;
+  onComplete: () => void;
+}> = ({ visible, moduleTitle, moduleColor, onComplete }) => {
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
+  const checkmarkScale = useRef(new Animated.Value(0)).current;
+  const checkmarkRotation = useRef(new Animated.Value(0)).current;
+  const messageOpacity = useRef(new Animated.Value(0)).current;
+  const messageTranslateY = useRef(new Animated.Value(20)).current;
+  const confettiOpacity = useRef(new Animated.Value(0)).current;
+  const confettiScale = useRef(new Animated.Value(0.5)).current;
+
+  useEffect(() => {
+    if (visible) {
+      // Reset values
+      overlayOpacity.setValue(0);
+      checkmarkScale.setValue(0);
+      checkmarkRotation.setValue(0);
+      messageOpacity.setValue(0);
+      messageTranslateY.setValue(20);
+      confettiOpacity.setValue(0);
+      confettiScale.setValue(0.5);
+
+      // Animate overlay fade in
+      Animated.timing(overlayOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+
+      // Animate confetti
+      Animated.parallel([
+        Animated.timing(confettiOpacity, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.spring(confettiScale, {
+          toValue: 1,
+          tension: 40,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      // Animate checkmark with rotation
+      Animated.sequence([
+        Animated.parallel([
+          Animated.spring(checkmarkScale, {
+            toValue: 1.2,
+            tension: 30,
+            friction: 5,
+            useNativeDriver: true,
+          }),
+          Animated.timing(checkmarkRotation, {
+            toValue: 1,
+            duration: 400,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.spring(checkmarkScale, {
+          toValue: 1,
+          tension: 40,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      // Animate message
+      Animated.parallel([
+        Animated.timing(messageOpacity, {
+          toValue: 1,
+          duration: 500,
+          delay: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(messageTranslateY, {
+          toValue: 0,
+          duration: 500,
+          delay: 300,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      // Fade out overlay after showing for a bit, then call onComplete
+      setTimeout(() => {
+        // Fade out overlay
+        Animated.timing(overlayOpacity, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }).start(() => {
+          onComplete();
+        });
+      }, 2000);
+    } else {
+      // Reset when not visible
+      overlayOpacity.setValue(0);
+      checkmarkScale.setValue(0);
+      checkmarkRotation.setValue(0);
+      messageOpacity.setValue(0);
+      messageTranslateY.setValue(20);
+      confettiOpacity.setValue(0);
+      confettiScale.setValue(0.5);
+    }
+  }, [visible, onComplete]);
+
+  if (!visible) return null;
+
+  const checkmarkRotate = checkmarkRotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F'];
+  const particleCount = 12;
+
+  return (
+    <Animated.View
+      style={[
+        styles.congratulationsOverlay,
+        {
+          opacity: overlayOpacity,
+        },
+      ]}
+      pointerEvents="box-none"
+    >
+      <Animated.View
+        style={[
+          styles.confettiContainer,
+          {
+            opacity: confettiOpacity,
+            transform: [{ scale: confettiScale }],
+          },
+        ]}
+      >
+        {Array.from({ length: particleCount }).map((_, i) => {
+          const angle = (i * 360) / particleCount;
+          return (
+            <ConfettiParticle
+              key={i}
+              index={i}
+              visible={visible}
+              angle={angle}
+              radius={120}
+              color={colors[i % colors.length]}
+            />
+          );
+        })}
+      </Animated.View>
+
+      <Animated.View
+        style={[
+          styles.congratulationsCheckmarkContainer,
+          {
+            transform: [
+              { scale: checkmarkScale },
+              { rotate: checkmarkRotate },
+            ],
+          },
+        ]}
+      >
+        <View style={[styles.congratulationsCheckmarkCircle, { backgroundColor: moduleColor }]}>
+          <Text style={styles.congratulationsCheckmarkText}>✓</Text>
+        </View>
+      </Animated.View>
+
+      <Animated.View
+        style={[
+          styles.congratulationsMessage,
+          {
+            opacity: messageOpacity,
+            transform: [{ translateY: messageTranslateY }],
+          },
+        ]}
+      >
+        <Text style={styles.congratulationsTitle}>Successfully Changed</Text>
+        <Text style={styles.congratulationsSubtitle}>
+          You've changed to {moduleTitle}
+        </Text>
+      </Animated.View>
+    </Animated.View>
+  );
+};
+
 // Change Button Demo Page
 const ChangeButtonDemoPage: React.FC<{ 
   selectedModule: string | null;
   isActive: boolean;
   onModuleChange?: (moduleId: string) => void;
   onShowModal?: () => void;
-}> = ({ selectedModule, isActive, onModuleChange, onShowModal }) => {
+  previousModuleId?: string | null;
+}> = ({ selectedModule, isActive, onModuleChange, onShowModal, previousModuleId }) => {
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const hasAnimated = useRef(false);
   const [isPillMode, setIsPillMode] = useState(false);
   const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [showCongratulations, setShowCongratulations] = useState(false);
+  const [showInstructionText, setShowInstructionText] = useState(false);
+  const hasShownCongratulations = useRef(false); // Track if congratulations has been shown once
   
   // Button animation values
   const buttonWidth = useRef(new Animated.Value(80)).current; // Larger initial size
   const textOpacity = useRef(new Animated.Value(0)).current;
   const iconScale = useRef(new Animated.Value(1)).current;
   const buttonTranslateX = useRef(new Animated.Value(0)).current;
+  
+  // Instructional text animation values
+  const instructionTextOpacity = useRef(new Animated.Value(0)).current;
+  const instructionTextTranslateY = useRef(new Animated.Value(20)).current;
   
   // Arrow animation values - use refs to persist across re-renders
   const arrowOpacity = useRef(new Animated.Value(0)).current;
@@ -386,6 +659,35 @@ const ChangeButtonDemoPage: React.FC<{
 
   const selectedModuleData = mentalHealthModules.find(m => m.id === selectedModule) || mentalHealthModules[0];
   const buttonColor = selectedModuleData.color;
+
+  // Detect module change and show congratulations (only once)
+  useEffect(() => {
+    // Only show congratulations if:
+    // 1. Page is active
+    // 2. There's a selected module
+    // 3. There was a previous module (not initial load)
+    // 4. The module actually changed
+    // 5. Congratulations hasn't been shown before
+    if (isActive && selectedModule && previousModuleId && selectedModule !== previousModuleId && !hasShownCongratulations.current) {
+      // Module has changed for the first time, show congratulations
+      hasShownCongratulations.current = true;
+      setShowCongratulations(true);
+      // Hide and reset instruction text if it was showing
+      if (showInstructionText) {
+        setShowInstructionText(false);
+        instructionTextOpacity.setValue(0);
+        instructionTextTranslateY.setValue(20);
+      }
+    }
+  }, [selectedModule, previousModuleId, isActive, showInstructionText]);
+
+  // Initialize previous module when page becomes active
+  useEffect(() => {
+    if (isActive && selectedModule && !previousModuleId) {
+      // Set initial previous module when page first becomes active
+      // This prevents congratulations from showing on initial load
+    }
+  }, [isActive, selectedModule, previousModuleId]);
 
   const startArrowAnimation = useCallback(() => {
     // Only start once, never restart
@@ -563,6 +865,28 @@ const ChangeButtonDemoPage: React.FC<{
     };
   }, []);
 
+  const handleCongratulationsComplete = () => {
+    // Hide the congratulations overlay
+    setShowCongratulations(false);
+    // Show instructional text after a short delay
+    setTimeout(() => {
+      setShowInstructionText(true);
+      Animated.parallel([
+        Animated.timing(instructionTextOpacity, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(instructionTextTranslateY, {
+          toValue: 0,
+          duration: 600,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }, 300);
+  };
+
   return (
     <View style={styles.page}>
       <Animated.View
@@ -657,7 +981,33 @@ const ChangeButtonDemoPage: React.FC<{
             </TouchableOpacity>
           </Animated.View>
         </Animated.View>
+        
+        {/* Instructional Text - appears after congratulations */}
+        {showInstructionText && (
+          <Animated.View
+            style={[
+              styles.instructionTextContainer,
+              {
+                opacity: instructionTextOpacity,
+                transform: [{ translateY: instructionTextTranslateY }],
+              },
+            ]}
+          >
+            <Text style={styles.instructionText}>
+              Great! Now you've learned how to change modules.{'\n'}
+              Click 'Continue' to learn how the app works.
+            </Text>
+          </Animated.View>
+        )}
       </View>
+
+      {/* Congratulations Overlay */}
+      <CongratulationsOverlay
+        visible={showCongratulations}
+        moduleTitle={selectedModuleData.title}
+        moduleColor={selectedModuleData.color}
+        onComplete={handleCongratulationsComplete}
+      />
     </View>
   );
 };
@@ -926,6 +1276,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   const setTodayModuleId = useStore(state => state.setTodayModuleId);
   const [showModuleModal, setShowModuleModal] = useState(false);
   const [demoModuleId, setDemoModuleId] = useState<string | null>(null);
+  const previousDemoModuleId = useRef<string | null>(null);
 
   const TOTAL_PAGES = 6;
 
@@ -997,8 +1348,15 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   };
 
   const handleDemoModuleChange = (moduleId: string) => {
+    // Track previous module before updating
+    previousDemoModuleId.current = demoModuleId || selectedModule || 'anxiety';
     setDemoModuleId(moduleId);
     setSelectedModule(moduleId);
+  };
+
+  const handleModuleChanged = () => {
+    // No automatic transition - user stays on current page
+    // This function is kept for potential future use but does nothing
   };
 
   const handleLogin = () => {
@@ -1047,6 +1405,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
             isActive={currentPage === 2}
             onModuleChange={handleDemoModuleChange}
             onShowModal={() => setShowModuleModal(true)}
+            previousModuleId={previousDemoModuleId.current}
           />
           <HowToUsePage isActive={currentPage === 3} />
           <LoginPage 
@@ -1519,5 +1878,82 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     ...theme.health.buttonText,
+  },
+  congratulationsOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    zIndex: 1000,
+  },
+  confettiContainer: {
+    position: 'absolute',
+    width: 240,
+    height: 240,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  congratulationsCheckmarkContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  congratulationsCheckmarkCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  congratulationsCheckmarkText: {
+    fontSize: 60,
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
+  congratulationsMessage: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    paddingHorizontal: 32,
+    paddingVertical: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  congratulationsTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginBottom: 8,
+  },
+  congratulationsSubtitle: {
+    fontSize: 17,
+    color: '#8e8e93',
+    textAlign: 'center',
+  },
+  instructionTextContainer: {
+    marginTop: 150,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  instructionText: {
+    fontSize: 15,
+    color: '#8e8e93',
+    textAlign: 'center',
+    lineHeight: 22,
+    fontWeight: '400',
   },
 });

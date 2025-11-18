@@ -224,20 +224,20 @@ const ProfileStackNavigator = () => {
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const activeSession = useStore(state => state.activeSession);
+  const isLoggedIn = useStore(state => state.isLoggedIn);
 
   const handleSplashFinish = () => {
     setShowSplash(false);
   };
 
   const handleLogin = () => {
-    setIsLoggedIn(true);
+    useStore.setState({ isLoggedIn: true });
   };
 
   const handleRegister = () => {
-    setIsLoggedIn(true);
+    useStore.setState({ isLoggedIn: true });
   };
 
   const handleShowRegister = () => {

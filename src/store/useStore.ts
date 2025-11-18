@@ -230,6 +230,7 @@ const buildInitialStoreData = () => {
         [`mindfulness-${today}`]: ['12', '13'],
       } as Record<string, string[]>;
     })(),
+    isLoggedIn: false,
   };
 };
 
@@ -251,6 +252,7 @@ interface AppState {
   isTransitioning: boolean;
   emotionalFeedbackHistory: EmotionalFeedbackEntry[];
   completedTodaySessions: Record<string, string[]>; // Key: "moduleId-date", Value: array of session IDs
+  isLoggedIn: boolean;
   addSessionDelta: (delta: SessionDelta) => void;
   setFilters: (filters: FilterState) => void;
   toggleReminder: () => void;
@@ -272,6 +274,7 @@ interface AppState {
   markSessionCompletedToday: (moduleId: string, sessionId: string, date?: string) => void;
   isSessionCompletedToday: (moduleId: string, sessionId: string, date?: string) => boolean;
   resetAppData: () => void;
+  logout: () => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -384,5 +387,9 @@ export const useStore = create<AppState>((set, get) => ({
       ...defaults,
       currentScreen: state.currentScreen,
     }));
+  },
+
+  logout: () => {
+    set({ isLoggedIn: false });
   },
 })); 

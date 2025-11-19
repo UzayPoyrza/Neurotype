@@ -1703,11 +1703,10 @@ const LoginPage: React.FC<{
         'neurotype://auth/callback'
       );
 
-      // Navigate to premium page after browser closes (whether success or dismiss)
+      // For testing: Navigate to premium page regardless of how browser closes
+      // (success, dismiss, cancel, etc.)
       // In production, you'd check result.type === 'success' and verify the auth code
-      if (result.type === 'success' || result.type === 'dismiss') {
-        onNavigateToPremium();
-      }
+      onNavigateToPremium();
     } catch (error) {
       console.error('Google sign in error:', error);
       // Navigate to premium even on error for demo purposes
@@ -1727,11 +1726,10 @@ const LoginPage: React.FC<{
         'neurotype://auth/callback'
       );
 
-      // Navigate to premium page after browser closes (whether success or dismiss)
+      // For testing: Navigate to premium page regardless of how browser closes
+      // (success, dismiss, cancel, etc.)
       // In production, you'd check result.type === 'success' and verify the auth code
-      if (result.type === 'success' || result.type === 'dismiss') {
-        onNavigateToPremium();
-      }
+      onNavigateToPremium();
     } catch (error) {
       console.error('Apple sign in error:', error);
       // Navigate to premium even on error for demo purposes
@@ -1927,6 +1925,11 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   const [showCongratulations, setShowCongratulations] = useState(false);
   const [congratulationsModule, setCongratulationsModule] = useState<{ title: string; color: string } | null>(null);
   const onCongratulationsCompleteRef = useRef<(() => void) | null>(null);
+  const [showFinishAnimation, setShowFinishAnimation] = useState(false);
+  const finishOverlayOpacity = useRef(new Animated.Value(0)).current;
+  const finishOverlayScale = useRef(new Animated.Value(1)).current;
+  const finishContentOpacity = useRef(new Animated.Value(0)).current;
+  const finishContentScale = useRef(new Animated.Value(0.8)).current;
 
   const TOTAL_PAGES = 6;
 
@@ -1988,14 +1991,58 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   };
 
   const handleFinish = () => {
-    if (selectedModule) {
-      setTodayModuleId(selectedModule);
-    }
-    useStore.setState({ 
-      hasCompletedOnboarding: true,
-      isLoggedIn: true 
-    });
-    onFinish();
+    // Start smooth exit animation - immediately show overlay to hide content
+    finishOverlayOpacity.setValue(1); // Set to fully opaque immediately to hide premium page
+    setShowFinishAnimation(true);
+    
+    // Small delay then show content animation
+    setTimeout(() => {
+      // Show finish content
+      Animated.parallel([
+        Animated.timing(finishContentOpacity, {
+          toValue: 1,
+          duration: 400,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.spring(finishContentScale, {
+          toValue: 1,
+          tension: 40,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        // After showing content, fade everything out and finish
+        setTimeout(() => {
+          // Fade out content but keep overlay visible
+          Animated.parallel([
+            Animated.timing(finishContentOpacity, {
+              toValue: 0,
+              duration: 500,
+              easing: Easing.in(Easing.ease),
+              useNativeDriver: true,
+            }),
+            Animated.timing(finishContentScale, {
+              toValue: 1.2,
+              duration: 500,
+              easing: Easing.in(Easing.ease),
+              useNativeDriver: true,
+            }),
+          ]).start(() => {
+            // Complete onboarding while overlay is still visible
+            if (selectedModule) {
+              setTodayModuleId(selectedModule);
+            }
+            useStore.setState({ 
+              hasCompletedOnboarding: true,
+              isLoggedIn: true 
+            });
+            // Keep overlay visible and transition directly to app
+            onFinish();
+          });
+        }, 800); // Show content for 800ms before fading out
+      });
+    }, 100); // Small delay before showing content
   };
 
   const handleSkip = () => {
@@ -2042,22 +2089,23 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
     <>
       <StatusBar barStyle="dark-content" backgroundColor="#f2f2f7" />
       <View style={styles.container}>
-        {currentPage === 0 && (
+        {!showFinishAnimation && currentPage === 0 && (
           <TouchableOpacity style={styles.skipButton} onPress={handleSkip} activeOpacity={0.7}>
             <Text style={styles.skipButtonText}>Skip</Text>
           </TouchableOpacity>
         )}
 
-        <ScrollView
-          ref={scrollViewRef}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
-          style={styles.scrollView}
-          scrollEnabled={false}
-        >
+        {!showFinishAnimation && (
+          <ScrollView
+            ref={scrollViewRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+            style={styles.scrollView}
+            scrollEnabled={false}
+          >
           <WelcomePage />
           <SelectModulePage 
             selectedModule={selectedModule}
@@ -2106,10 +2154,10 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
             }}
           />
           <PremiumFeaturesPage isActive={currentPage === 5} />
-        </ScrollView>
+          </ScrollView>
+        )}
 
-
-        {currentPage !== 4 && (
+        {!showFinishAnimation && currentPage !== 4 && (
           <Animated.View
             style={[
               styles.buttonContainer,
@@ -2157,6 +2205,40 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
           onModuleSelect={handleDemoModuleChange}
           onClose={() => setShowModuleModal(false)}
         />
+      )}
+
+      {/* Finish Animation Overlay - covers everything */}
+      {showFinishAnimation && (
+        <Animated.View
+          style={[
+            styles.finishOverlay,
+            {
+              opacity: finishOverlayOpacity,
+            },
+          ]}
+          pointerEvents="none"
+        >
+          <View style={styles.finishOverlayBackground} />
+          <Animated.View
+            style={[
+              styles.finishContent,
+              {
+                opacity: finishContentOpacity,
+                transform: [{ scale: finishContentScale }],
+              },
+            ]}
+          >
+            <View style={styles.finishIconContainer}>
+              <Image
+                source={require('../../assets/icon_no_background.png')}
+                style={styles.finishIcon}
+                resizeMode="contain"
+              />
+            </View>
+            <Text style={styles.finishText}>Welcome to Neurotype!</Text>
+            <Text style={styles.finishSubtext}>Let's begin your journey</Text>
+          </Animated.View>
+        </Animated.View>
       )}
     </>
   );
@@ -3160,5 +3242,58 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#ffffff',
     fontWeight: '600',
+  },
+  finishOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10000,
+    elevation: 10000,
+  },
+  finishOverlayBackground: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#f2f2f7',
+  },
+  finishContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  finishIconContainer: {
+    width: 140,
+    height: 140,
+    borderRadius: 30,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  finishIcon: {
+    width: 120,
+    height: 120,
+  },
+  finishText: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: '#000000',
+    textAlign: 'center',
+    marginBottom: 8,
+    letterSpacing: -0.5,
+  },
+  finishSubtext: {
+    fontSize: 20,
+    fontWeight: '400',
+    color: '#8e8e93',
+    textAlign: 'center',
   },
 });

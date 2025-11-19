@@ -2553,7 +2553,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
     if (currentPage === 2) return hasClickedChangeButton ? 'Continue' : 'Click the change button';
     if (currentPage === 3) return hasScrolledOnHowToUse ? 'Continue' : 'Scroll down';
     if (currentPage === TOTAL_PAGES - 1) {
-      return selectedPlan ? 'Get Started' : "No thanks! I'll continue with Free Plan.";
+      return selectedPlan ? 'Continue to payment' : "No thanks! I'll continue with Free Plan.";
     }
     return 'Continue';
   };

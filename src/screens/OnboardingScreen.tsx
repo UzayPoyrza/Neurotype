@@ -2032,6 +2032,10 @@ const PremiumFeaturesPage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
   const [selectedPlan, setSelectedPlan] = useState<string>('yearly');
   const [currentPricingPage, setCurrentPricingPage] = useState(0);
   const pricingScrollViewRef = useRef<ScrollView>(null);
+  const mainScrollViewRef = useRef<ScrollView>(null);
+  const scrollProgress = useRef(new Animated.Value(0)).current;
+  const [scrollContentHeight, setScrollContentHeight] = useState(0);
+  const [scrollViewHeight, setScrollViewHeight] = useState(0);
   const scaleAnimations = useRef(
     pricingPlans.map(() => new Animated.Value(1))
   ).current;
@@ -2111,12 +2115,41 @@ const PremiumFeaturesPage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
     setCurrentPricingPage(Math.min(page, pricingPlans.length - 1));
   };
 
+  const handleMainScroll = (event: any) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const scrollableHeight = contentSize.height - layoutMeasurement.height;
+    if (scrollableHeight > 0) {
+      const progress = contentOffset.y / scrollableHeight;
+      scrollProgress.setValue(Math.min(Math.max(progress, 0), 1));
+    }
+  };
+
+  const handleContentSizeChange = (contentWidth: number, contentHeight: number) => {
+    setScrollContentHeight(contentHeight);
+  };
+
+  const handleScrollViewLayout = (event: any) => {
+    const { height } = event.nativeEvent.layout;
+    setScrollViewHeight(height);
+  };
+
+  const scrollableHeight = scrollContentHeight - scrollViewHeight;
+  const progressBarHeight = scrollProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+  });
+
   return (
     <View style={styles.page}>
       <ScrollView 
+        ref={mainScrollViewRef}
         style={styles.page} 
         contentContainerStyle={styles.premiumScrollContent}
         showsVerticalScrollIndicator={false}
+        onScroll={handleMainScroll}
+        onContentSizeChange={handleContentSizeChange}
+        onLayout={handleScrollViewLayout}
+        scrollEventThrottle={16}
       >
         <View style={styles.pageBackground}>
           <Animated.View
@@ -2329,6 +2362,22 @@ const PremiumFeaturesPage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
           </Animated.View>
         </View>
       </ScrollView>
+      
+      {/* Scroll Progress Indicator */}
+      {scrollableHeight > 0 && (
+        <View style={styles.scrollProgressContainer}>
+          <View style={styles.scrollProgressTrack}>
+            <Animated.View
+              style={[
+                styles.scrollProgressBar,
+                {
+                  height: progressBarHeight,
+                },
+              ]}
+            />
+          </View>
+        </View>
+      )}
     </View>
   );
 };
@@ -3225,7 +3274,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   premiumScrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 10,
+  },
+  scrollProgressContainer: {
+    position: 'absolute',
+    right: 8,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
+  },
+  scrollProgressTrack: {
+    width: 4,
+    height: '80%',
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    borderRadius: 2,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  scrollProgressBar: {
+    width: '100%',
+    backgroundColor: '#007AFF',
+    borderRadius: 2,
+    minHeight: 4,
   },
   premiumPricingContainer: {
     paddingHorizontal: 0,

@@ -2023,13 +2023,16 @@ const pricingPlans = [
 ];
 
 // Premium Features Page
-const PremiumFeaturesPage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
+const PremiumFeaturesPage: React.FC<{ 
+  isActive: boolean;
+  selectedPlan: string | null;
+  onSelectPlan: (planId: string | null) => void;
+}> = ({ isActive, selectedPlan, onSelectPlan }) => {
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleTranslateY = useRef(new Animated.Value(20)).current;
   const cardsOpacity = useRef(new Animated.Value(0)).current;
   const cardsTranslateY = useRef(new Animated.Value(30)).current;
   const hasAnimated = useRef(false);
-  const [selectedPlan, setSelectedPlan] = useState<string>('yearly');
   const [currentPricingPage, setCurrentPricingPage] = useState(0);
   const pricingScrollViewRef = useRef<ScrollView>(null);
   const mainScrollViewRef = useRef<ScrollView>(null);
@@ -2076,7 +2079,9 @@ const PremiumFeaturesPage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
   }, [isActive]);
 
   const handleSelectPlan = (planId: string) => {
-    setSelectedPlan(planId);
+    // Toggle selection - if clicking the same plan, deselect it
+    const newSelectedPlan = selectedPlan === planId ? null : planId;
+    onSelectPlan(newSelectedPlan);
     
     // Animate the selected card
     const index = pricingPlans.findIndex(p => p.id === planId);
@@ -2385,6 +2390,7 @@ const PremiumFeaturesPage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
 export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) => {
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const buttonOpacity = useRef(new Animated.Value(0)).current;
   const buttonScale = useRef(new Animated.Value(0.95)).current;
@@ -2546,7 +2552,9 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
     if (currentPage === 1) return selectedModule ? 'Continue' : 'Select a module';
     if (currentPage === 2) return hasClickedChangeButton ? 'Continue' : 'Click the change button';
     if (currentPage === 3) return hasScrolledOnHowToUse ? 'Continue' : 'Scroll down';
-    if (currentPage === TOTAL_PAGES - 1) return 'Get Started';
+    if (currentPage === TOTAL_PAGES - 1) {
+      return selectedPlan ? 'Get Started' : "No thanks! I'll continue with Free Plan.";
+    }
     return 'Continue';
   };
 
@@ -2625,7 +2633,11 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
               scrollViewRef.current?.scrollTo({ x: SCREEN_WIDTH * 5, animated: true });
             }}
           />
-          <PremiumFeaturesPage isActive={currentPage === 5} />
+          <PremiumFeaturesPage 
+            isActive={currentPage === 5}
+            selectedPlan={selectedPlan}
+            onSelectPlan={setSelectedPlan}
+          />
           </ScrollView>
         )}
 

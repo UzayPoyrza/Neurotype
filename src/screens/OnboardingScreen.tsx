@@ -2027,11 +2027,14 @@ const PremiumFeaturesPage: React.FC<{
   isActive: boolean;
   selectedPlan: string | null;
   onSelectPlan: (planId: string | null) => void;
-}> = ({ isActive, selectedPlan, onSelectPlan }) => {
+  onClose: () => void;
+}> = ({ isActive, selectedPlan, onSelectPlan, onClose }) => {
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleTranslateY = useRef(new Animated.Value(20)).current;
   const cardsOpacity = useRef(new Animated.Value(0)).current;
   const cardsTranslateY = useRef(new Animated.Value(30)).current;
+  const closeButtonOpacity = useRef(new Animated.Value(0)).current;
+  const closeButtonScale = useRef(new Animated.Value(0.8)).current;
   const hasAnimated = useRef(false);
   const [currentPricingPage, setCurrentPricingPage] = useState(0);
   const pricingScrollViewRef = useRef<ScrollView>(null);
@@ -2072,9 +2075,28 @@ const PremiumFeaturesPage: React.FC<{
           easing: Easing.out(Easing.ease),
           useNativeDriver: true,
         }),
-      ]).start();
+      ]).start(() => {
+        // Animate close button after everything else loads
+        Animated.parallel([
+          Animated.timing(closeButtonOpacity, {
+            toValue: 1,
+            duration: 400,
+            delay: 300,
+            useNativeDriver: true,
+          }),
+          Animated.spring(closeButtonScale, {
+            toValue: 1,
+            tension: 50,
+            friction: 7,
+            delay: 300,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      });
     } else if (!isActive) {
       hasAnimated.current = false;
+      closeButtonOpacity.setValue(0);
+      closeButtonScale.setValue(0.8);
     }
   }, [isActive]);
 
@@ -2146,6 +2168,25 @@ const PremiumFeaturesPage: React.FC<{
 
   return (
     <View style={styles.page}>
+      {/* Close Button */}
+      <Animated.View
+        style={[
+          styles.closeButtonContainer,
+          {
+            opacity: closeButtonOpacity,
+            transform: [{ scale: closeButtonScale }],
+          },
+        ]}
+      >
+        <TouchableOpacity
+          onPress={onClose}
+          style={styles.closeButton}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.closeButtonText}>×</Text>
+        </TouchableOpacity>
+      </Animated.View>
+
       <ScrollView 
         ref={mainScrollViewRef}
         style={styles.page} 
@@ -2637,6 +2678,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
             isActive={currentPage === 5}
             selectedPlan={selectedPlan}
             onSelectPlan={setSelectedPlan}
+            onClose={handleFinish}
           />
           </ScrollView>
         )}
@@ -3311,6 +3353,29 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
     borderRadius: 2,
     minHeight: 4,
+  },
+  closeButtonContainer: {
+    position: 'absolute',
+    top: 60,
+    right: 20,
+    zIndex: 1000,
+  },
+  closeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  closeButtonText: {
+    fontSize: 28,
+    fontWeight: '300',
+    color: '#000000',
+    lineHeight: 28,
+    marginTop: -2,
   },
   premiumPricingContainer: {
     paddingHorizontal: 0,

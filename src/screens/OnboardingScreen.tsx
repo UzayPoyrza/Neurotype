@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Image, Animated, StatusBar, TouchableOpacity, ScrollView, Dimensions, TextInput, KeyboardAvoidingView, Platform, Easing } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as WebBrowser from 'expo-web-browser';
 import Svg, { Path } from 'react-native-svg';
 import { theme } from '../styles/theme';
 import { mentalHealthModules, MentalHealthModule } from '../data/modules';
@@ -1556,7 +1557,8 @@ const HowToUsePage: React.FC<{
 const LoginPage: React.FC<{ 
   isActive: boolean;
   onLogin: () => void;
-}> = ({ isActive, onLogin }) => {
+  onNavigateToPremium: () => void;
+}> = ({ isActive, onLogin, onNavigateToPremium }) => {
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleTranslateY = useRef(new Animated.Value(20)).current;
   const buttonsOpacity = useRef(new Animated.Value(0)).current;
@@ -1571,6 +1573,11 @@ const LoginPage: React.FC<{
   const cursorOpacity = useRef(new Animated.Value(1)).current;
   
   const fullText = "Time to get started on your journey.";
+
+  // Complete the OAuth session when the browser closes
+  useEffect(() => {
+    WebBrowser.maybeCompleteAuthSession();
+  }, []);
   
   // Blinking cursor animation
   useEffect(() => {
@@ -1685,15 +1692,51 @@ const LoginPage: React.FC<{
   }, [isActive, fullText]);
 
   const handleGoogleSignIn = async () => {
-    // TODO: Implement Google sign in
-    // For now, just proceed
-    onLogin();
+    try {
+      // Open OAuth URL in browser
+      // TODO: Replace with your actual Google OAuth URL
+      // For demo: using a test URL that will open in browser
+      const authUrl = 'https://accounts.google.com/signin/v2/identifier?flowName=GlifWebSignIn&flowEntry=ServiceLogin';
+      
+      const result = await WebBrowser.openAuthSessionAsync(
+        authUrl,
+        'neurotype://auth/callback'
+      );
+
+      // Navigate to premium page after browser closes (whether success or dismiss)
+      // In production, you'd check result.type === 'success' and verify the auth code
+      if (result.type === 'success' || result.type === 'dismiss') {
+        onNavigateToPremium();
+      }
+    } catch (error) {
+      console.error('Google sign in error:', error);
+      // Navigate to premium even on error for demo purposes
+      onNavigateToPremium();
+    }
   };
 
   const handleAppleSignIn = async () => {
-    // TODO: Implement Apple sign in
-    // For now, just proceed
-    onLogin();
+    try {
+      // Open OAuth URL in browser
+      // TODO: Replace with your actual Apple OAuth URL
+      // For demo: using a test URL that will open in browser
+      const authUrl = 'https://appleid.apple.com/sign-in';
+      
+      const result = await WebBrowser.openAuthSessionAsync(
+        authUrl,
+        'neurotype://auth/callback'
+      );
+
+      // Navigate to premium page after browser closes (whether success or dismiss)
+      // In production, you'd check result.type === 'success' and verify the auth code
+      if (result.type === 'success' || result.type === 'dismiss') {
+        onNavigateToPremium();
+      }
+    } catch (error) {
+      console.error('Apple sign in error:', error);
+      // Navigate to premium even on error for demo purposes
+      onNavigateToPremium();
+    }
   };
 
   const handleSignIn = () => {
@@ -2057,6 +2100,10 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
           <LoginPage 
             isActive={currentPage === 4}
             onLogin={handleLogin}
+            onNavigateToPremium={() => {
+              // Navigate to premium features page (page 5)
+              scrollViewRef.current?.scrollTo({ x: SCREEN_WIDTH * 5, animated: true });
+            }}
           />
           <PremiumFeaturesPage isActive={currentPage === 5} />
         </ScrollView>

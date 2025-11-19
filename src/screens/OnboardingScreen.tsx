@@ -2138,6 +2138,7 @@ const PremiumFeaturesPage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
 
           <Animated.View
             style={[
+              styles.pricingContainerWrapper,
               {
                 opacity: cardsOpacity,
                 transform: [{ translateY: cardsTranslateY }],
@@ -2147,10 +2148,11 @@ const PremiumFeaturesPage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
             <ScrollView
               ref={pricingScrollViewRef}
               horizontal
-              pagingEnabled
+              pagingEnabled={true}
               showsHorizontalScrollIndicator={false}
               onScroll={handlePricingScroll}
               scrollEventThrottle={16}
+              decelerationRate="fast"
               style={styles.pricingScrollView}
               contentContainerStyle={styles.pricingScrollContent}
             >
@@ -3232,14 +3234,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     marginBottom: 32,
   },
+  pricingContainerWrapper: {
+    marginHorizontal: -20,
+    width: SCREEN_WIDTH,
+  },
   pricingScrollView: {
     marginHorizontal: 0,
+    width: SCREEN_WIDTH,
   },
   pricingScrollContent: {
-    paddingRight: 20,
+    paddingRight: 0,
   },
   pricingCardWrapper: {
     width: SCREEN_WIDTH,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
     paddingHorizontal: 20,
   },
   pricingCard: {
@@ -3257,6 +3266,8 @@ const styles = StyleSheet.create({
     overflow: 'visible',
     minHeight: 480,
     justifyContent: 'space-between',
+    width: SCREEN_WIDTH - 40,
+    alignSelf: 'center',
   },
   pricingCardSelected: {
     borderColor: '#007AFF',

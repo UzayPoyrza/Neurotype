@@ -1833,11 +1833,212 @@ const LoginPage: React.FC<{
   );
 };
 
+// Premium Feature Card Component
+const PremiumFeatureCard: React.FC<{
+  icon: string;
+  title: string;
+  description: string;
+  gradient: string[];
+  delay: number;
+  isActive: boolean;
+}> = ({ icon, title, description, gradient, delay, isActive }) => {
+  const cardOpacity = useRef(new Animated.Value(0)).current;
+  const cardScale = useRef(new Animated.Value(0.8)).current;
+  const cardTranslateY = useRef(new Animated.Value(30)).current;
+  const iconScale = useRef(new Animated.Value(1)).current;
+  const [isPressed, setIsPressed] = useState(false);
+  const pressScale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (isActive) {
+      // Staggered entrance animation
+      Animated.parallel([
+        Animated.timing(cardOpacity, {
+          toValue: 1,
+          duration: 600,
+          delay: delay,
+          useNativeDriver: true,
+        }),
+        Animated.spring(cardScale, {
+          toValue: 1,
+          tension: 50,
+          friction: 7,
+          delay: delay,
+          useNativeDriver: true,
+        }),
+        Animated.timing(cardTranslateY, {
+          toValue: 0,
+          duration: 600,
+          delay: delay,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        // Icon pulse animation after card appears
+        Animated.loop(
+          Animated.sequence([
+            Animated.timing(iconScale, {
+              toValue: 1.1,
+              duration: 1500,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+            Animated.timing(iconScale, {
+              toValue: 1,
+              duration: 1500,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+          ])
+        ).start();
+      });
+    }
+  }, [isActive, delay]);
+
+  const handlePressIn = () => {
+    setIsPressed(true);
+    Animated.spring(pressScale, {
+      toValue: 0.95,
+      tension: 300,
+      friction: 10,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    setIsPressed(false);
+    Animated.spring(pressScale, {
+      toValue: 1,
+      tension: 300,
+      friction: 10,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  return (
+    <Animated.View
+      style={[
+        styles.premiumFeatureCard,
+        {
+          opacity: cardOpacity,
+          transform: [
+            { scale: cardScale },
+            { translateY: cardTranslateY },
+          ],
+        },
+      ]}
+    >
+      <TouchableOpacity
+        activeOpacity={1}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={styles.premiumFeatureCardTouchable}
+      >
+        <Animated.View
+          style={{
+            transform: [{ scale: pressScale }],
+          }}
+        >
+          <LinearGradient
+            colors={gradient as [string, string]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.premiumFeatureCardGradient}
+          >
+          <View style={styles.premiumFeatureCardContent}>
+            <Animated.View
+              style={[
+                styles.premiumFeatureIconContainer,
+                {
+                  transform: [
+                    { scale: iconScale },
+                  ],
+                },
+              ]}
+            >
+              <Text style={styles.premiumFeatureIcon}>{icon}</Text>
+            </Animated.View>
+            
+            <View style={styles.premiumFeatureTextContainer}>
+              <Text style={styles.premiumFeatureTitle}>{title}</Text>
+              <Text style={styles.premiumFeatureDescription}>{description}</Text>
+            </View>
+
+            <View style={styles.premiumFeatureArrow}>
+              <Text style={styles.premiumFeatureArrowText}>→</Text>
+            </View>
+          </View>
+        </LinearGradient>
+        </Animated.View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
+
+// Mock pricing data
+const pricingPlans = [
+  {
+    id: 'monthly',
+    name: 'Monthly',
+    price: 9.99,
+    period: 'month',
+    originalPrice: null,
+    savings: null,
+    popular: false,
+    features: [
+      'Unlimited meditation sessions',
+      'All modules unlocked',
+      'Progress tracking',
+      'Basic analytics',
+    ],
+  },
+  {
+    id: 'yearly',
+    name: 'Yearly',
+    price: 79.99,
+    period: 'year',
+    originalPrice: 119.88,
+    savings: 'Save 33%',
+    popular: true,
+    features: [
+      'Everything in Monthly',
+      'Advanced analytics',
+      'AI-powered recommendations',
+      'Cloud sync across devices',
+      'Priority support',
+      'Early access to new features',
+    ],
+  },
+  {
+    id: 'lifetime',
+    name: 'Lifetime',
+    price: 199.99,
+    period: 'one-time',
+    originalPrice: null,
+    savings: 'Best Value',
+    popular: false,
+    features: [
+      'Everything in Yearly',
+      'Pay once, use forever',
+      'All future updates included',
+      'Lifetime priority support',
+    ],
+  },
+];
+
 // Premium Features Page
 const PremiumFeaturesPage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleTranslateY = useRef(new Animated.Value(20)).current;
+  const cardsOpacity = useRef(new Animated.Value(0)).current;
+  const cardsTranslateY = useRef(new Animated.Value(30)).current;
   const hasAnimated = useRef(false);
+  const [selectedPlan, setSelectedPlan] = useState<string>('yearly');
+  const [currentPricingPage, setCurrentPricingPage] = useState(0);
+  const pricingScrollViewRef = useRef<ScrollView>(null);
+  const scaleAnimations = useRef(
+    pricingPlans.map(() => new Animated.Value(1))
+  ).current;
 
   useEffect(() => {
     if (isActive && !hasAnimated.current) {
@@ -1855,57 +2056,280 @@ const PremiumFeaturesPage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
           delay: 200,
           useNativeDriver: true,
         }),
+        Animated.timing(cardsOpacity, {
+          toValue: 1,
+          duration: 600,
+          delay: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(cardsTranslateY, {
+          toValue: 0,
+          duration: 600,
+          delay: 400,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
       ]).start();
+    } else if (!isActive) {
+      hasAnimated.current = false;
     }
   }, [isActive]);
 
+  const handleSelectPlan = (planId: string) => {
+    setSelectedPlan(planId);
+    
+    // Animate the selected card
+    const index = pricingPlans.findIndex(p => p.id === planId);
+    if (index !== -1) {
+      Animated.sequence([
+        Animated.spring(scaleAnimations[index], {
+          toValue: 0.95,
+          tension: 300,
+          friction: 10,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnimations[index], {
+          toValue: 1,
+          tension: 300,
+          friction: 10,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  };
+
+  const formatPrice = (price: number) => {
+    return `$${price.toFixed(2)}`;
+  };
+
+  const calculateMonthlyEquivalent = (plan: typeof pricingPlans[0]) => {
+    if (plan.period === 'year') {
+      return (plan.price / 12).toFixed(2);
+    }
+    return plan.price.toFixed(2);
+  };
+
+  const handlePricingScroll = (event: any) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const page = Math.round(offsetX / SCREEN_WIDTH);
+    setCurrentPricingPage(Math.min(page, pricingPlans.length - 1));
+  };
+
   return (
     <View style={styles.page}>
-      <View style={styles.pageBackground}>
-        <Animated.View
-          style={[
-            styles.titleContainer,
-            {
-              opacity: titleOpacity,
-              transform: [{ translateY: titleTranslateY }],
-            },
-          ]}
-        >
-          <Text style={styles.titleLight}>Premium Features</Text>
-          <Text style={styles.subtitleLight}>Unlock the full potential</Text>
-        </Animated.View>
+      <ScrollView 
+        style={styles.page} 
+        contentContainerStyle={styles.premiumScrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.pageBackground}>
+          <Animated.View
+            style={[
+              styles.titleContainer,
+              {
+                opacity: titleOpacity,
+                transform: [{ translateY: titleTranslateY }],
+              },
+            ]}
+          >
+            <Text style={styles.titleLight}>Choose Your Plan</Text>
+            <Text style={styles.subtitleLight}>Unlock the full potential of Neurotype</Text>
+          </Animated.View>
 
-      <View style={styles.premiumFeaturesContainer}>
-        <FeaturePoint
-          icon="⭐"
-          title="Unlimited Sessions"
-          description="Access all meditation sessions without limits"
-          delay={400}
-          isActive={isActive}
-        />
-        <FeaturePoint
-          icon="📊"
-          title="Advanced Analytics"
-          description="Track your progress with detailed insights and charts"
-          delay={600}
-          isActive={isActive}
-        />
-        <FeaturePoint
-          icon="🎯"
-          title="Personalized Recommendations"
-          description="Get AI-powered suggestions tailored to your unique needs"
-          delay={800}
-          isActive={isActive}
-        />
-        <FeaturePoint
-          icon="☁️"
-          title="Cloud Sync"
-          description="Sync your progress across all your devices"
-          delay={1000}
-          isActive={isActive}
-        />
-      </View>
-      </View>
+          <Animated.View
+            style={[
+              {
+                opacity: cardsOpacity,
+                transform: [{ translateY: cardsTranslateY }],
+              },
+            ]}
+          >
+            <ScrollView
+              ref={pricingScrollViewRef}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onScroll={handlePricingScroll}
+              scrollEventThrottle={16}
+              style={styles.pricingScrollView}
+              contentContainerStyle={styles.pricingScrollContent}
+            >
+              {pricingPlans.map((plan, index) => {
+                const isSelected = selectedPlan === plan.id;
+                const monthlyPrice = calculateMonthlyEquivalent(plan);
+                
+                return (
+                  <View key={plan.id} style={styles.pricingCardWrapper}>
+                    <Animated.View
+                      style={[
+                        styles.pricingCard,
+                        isSelected && styles.pricingCardSelected,
+                        {
+                          transform: [{ scale: scaleAnimations[index] }],
+                        },
+                      ]}
+                    >
+                      {plan.popular && (
+                        <View style={styles.popularBadge}>
+                          <Text style={styles.popularBadgeText}>Most Popular</Text>
+                        </View>
+                      )}
+                      
+                      <TouchableOpacity
+                        activeOpacity={0.9}
+                        onPress={() => handleSelectPlan(plan.id)}
+                        style={styles.pricingCardTouchable}
+                      >
+                        <View style={styles.pricingCardHeader}>
+                          <Text style={styles.pricingCardName}>{plan.name}</Text>
+                          {plan.savings && (
+                            <View style={styles.savingsBadge}>
+                              <Text style={styles.savingsBadgeText}>{plan.savings}</Text>
+                            </View>
+                          )}
+                        </View>
+
+                        <View style={styles.pricingCardPriceContainer}>
+                          <View style={styles.pricingCardPriceRow}>
+                            <Text style={styles.pricingCardPrice}>
+                              {formatPrice(plan.price)}
+                            </Text>
+                            {plan.period !== 'one-time' && (
+                              <Text style={styles.pricingCardPeriod}>/{plan.period}</Text>
+                            )}
+                          </View>
+                          {plan.period === 'year' && (
+                            <Text style={styles.pricingCardEquivalent}>
+                              ${monthlyPrice}/month billed annually
+                            </Text>
+                          )}
+                          {plan.originalPrice && (
+                            <Text style={styles.pricingCardOriginal}>
+                              ${plan.originalPrice.toFixed(2)}/year
+                            </Text>
+                          )}
+                        </View>
+
+                        <View style={styles.pricingCardFeatures}>
+                          {plan.features.map((feature, featureIndex) => (
+                            <View key={featureIndex} style={styles.pricingCardFeature}>
+                              <Text style={styles.pricingCardFeatureIcon}>✓</Text>
+                              <Text style={styles.pricingCardFeatureText}>{feature}</Text>
+                            </View>
+                          ))}
+                        </View>
+
+                        <View style={[
+                          styles.pricingCardButton,
+                          isSelected && styles.pricingCardButtonSelected,
+                        ]}>
+                          <Text style={[
+                            styles.pricingCardButtonText,
+                            isSelected && styles.pricingCardButtonTextSelected,
+                          ]}>
+                            {isSelected ? 'Selected' : 'Select Plan'}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    </Animated.View>
+                  </View>
+                );
+              })}
+            </ScrollView>
+            
+            {/* Page Indicators */}
+            <View style={styles.pricingIndicators}>
+              {pricingPlans.map((_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.pricingIndicator,
+                    currentPricingPage === index && styles.pricingIndicatorActive,
+                    index < pricingPlans.length - 1 && { marginRight: 8 },
+                  ]}
+                />
+              ))}
+            </View>
+          </Animated.View>
+
+          <Animated.View
+            style={[
+              styles.premiumFeaturesList,
+              {
+                opacity: cardsOpacity,
+              },
+            ]}
+          >
+            <Text style={styles.premiumFeaturesListTitle}>All Premium Features</Text>
+            <Text style={styles.premiumFeaturesListSubtitle}>
+              Everything you need for your meditation journey
+            </Text>
+            
+            <View style={styles.premiumFeaturesGrid}>
+              {[
+                {
+                  icon: '⭐',
+                  title: 'Unlimited Sessions',
+                  description: 'Access all meditation sessions without limits',
+                  gradient: ['#FFD700', '#FFA500'],
+                  delay: 600,
+                },
+                {
+                  icon: '📊',
+                  title: 'Advanced Analytics',
+                  description: 'Track your progress with detailed insights and charts',
+                  gradient: ['#4ECDC4', '#44A08D'],
+                  delay: 700,
+                },
+                {
+                  icon: '🎯',
+                  title: 'AI Recommendations',
+                  description: 'Get personalized suggestions tailored to your unique needs',
+                  gradient: ['#667EEA', '#764BA2'],
+                  delay: 800,
+                },
+                {
+                  icon: '☁️',
+                  title: 'Cloud Sync',
+                  description: 'Sync your progress across all your devices seamlessly',
+                  gradient: ['#89F7FE', '#66A6FF'],
+                  delay: 900,
+                },
+                {
+                  icon: '🔔',
+                  title: 'Smart Reminders',
+                  description: 'Never miss a session with intelligent notification system',
+                  gradient: ['#F093FB', '#F5576C'],
+                  delay: 1000,
+                },
+                {
+                  icon: '🎨',
+                  title: 'Custom Themes',
+                  description: 'Personalize your experience with beautiful themes',
+                  gradient: ['#FA709A', '#FEE140'],
+                  delay: 1100,
+                },
+              ].map((feature, index) => (
+                <PremiumFeatureCard
+                  key={index}
+                  icon={feature.icon}
+                  title={feature.title}
+                  description={feature.description}
+                  gradient={feature.gradient}
+                  delay={feature.delay}
+                  isActive={isActive}
+                />
+              ))}
+            </View>
+          </Animated.View>
+
+          <View style={styles.premiumFooter}>
+            <Text style={styles.premiumFooterText}>
+              Cancel anytime. All plans include a 7-day free trial.
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
     </View>
   );
 };
@@ -2800,6 +3224,294 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 0,
     justifyContent: 'center',
+  },
+  premiumScrollContent: {
+    paddingBottom: 40,
+  },
+  premiumPricingContainer: {
+    paddingHorizontal: 0,
+    marginBottom: 32,
+  },
+  pricingScrollView: {
+    marginHorizontal: 0,
+  },
+  pricingScrollContent: {
+    paddingRight: 20,
+  },
+  pricingCardWrapper: {
+    width: SCREEN_WIDTH,
+    paddingHorizontal: 20,
+  },
+  pricingCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: '#e5e5ea',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    position: 'relative',
+    overflow: 'visible',
+    minHeight: 480,
+    justifyContent: 'space-between',
+  },
+  pricingCardSelected: {
+    borderColor: '#007AFF',
+    borderWidth: 3,
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+    backgroundColor: '#f8f9ff',
+  },
+  pricingCardTouchable: {
+    width: '100%',
+  },
+  popularBadge: {
+    position: 'absolute',
+    top: -12,
+    alignSelf: 'center',
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+    zIndex: 10,
+  },
+  popularBadgeText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  pricingCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    marginTop: 8,
+  },
+  pricingCardName: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#000000',
+    letterSpacing: -0.5,
+  },
+  savingsBadge: {
+    backgroundColor: '#34C759',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  savingsBadgeText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  pricingCardPriceContainer: {
+    marginBottom: 20,
+  },
+  pricingCardPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 4,
+  },
+  pricingCardPrice: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: '#000000',
+    letterSpacing: -1,
+  },
+  pricingCardPeriod: {
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#8e8e93',
+    marginLeft: 4,
+  },
+  pricingCardEquivalent: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#8e8e93',
+    marginTop: 4,
+  },
+  pricingCardOriginal: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#c7c7cc',
+    textDecorationLine: 'line-through',
+    marginTop: 2,
+  },
+  pricingCardFeatures: {
+    marginBottom: 20,
+    flex: 1,
+    justifyContent: 'flex-start',
+  },
+  pricingIndicators: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  pricingIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#c7c7cc',
+  },
+  pricingIndicatorActive: {
+    width: 24,
+    backgroundColor: '#007AFF',
+  },
+  pricingCardFeature: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  pricingCardFeatureIcon: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#34C759',
+    marginRight: 10,
+    marginTop: 2,
+    width: 20,
+  },
+  pricingCardFeatureText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '400',
+    color: '#000000',
+    lineHeight: 20,
+  },
+  pricingCardButton: {
+    backgroundColor: '#f2f2f7',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#e5e5ea',
+  },
+  pricingCardButtonSelected: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  pricingCardButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000000',
+  },
+  pricingCardButtonTextSelected: {
+    color: '#ffffff',
+  },
+  premiumFeaturesList: {
+    paddingHorizontal: 0,
+    marginTop: 8,
+  },
+  premiumFeaturesListTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#000000',
+    marginBottom: 8,
+    textAlign: 'center',
+    letterSpacing: -0.5,
+  },
+  premiumFeaturesListSubtitle: {
+    fontSize: 16,
+    fontWeight: '400',
+    color: '#8e8e93',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  premiumFeaturesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginHorizontal: 0,
+  },
+  premiumFeatureCard: {
+    width: '48%',
+    marginBottom: 12,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  premiumFeatureCardTouchable: {
+    width: '100%',
+  },
+  premiumFeatureCardGradient: {
+    borderRadius: 16,
+    padding: 16,
+    minHeight: 140,
+  },
+  premiumFeatureCardContent: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  premiumFeatureIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  premiumFeatureIcon: {
+    fontSize: 24,
+  },
+  premiumFeatureTextContainer: {
+    flex: 1,
+    marginBottom: 8,
+  },
+  premiumFeatureTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#ffffff',
+    marginBottom: 4,
+    letterSpacing: -0.3,
+  },
+  premiumFeatureDescription: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: 'rgba(255, 255, 255, 0.9)',
+    lineHeight: 18,
+  },
+  premiumFeatureArrow: {
+    alignSelf: 'flex-end',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  premiumFeatureArrowText: {
+    fontSize: 18,
+    color: '#ffffff',
+    fontWeight: '700',
+  },
+  premiumFooter: {
+    marginTop: 32,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    alignItems: 'center',
+  },
+  premiumFooterText: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: '#8e8e93',
+    textAlign: 'center',
+    lineHeight: 18,
   },
   pageIndicators: {
     flexDirection: 'row',

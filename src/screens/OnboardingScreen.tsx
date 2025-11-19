@@ -3255,6 +3255,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 20,
     padding: 20,
+    paddingTop: 32,
     borderWidth: 2,
     borderColor: '#e5e5ea',
     shadowColor: '#000',
@@ -3282,7 +3283,7 @@ const styles = StyleSheet.create({
   },
   popularBadge: {
     position: 'absolute',
-    top: -12,
+    top: 8,
     alignSelf: 'center',
     backgroundColor: '#007AFF',
     paddingHorizontal: 16,

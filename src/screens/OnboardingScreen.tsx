@@ -1963,10 +1963,6 @@ const PremiumFeatureCard: React.FC<{
               <Text style={styles.premiumFeatureTitle}>{title}</Text>
               <Text style={styles.premiumFeatureDescription}>{description}</Text>
             </View>
-
-            <View style={styles.premiumFeatureArrow}>
-              <Text style={styles.premiumFeatureArrowText}>→</Text>
-            </View>
           </View>
         </LinearGradient>
         </Animated.View>
@@ -3454,18 +3450,21 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 6,
+    height: 180,
   },
   premiumFeatureCardTouchable: {
     width: '100%',
+    height: '100%',
   },
   premiumFeatureCardGradient: {
     borderRadius: 16,
     padding: 16,
-    minHeight: 140,
+    height: '100%',
   },
   premiumFeatureCardContent: {
     flex: 1,
     justifyContent: 'space-between',
+    height: '100%',
   },
   premiumFeatureIconContainer: {
     width: 48,

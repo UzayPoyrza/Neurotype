@@ -2248,6 +2248,13 @@ const PremiumFeaturesPage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
                 />
               ))}
             </View>
+            
+            {/* Cancel Anytime Text */}
+            <View style={styles.pricingFooter}>
+              <Text style={styles.pricingFooterText}>
+                Cancel anytime. All plans include a 7-day free trial.
+              </Text>
+            </View>
           </Animated.View>
 
           <Animated.View
@@ -2320,12 +2327,6 @@ const PremiumFeaturesPage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
               ))}
             </View>
           </Animated.View>
-
-          <View style={styles.premiumFooter}>
-            <Text style={styles.premiumFooterText}>
-              Cancel anytime. All plans include a 7-day free trial.
-            </Text>
-          </View>
         </View>
       </ScrollView>
     </View>
@@ -3361,7 +3362,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 16,
+    marginBottom: 12,
+  },
+  pricingFooter: {
+    marginTop: 8,
+    paddingHorizontal: 20,
+    alignItems: 'center',
     marginBottom: 8,
+  },
+  pricingFooterText: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: '#8e8e93',
+    textAlign: 'center',
+    lineHeight: 18,
   },
   pricingIndicator: {
     width: 8,
@@ -3417,7 +3431,7 @@ const styles = StyleSheet.create({
   },
   premiumFeaturesList: {
     paddingHorizontal: 0,
-    marginTop: 8,
+    marginTop: 16,
   },
   premiumFeaturesListTitle: {
     fontSize: 28,
@@ -3510,19 +3524,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#ffffff',
     fontWeight: '700',
-  },
-  premiumFooter: {
-    marginTop: 32,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    alignItems: 'center',
-  },
-  premiumFooterText: {
-    fontSize: 13,
-    fontWeight: '400',
-    color: '#8e8e93',
-    textAlign: 'center',
-    lineHeight: 18,
   },
   pageIndicators: {
     flexDirection: 'row',

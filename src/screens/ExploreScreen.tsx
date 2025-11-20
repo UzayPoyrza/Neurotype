@@ -57,12 +57,13 @@ export const ExploreScreen: React.FC = () => {
     setCurrentScreen('explore');
   }, [setCurrentScreen]);
 
-  // Fetch all sessions for liked meditations
+  // Fetch all sessions for liked meditations count only
   useEffect(() => {
     const fetchSessions = async () => {
       try {
         const sessions = await getAllSessions();
         setAllSessions(sessions);
+        console.log('[ExploreScreen] ✅ Fetched sessions for liked meditations count:', sessions.length);
       } catch (error) {
         console.error('Error fetching sessions for liked meditations:', error);
       }
@@ -173,7 +174,7 @@ export const ExploreScreen: React.FC = () => {
 
     // Return pinned modules first, then regular modules
     return [...pinnedModules, ...regularModules];
-  }, [searchQuery, selectedSort, recentModuleIds, likedSessionIds]);
+  }, [searchQuery, selectedSort, recentModuleIds, likedSessionIds, likedSessions]);
 
   const handleModulePress = (moduleId: string) => {
     console.log('[ExploreScreen] 👆 User clicked module:', moduleId);
@@ -373,12 +374,7 @@ export const ExploreScreen: React.FC = () => {
                           </Text>
                           
                           <View style={styles.moduleFooter}>
-                            <Text style={[
-                              styles.sessionCount,
-                              styles.pinnedSessionCount
-                            ]}>
-                              {module.meditationCount} session{module.meditationCount === 1 ? '' : 's'}
-                            </Text>
+                            <View />
                             <View style={styles.moduleArrow}>
                               <Text style={styles.moduleArrowText}>→</Text>
                             </View>
@@ -415,9 +411,7 @@ export const ExploreScreen: React.FC = () => {
                           </Text>
                           
                           <View style={styles.moduleFooter}>
-                            <Text style={styles.sessionCount}>
-                              {module.meditationCount} session{module.meditationCount === 1 ? '' : 's'}
-                            </Text>
+                            <View />
                             <View style={styles.moduleArrow}>
                               <Text style={styles.moduleArrowText}>→</Text>
                             </View>

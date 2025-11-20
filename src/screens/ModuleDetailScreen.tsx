@@ -264,11 +264,14 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
             </Text>
           </View>
           <Text style={styles.moduleTitle}>
-            {moduleId === 'liked-meditations' ? 'Liked Meditations' : module?.title}
+            {moduleId === 'liked-meditations' 
+              ? `${moduleSessions.length} favorite meditation${moduleSessions.length === 1 ? '' : 's'}`
+              : module?.title
+            }
           </Text>
           <Text style={styles.moduleDescription}>
             {moduleId === 'liked-meditations' 
-              ? `${moduleSessions.length} favorite meditation session${moduleSessions.length === 1 ? '' : 's'}`
+              ? 'View hearted meditations'
               : module?.description
             }
           </Text>

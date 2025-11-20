@@ -153,13 +153,12 @@ export const ExploreScreen: React.FC = () => {
     const likedMeditationsItem = {
       id: 'liked-meditations',
       title: 'Liked Meditations',
-      description: likedSessions.length > 0 
-        ? `${likedSessions.length} favorite meditation session${likedSessions.length === 1 ? '' : 's'}`
-        : 'No favorite sessions yet',
-      category: 'wellness' as const, // Use a valid category type
+      description: 'View hearted meditations',
+      category: 'wellness' as const, // Category for display, but it's its own special item
       color: '#E74C3C',
       meditationCount: likedSessions.length,
       isPinned: true,
+      isLikedMeditations: true, // Special flag to identify this as liked meditations
       likedSessions: likedSessions, // Store the actual liked sessions
     };
 
@@ -398,7 +397,11 @@ export const ExploreScreen: React.FC = () => {
                           <View style={styles.moduleCardHeader}>
                             <View style={styles.moduleHeaderLeft}>
                               <View style={[styles.moduleIndicator, { backgroundColor: module.color }]} />
-                              <Text style={styles.moduleCategory}>{module.category.toUpperCase()}</Text>
+                              <Text style={styles.moduleCategory}>
+                                {('isLikedMeditations' in module && module.isLikedMeditations) 
+                                  ? 'PINNED' 
+                                  : module.category.toUpperCase()}
+                              </Text>
                             </View>
                             <View style={styles.pinBadge}>
                               <Text style={styles.pinIcon}>📌</Text>

@@ -6,7 +6,8 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "migrate:sessions": "ts-node --project scripts/tsconfig.json scripts/migrateSessions.ts"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
@@ -36,7 +37,10 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@types/node": "^24.10.1",
     "@types/react": "~19.1.10",
+    "dotenv": "^17.2.3",
+    "ts-node": "^10.9.2",
     "typescript": "~5.9.2"
   },
   "private": true

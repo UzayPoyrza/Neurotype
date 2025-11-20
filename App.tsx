@@ -21,6 +21,7 @@ import { SplashScreen } from './src/screens/SplashScreen';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { useStore } from './src/store/useStore';
 import { supabase } from './src/services/supabase';
+import { getAllSessions, getSessionsByModality, getSessionById } from './src/services/sessionService';
 
 const Tab = createBottomTabNavigator();
 const TodayStack = createStackNavigator();
@@ -227,32 +228,70 @@ export default function App() {
   const activeSession = useStore(state => state.activeSession);
   const hasCompletedOnboarding = useStore(state => state.hasCompletedOnboarding);
 
-  // Test Supabase connection
+  // Test Supabase connection and session migration
   useEffect(() => {
     const testSupabaseConnection = async () => {
       try {
-        console.log('🧪 Testing Supabase connection...');
+        console.log('\n🧪 Testing Supabase connection and session migration...\n');
         
-        // Test: Fetch active sessions (public data, no auth needed)
-        const { data: sessions, error } = await supabase
-          .from('sessions')
-          .select('*')
-          .eq('is_active', true)
-          .limit(5);
+        // Test 1: Fetch all sessions
+        console.log('📋 Test 1: Fetching all sessions...');
+        const allSessions = await getAllSessions();
+        console.log(`✅ Found ${allSessions.length} sessions`);
         
-        if (error) {
-          console.error('❌ Supabase error:', error);
-          console.error('Error details:', error.message);
-          return;
-        }
-        
-        console.log('✅ Supabase connection successful!');
-        console.log('📊 Sessions found:', sessions?.length || 0);
-        if (sessions && sessions.length > 0) {
-          console.log('📝 First session:', sessions[0].title);
+        if (allSessions.length > 0) {
+          console.log('📝 Sessions:');
+          allSessions.slice(0, 5).forEach(s => {
+            console.log(`   - ${s.title} (${s.durationMin}min, ${s.modality})`);
+          });
+          if (allSessions.length > 5) {
+            console.log(`   ... and ${allSessions.length - 5} more`);
+          }
         } else {
           console.log('⚠️ No sessions found - database might be empty');
         }
+        
+        // Test 2: Fetch sessions by modality (anxiety)
+        console.log('\n📋 Test 2: Fetching anxiety sessions...');
+        const anxietySessions = await getSessionsByModality('anxiety');
+        console.log(`✅ Found ${anxietySessions.length} anxiety sessions`);
+        if (anxietySessions.length > 0) {
+          console.log('📝 Anxiety sessions:', anxietySessions.map(s => s.title).join(', '));
+        }
+        
+        // Test 3: Fetch sessions by modality (stress) - should have cross-module sessions
+        console.log('\n📋 Test 3: Fetching stress sessions (testing cross-module)...');
+        const stressSessions = await getSessionsByModality('stress');
+        console.log(`✅ Found ${stressSessions.length} stress sessions`);
+        if (stressSessions.length > 0) {
+          console.log('📝 Stress sessions:', stressSessions.map(s => s.title).join(', '));
+        }
+        
+        // Test 4: Check for cross-module session (Ocean Waves should be in both)
+        console.log('\n📋 Test 4: Verifying cross-module sessions...');
+        const oceanWaves = anxietySessions.find(s => s.title.includes('Ocean Waves'));
+        if (oceanWaves) {
+          const alsoInStress = stressSessions.find(s => s.id === oceanWaves.id);
+          if (alsoInStress) {
+            console.log(`✅ Cross-module verified: "${oceanWaves.title}" appears in both anxiety and stress`);
+          } else {
+            console.log(`⚠️ Cross-module check: "${oceanWaves.title}" not found in stress sessions`);
+          }
+        }
+        
+        // Test 5: Fetch single session by ID
+        if (allSessions.length > 0) {
+          console.log('\n📋 Test 5: Fetching single session by ID...');
+          const firstSession = await getSessionById(allSessions[0].id);
+          if (firstSession) {
+            console.log(`✅ Retrieved session: "${firstSession.title}"`);
+          } else {
+            console.log('⚠️ Could not retrieve session by ID');
+          }
+        }
+        
+        console.log('\n✅ All tests completed successfully!\n');
+        
       } catch (error) {
         console.error('❌ Connection test failed:', error);
       }

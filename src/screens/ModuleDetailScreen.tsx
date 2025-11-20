@@ -1,13 +1,13 @@
 import React, { useMemo, useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Animated, ActivityIndicator } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { SessionCard } from '../components/SessionCard';
 import { Session } from '../types';
-import { mockSessions } from '../data/mockData';
 import { mentalHealthModules } from '../data/modules';
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
+import { getAllSessions, getSessionsByModality } from '../services/sessionService';
 
 type ExploreStackParamList = {
   ExploreMain: undefined;
@@ -79,6 +79,11 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
   const { moduleId } = route.params;
   const module = mentalHealthModules.find(m => m.id === moduleId);
   const likedSessionIds = useStore(state => state.likedSessionIds);
+  
+  // Session state from database
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   // Message state for "Added to Liked meditations" or "Removed from Liked meditations"
   const [showAddedMessage, setShowAddedMessage] = useState(false);
@@ -157,40 +162,48 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
       setCurrentScreen('explore');
     };
   }, [setCurrentScreen]);
-  
-  // Filter sessions based on module type
+
+  // Fetch sessions from database based on module
+  useEffect(() => {
+    const fetchSessions = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        let fetchedSessions: Session[] = [];
+        
+        // Handle liked meditations case - fetch all sessions and filter by liked
+        if (moduleId === 'liked-meditations') {
+          const allSessions = await getAllSessions();
+          fetchedSessions = allSessions.filter(session => 
+            likedSessionIds.includes(session.id) || removingSessionIds.has(session.id)
+          );
+        } else if (module) {
+          // Fetch sessions for the specific module/modality
+          fetchedSessions = await getSessionsByModality(moduleId);
+        }
+        
+        setSessions(fetchedSessions);
+      } catch (err) {
+        console.error('Error fetching sessions:', err);
+        setError('Failed to load sessions. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSessions();
+  }, [moduleId, module, likedSessionIds, removingSessionIds]);
+
+  // Filter sessions based on module type (for liked meditations with removing animation)
   const moduleSessions = useMemo(() => {
-    // Handle liked meditations case
     if (moduleId === 'liked-meditations') {
-      return mockSessions.filter(session => 
+      return sessions.filter(session => 
         likedSessionIds.includes(session.id) || removingSessionIds.has(session.id)
       );
     }
-    
-    if (!module) return [];
-    
-    // Map module IDs to session goals/types
-    const moduleToGoalMap: Record<string, string[]> = {
-      'anxiety': ['anxiety'],
-      'adhd': ['focus'],
-      'depression': ['stress', 'sleep'],
-      'bipolar': ['stress'],
-      'panic': ['anxiety'],
-      'ptsd': ['stress'],
-      'stress': ['stress'],
-      'sleep': ['sleep'],
-      'focus': ['focus'],
-      'emotional-regulation': ['anxiety', 'stress'],
-      'mindfulness': ['anxiety', 'focus', 'stress'],
-      'self-compassion': ['stress'],
-    };
-    
-    const relevantGoals = moduleToGoalMap[moduleId] || ['anxiety'];
-    
-    return mockSessions.filter(session => 
-      relevantGoals.includes(session.goal)
-    );
-  }, [moduleId, module, likedSessionIds, removingSessionIds]);
+    return sessions;
+  }, [sessions, moduleId, likedSessionIds, removingSessionIds]);
 
   const handleSessionStart = (session: Session) => {
     // Navigate to MeditationDetail screen instead of setting active session
@@ -239,40 +252,56 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
 
       {/* Sessions List */}
       <View style={styles.content}>
-        <FlatList
-          data={moduleSessions}
-          renderItem={({ item }) => {
-            const isRemoving = removingSessionIds.has(item.id);
-            return (
-              <AnimatedSessionCard
-                session={item}
-                onStart={() => handleSessionStart(item)}
-                variant="list"
-                onLike={(isLiked) => handleLike(isLiked, item.id)}
-                isRemoving={isRemoving}
-              />
-            );
-          }}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContainer}
-          ItemSeparatorComponent={() => <View style={{ height: theme.spacing.md }} />}
-        />
-
-        {moduleSessions.length === 0 && (
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text style={styles.loadingText}>Loading sessions...</Text>
+          </View>
+        ) : error ? (
           <View style={styles.emptyStateContainer}>
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>
-                {moduleId === 'liked-meditations' ? 'No Liked Meditations' : 'Coming Soon'}
-              </Text>
-              <Text style={styles.emptySubtext}>
-                {moduleId === 'liked-meditations' 
-                  ? 'Heart meditations you enjoy to see them here'
-                  : `Meditations for ${module?.title} are being prepared`
-                }
-              </Text>
+              <Text style={styles.emptyText}>Error Loading Sessions</Text>
+              <Text style={styles.emptySubtext}>{error}</Text>
             </View>
           </View>
+        ) : (
+          <>
+            <FlatList
+              data={moduleSessions}
+              renderItem={({ item }) => {
+                const isRemoving = removingSessionIds.has(item.id);
+                return (
+                  <AnimatedSessionCard
+                    session={item}
+                    onStart={() => handleSessionStart(item)}
+                    variant="list"
+                    onLike={(isLiked) => handleLike(isLiked, item.id)}
+                    isRemoving={isRemoving}
+                  />
+                );
+              }}
+              keyExtractor={(item) => item.id}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.listContainer}
+              ItemSeparatorComponent={() => <View style={{ height: theme.spacing.md }} />}
+            />
+
+            {moduleSessions.length === 0 && !isLoading && (
+              <View style={styles.emptyStateContainer}>
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyText}>
+                    {moduleId === 'liked-meditations' ? 'No Liked Meditations' : 'Coming Soon'}
+                  </Text>
+                  <Text style={styles.emptySubtext}>
+                    {moduleId === 'liked-meditations' 
+                      ? 'Heart meditations you enjoy to see them here'
+                      : `Meditations for ${module?.title} are being prepared`
+                    }
+                  </Text>
+                </View>
+              </View>
+            )}
+          </>
         )}
       </View>
       
@@ -376,6 +405,18 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 12,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 17,
+    color: '#8e8e93',
+    fontWeight: '400',
   },
   sectionHeader: {
     marginBottom: 24,

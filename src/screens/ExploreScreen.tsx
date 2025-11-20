@@ -19,10 +19,10 @@ import { SearchBar } from '../components/SearchBar';
 import { FilterCategory, FilterSelection } from '../components/SpotifyFilterBar';
 import { ExploreIcon } from '../components/icons';
 import { useStore } from '../store/useStore';
-import { mockSessions } from '../data/mockData';
 import { mentalHealthModules, MentalHealthModule } from '../data/modules';
 import { theme } from '../styles/theme';
 import { ExploreScreen as ExploreScreenComponent } from '../components/ExploreScreen';
+import { getAllSessions } from '../services/sessionService';
 
 type ExploreStackParamList = {
   ExploreMain: undefined;
@@ -50,11 +50,25 @@ export const ExploreScreen: React.FC = () => {
   const [isShuffling, setIsShuffling] = useState(false);
   const moduleOpacity = useSharedValue(1);
   const moduleScale = useSharedValue(1);
+  const [allSessions, setAllSessions] = useState<any[]>([]);
 
   // Set screen context when component mounts
   useEffect(() => {
     setCurrentScreen('explore');
   }, [setCurrentScreen]);
+
+  // Fetch all sessions for liked meditations
+  useEffect(() => {
+    const fetchSessions = async () => {
+      try {
+        const sessions = await getAllSessions();
+        setAllSessions(sessions);
+      } catch (error) {
+        console.error('Error fetching sessions for liked meditations:', error);
+      }
+    };
+    fetchSessions();
+  }, []);
 
   // Define filter categories for top nav pill filters
   const filterCategories: FilterCategory[] = [
@@ -84,8 +98,8 @@ export const ExploreScreen: React.FC = () => {
     },
   ];
 
-  // Get liked sessions
-  const likedSessions = mockSessions.filter(session => likedSessionIds.includes(session.id));
+  // Get liked sessions from database
+  const likedSessions = allSessions.filter(session => likedSessionIds.includes(session.id));
 
   // Filter and sort modules
   const filteredModules = useMemo(() => {

@@ -179,8 +179,9 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
           console.log('[ModuleDetailScreen] 📥 Fetching all sessions for liked meditations...');
           const allSessions = await getAllSessions();
           console.log('[ModuleDetailScreen] ✅ Fetched', allSessions.length, 'total sessions');
+          // Only filter by likedSessionIds here - removingSessionIds is handled by moduleSessions useMemo
           fetchedSessions = allSessions.filter(session => 
-            likedSessionIds.includes(session.id) || removingSessionIds.has(session.id)
+            likedSessionIds.includes(session.id)
           );
           console.log('[ModuleDetailScreen] 🔍 Filtered to', fetchedSessions.length, 'liked sessions');
         } else if (module) {
@@ -216,50 +217,82 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
     };
 
     fetchSessions();
-  }, [moduleId, module, removingSessionIds, cacheSessions]); // Removed likedSessionIds to prevent refetch on like/unlike
+  }, [moduleId, module, cacheSessions]); // Only refetch when module changes, not on like/unlike or removal animation
 
-  // Update sessions list when likedSessionIds changes (background update, no loading screen)
+  // Track previous likedSessionIds to detect if we're adding or removing
+  const prevLikedSessionIdsRef = useRef<string[]>(likedSessionIds);
+  
+  // Background sync when likedSessionIds changes (only for adding new liked sessions)
   useEffect(() => {
-    // Only update for liked meditations module, and only if not currently loading
+    // Only sync for liked meditations module, and only if not currently loading
     if (moduleId === 'liked-meditations' && !isLoading) {
-      console.log('[ModuleDetailScreen] 🔄 Background update: likedSessionIds changed');
+      const prevLikedIds = prevLikedSessionIdsRef.current;
+      const isAdding = likedSessionIds.length > prevLikedIds.length;
       
-      // Try to get sessions from cache first (fast, no loading)
-      const getCachedSession = useStore.getState().getCachedSession;
-      const sessionCache = useStore.getState().sessionCache;
-      const cachedSessionIds = Object.keys(sessionCache);
+      // INSTANT UPDATE: The moduleSessions useMemo already filters based on likedSessionIds
+      // So unliking is instant - no state updates needed, just let useMemo handle it
       
-      // Filter cached sessions by current likedSessionIds
-      const cachedSessions = cachedSessionIds
-        .map(id => getCachedSession(id))
-        .filter((session): session is Session => 
-          session !== null && 
-          (likedSessionIds.includes(session.id) || removingSessionIds.has(session.id))
+      // If unliking, instantly update sessions state to remove unliked session (optimistic update)
+      if (!isAdding) {
+        // Immediately filter out unliked sessions from state (instant, no loading)
+        const updatedSessions = sessions.filter(session => 
+          likedSessionIds.includes(session.id) || removingSessionIds.has(session.id)
         );
-      
-      if (cachedSessions.length > 0 || likedSessionIds.length === 0) {
-        // Update from cache immediately (no loading screen)
-        setSessions(cachedSessions);
-        console.log('[ModuleDetailScreen] ✅ Updated liked sessions from cache:', cachedSessions.length);
-      } else {
-        // If cache doesn't have all sessions, fetch in background (no loading screen)
-        console.log('[ModuleDetailScreen] 📥 Background fetch for liked sessions (no loading screen)...');
-        getAllSessions()
-          .then(allSessions => {
-            const filtered = allSessions.filter(session => 
-              likedSessionIds.includes(session.id) || removingSessionIds.has(session.id)
-            );
-            setSessions(filtered);
-            cacheSessions(filtered);
-            console.log('[ModuleDetailScreen] ✅ Background fetch completed:', filtered.length);
-          })
-          .catch(err => {
-            console.error('[ModuleDetailScreen] ❌ Background fetch error (silent):', err);
-            // Don't show error to user, just log it - the UI will show cached data
-          });
+        setSessions(updatedSessions);
+        prevLikedSessionIdsRef.current = likedSessionIds;
+        return; // Early return - skip all background processing for unliking
       }
+      
+      // Only do background sync if we're ADDING new likes
+      if (isAdding) {
+        const getCachedSession = useStore.getState().getCachedSession;
+        const sessionCache = useStore.getState().sessionCache;
+        const cachedSessionIds = Object.keys(sessionCache);
+        
+        // Find newly liked sessions that aren't in cache yet
+        const newLikedIds = likedSessionIds.filter(id => !prevLikedIds.includes(id));
+        const missingSessionIds = newLikedIds.filter(id => !cachedSessionIds.includes(id));
+        
+        if (missingSessionIds.length > 0) {
+          // New liked sessions not in cache - fetch in background (silent, no loading screen)
+          console.log('[ModuleDetailScreen] 📥 Background sync: Fetching', missingSessionIds.length, 'new liked sessions...');
+          getAllSessions()
+            .then(allSessions => {
+              // Get the newly liked sessions
+              const newSessions = allSessions.filter(session => 
+                missingSessionIds.includes(session.id)
+              );
+              
+              // Add to cache
+              if (newSessions.length > 0) {
+                cacheSessions(newSessions);
+                console.log('[ModuleDetailScreen] ✅ Background sync: Cached', newSessions.length, 'new sessions');
+              }
+              
+              // Update sessions list with all liked sessions (including new ones)
+              const allLikedSessions = allSessions.filter(session => 
+                likedSessionIds.includes(session.id)
+              );
+              setSessions(allLikedSessions);
+            })
+            .catch(err => {
+              console.error('[ModuleDetailScreen] ❌ Background sync error (silent):', err);
+              // Don't show error - UI already works with existing sessions
+            });
+        } else {
+          // All new likes are already in cache, just update the sessions list
+          const getCachedSession = useStore.getState().getCachedSession;
+          const allLikedSessions = likedSessionIds
+            .map(id => getCachedSession(id))
+            .filter((session): session is Session => session !== null);
+          setSessions(allLikedSessions);
+        }
+      }
+      
+      // Update ref for next comparison (only if we processed adding)
+      prevLikedSessionIdsRef.current = likedSessionIds;
     }
-  }, [likedSessionIds, moduleId, removingSessionIds, cacheSessions, isLoading]);
+  }, [likedSessionIds, moduleId, cacheSessions, isLoading]);
 
   // Filter sessions based on module type (for liked meditations with removing animation)
   const moduleSessions = useMemo(() => {

@@ -164,7 +164,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
     };
   }, [setCurrentScreen]);
 
-  // Fetch sessions from database based on module
+  // Fetch sessions from database based on module (only when module changes)
   useEffect(() => {
     const fetchSessions = async () => {
       console.log('[ModuleDetailScreen] 🔄 Starting to fetch sessions for module:', moduleId);
@@ -216,7 +216,50 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
     };
 
     fetchSessions();
-  }, [moduleId, module, likedSessionIds, removingSessionIds, cacheSessions]);
+  }, [moduleId, module, removingSessionIds, cacheSessions]); // Removed likedSessionIds to prevent refetch on like/unlike
+
+  // Update sessions list when likedSessionIds changes (background update, no loading screen)
+  useEffect(() => {
+    // Only update for liked meditations module, and only if not currently loading
+    if (moduleId === 'liked-meditations' && !isLoading) {
+      console.log('[ModuleDetailScreen] 🔄 Background update: likedSessionIds changed');
+      
+      // Try to get sessions from cache first (fast, no loading)
+      const getCachedSession = useStore.getState().getCachedSession;
+      const sessionCache = useStore.getState().sessionCache;
+      const cachedSessionIds = Object.keys(sessionCache);
+      
+      // Filter cached sessions by current likedSessionIds
+      const cachedSessions = cachedSessionIds
+        .map(id => getCachedSession(id))
+        .filter((session): session is Session => 
+          session !== null && 
+          (likedSessionIds.includes(session.id) || removingSessionIds.has(session.id))
+        );
+      
+      if (cachedSessions.length > 0 || likedSessionIds.length === 0) {
+        // Update from cache immediately (no loading screen)
+        setSessions(cachedSessions);
+        console.log('[ModuleDetailScreen] ✅ Updated liked sessions from cache:', cachedSessions.length);
+      } else {
+        // If cache doesn't have all sessions, fetch in background (no loading screen)
+        console.log('[ModuleDetailScreen] 📥 Background fetch for liked sessions (no loading screen)...');
+        getAllSessions()
+          .then(allSessions => {
+            const filtered = allSessions.filter(session => 
+              likedSessionIds.includes(session.id) || removingSessionIds.has(session.id)
+            );
+            setSessions(filtered);
+            cacheSessions(filtered);
+            console.log('[ModuleDetailScreen] ✅ Background fetch completed:', filtered.length);
+          })
+          .catch(err => {
+            console.error('[ModuleDetailScreen] ❌ Background fetch error (silent):', err);
+            // Don't show error to user, just log it - the UI will show cached data
+          });
+      }
+    }
+  }, [likedSessionIds, moduleId, removingSessionIds, cacheSessions, isLoading]);
 
   // Filter sessions based on module type (for liked meditations with removing animation)
   const moduleSessions = useMemo(() => {

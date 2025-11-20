@@ -176,8 +176,10 @@ export const ExploreScreen: React.FC = () => {
   }, [searchQuery, selectedSort, recentModuleIds, likedSessionIds]);
 
   const handleModulePress = (moduleId: string) => {
+    console.log('[ExploreScreen] 👆 User clicked module:', moduleId);
     addRecentModule(moduleId);
     // Don't change global background color - let the detail screen handle its own background
+    console.log('[ExploreScreen] 🚀 Navigating to ModuleDetail for:', moduleId);
     navigation.navigate('ModuleDetail', { moduleId });
   };
 

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,18 +10,19 @@ import {
   StatusBar,
   TouchableWithoutFeedback,
   Share,
+  ActivityIndicator,
 } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Session } from '../types';
-import { mockSessions } from '../data/mockData';
 import { theme } from '../styles/theme';
 import { useStore } from '../store/useStore';
 import { ShareIcon } from '../components/icons';
 import { DraggableActionBar } from '../components/DraggableActionBar';
 import { meditationAudioData } from '../data/meditationMockData';
+import { getSessionById } from '../services/sessionService';
 
 type MeditationDetailStackParamList = {
   MeditationDetail: {
@@ -42,7 +43,11 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const { sessionId } = route.params;
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const setActiveSession = useStore(state => state.setActiveSession);
+  const getCachedSession = useStore(state => state.getCachedSession);
+  const cacheSessions = useStore(state => state.cacheSessions);
   
+  const [session, setSession] = useState<Session | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('summary');
   const [historySortOrder, setHistorySortOrder] = useState<'latest' | 'earliest'>('latest');
   const [showSortOptions, setShowSortOptions] = useState(false);
@@ -54,7 +59,79 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const shareSheetAnim = useRef(new Animated.Value(0)).current;
   const screenWidth = Dimensions.get('window').width;
   
-  const session = mockSessions.find(s => s.id === sessionId);
+  // Load session from cache or database
+  useEffect(() => {
+    const loadSession = async () => {
+      console.log('[MeditationDetailScreen] 🔄 Loading session:', sessionId);
+      setIsLoading(true);
+      
+      // First check cache (pre-rendered when module was loaded)
+      console.log('[MeditationDetailScreen] 🔍 Checking cache for session:', sessionId);
+      const cachedSession = getCachedSession(sessionId);
+      if (cachedSession) {
+        console.log('[MeditationDetailScreen] ✅ Found in cache! Using cached session:', {
+          id: cachedSession.id,
+          title: cachedSession.title,
+          hasDescription: !!cachedSession.description,
+          hasWhyItWorks: !!cachedSession.whyItWorks,
+          description: cachedSession.description?.substring(0, 50) + '...',
+          whyItWorks: cachedSession.whyItWorks?.substring(0, 50) + '...',
+        });
+        console.log('[MeditationDetailScreen] 📄 Full cached session object:', JSON.stringify(cachedSession, null, 2));
+        setSession(cachedSession);
+        setIsLoading(false);
+        return;
+      }
+      
+      // If not in cache, fetch from database
+      console.log('[MeditationDetailScreen] 📥 Session not in cache, fetching from database...');
+      try {
+        const fetchedSession = await getSessionById(sessionId);
+        if (fetchedSession) {
+          console.log('[MeditationDetailScreen] ✅ Fetched from database:', {
+            id: fetchedSession.id,
+            title: fetchedSession.title,
+            hasDescription: !!fetchedSession.description,
+            hasWhyItWorks: !!fetchedSession.whyItWorks,
+            description: fetchedSession.description?.substring(0, 50) + '...',
+            whyItWorks: fetchedSession.whyItWorks?.substring(0, 50) + '...',
+          });
+          console.log('[MeditationDetailScreen] 📄 Full fetched session object:', JSON.stringify(fetchedSession, null, 2));
+          setSession(fetchedSession);
+          // Cache for future use
+          console.log('[MeditationDetailScreen] 💾 Caching fetched session...');
+          cacheSessions([fetchedSession]);
+        } else {
+          console.log('[MeditationDetailScreen] ⚠️ Session not found in database');
+        }
+      } catch (error) {
+        console.error('[MeditationDetailScreen] ❌ Error fetching session:', error);
+      } finally {
+        setIsLoading(false);
+        console.log('[MeditationDetailScreen] ✨ Finished loading session');
+      }
+    };
+
+    loadSession();
+  }, [sessionId, getCachedSession, cacheSessions]);
+
+  // Log when session state changes
+  useEffect(() => {
+    if (session) {
+      console.log('[MeditationDetailScreen] 📊 Session state updated:', {
+        id: session.id,
+        title: session.title,
+        hasDescription: !!session.description,
+        hasWhyItWorks: !!session.whyItWorks,
+        description: session.description,
+        whyItWorks: session.whyItWorks,
+        fullSession: session,
+      });
+    } else {
+      console.log('[MeditationDetailScreen] ⚠️ Session is null');
+    }
+  }, [session]);
+
   const hasTutorial = !!(session && (meditationAudioData[session.id as keyof typeof meditationAudioData] as any)?.tutorialBackgroundAudio);
   const sessionShareLink = session ? `https://neurotype.app/sessions/${session.id}` : '';
   const formattedGoal = session ? session.goal.charAt(0).toUpperCase() + session.goal.slice(1) : '';
@@ -204,6 +281,16 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
     }
   };
 
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      </View>
+    );
+  }
+
   if (!session) {
     return (
       <View style={styles.errorContainer}>
@@ -267,36 +354,72 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
     </View>
   );
 
-  const renderBenefitsExplanation = () => (
-    <View style={styles.benefitsSection}>
-      <Text style={styles.benefitsTitle}>Why This Meditation?</Text>
-      <Text style={styles.benefitsDescription}>
-        {session.whyItWorks || session.description}
-      </Text>
+  const renderDescription = () => {
+    if (!session || !session.description) {
+      return null;
+    }
+    
+    return (
+      <View style={styles.descriptionSection}>
+        <Text style={styles.descriptionTitle}>Description</Text>
+        <Text style={styles.descriptionText}>
+          {session.description}
+        </Text>
+      </View>
+    );
+  };
+
+  const renderBenefitsExplanation = () => {
+    if (!session) {
+      console.log('[MeditationDetailScreen] ⚠️ renderBenefitsExplanation called but session is null!');
+      return null;
+    }
+    
+    console.log('[MeditationDetailScreen] 🎨 Rendering benefits explanation:', {
+      hasWhyItWorks: !!session.whyItWorks,
+      hasDescription: !!session.description,
+      whyItWorks: session.whyItWorks,
+      description: session.description,
+    });
+    
+    return (
+      <View style={styles.benefitsSection} testID="benefits-section">
+        {session.whyItWorks && (
+          <>
+            <Text style={styles.benefitsTitle}>Why This Meditation?</Text>
+            <Text style={styles.benefitsDescription}>
+              {session.whyItWorks}
+            </Text>
+          </>
+        )}
       
-      <View style={styles.uniqueBenefits}>
-        <Text style={styles.uniqueBenefitsTitle}>Unique Benefits</Text>
-        <View style={styles.benefitItem}>
-          <Text style={styles.benefitIcon}>🧠</Text>
-          <Text style={styles.benefitText}>Enhanced {session.goal === 'anxiety' ? 'calm and relaxation' : session.goal === 'focus' ? 'concentration and clarity' : 'sleep quality'}</Text>
-        </View>
-        <View style={styles.benefitItem}>
-          <Text style={styles.benefitIcon}>⚡</Text>
-          <Text style={styles.benefitText}>Optimized for {session.modality} practice</Text>
-        </View>
-        <View style={styles.benefitItem}>
-          <Text style={styles.benefitIcon}>🎯</Text>
-          <Text style={styles.benefitText}>Scientifically proven techniques</Text>
+        <View style={styles.uniqueBenefits}>
+          <Text style={styles.uniqueBenefitsTitle}>Unique Benefits</Text>
+          <View style={styles.benefitItem}>
+            <Text style={styles.benefitIcon}>🧠</Text>
+            <Text style={styles.benefitText}>Enhanced {session.goal === 'anxiety' ? 'calm and relaxation' : session.goal === 'focus' ? 'concentration and clarity' : 'sleep quality'}</Text>
+          </View>
+          <View style={styles.benefitItem}>
+            <Text style={styles.benefitIcon}>⚡</Text>
+            <Text style={styles.benefitText}>Optimized for {session.modality} practice</Text>
+          </View>
+          <View style={styles.benefitItem}>
+            <Text style={styles.benefitIcon}>🎯</Text>
+            <Text style={styles.benefitText}>Scientifically proven techniques</Text>
+          </View>
         </View>
       </View>
-    </View>
-  );
+    );
+  };
 
-  const renderSummaryPage = () => (
-    <View style={styles.pageContainer}>
-      {renderBenefitsExplanation()}
-    </View>
-  );
+  const renderSummaryPage = () => {
+    if (!session) {
+      console.log('[MeditationDetailScreen] ⚠️ renderSummaryPage called but session is null!');
+      return null;
+    }
+    console.log('[MeditationDetailScreen] 🎨 renderSummaryPage called, session:', session.title);
+    return renderBenefitsExplanation();
+  };
 
   const renderHistoryPage = () => {
     // Check if this is "Gentle Stretching Flow" to show placeholder data
@@ -573,6 +696,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           >
             {renderVisualSection()}
             {renderMeditationInfo(true)}
+            {renderDescription()}
             {renderSummaryPage()}
           </ScrollView>
           
@@ -722,6 +846,12 @@ const styles = StyleSheet.create({
   errorText: {
     color: theme.colors.text.primary,
     fontSize: 18,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: theme.health.container.backgroundColor,
   },
   stickyHeader: {
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
@@ -889,9 +1019,28 @@ const styles = StyleSheet.create({
     color: '#1C1C1E',
     textTransform: 'capitalize',
   },
+  descriptionSection: {
+    paddingHorizontal: 20,
+    paddingTop: 0,
+    paddingBottom: 20,
+    backgroundColor: 'transparent',
+  },
+  descriptionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+    marginBottom: 8,
+  },
+  descriptionText: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: theme.colors.text.primary,
+    fontWeight: '400',
+  },
   benefitsSection: {
     paddingHorizontal: 20,
-    paddingVertical: 24,
+    paddingTop: 0,
+    paddingBottom: 24,
     backgroundColor: 'transparent',
   },
   benefitsTitle: {
@@ -905,6 +1054,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: theme.colors.text.secondary,
     marginBottom: 20,
+    opacity: 1, // Ensure text is visible
   },
   uniqueBenefits: {
     gap: 16,

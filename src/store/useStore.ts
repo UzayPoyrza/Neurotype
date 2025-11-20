@@ -232,6 +232,7 @@ const buildInitialStoreData = () => {
     })(),
     isLoggedIn: false,
     hasCompletedOnboarding: false,
+    sessionCache: {} as Record<string, Session>,
   };
 };
 
@@ -255,6 +256,7 @@ interface AppState {
   completedTodaySessions: Record<string, string[]>; // Key: "moduleId-date", Value: array of session IDs
   isLoggedIn: boolean;
   hasCompletedOnboarding: boolean;
+  sessionCache: Record<string, Session>;
   addSessionDelta: (delta: SessionDelta) => void;
   setFilters: (filters: FilterState) => void;
   toggleReminder: () => void;
@@ -275,6 +277,8 @@ interface AppState {
   removeEmotionalFeedbackEntry: (entryId: string) => void;
   markSessionCompletedToday: (moduleId: string, sessionId: string, date?: string) => void;
   isSessionCompletedToday: (moduleId: string, sessionId: string, date?: string) => boolean;
+  cacheSessions: (sessions: Session[]) => void;
+  getCachedSession: (sessionId: string) => Session | null;
   resetAppData: () => void;
   logout: () => void;
 }
@@ -381,6 +385,20 @@ export const useStore = create<AppState>((set, get) => ({
     const completed = state.completedTodaySessions[key] || [];
     // Check both with and without -today suffix
     return completed.includes(sessionId) || completed.includes(sessionId.replace('-today', ''));
+  },
+
+  cacheSessions: (sessions: Session[]) =>
+    set((state) => {
+      const newCache = { ...state.sessionCache };
+      sessions.forEach((session) => {
+        newCache[session.id] = session;
+      });
+      return { sessionCache: newCache };
+    }),
+
+  getCachedSession: (sessionId: string): Session | null => {
+    const state = get();
+    return state.sessionCache[sessionId] || null;
   },
 
   resetAppData: () => {

@@ -79,6 +79,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
   const { moduleId } = route.params;
   const module = mentalHealthModules.find(m => m.id === moduleId);
   const likedSessionIds = useStore(state => state.likedSessionIds);
+  const cacheSessions = useStore(state => state.cacheSessions);
   
   // Session state from database
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -166,6 +167,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
   // Fetch sessions from database based on module
   useEffect(() => {
     const fetchSessions = async () => {
+      console.log('[ModuleDetailScreen] 🔄 Starting to fetch sessions for module:', moduleId);
       setIsLoading(true);
       setError(null);
       
@@ -174,26 +176,47 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
         
         // Handle liked meditations case - fetch all sessions and filter by liked
         if (moduleId === 'liked-meditations') {
+          console.log('[ModuleDetailScreen] 📥 Fetching all sessions for liked meditations...');
           const allSessions = await getAllSessions();
+          console.log('[ModuleDetailScreen] ✅ Fetched', allSessions.length, 'total sessions');
           fetchedSessions = allSessions.filter(session => 
             likedSessionIds.includes(session.id) || removingSessionIds.has(session.id)
           );
+          console.log('[ModuleDetailScreen] 🔍 Filtered to', fetchedSessions.length, 'liked sessions');
         } else if (module) {
-          // Fetch sessions for the specific module/modality
+          console.log('[ModuleDetailScreen] 📥 Fetching sessions by modality:', moduleId);
           fetchedSessions = await getSessionsByModality(moduleId);
+          console.log('[ModuleDetailScreen] ✅ Fetched', fetchedSessions.length, 'sessions for modality', moduleId);
+        }
+        
+        // Log session data to verify what we're getting
+        if (fetchedSessions.length > 0) {
+          console.log('[ModuleDetailScreen] 📋 Sample session data:', {
+            id: fetchedSessions[0].id,
+            title: fetchedSessions[0].title,
+            hasDescription: !!fetchedSessions[0].description,
+            hasWhyItWorks: !!fetchedSessions[0].whyItWorks,
+            description: fetchedSessions[0].description?.substring(0, 50) + '...',
+            whyItWorks: fetchedSessions[0].whyItWorks?.substring(0, 50) + '...',
+          });
         }
         
         setSessions(fetchedSessions);
+        // Cache all sessions with their full data (description, whyItWorks, thumbnail_url, etc.)
+        console.log('[ModuleDetailScreen] 💾 Caching', fetchedSessions.length, 'sessions...');
+        cacheSessions(fetchedSessions);
+        console.log('[ModuleDetailScreen] ✅ Sessions cached successfully');
       } catch (err) {
-        console.error('Error fetching sessions:', err);
+        console.error('[ModuleDetailScreen] ❌ Error fetching sessions:', err);
         setError('Failed to load sessions. Please try again.');
       } finally {
         setIsLoading(false);
+        console.log('[ModuleDetailScreen] ✨ Finished loading sessions');
       }
     };
 
     fetchSessions();
-  }, [moduleId, module, likedSessionIds, removingSessionIds]);
+  }, [moduleId, module, likedSessionIds, removingSessionIds, cacheSessions]);
 
   // Filter sessions based on module type (for liked meditations with removing animation)
   const moduleSessions = useMemo(() => {
@@ -206,7 +229,9 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
   }, [sessions, moduleId, likedSessionIds, removingSessionIds]);
 
   const handleSessionStart = (session: Session) => {
+    console.log('[ModuleDetailScreen] 👆 User clicked session:', session.id, session.title);
     // Navigate to MeditationDetail screen instead of setting active session
+    console.log('[ModuleDetailScreen] 🚀 Navigating to MeditationDetail for session:', session.id);
     navigation.navigate('MeditationDetail', { sessionId: session.id });
   };
 
@@ -286,7 +311,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
               ItemSeparatorComponent={() => <View style={{ height: theme.spacing.md }} />}
             />
 
-            {moduleSessions.length === 0 && !isLoading && (
+            {moduleSessions.length === 0 && (
               <View style={styles.emptyStateContainer}>
                 <View style={styles.emptyState}>
                   <Text style={styles.emptyText}>

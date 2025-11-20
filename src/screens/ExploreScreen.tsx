@@ -6,6 +6,7 @@ import Animated, {
   withTiming, 
   withSequence,
   withDelay,
+  withRepeat,
   Easing,
   runOnJS 
 } from 'react-native-reanimated';
@@ -32,6 +33,48 @@ type ExploreStackParamList = {
 
 type ExploreScreenNavigationProp = StackNavigationProp<ExploreStackParamList, 'ExploreMain'>;
 
+// Animated Current Module Indicator Component
+const CurrentModuleIndicator: React.FC<{ isVisible: boolean }> = ({ isVisible }) => {
+  const opacity = useSharedValue(isVisible ? 1 : 0);
+  const scale = useSharedValue(isVisible ? 1 : 0.8);
+  const pulseScale = useSharedValue(1);
+
+  useEffect(() => {
+    if (isVisible) {
+      // Fade in and scale up animation
+      opacity.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.cubic) });
+      scale.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.back(1.2)) });
+      
+      // Subtle pulse animation
+      pulseScale.value = withRepeat(
+        withSequence(
+          withTiming(1.05, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) })
+        ),
+        -1,
+        false
+      );
+    } else {
+      opacity.value = withTiming(0, { duration: 200 });
+      scale.value = withTiming(0.8, { duration: 200 });
+      pulseScale.value = 1;
+    }
+  }, [isVisible]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [
+      { scale: scale.value * pulseScale.value }
+    ],
+  }));
+
+  return (
+    <Animated.View style={[styles.currentModuleBadge, animatedStyle]} pointerEvents="none">
+      <Text style={styles.currentModuleText}>Current Module</Text>
+    </Animated.View>
+  );
+};
+
 export const ExploreScreen: React.FC = () => {
   const navigation = useNavigation<ExploreScreenNavigationProp>();
   const addRecentModule = useStore(state => state.addRecentModule);
@@ -40,6 +83,7 @@ export const ExploreScreen: React.FC = () => {
   const setGlobalBackgroundColor = useStore(state => state.setGlobalBackgroundColor);
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
   const likedSessionIds = useStore(state => state.likedSessionIds);
+  const todayModuleId = useStore(state => state.todayModuleId);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [selectedSort, setSelectedSort] = useState<string>('recents');
@@ -333,6 +377,7 @@ export const ExploreScreen: React.FC = () => {
                 <View key={rowIndex} style={styles.moduleRow}>
                   {modulesInRow.map((module, moduleIndex) => {
                     const isPinned = 'isPinned' in module && module.isPinned;
+                    const isCurrentModule = module.id === todayModuleId;
                   
                   // Apply animation only to non-pinned modules
                   if (isPinned) {
@@ -374,7 +419,7 @@ export const ExploreScreen: React.FC = () => {
                           </Text>
                           
                           <View style={styles.moduleFooter}>
-                            <View />
+                            <CurrentModuleIndicator isVisible={isCurrentModule} />
                             <View style={styles.moduleArrow}>
                               <Text style={styles.moduleArrowText}>→</Text>
                             </View>
@@ -411,7 +456,7 @@ export const ExploreScreen: React.FC = () => {
                           </Text>
                           
                           <View style={styles.moduleFooter}>
-                            <View />
+                            <CurrentModuleIndicator isVisible={isCurrentModule} />
                             <View style={styles.moduleArrow}>
                               <Text style={styles.moduleArrowText}>→</Text>
                             </View>
@@ -728,6 +773,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#000000',
+  },
+  currentModuleBadge: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  currentModuleText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
   },
   emptyState: {
     alignItems: 'center',

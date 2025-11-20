@@ -111,7 +111,7 @@ export const TodayScreen: React.FC = () => {
               duration: 300,
               useNativeDriver: true,
             }),
-            Animated.delay(2000),
+            Animated.delay(2300), // Wait for toast to finish fading out (2000ms delay + 300ms fade out)
             Animated.timing(floatingButtonOffset, {
               toValue: 0, // Move button back down
               duration: 300,

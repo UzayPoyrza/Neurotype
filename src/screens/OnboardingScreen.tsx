@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Image, Animated, StatusBar, TouchableOpacity, ScrollView, Dimensions, TextInput, KeyboardAvoidingView, Platform, Easing } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as WebBrowser from 'expo-web-browser';
 import Svg, { Path } from 'react-native-svg';
 import { theme } from '../styles/theme';
 import { mentalHealthModules, MentalHealthModule } from '../data/modules';
@@ -199,6 +201,10 @@ const SelectModulePage: React.FC<{
   useEffect(() => {
     if (isActive && !hasAnimated.current) {
       hasAnimated.current = true;
+      // Reset scroll arrow state when page first becomes active
+      setShowScrollArrow(true);
+      arrowOpacity.setValue(1);
+      
       Animated.parallel([
         Animated.timing(titleOpacity, {
           toValue: 1,
@@ -213,6 +219,9 @@ const SelectModulePage: React.FC<{
           useNativeDriver: true,
         }),
       ]).start();
+    } else if (!isActive) {
+      // Reset when page becomes inactive
+      hasAnimated.current = false;
     }
   }, [isActive]);
 
@@ -221,33 +230,23 @@ const SelectModulePage: React.FC<{
     const isAtBottom = contentOffset.y + layoutMeasurement.height >= contentSize.height - 20;
     const isScrollable = contentSize.height > layoutMeasurement.height;
     
-    if (!isScrollable) {
-      // Content fits on screen, hide arrow
-      if (showScrollArrow) {
+    // Only hide arrow when scrolled to bottom, not when content fits on screen
+    if (isScrollable) {
+      if (isAtBottom && showScrollArrow) {
         setShowScrollArrow(false);
         Animated.timing(arrowOpacity, {
           toValue: 0,
           duration: 300,
           useNativeDriver: true,
         }).start();
+      } else if (!isAtBottom && !showScrollArrow) {
+        setShowScrollArrow(true);
+        Animated.timing(arrowOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
       }
-      return;
-    }
-    
-    if (isAtBottom && showScrollArrow) {
-      setShowScrollArrow(false);
-      Animated.timing(arrowOpacity, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else if (!isAtBottom && !showScrollArrow) {
-      setShowScrollArrow(true);
-      Animated.timing(arrowOpacity, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
     }
   };
 
@@ -255,20 +254,16 @@ const SelectModulePage: React.FC<{
     // Check if content is scrollable when content size changes
     if (scrollViewHeight > 0) {
       const isScrollable = contentHeight > scrollViewHeight;
-      if (!isScrollable && showScrollArrow) {
-        setShowScrollArrow(false);
-        Animated.timing(arrowOpacity, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }).start();
-      } else if (isScrollable && !showScrollArrow && contentHeight > scrollViewHeight) {
-        setShowScrollArrow(true);
-        Animated.timing(arrowOpacity, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }).start();
+      if (isScrollable) {
+        // Show arrow if content is scrollable (will be hidden by handleScroll if at bottom)
+        if (!showScrollArrow) {
+          setShowScrollArrow(true);
+          Animated.timing(arrowOpacity, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }).start();
+        }
       }
     }
   };
@@ -341,19 +336,25 @@ const SelectModulePage: React.FC<{
           })}
         </ScrollView>
         
-        <Animated.View 
-          style={[
-            styles.scrollArrowContainer,
-            { opacity: arrowOpacity }
-          ]}
-          pointerEvents="none"
-        >
-          <View style={styles.scrollArrowGradient}>
-            <View style={styles.scrollArrow}>
-              <Text style={styles.scrollArrowText}>⌄</Text>
-            </View>
-          </View>
-        </Animated.View>
+        {showScrollArrow && (
+          <Animated.View 
+            style={[
+              styles.scrollArrowContainer,
+              { opacity: arrowOpacity }
+            ]}
+            pointerEvents="none"
+          >
+            <LinearGradient
+              colors={['rgba(242, 242, 247, 0)', 'rgba(242, 242, 247, 0.4)', 'rgba(242, 242, 247, 0.8)', 'rgba(242, 242, 247, 1)']}
+              locations={[0, 0.3, 0.7, 1]}
+              style={styles.scrollArrowGradient}
+            >
+              <View style={styles.scrollArrow}>
+                <Text style={styles.scrollArrowText}>⌄</Text>
+              </View>
+            </LinearGradient>
+          </Animated.View>
+        )}
       </View>
       </View>
     </View>
@@ -632,7 +633,9 @@ const ChangeButtonDemoPage: React.FC<{
   onModuleChange?: (moduleId: string) => void;
   onShowModal?: () => void;
   previousModuleId?: string | null;
-}> = ({ selectedModule, isActive, onModuleChange, onShowModal, previousModuleId }) => {
+  onShowCongratulations?: (show: boolean) => void;
+  onCongratulationsComplete?: (handler: () => void) => void;
+}> = ({ selectedModule, isActive, onModuleChange, onShowModal, previousModuleId, onShowCongratulations, onCongratulationsComplete }) => {
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const hasAnimated = useRef(false);
   const [isPillMode, setIsPillMode] = useState(false);
@@ -673,6 +676,9 @@ const ChangeButtonDemoPage: React.FC<{
       // Module has changed for the first time, show congratulations
       hasShownCongratulations.current = true;
       setShowCongratulations(true);
+      if (onShowCongratulations) {
+        onShowCongratulations(true);
+      }
       // Hide and reset instruction text if it was showing
       if (showInstructionText) {
         setShowInstructionText(false);
@@ -867,8 +873,6 @@ const ChangeButtonDemoPage: React.FC<{
   }, []);
 
   const handleCongratulationsComplete = () => {
-    // Hide the congratulations overlay
-    setShowCongratulations(false);
     // Show instructional text after a short delay
     setTimeout(() => {
       setShowInstructionText(true);
@@ -887,6 +891,13 @@ const ChangeButtonDemoPage: React.FC<{
       ]).start();
     }, 300);
   };
+
+  // Expose handleCongratulationsComplete to parent
+  useEffect(() => {
+    if (onCongratulationsComplete) {
+      onCongratulationsComplete(handleCongratulationsComplete);
+    }
+  }, [onCongratulationsComplete]);
 
   return (
     <View style={styles.page}>
@@ -947,8 +958,13 @@ const ChangeButtonDemoPage: React.FC<{
           >
             <TouchableOpacity
               style={styles.demoChangeButtonContent}
-              onPress={() => onShowModal?.()}
+              onPress={() => {
+                if (onShowModal) {
+                  onShowModal();
+                }
+              }}
               activeOpacity={0.8}
+              disabled={false}
             >
               <View style={styles.demoChangeButtonInner}>
                 <Animated.View
@@ -1003,13 +1019,6 @@ const ChangeButtonDemoPage: React.FC<{
         )}
       </View>
 
-      {/* Congratulations Overlay */}
-      <CongratulationsOverlay
-        visible={showCongratulations}
-        moduleTitle={selectedModuleData.title}
-        moduleColor={selectedModuleData.color}
-        onComplete={handleCongratulationsComplete}
-      />
       </View>
     </View>
   );
@@ -1129,7 +1138,10 @@ const StickerBadge: React.FC<{
 };
 
 // How to Use App Page
-const HowToUsePage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
+const HowToUsePage: React.FC<{ 
+  isActive: boolean;
+  onScrollStateChange?: (hasScrolled: boolean) => void;
+}> = ({ isActive, onScrollStateChange }) => {
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleTranslateY = useRef(new Animated.Value(20)).current;
   const demoOpacity = useRef(new Animated.Value(0)).current;
@@ -1140,6 +1152,10 @@ const HowToUsePage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
   const hasAnimated = useRef(false);
   const [feedbackRating, setFeedbackRating] = useState(5);
   const sliderAnimationRef = useRef<NodeJS.Timeout | null>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [showScrollArrow, setShowScrollArrow] = useState(true);
+  const arrowOpacity = useRef(new Animated.Value(1)).current;
+  const [scrollViewHeight, setScrollViewHeight] = useState(0);
   
   // Slider demo animation
   const startSliderDemo = useCallback(() => {
@@ -1201,6 +1217,10 @@ const HowToUsePage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
   useEffect(() => {
     if (isActive && !hasAnimated.current) {
       hasAnimated.current = true;
+      // Reset scroll arrow state when page first becomes active
+      setShowScrollArrow(true);
+      arrowOpacity.setValue(1);
+      
       Animated.parallel([
         Animated.timing(titleOpacity, {
           toValue: 1,
@@ -1250,6 +1270,9 @@ const HowToUsePage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
           startSliderDemo();
         }
       });
+    } else if (!isActive) {
+      // Reset when page becomes inactive
+      hasAnimated.current = false;
     }
 
     return () => {
@@ -1259,12 +1282,75 @@ const HowToUsePage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
     };
   }, [isActive, startSliderDemo]);
 
+  const handleScroll = (event: any) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const isAtBottom = contentOffset.y + layoutMeasurement.height >= contentSize.height - 20;
+    const isScrollable = contentSize.height > layoutMeasurement.height;
+    
+    // Only hide arrow when scrolled to bottom, not when content fits on screen
+    if (isScrollable) {
+      if (isAtBottom && showScrollArrow) {
+        setShowScrollArrow(false);
+        if (onScrollStateChange) {
+          onScrollStateChange(true);
+        }
+        Animated.timing(arrowOpacity, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+      } else if (!isAtBottom && !showScrollArrow) {
+        setShowScrollArrow(true);
+        if (onScrollStateChange) {
+          onScrollStateChange(false);
+        }
+        Animated.timing(arrowOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+      } else if (!isAtBottom && onScrollStateChange) {
+        // Still scrolling but not at bottom
+        onScrollStateChange(false);
+      }
+    }
+  };
+
+  const handleContentSizeChange = (contentWidth: number, contentHeight: number) => {
+    // Check if content is scrollable when content size changes
+    if (scrollViewHeight > 0) {
+      const isScrollable = contentHeight > scrollViewHeight;
+      if (isScrollable) {
+        // Show arrow if content is scrollable (will be hidden by handleScroll if at bottom)
+        if (!showScrollArrow) {
+          setShowScrollArrow(true);
+          Animated.timing(arrowOpacity, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }).start();
+        }
+      }
+    }
+  };
+
+  const handleScrollViewLayout = (event: any) => {
+    const { height } = event.nativeEvent.layout;
+    setScrollViewHeight(height);
+  };
+
   return (
-    <ScrollView 
-      style={styles.page} 
-      contentContainerStyle={styles.howToUseScrollContent}
-      showsVerticalScrollIndicator={false}
-    >
+    <View style={styles.page}>
+      <ScrollView 
+        ref={scrollViewRef}
+        style={styles.page} 
+        contentContainerStyle={styles.howToUseScrollContent}
+        showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        onContentSizeChange={handleContentSizeChange}
+        onLayout={handleScrollViewLayout}
+        scrollEventThrottle={16}
+      >
       <View style={styles.pageBackground}>
         <Animated.View
           style={[
@@ -1441,7 +1527,29 @@ const HowToUsePage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
         </View>
       </Animated.View>
       </View>
-    </ScrollView>
+      </ScrollView>
+      
+      {/* Scroll Indicator */}
+      {showScrollArrow && (
+        <Animated.View 
+          style={[
+            styles.scrollArrowContainer,
+            { opacity: arrowOpacity }
+          ]}
+          pointerEvents="none"
+        >
+          <LinearGradient
+            colors={['rgba(242, 242, 247, 0)', 'rgba(242, 242, 247, 0.4)', 'rgba(242, 242, 247, 0.8)', 'rgba(242, 242, 247, 1)']}
+            locations={[0, 0.3, 0.7, 1]}
+            style={styles.scrollArrowGradient}
+          >
+            <View style={styles.scrollArrow}>
+              <Text style={styles.scrollArrowText}>⌄</Text>
+            </View>
+          </LinearGradient>
+        </Animated.View>
+      )}
+    </View>
   );
 };
 
@@ -1449,16 +1557,60 @@ const HowToUsePage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
 const LoginPage: React.FC<{ 
   isActive: boolean;
   onLogin: () => void;
-}> = ({ isActive, onLogin }) => {
+  onNavigateToPremium: () => void;
+}> = ({ isActive, onLogin, onNavigateToPremium }) => {
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleTranslateY = useRef(new Animated.Value(20)).current;
   const buttonsOpacity = useRef(new Animated.Value(0)).current;
   const buttonsTranslateY = useRef(new Animated.Value(30)).current;
   const hasAnimated = useRef(false);
+  const [typingText, setTypingText] = useState('');
+  const [showCursor, setShowCursor] = useState(false);
+  const typingComplete = useRef(false);
+  const typingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const cursorHideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const cursorOpacity = useRef(new Animated.Value(1)).current;
+  
+  const fullText = "Time to get started on your journey.";
+
+  // Complete the OAuth session when the browser closes
+  useEffect(() => {
+    WebBrowser.maybeCompleteAuthSession();
+  }, []);
+  
+  // Blinking cursor animation
+  useEffect(() => {
+    if (isActive && showCursor) {
+      const blinkAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(cursorOpacity, {
+            toValue: 0,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(cursorOpacity, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      blinkAnimation.start();
+      return () => {
+        blinkAnimation.stop();
+        cursorOpacity.setValue(1);
+      };
+    }
+  }, [isActive, showCursor]);
 
   useEffect(() => {
     if (isActive && !hasAnimated.current) {
       hasAnimated.current = true;
+      // Reset typing state
+      setTypingText('');
+      typingComplete.current = false;
+      
       // Animate title
       Animated.parallel([
         Animated.timing(titleOpacity, {
@@ -1476,6 +1628,28 @@ const LoginPage: React.FC<{
         }),
       ]).start();
 
+      // Start typing animation after title appears
+      typingTimeoutRef.current = setTimeout(() => {
+        setShowCursor(true);
+        let currentIndex = 0;
+        typingIntervalRef.current = setInterval(() => {
+          if (currentIndex < fullText.length) {
+            setTypingText(fullText.substring(0, currentIndex + 1));
+            currentIndex++;
+          } else {
+            if (typingIntervalRef.current) {
+              clearInterval(typingIntervalRef.current);
+              typingIntervalRef.current = null;
+            }
+            typingComplete.current = true;
+            // Hide cursor after a short delay
+            cursorHideTimeoutRef.current = setTimeout(() => {
+              setShowCursor(false);
+            }, 800); // Hide cursor 800ms after typing completes
+          }
+        }, 50); // 50ms per character for smooth typing
+      }, 800);
+
       // Animate buttons sliding up
       Animated.parallel([
         Animated.timing(buttonsOpacity, {
@@ -1492,19 +1666,75 @@ const LoginPage: React.FC<{
           useNativeDriver: true,
         }),
       ]).start();
+    } else if (!isActive) {
+      // Reset when page becomes inactive
+      hasAnimated.current = false;
+      setTypingText('');
+      setShowCursor(false);
+      typingComplete.current = false;
     }
-  }, [isActive]);
+    
+    return () => {
+      // Cleanup on unmount or when isActive changes
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
+      if (typingIntervalRef.current) {
+        clearInterval(typingIntervalRef.current);
+        typingIntervalRef.current = null;
+      }
+      if (cursorHideTimeoutRef.current) {
+        clearTimeout(cursorHideTimeoutRef.current);
+        cursorHideTimeoutRef.current = null;
+      }
+    };
+  }, [isActive, fullText]);
 
   const handleGoogleSignIn = async () => {
-    // TODO: Implement Google sign in
-    // For now, just proceed
-    onLogin();
+    try {
+      // Open OAuth URL in browser
+      // TODO: Replace with your actual Google OAuth URL
+      // For demo: using a test URL that will open in browser
+      const authUrl = 'https://accounts.google.com/signin/v2/identifier?flowName=GlifWebSignIn&flowEntry=ServiceLogin';
+      
+      const result = await WebBrowser.openAuthSessionAsync(
+        authUrl,
+        'neurotype://auth/callback'
+      );
+
+      // For testing: Navigate to premium page regardless of how browser closes
+      // (success, dismiss, cancel, etc.)
+      // In production, you'd check result.type === 'success' and verify the auth code
+      onNavigateToPremium();
+    } catch (error) {
+      console.error('Google sign in error:', error);
+      // Navigate to premium even on error for demo purposes
+      onNavigateToPremium();
+    }
   };
 
   const handleAppleSignIn = async () => {
-    // TODO: Implement Apple sign in
-    // For now, just proceed
-    onLogin();
+    try {
+      // Open OAuth URL in browser
+      // TODO: Replace with your actual Apple OAuth URL
+      // For demo: using a test URL that will open in browser
+      const authUrl = 'https://appleid.apple.com/sign-in';
+      
+      const result = await WebBrowser.openAuthSessionAsync(
+        authUrl,
+        'neurotype://auth/callback'
+      );
+
+      // For testing: Navigate to premium page regardless of how browser closes
+      // (success, dismiss, cancel, etc.)
+      // In production, you'd check result.type === 'success' and verify the auth code
+      onNavigateToPremium();
+    } catch (error) {
+      console.error('Apple sign in error:', error);
+      // Navigate to premium even on error for demo purposes
+      onNavigateToPremium();
+    }
   };
 
   const handleSignIn = () => {
@@ -1526,7 +1756,13 @@ const LoginPage: React.FC<{
             },
           ]}
         >
-          <Text style={styles.loginBackgroundText}>That's everything.{'\n'}Time to get started on your journey.</Text>
+          <Text style={styles.loginBackgroundTextLarge} numberOfLines={1}>That's everything.</Text>
+          <Text style={styles.loginBackgroundTextSmall}>
+            {typingText}
+            {showCursor && (
+              <Animated.Text style={[styles.typingCursor, { opacity: cursorOpacity }]}>|</Animated.Text>
+            )}
+          </Text>
         </Animated.View>
 
         {/* Social Login Buttons - Positioned at bottom */}
@@ -1590,13 +1826,6 @@ const LoginPage: React.FC<{
               </View>
             </TouchableOpacity>
 
-            {/* Sign In Link */}
-            <View style={styles.signInLinkContainer}>
-              <Text style={styles.signInLinkText}>Already have an account? </Text>
-              <TouchableOpacity onPress={handleSignIn} activeOpacity={0.7}>
-                <Text style={styles.signInLink}>Sign In</Text>
-              </TouchableOpacity>
-            </View>
           </Animated.View>
         </View>
       </View>
@@ -1604,11 +1833,218 @@ const LoginPage: React.FC<{
   );
 };
 
+// Premium Feature Card Component
+const PremiumFeatureCard: React.FC<{
+  icon: string;
+  title: string;
+  description: string;
+  gradient: string[];
+  delay: number;
+  isActive: boolean;
+}> = ({ icon, title, description, gradient, delay, isActive }) => {
+  const cardOpacity = useRef(new Animated.Value(0)).current;
+  const cardScale = useRef(new Animated.Value(0.8)).current;
+  const cardTranslateY = useRef(new Animated.Value(30)).current;
+  const iconScale = useRef(new Animated.Value(1)).current;
+  const [isPressed, setIsPressed] = useState(false);
+  const pressScale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (isActive) {
+      // Staggered entrance animation
+      Animated.parallel([
+        Animated.timing(cardOpacity, {
+          toValue: 1,
+          duration: 600,
+          delay: delay,
+          useNativeDriver: true,
+        }),
+        Animated.spring(cardScale, {
+          toValue: 1,
+          tension: 50,
+          friction: 7,
+          delay: delay,
+          useNativeDriver: true,
+        }),
+        Animated.timing(cardTranslateY, {
+          toValue: 0,
+          duration: 600,
+          delay: delay,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        // Icon pulse animation after card appears
+        Animated.loop(
+          Animated.sequence([
+            Animated.timing(iconScale, {
+              toValue: 1.1,
+              duration: 1500,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+            Animated.timing(iconScale, {
+              toValue: 1,
+              duration: 1500,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+          ])
+        ).start();
+      });
+    }
+  }, [isActive, delay]);
+
+  const handlePressIn = () => {
+    setIsPressed(true);
+    Animated.spring(pressScale, {
+      toValue: 0.95,
+      tension: 300,
+      friction: 10,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    setIsPressed(false);
+    Animated.spring(pressScale, {
+      toValue: 1,
+      tension: 300,
+      friction: 10,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  return (
+    <Animated.View
+      style={[
+        styles.premiumFeatureCard,
+        {
+          opacity: cardOpacity,
+          transform: [
+            { scale: cardScale },
+            { translateY: cardTranslateY },
+          ],
+        },
+      ]}
+    >
+      <TouchableOpacity
+        activeOpacity={1}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={styles.premiumFeatureCardTouchable}
+      >
+        <Animated.View
+          style={{
+            transform: [{ scale: pressScale }],
+          }}
+        >
+          <LinearGradient
+            colors={gradient as [string, string]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.premiumFeatureCardGradient}
+          >
+          <View style={styles.premiumFeatureCardContent}>
+            <Animated.View
+              style={[
+                styles.premiumFeatureIconContainer,
+                {
+                  transform: [
+                    { scale: iconScale },
+                  ],
+                },
+              ]}
+            >
+              <Text style={styles.premiumFeatureIcon}>{icon}</Text>
+            </Animated.View>
+            
+            <View style={styles.premiumFeatureTextContainer}>
+              <Text style={styles.premiumFeatureTitle}>{title}</Text>
+              <Text style={styles.premiumFeatureDescription}>{description}</Text>
+            </View>
+          </View>
+        </LinearGradient>
+        </Animated.View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
+
+// Mock pricing data
+const pricingPlans = [
+  {
+    id: 'monthly',
+    name: 'Monthly',
+    price: 9.99,
+    period: 'month',
+    originalPrice: null,
+    savings: null,
+    popular: false,
+    features: [
+      'Unlimited meditation sessions',
+      'All modules unlocked',
+      'Progress tracking',
+      'Basic analytics',
+    ],
+  },
+  {
+    id: 'yearly',
+    name: 'Yearly',
+    price: 79.99,
+    period: 'year',
+    originalPrice: 119.88,
+    savings: 'Save 33%',
+    popular: true,
+    features: [
+      'Everything in Monthly',
+      'Advanced analytics',
+      'AI-powered recommendations',
+      'Cloud sync across devices',
+      'Priority support',
+      'Early access to new features',
+    ],
+  },
+  {
+    id: 'lifetime',
+    name: 'Lifetime',
+    price: 199.99,
+    period: 'one-time',
+    originalPrice: null,
+    savings: 'Best Value',
+    popular: false,
+    features: [
+      'Everything in Yearly',
+      'Pay once, use forever',
+      'All future updates included',
+      'Lifetime priority support',
+    ],
+  },
+];
+
 // Premium Features Page
-const PremiumFeaturesPage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
+const PremiumFeaturesPage: React.FC<{ 
+  isActive: boolean;
+  selectedPlan: string | null;
+  onSelectPlan: (planId: string | null) => void;
+  onClose: () => void;
+}> = ({ isActive, selectedPlan, onSelectPlan, onClose }) => {
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleTranslateY = useRef(new Animated.Value(20)).current;
+  const cardsOpacity = useRef(new Animated.Value(0)).current;
+  const cardsTranslateY = useRef(new Animated.Value(30)).current;
+  const closeButtonOpacity = useRef(new Animated.Value(0)).current;
+  const closeButtonScale = useRef(new Animated.Value(0.8)).current;
   const hasAnimated = useRef(false);
+  const [currentPricingPage, setCurrentPricingPage] = useState(0);
+  const pricingScrollViewRef = useRef<ScrollView>(null);
+  const mainScrollViewRef = useRef<ScrollView>(null);
+  const scrollProgress = useRef(new Animated.Value(0)).current;
+  const [scrollContentHeight, setScrollContentHeight] = useState(0);
+  const [scrollViewHeight, setScrollViewHeight] = useState(0);
+  const scaleAnimations = useRef(
+    pricingPlans.map(() => new Animated.Value(1))
+  ).current;
 
   useEffect(() => {
     if (isActive && !hasAnimated.current) {
@@ -1626,57 +2062,368 @@ const PremiumFeaturesPage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
           delay: 200,
           useNativeDriver: true,
         }),
-      ]).start();
+        Animated.timing(cardsOpacity, {
+          toValue: 1,
+          duration: 600,
+          delay: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(cardsTranslateY, {
+          toValue: 0,
+          duration: 600,
+          delay: 400,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        // Animate close button after everything else loads
+        Animated.parallel([
+          Animated.timing(closeButtonOpacity, {
+            toValue: 1,
+            duration: 400,
+            delay: 300,
+            useNativeDriver: true,
+          }),
+          Animated.spring(closeButtonScale, {
+            toValue: 1,
+            tension: 50,
+            friction: 7,
+            delay: 300,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      });
+    } else if (!isActive) {
+      hasAnimated.current = false;
+      closeButtonOpacity.setValue(0);
+      closeButtonScale.setValue(0.8);
     }
   }, [isActive]);
 
+  const handleSelectPlan = (planId: string) => {
+    // Toggle selection - if clicking the same plan, deselect it
+    const newSelectedPlan = selectedPlan === planId ? null : planId;
+    onSelectPlan(newSelectedPlan);
+    
+    // Animate the selected card
+    const index = pricingPlans.findIndex(p => p.id === planId);
+    if (index !== -1) {
+      Animated.sequence([
+        Animated.spring(scaleAnimations[index], {
+          toValue: 0.95,
+          tension: 300,
+          friction: 10,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnimations[index], {
+          toValue: 1,
+          tension: 300,
+          friction: 10,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  };
+
+  const formatPrice = (price: number) => {
+    return `$${price.toFixed(2)}`;
+  };
+
+  const calculateMonthlyEquivalent = (plan: typeof pricingPlans[0]) => {
+    if (plan.period === 'year') {
+      return (plan.price / 12).toFixed(2);
+    }
+    return plan.price.toFixed(2);
+  };
+
+  const handlePricingScroll = (event: any) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const page = Math.round(offsetX / SCREEN_WIDTH);
+    setCurrentPricingPage(Math.min(page, pricingPlans.length - 1));
+  };
+
+  const handleMainScroll = (event: any) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const scrollableHeight = contentSize.height - layoutMeasurement.height;
+    if (scrollableHeight > 0) {
+      const progress = contentOffset.y / scrollableHeight;
+      scrollProgress.setValue(Math.min(Math.max(progress, 0), 1));
+    }
+  };
+
+  const handleContentSizeChange = (contentWidth: number, contentHeight: number) => {
+    setScrollContentHeight(contentHeight);
+  };
+
+  const handleScrollViewLayout = (event: any) => {
+    const { height } = event.nativeEvent.layout;
+    setScrollViewHeight(height);
+  };
+
+  const scrollableHeight = scrollContentHeight - scrollViewHeight;
+  const progressBarHeight = scrollProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+  });
+
   return (
     <View style={styles.page}>
-      <View style={styles.pageBackground}>
-        <Animated.View
-          style={[
-            styles.titleContainer,
-            {
-              opacity: titleOpacity,
-              transform: [{ translateY: titleTranslateY }],
-            },
-          ]}
+      {/* Close Button */}
+      <Animated.View
+        style={[
+          styles.closeButtonContainer,
+          {
+            opacity: closeButtonOpacity,
+            transform: [{ scale: closeButtonScale }],
+          },
+        ]}
+      >
+        <TouchableOpacity
+          onPress={onClose}
+          style={styles.closeButton}
+          activeOpacity={0.7}
         >
-          <Text style={styles.titleLight}>Premium Features</Text>
-          <Text style={styles.subtitleLight}>Unlock the full potential</Text>
-        </Animated.View>
+          <Text style={styles.closeButtonText}>×</Text>
+        </TouchableOpacity>
+      </Animated.View>
 
-      <View style={styles.premiumFeaturesContainer}>
-        <FeaturePoint
-          icon="⭐"
-          title="Unlimited Sessions"
-          description="Access all meditation sessions without limits"
-          delay={400}
-          isActive={isActive}
-        />
-        <FeaturePoint
-          icon="📊"
-          title="Advanced Analytics"
-          description="Track your progress with detailed insights and charts"
-          delay={600}
-          isActive={isActive}
-        />
-        <FeaturePoint
-          icon="🎯"
-          title="Personalized Recommendations"
-          description="Get AI-powered suggestions tailored to your unique needs"
-          delay={800}
-          isActive={isActive}
-        />
-        <FeaturePoint
-          icon="☁️"
-          title="Cloud Sync"
-          description="Sync your progress across all your devices"
-          delay={1000}
-          isActive={isActive}
-        />
-      </View>
-      </View>
+      <ScrollView 
+        ref={mainScrollViewRef}
+        style={styles.page} 
+        contentContainerStyle={styles.premiumScrollContent}
+        showsVerticalScrollIndicator={false}
+        onScroll={handleMainScroll}
+        onContentSizeChange={handleContentSizeChange}
+        onLayout={handleScrollViewLayout}
+        scrollEventThrottle={16}
+      >
+        <View style={styles.pageBackground}>
+          <Animated.View
+            style={[
+              styles.titleContainer,
+              {
+                opacity: titleOpacity,
+                transform: [{ translateY: titleTranslateY }],
+              },
+            ]}
+          >
+            <Text style={styles.titleLight}>Choose Your Plan</Text>
+            <Text style={styles.subtitleLight}>Unlock the full potential of Neurotype</Text>
+          </Animated.View>
+
+          <Animated.View
+            style={[
+              styles.pricingContainerWrapper,
+              {
+                opacity: cardsOpacity,
+                transform: [{ translateY: cardsTranslateY }],
+              },
+            ]}
+          >
+            <ScrollView
+              ref={pricingScrollViewRef}
+              horizontal
+              pagingEnabled={true}
+              showsHorizontalScrollIndicator={false}
+              onScroll={handlePricingScroll}
+              scrollEventThrottle={16}
+              decelerationRate="fast"
+              style={styles.pricingScrollView}
+              contentContainerStyle={styles.pricingScrollContent}
+            >
+              {pricingPlans.map((plan, index) => {
+                const isSelected = selectedPlan === plan.id;
+                const monthlyPrice = calculateMonthlyEquivalent(plan);
+                
+                return (
+                  <View key={plan.id} style={styles.pricingCardWrapper}>
+                    <Animated.View
+                      style={[
+                        styles.pricingCard,
+                        isSelected && styles.pricingCardSelected,
+                        {
+                          transform: [{ scale: scaleAnimations[index] }],
+                        },
+                      ]}
+                    >
+                      {plan.popular && (
+                        <View style={styles.popularBadge}>
+                          <Text style={styles.popularBadgeText}>Most Popular</Text>
+                        </View>
+                      )}
+                      
+                      <TouchableOpacity
+                        activeOpacity={0.9}
+                        onPress={() => handleSelectPlan(plan.id)}
+                        style={styles.pricingCardTouchable}
+                      >
+                        <View style={styles.pricingCardHeader}>
+                          <Text style={styles.pricingCardName}>{plan.name}</Text>
+                          {plan.savings && (
+                            <View style={styles.savingsBadge}>
+                              <Text style={styles.savingsBadgeText}>{plan.savings}</Text>
+                            </View>
+                          )}
+                        </View>
+
+                        <View style={styles.pricingCardPriceContainer}>
+                          <View style={styles.pricingCardPriceRow}>
+                            <Text style={styles.pricingCardPrice}>
+                              {formatPrice(plan.price)}
+                            </Text>
+                            {plan.period !== 'one-time' && (
+                              <Text style={styles.pricingCardPeriod}>/{plan.period}</Text>
+                            )}
+                          </View>
+                          {plan.period === 'year' && (
+                            <Text style={styles.pricingCardEquivalent}>
+                              ${monthlyPrice}/month billed annually
+                            </Text>
+                          )}
+                          {plan.originalPrice && (
+                            <Text style={styles.pricingCardOriginal}>
+                              ${plan.originalPrice.toFixed(2)}/year
+                            </Text>
+                          )}
+                        </View>
+
+                        <View style={styles.pricingCardFeatures}>
+                          {plan.features.map((feature, featureIndex) => (
+                            <View key={featureIndex} style={styles.pricingCardFeature}>
+                              <Text style={styles.pricingCardFeatureIcon}>✓</Text>
+                              <Text style={styles.pricingCardFeatureText}>{feature}</Text>
+                            </View>
+                          ))}
+                        </View>
+
+                        <View style={[
+                          styles.pricingCardButton,
+                          isSelected && styles.pricingCardButtonSelected,
+                        ]}>
+                          <Text style={[
+                            styles.pricingCardButtonText,
+                            isSelected && styles.pricingCardButtonTextSelected,
+                          ]}>
+                            {isSelected ? 'Selected' : 'Select Plan'}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    </Animated.View>
+                  </View>
+                );
+              })}
+            </ScrollView>
+            
+            {/* Page Indicators */}
+            <View style={styles.pricingIndicators}>
+              {pricingPlans.map((_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.pricingIndicator,
+                    currentPricingPage === index && styles.pricingIndicatorActive,
+                    index < pricingPlans.length - 1 && { marginRight: 8 },
+                  ]}
+                />
+              ))}
+            </View>
+            
+            {/* Cancel Anytime Text */}
+            <View style={styles.pricingFooter}>
+              <Text style={styles.pricingFooterText}>
+                Cancel anytime. All plans include a 7-day free trial.
+              </Text>
+            </View>
+          </Animated.View>
+
+          <Animated.View
+            style={[
+              styles.premiumFeaturesList,
+              {
+                opacity: cardsOpacity,
+              },
+            ]}
+          >
+            <Text style={styles.premiumFeaturesListTitle}>All Premium Features</Text>
+            <Text style={styles.premiumFeaturesListSubtitle}>
+              Everything you need for your meditation journey
+            </Text>
+            
+            <View style={styles.premiumFeaturesGrid}>
+              {[
+                {
+                  icon: '⭐',
+                  title: 'Unlimited Sessions',
+                  description: 'Access all meditation sessions without limits',
+                  gradient: ['#FFD700', '#FFA500'],
+                  delay: 600,
+                },
+                {
+                  icon: '📊',
+                  title: 'Advanced Analytics',
+                  description: 'Track your progress with detailed insights and charts',
+                  gradient: ['#4ECDC4', '#44A08D'],
+                  delay: 700,
+                },
+                {
+                  icon: '🎯',
+                  title: 'AI Recommendations',
+                  description: 'Get personalized suggestions tailored to your unique needs',
+                  gradient: ['#667EEA', '#764BA2'],
+                  delay: 800,
+                },
+                {
+                  icon: '☁️',
+                  title: 'Cloud Sync',
+                  description: 'Sync your progress across all your devices seamlessly',
+                  gradient: ['#89F7FE', '#66A6FF'],
+                  delay: 900,
+                },
+                {
+                  icon: '🔔',
+                  title: 'Smart Reminders',
+                  description: 'Never miss a session with intelligent notification system',
+                  gradient: ['#F093FB', '#F5576C'],
+                  delay: 1000,
+                },
+                {
+                  icon: '🎨',
+                  title: 'Custom Themes',
+                  description: 'Personalize your experience with beautiful themes',
+                  gradient: ['#FA709A', '#FEE140'],
+                  delay: 1100,
+                },
+              ].map((feature, index) => (
+                <PremiumFeatureCard
+                  key={index}
+                  icon={feature.icon}
+                  title={feature.title}
+                  description={feature.description}
+                  gradient={feature.gradient}
+                  delay={feature.delay}
+                  isActive={isActive}
+                />
+              ))}
+            </View>
+          </Animated.View>
+        </View>
+      </ScrollView>
+      
+      {/* Scroll Progress Indicator */}
+      {scrollableHeight > 0 && (
+        <View style={styles.scrollProgressContainer}>
+          <View style={styles.scrollProgressTrack}>
+            <Animated.View
+              style={[
+                styles.scrollProgressBar,
+                {
+                  height: progressBarHeight,
+                },
+              ]}
+            />
+          </View>
+        </View>
+      )}
     </View>
   );
 };
@@ -1684,6 +2431,7 @@ const PremiumFeaturesPage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
 export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) => {
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const buttonOpacity = useRef(new Animated.Value(0)).current;
   const buttonScale = useRef(new Animated.Value(0.95)).current;
@@ -1691,6 +2439,16 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   const [showModuleModal, setShowModuleModal] = useState(false);
   const [demoModuleId, setDemoModuleId] = useState<string | null>(null);
   const previousDemoModuleId = useRef<string | null>(null);
+  const [hasClickedChangeButton, setHasClickedChangeButton] = useState(false);
+  const [hasScrolledOnHowToUse, setHasScrolledOnHowToUse] = useState(false);
+  const [showCongratulations, setShowCongratulations] = useState(false);
+  const [congratulationsModule, setCongratulationsModule] = useState<{ title: string; color: string } | null>(null);
+  const onCongratulationsCompleteRef = useRef<(() => void) | null>(null);
+  const [showFinishAnimation, setShowFinishAnimation] = useState(false);
+  const finishOverlayOpacity = useRef(new Animated.Value(0)).current;
+  const finishOverlayScale = useRef(new Animated.Value(1)).current;
+  const finishContentOpacity = useRef(new Animated.Value(0)).current;
+  const finishContentScale = useRef(new Animated.Value(0.8)).current;
 
   const TOTAL_PAGES = 6;
 
@@ -1726,6 +2484,15 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
         }),
       ]).start();
     }
+    
+    // Reset change button click state when leaving page 2
+    if (currentPage !== 2) {
+      setHasClickedChangeButton(false);
+    }
+    // Reset scroll state when leaving page 3
+    if (currentPage !== 3) {
+      setHasScrolledOnHowToUse(false);
+    }
   }, [currentPage]);
 
   const handleScroll = (event: any) => {
@@ -1743,14 +2510,58 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   };
 
   const handleFinish = () => {
-    if (selectedModule) {
-      setTodayModuleId(selectedModule);
-    }
-    useStore.setState({ 
-      hasCompletedOnboarding: true,
-      isLoggedIn: true 
-    });
-    onFinish();
+    // Start smooth exit animation - immediately show overlay to hide content
+    finishOverlayOpacity.setValue(1); // Set to fully opaque immediately to hide premium page
+    setShowFinishAnimation(true);
+    
+    // Small delay then show content animation
+    setTimeout(() => {
+      // Show finish content
+      Animated.parallel([
+        Animated.timing(finishContentOpacity, {
+          toValue: 1,
+          duration: 400,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.spring(finishContentScale, {
+          toValue: 1,
+          tension: 40,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        // After showing content, fade everything out and finish
+        setTimeout(() => {
+          // Fade out content but keep overlay visible
+          Animated.parallel([
+            Animated.timing(finishContentOpacity, {
+              toValue: 0,
+              duration: 500,
+              easing: Easing.in(Easing.ease),
+              useNativeDriver: true,
+            }),
+            Animated.timing(finishContentScale, {
+              toValue: 1.2,
+              duration: 500,
+              easing: Easing.in(Easing.ease),
+              useNativeDriver: true,
+            }),
+          ]).start(() => {
+            // Complete onboarding while overlay is still visible
+            if (selectedModule) {
+              setTodayModuleId(selectedModule);
+            }
+            useStore.setState({ 
+              hasCompletedOnboarding: true,
+              isLoggedIn: true 
+            });
+            // Keep overlay visible and transition directly to app
+            onFinish();
+          });
+        }, 800); // Show content for 800ms before fading out
+      });
+    }, 100); // Small delay before showing content
   };
 
   const handleSkip = () => {
@@ -1780,12 +2591,18 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   const getButtonText = () => {
     if (currentPage === 0) return 'Continue';
     if (currentPage === 1) return selectedModule ? 'Continue' : 'Select a module';
-    if (currentPage === TOTAL_PAGES - 1) return 'Get Started';
+    if (currentPage === 2) return hasClickedChangeButton ? 'Continue' : 'Click the change button';
+    if (currentPage === 3) return hasScrolledOnHowToUse ? 'Continue' : 'Scroll down';
+    if (currentPage === TOTAL_PAGES - 1) {
+      return selectedPlan ? 'Continue to payment' : "No thanks! I'll continue with Free Plan.";
+    }
     return 'Continue';
   };
 
   const canProceed = () => {
     if (currentPage === 1 && !selectedModule) return false;
+    if (currentPage === 2 && !hasClickedChangeButton) return false;
+    if (currentPage === 3 && !hasScrolledOnHowToUse) return false;
     return true;
   };
 
@@ -1793,21 +2610,23 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
     <>
       <StatusBar barStyle="dark-content" backgroundColor="#f2f2f7" />
       <View style={styles.container}>
-        {currentPage === 0 && (
+        {!showFinishAnimation && currentPage === 0 && (
           <TouchableOpacity style={styles.skipButton} onPress={handleSkip} activeOpacity={0.7}>
             <Text style={styles.skipButtonText}>Skip</Text>
           </TouchableOpacity>
         )}
 
-        <ScrollView
-          ref={scrollViewRef}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
-          style={styles.scrollView}
-        >
+        {!showFinishAnimation && (
+          <ScrollView
+            ref={scrollViewRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+            style={styles.scrollView}
+            scrollEnabled={false}
+          >
           <WelcomePage />
           <SelectModulePage 
             selectedModule={selectedModule}
@@ -1818,33 +2637,53 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
             selectedModule={demoModuleId || selectedModule || 'anxiety'}
             isActive={currentPage === 2}
             onModuleChange={handleDemoModuleChange}
-            onShowModal={() => setShowModuleModal(true)}
+            onShowModal={() => {
+              setShowModuleModal(true);
+              // Activate continue button after 100ms delay
+              setTimeout(() => {
+                setHasClickedChangeButton(true);
+              }, 100);
+            }}
             previousModuleId={previousDemoModuleId.current}
+            onShowCongratulations={(show) => {
+              setShowCongratulations(show);
+              if (show) {
+                const module = mentalHealthModules.find(m => m.id === (demoModuleId || selectedModule || 'anxiety'));
+                if (module) {
+                  setCongratulationsModule({ title: module.title, color: module.color });
+                }
+              }
+            }}
+            onCongratulationsComplete={(handler) => {
+              onCongratulationsCompleteRef.current = handler;
+            }}
           />
-          <HowToUsePage isActive={currentPage === 3} />
+          <HowToUsePage 
+            isActive={currentPage === 3}
+            onScrollStateChange={(hasScrolled) => {
+              if (currentPage === 3) {
+                setHasScrolledOnHowToUse(hasScrolled);
+              }
+            }}
+          />
           <LoginPage 
             isActive={currentPage === 4}
             onLogin={handleLogin}
+            onNavigateToPremium={() => {
+              // Navigate to premium features page (page 5)
+              scrollViewRef.current?.scrollTo({ x: SCREEN_WIDTH * 5, animated: true });
+            }}
           />
-          <PremiumFeaturesPage isActive={currentPage === 5} />
-        </ScrollView>
-
-        {currentPage !== 4 && (
-          <View style={styles.pageIndicators}>
-            {Array.from({ length: TOTAL_PAGES }).map((_, index) => (
-              <View 
-                key={index} 
-                style={[
-                  styles.indicator, 
-                  currentPage === index && styles.indicatorActive,
-                  index > 0 && { marginLeft: 8 }
-                ]} 
-              />
-            ))}
-          </View>
+          <PremiumFeaturesPage 
+            isActive={currentPage === 5}
+            selectedPlan={selectedPlan}
+            onSelectPlan={setSelectedPlan}
+            onClose={handleFinish}
+          />
+          </ScrollView>
         )}
 
-        {currentPage !== 4 && (
+        {!showFinishAnimation && currentPage !== 4 && (
           <Animated.View
             style={[
               styles.buttonContainer,
@@ -1866,6 +2705,23 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
         )}
       </View>
 
+      {/* Congratulations Overlay - Rendered at root level to cover entire screen */}
+      {showCongratulations && congratulationsModule && (
+        <CongratulationsOverlay
+          visible={showCongratulations}
+          moduleTitle={congratulationsModule.title}
+          moduleColor={congratulationsModule.color}
+          onComplete={() => {
+            setShowCongratulations(false);
+            setCongratulationsModule(null);
+            // Call the handler from ChangeButtonDemoPage to show instructional text
+            if (onCongratulationsCompleteRef.current) {
+              onCongratulationsCompleteRef.current();
+            }
+          }}
+        />
+      )}
+
       {/* Module Grid Modal */}
       {currentPage === 2 && (
         <ModuleGridModal
@@ -1875,6 +2731,40 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
           onModuleSelect={handleDemoModuleChange}
           onClose={() => setShowModuleModal(false)}
         />
+      )}
+
+      {/* Finish Animation Overlay - covers everything */}
+      {showFinishAnimation && (
+        <Animated.View
+          style={[
+            styles.finishOverlay,
+            {
+              opacity: finishOverlayOpacity,
+            },
+          ]}
+          pointerEvents="none"
+        >
+          <View style={styles.finishOverlayBackground} />
+          <Animated.View
+            style={[
+              styles.finishContent,
+              {
+                opacity: finishContentOpacity,
+                transform: [{ scale: finishContentScale }],
+              },
+            ]}
+          >
+            <View style={styles.finishIconContainer}>
+              <Image
+                source={require('../../assets/icon_no_background.png')}
+                style={styles.finishIcon}
+                resizeMode="contain"
+              />
+            </View>
+            <Text style={styles.finishText}>Welcome to Neurotype!</Text>
+            <Text style={styles.finishSubtext}>Let's begin your journey</Text>
+          </Animated.View>
+        </Animated.View>
       )}
     </>
   );
@@ -2050,13 +2940,14 @@ const styles = StyleSheet.create({
   },
   scrollArrowContainer: {
     position: 'absolute',
-    bottom: -70,
+    bottom: 0,
     left: 0,
     right: 0,
     height: 80,
     alignItems: 'center',
     justifyContent: 'flex-end',
     backgroundColor: 'transparent',
+    zIndex: 10,
   },
   scrollArrowGradient: {
     width: '100%',
@@ -2074,8 +2965,8 @@ const styles = StyleSheet.create({
   },
   scrollArrowText: {
     fontSize: 24,
-    color: 'rgba(255, 255, 255, 0.6)',
-    fontWeight: '200',
+    color: 'rgba(0, 0, 0, 0.4)',
+    fontWeight: '300',
   },
   moduleCard: {
     borderRadius: 16,
@@ -2283,19 +3174,35 @@ const styles = StyleSheet.create({
   },
   loginBackgroundTextContainer: {
     position: 'absolute',
-    top: 100,
+    top: 320,
     left: 0,
     right: 0,
     paddingHorizontal: 20,
     zIndex: 0,
   },
-  loginBackgroundText: {
-    fontSize: 48,
+  loginBackgroundTextLarge: {
+    fontSize: 46,
     fontWeight: '700',
     color: '#000000',
-    textAlign: 'center',
+    textAlign: 'left',
     lineHeight: 56,
-    opacity: 0.15,
+    marginBottom: 16,
+    paddingLeft: 8,
+    flexShrink: 0,
+  },
+  loginBackgroundTextSmall: {
+    fontSize: 30,
+    fontWeight: '700',
+    color: '#000000',
+    textAlign: 'left',
+    lineHeight: 48,
+    paddingLeft: 8,
+  },
+  typingCursor: {
+    fontSize: 30,
+    fontWeight: '700',
+    color: '#000000',
+    opacity: 1,
   },
   loginTitleContainer: {
     alignItems: 'center',
@@ -2322,24 +3229,30 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: 16,
-    paddingBottom: 40,
+    paddingHorizontal: 0,
+    paddingBottom: 0,
     zIndex: 1,
   },
   loginButtonsBox: {
     backgroundColor: '#ffffff',
-    borderRadius: 20,
+    borderRadius: 24,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
     paddingHorizontal: 24,
     paddingTop: 24,
-    paddingBottom: 28,
+    paddingBottom: 50,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 8,
-    borderWidth: 1,
+    borderWidth: 0,
+    borderTopWidth: 1,
     borderColor: '#e5e5ea',
-    minHeight: 280,
+    width: '100%',
+    minHeight: '50%',
   },
   loginBoxSubtitle: {
     fontSize: 16,
@@ -2414,6 +3327,354 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     justifyContent: 'center',
   },
+  premiumScrollContent: {
+    paddingBottom: 10,
+  },
+  scrollProgressContainer: {
+    position: 'absolute',
+    right: 8,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
+  },
+  scrollProgressTrack: {
+    width: 4,
+    height: '80%',
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    borderRadius: 2,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  scrollProgressBar: {
+    width: '100%',
+    backgroundColor: '#007AFF',
+    borderRadius: 2,
+    minHeight: 4,
+  },
+  closeButtonContainer: {
+    position: 'absolute',
+    top: 60,
+    right: 20,
+    zIndex: 1000,
+  },
+  closeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  closeButtonText: {
+    fontSize: 28,
+    fontWeight: '300',
+    color: '#000000',
+    lineHeight: 28,
+    marginTop: -2,
+  },
+  premiumPricingContainer: {
+    paddingHorizontal: 0,
+    marginBottom: 32,
+  },
+  pricingContainerWrapper: {
+    marginHorizontal: -20,
+    width: SCREEN_WIDTH,
+  },
+  pricingScrollView: {
+    marginHorizontal: 0,
+    width: SCREEN_WIDTH,
+  },
+  pricingScrollContent: {
+    paddingRight: 0,
+  },
+  pricingCardWrapper: {
+    width: SCREEN_WIDTH,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingHorizontal: 20,
+  },
+  pricingCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 20,
+    paddingTop: 32,
+    borderWidth: 2,
+    borderColor: '#e5e5ea',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    position: 'relative',
+    overflow: 'visible',
+    minHeight: 480,
+    justifyContent: 'space-between',
+    width: SCREEN_WIDTH - 40,
+    alignSelf: 'center',
+  },
+  pricingCardSelected: {
+    borderColor: '#007AFF',
+    borderWidth: 3,
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+    backgroundColor: '#f8f9ff',
+  },
+  pricingCardTouchable: {
+    width: '100%',
+  },
+  popularBadge: {
+    position: 'absolute',
+    top: 8,
+    alignSelf: 'center',
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+    zIndex: 10,
+  },
+  popularBadgeText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  pricingCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    marginTop: 8,
+  },
+  pricingCardName: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#000000',
+    letterSpacing: -0.5,
+  },
+  savingsBadge: {
+    backgroundColor: '#34C759',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  savingsBadgeText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  pricingCardPriceContainer: {
+    marginBottom: 20,
+  },
+  pricingCardPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 4,
+  },
+  pricingCardPrice: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: '#000000',
+    letterSpacing: -1,
+  },
+  pricingCardPeriod: {
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#8e8e93',
+    marginLeft: 4,
+  },
+  pricingCardEquivalent: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#8e8e93',
+    marginTop: 4,
+  },
+  pricingCardOriginal: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#c7c7cc',
+    textDecorationLine: 'line-through',
+    marginTop: 2,
+  },
+  pricingCardFeatures: {
+    marginBottom: 20,
+    flex: 1,
+    justifyContent: 'flex-start',
+  },
+  pricingIndicators: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 12,
+  },
+  pricingFooter: {
+    marginTop: 8,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  pricingFooterText: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: '#8e8e93',
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  pricingIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#c7c7cc',
+  },
+  pricingIndicatorActive: {
+    width: 24,
+    backgroundColor: '#007AFF',
+  },
+  pricingCardFeature: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  pricingCardFeatureIcon: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#34C759',
+    marginRight: 10,
+    marginTop: 2,
+    width: 20,
+  },
+  pricingCardFeatureText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '400',
+    color: '#000000',
+    lineHeight: 20,
+  },
+  pricingCardButton: {
+    backgroundColor: '#f2f2f7',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#e5e5ea',
+  },
+  pricingCardButtonSelected: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  pricingCardButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000000',
+  },
+  pricingCardButtonTextSelected: {
+    color: '#ffffff',
+  },
+  premiumFeaturesList: {
+    paddingHorizontal: 0,
+    marginTop: 16,
+  },
+  premiumFeaturesListTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#000000',
+    marginBottom: 8,
+    textAlign: 'center',
+    letterSpacing: -0.5,
+  },
+  premiumFeaturesListSubtitle: {
+    fontSize: 16,
+    fontWeight: '400',
+    color: '#8e8e93',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  premiumFeaturesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginHorizontal: 0,
+  },
+  premiumFeatureCard: {
+    width: '48%',
+    marginBottom: 12,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+    height: 180,
+  },
+  premiumFeatureCardTouchable: {
+    width: '100%',
+    height: '100%',
+  },
+  premiumFeatureCardGradient: {
+    borderRadius: 16,
+    padding: 16,
+    height: '100%',
+  },
+  premiumFeatureCardContent: {
+    flex: 1,
+    justifyContent: 'space-between',
+    height: '100%',
+  },
+  premiumFeatureIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  premiumFeatureIcon: {
+    fontSize: 24,
+  },
+  premiumFeatureTextContainer: {
+    flex: 1,
+    marginBottom: 8,
+  },
+  premiumFeatureTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#ffffff',
+    marginBottom: 4,
+    letterSpacing: -0.3,
+  },
+  premiumFeatureDescription: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: 'rgba(255, 255, 255, 0.9)',
+    lineHeight: 18,
+  },
+  premiumFeatureArrow: {
+    alignSelf: 'flex-end',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  premiumFeatureArrowText: {
+    fontSize: 18,
+    color: '#ffffff',
+    fontWeight: '700',
+  },
   pageIndicators: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -2452,7 +3713,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    zIndex: 1000,
+    zIndex: 10000,
+    width: '100%',
+    height: '100%',
   },
   confettiContainer: {
     position: 'absolute',
@@ -2521,7 +3784,40 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   howToUseScrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 0,
+  },
+  scrollIndicatorContainer: {
+    position: 'absolute',
+    bottom: 10,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    pointerEvents: 'none',
+  },
+  scrollIndicator: {
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scrollIndicatorText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+    marginRight: 8,
+  },
+  scrollIndicatorArrow: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scrollIndicatorArrowText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '300',
   },
   demoTodayContainer: {
     flex: 1,
@@ -2820,5 +4116,58 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#ffffff',
     fontWeight: '600',
+  },
+  finishOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10000,
+    elevation: 10000,
+  },
+  finishOverlayBackground: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#f2f2f7',
+  },
+  finishContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  finishIconContainer: {
+    width: 140,
+    height: 140,
+    borderRadius: 30,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  finishIcon: {
+    width: 120,
+    height: 120,
+  },
+  finishText: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: '#000000',
+    textAlign: 'center',
+    marginBottom: 8,
+    letterSpacing: -0.5,
+  },
+  finishSubtext: {
+    fontSize: 20,
+    fontWeight: '400',
+    color: '#8e8e93',
+    textAlign: 'center',
   },
 });

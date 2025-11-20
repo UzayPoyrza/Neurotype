@@ -1,0 +1,123 @@
+/**
+ * Emotional Feedback Service
+ * Handles in-session emotional feedback entries
+ */
+
+import { supabase } from './supabase';
+import type { EmotionalFeedbackLabel } from '../types';
+
+export interface EmotionalFeedback {
+  id?: string;
+  user_id: string;
+  session_id: string;
+  context_module?: string;
+  label: EmotionalFeedbackLabel;
+  timestamp_seconds: number;
+  feedback_date: string;
+}
+
+/**
+ * Add emotional feedback entry
+ */
+export async function addEmotionalFeedback(
+  userId: string,
+  sessionId: string,
+  label: EmotionalFeedbackLabel,
+  timestampSeconds: number,
+  contextModule?: string,
+  date?: string
+): Promise<{ success: boolean; error?: string; id?: string }> {
+  try {
+    const feedbackDate = date || new Date().toISOString().split('T')[0];
+
+    const { data, error } = await supabase
+      .from('emotional_feedback')
+      .insert({
+        user_id: userId,
+        session_id: sessionId,
+        context_module: contextModule || null,
+        label,
+        timestamp_seconds: timestampSeconds,
+        feedback_date: feedbackDate,
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      console.error('Error adding emotional feedback:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, id: data?.id };
+  } catch (error: any) {
+    console.error('Error in addEmotionalFeedback:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Get user's emotional feedback history
+ */
+export async function getUserEmotionalFeedback(
+  userId: string,
+  limit?: number
+): Promise<EmotionalFeedback[]> {
+  try {
+    let query = supabase
+      .from('emotional_feedback')
+      .select('*')
+      .eq('user_id', userId)
+      .order('feedback_date', { ascending: false });
+
+    if (limit) {
+      query = query.limit(limit);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching emotional feedback:', error);
+      return [];
+    }
+
+    return (data || []).map(feedback => ({
+      id: feedback.id,
+      user_id: feedback.user_id,
+      session_id: feedback.session_id,
+      context_module: feedback.context_module,
+      label: feedback.label as EmotionalFeedbackLabel,
+      timestamp_seconds: feedback.timestamp_seconds,
+      feedback_date: feedback.feedback_date,
+    }));
+  } catch (error) {
+    console.error('Error in getUserEmotionalFeedback:', error);
+    return [];
+  }
+}
+
+/**
+ * Remove emotional feedback entry
+ */
+export async function removeEmotionalFeedback(
+  userId: string,
+  feedbackId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await supabase
+      .from('emotional_feedback')
+      .delete()
+      .eq('id', feedbackId)
+      .eq('user_id', userId); // Ensure user can only delete their own feedback
+
+    if (error) {
+      console.error('Error removing emotional feedback:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error in removeEmotionalFeedback:', error);
+    return { success: false, error: error.message };
+  }
+}
+

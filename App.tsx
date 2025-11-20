@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
@@ -20,6 +20,7 @@ import { MeditationDetailScreen } from './src/screens/MeditationDetailScreen';
 import { SplashScreen } from './src/screens/SplashScreen';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { useStore } from './src/store/useStore';
+import { supabase } from './src/services/supabase';
 
 const Tab = createBottomTabNavigator();
 const TodayStack = createStackNavigator();
@@ -225,6 +226,45 @@ export default function App() {
   const [showSplash, setShowSplash] = useState(true);
   const activeSession = useStore(state => state.activeSession);
   const hasCompletedOnboarding = useStore(state => state.hasCompletedOnboarding);
+
+  // Test Supabase connection
+  useEffect(() => {
+    const testSupabaseConnection = async () => {
+      try {
+        console.log('🧪 Testing Supabase connection...');
+        
+        // Test: Fetch active sessions (public data, no auth needed)
+        const { data: sessions, error } = await supabase
+          .from('sessions')
+          .select('*')
+          .eq('is_active', true)
+          .limit(5);
+        
+        if (error) {
+          console.error('❌ Supabase error:', error);
+          console.error('Error details:', error.message);
+          return;
+        }
+        
+        console.log('✅ Supabase connection successful!');
+        console.log('📊 Sessions found:', sessions?.length || 0);
+        if (sessions && sessions.length > 0) {
+          console.log('📝 First session:', sessions[0].title);
+        } else {
+          console.log('⚠️ No sessions found - database might be empty');
+        }
+      } catch (error) {
+        console.error('❌ Connection test failed:', error);
+      }
+    };
+
+    // Run test after a short delay to ensure app is initialized
+    const timer = setTimeout(() => {
+      testSupabaseConnection();
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleSplashFinish = () => {
     setShowSplash(false);

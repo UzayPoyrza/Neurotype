@@ -22,6 +22,7 @@ import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { useStore } from './src/store/useStore';
 import { supabase } from './src/services/supabase';
 import { getAllSessions, getSessionsByModality, getSessionById } from './src/services/sessionService';
+import { ensureTestUser, verifyTestUserConnection } from './src/services/testUserService';
 
 const Tab = createBottomTabNavigator();
 const TodayStack = createStackNavigator();
@@ -227,6 +228,30 @@ export default function App() {
   const [showSplash, setShowSplash] = useState(true);
   const activeSession = useStore(state => state.activeSession);
   const hasCompletedOnboarding = useStore(state => state.hasCompletedOnboarding);
+
+  // Initialize test user
+  useEffect(() => {
+    const initTestUser = async () => {
+      try {
+        const userId = await ensureTestUser();
+        useStore.setState({ userId });
+        console.log('👤 Test user connected to app:', userId);
+        console.log('✅ You are now logged in as user:', userId);
+        
+        // Verify user ID is in store
+        const storeUserId = useStore.getState().userId;
+        if (storeUserId === userId) {
+          console.log('✅ User ID stored in app state:', userId);
+        }
+      } catch (error) {
+        console.error('❌ Failed to initialize test user:', error);
+        // Set test user ID anyway as fallback
+        useStore.setState({ userId: '00000000-0000-0000-0000-000000000001' });
+      }
+    };
+    
+    initTestUser();
+  }, []);
 
   // Test Supabase connection and session migration
   useEffect(() => {

@@ -13,6 +13,8 @@ export async function toggleLikedSession(
   sessionId: string
 ): Promise<{ success: boolean; isLiked: boolean; error?: string }> {
   try {
+    console.log('💾 Attempting to toggle like for session:', sessionId, 'user:', userId);
+    
     // First check if already liked
     const { data: existing, error: checkError } = await supabase
       .from('liked_sessions')
@@ -21,8 +23,13 @@ export async function toggleLikedSession(
       .eq('session_id', sessionId)
       .maybeSingle();
 
+    if (checkError) {
+      console.error('❌ Error checking like status:', checkError);
+    }
+
     if (existing) {
       // Unlike: delete the record
+      console.log('🗑️ Unliking session:', sessionId);
       const { error } = await supabase
         .from('liked_sessions')
         .delete()
@@ -30,13 +37,15 @@ export async function toggleLikedSession(
         .eq('session_id', sessionId);
 
       if (error) {
-        console.error('Error unliking session:', error);
+        console.error('❌ Error unliking session:', error);
         return { success: false, isLiked: true, error: error.message };
       }
 
+      console.log('✅ Successfully unliked session in database:', sessionId);
       return { success: true, isLiked: false };
     } else {
       // Like: insert new record
+      console.log('❤️ Liking session:', sessionId);
       const { error } = await supabase
         .from('liked_sessions')
         .insert({
@@ -45,14 +54,18 @@ export async function toggleLikedSession(
         });
 
       if (error) {
-        console.error('Error liking session:', error);
+        console.error('❌ Error liking session:', error);
+        console.error('❌ Error details:', JSON.stringify(error, null, 2));
         return { success: false, isLiked: false, error: error.message };
       }
 
+      console.log('✅ Successfully added like to database!');
+      console.log('✅ Session ID:', sessionId);
+      console.log('✅ User ID:', userId);
       return { success: true, isLiked: true };
     }
   } catch (error: any) {
-    console.error('Error in toggleLikedSession:', error);
+    console.error('❌ Error in toggleLikedSession:', error);
     return { success: false, isLiked: false, error: error.message };
   }
 }

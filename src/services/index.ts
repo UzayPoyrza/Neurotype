@@ -10,4 +10,5 @@ export * from './feedbackService';
 export * from './likedService';
 export * from './recommendationService';
 export * from './userService';
+export * from './testUserService';
 

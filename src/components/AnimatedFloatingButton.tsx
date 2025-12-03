@@ -169,8 +169,13 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
 
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        // Only capture when there's significant movement (dragging, not scrolling)
+        // Increase threshold to avoid interfering with scroll
+        const moved = Math.abs(gestureState.dx) > 15 || Math.abs(gestureState.dy) > 15;
+        return moved;
+      },
       onPanResponderGrant: () => {
         setIsDragging(true);
         
@@ -213,6 +218,9 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
         const nearestCorner = findNearestCorner(boundedX, boundedY);
         snapToCorner(nearestCorner);
       },
+      onPanResponderTerminate: () => {
+        setIsDragging(false);
+      },
     })
   ).current;
 
@@ -252,6 +260,9 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
           onPress={onPress}
           activeOpacity={0.8}
           disabled={isDragging}
+          delayPressIn={0}
+          delayPressOut={0}
+          delayLongPress={500}
         >
         <View style={styles.content}>
           <Animated.View
@@ -296,6 +307,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     height: 56,
     zIndex: 1000,
+    pointerEvents: 'box-none',
   },
   floatingButton: {
     height: 56,
@@ -308,6 +320,7 @@ const styles = StyleSheet.create({
     elevation: 6,
     justifyContent: 'center',
     alignItems: 'center',
+    pointerEvents: 'auto',
   },
   buttonBackground: {
     height: 56,

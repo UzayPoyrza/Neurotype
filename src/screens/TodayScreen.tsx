@@ -19,6 +19,7 @@ import { LineGraphIcon } from '../components/icons/LineGraphIcon';
 import { ensureDailyRecommendations, getDailyRecommendations } from '../services/recommendationService';
 import { useUserId } from '../hooks/useUserId';
 import { getSessionById } from '../services/sessionService';
+import { getCompletedSessionsByDateRange, isSessionCompleted } from '../services/progressService';
 
 type SessionState = 'not_started' | 'in_progress' | 'completed' | 'rating';
 
@@ -155,6 +156,19 @@ export const TodayScreen: React.FC = () => {
                   const sessions = (await Promise.all(sessionPromises)).filter(
                     (s): s is Session => s !== null
                   );
+                  
+                  // Check which recommended sessions are completed today
+                  const today = new Date().toISOString().split('T')[0];
+                  console.log('✅ [TodayScreen] Checking completed sessions for today after module change:', today);
+                  
+                  for (const session of sessions) {
+                    const completed = await isSessionCompleted(userId, session.id, today);
+                    if (completed) {
+                      console.log('✅ [TodayScreen] Session completed today:', session.id, session.title);
+                      markSessionCompletedToday(selectedModuleId, session.id, today);
+                    }
+                  }
+                  
                   setTodaySessions(sessions);
                 };
                 refetchRecommendations();
@@ -264,7 +278,7 @@ export const TodayScreen: React.FC = () => {
       
       try {
         // Ensure recommendations exist for the current module
-        await ensureDailyRecommendations(userId, selectedModuleId, false);
+        const recResult = await ensureDailyRecommendations(userId, selectedModuleId, false);
         
         // Fetch recommendations for today
         const recommendations = await getDailyRecommendations(userId);
@@ -295,6 +309,26 @@ export const TodayScreen: React.FC = () => {
         );
         
         console.log('📋 [TodayScreen] Loaded', sessions.length, 'sessions from recommendations');
+        
+        // Only check completed sessions if recommendations were not regenerated (already existed)
+        // This means the recommendations are stable and we should check completion status
+        if (!recResult.generated) {
+          const today = new Date().toISOString().split('T')[0];
+          console.log('✅ [TodayScreen] Recommendations already exist, checking completed sessions for today:', today);
+          
+          // Check each recommended session if it's completed today
+          for (const session of sessions) {
+            const completed = await isSessionCompleted(userId, session.id, today);
+            if (completed) {
+              console.log('✅ [TodayScreen] Session completed today:', session.id, session.title);
+              // Mark as completed in store so UI shows checkmark
+              markSessionCompletedToday(selectedModuleId, session.id, today);
+            }
+          }
+        } else {
+          console.log('📋 [TodayScreen] Recommendations were just generated, skipping completion check');
+        }
+        
         setTodaySessions(sessions);
       } catch (error) {
         console.error('❌ [TodayScreen] Error fetching recommendations:', error);

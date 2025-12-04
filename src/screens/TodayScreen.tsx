@@ -61,6 +61,7 @@ export const TodayScreen: React.FC = () => {
   const [showModuleToast, setShowModuleToast] = useState(false);
   const [toastModuleName, setToastModuleName] = useState('');
   const prevModuleIdRef = useRef<string | null>(null);
+  const recommendationCheckInProgressRef = useRef<Record<string, boolean>>({});
   
   // Daily recommendations state
   const [todaySessions, setTodaySessions] = useState<Session[]>([]);
@@ -132,52 +133,69 @@ export const TodayScreen: React.FC = () => {
         });
         
         // Check and generate recommendations for the new module
-        // Force regenerate when module changes to ensure recommendations match the new module
+        // Don't force regenerate - check if recommendations exist first
         if (userId) {
           console.log('🎯 [TodayScreen] Module changed to:', selectedModuleId);
-          ensureDailyRecommendations(userId, selectedModuleId, true).then(result => {
+          
+          // Prevent duplicate checks if one is already in progress
+          if (recommendationCheckInProgressRef.current[selectedModuleId]) {
+            console.log('⏳ [TodayScreen] Recommendation check already in progress for module:', selectedModuleId);
+            return;
+          }
+          
+          recommendationCheckInProgressRef.current[selectedModuleId] = true;
+          
+          // Check if recommendations exist first, don't force regenerate
+          ensureDailyRecommendations(userId, selectedModuleId, false).then(result => {
+            recommendationCheckInProgressRef.current[selectedModuleId] = false;
             if (result.success) {
+              // Refetch recommendations (whether they were just generated or already existed)
+              const refetchRecommendations = async () => {
+                const recommendations = await getDailyRecommendations(userId, selectedModuleId);
+                const sessionPromises = recommendations.map(async (rec) => {
+                  const session = await getSessionById(rec.session_id);
+                  if (session) {
+                    return {
+                      ...session,
+                      isRecommended: rec.is_recommended,
+                      adaptiveReason: rec.is_recommended ? 'Recommended for you' : 'Alternative option',
+                    };
+                  }
+                  return null;
+                });
+                const sessions = (await Promise.all(sessionPromises)).filter(
+                  (s): s is Session => s !== null
+                );
+                
+                // Check which recommended sessions are completed today
+                const today = new Date().toISOString().split('T')[0];
+                console.log('✅ [TodayScreen] Checking completed sessions for today after module change:', today);
+                
+                for (const session of sessions) {
+                  const completed = await isSessionCompleted(userId, session.id, today);
+                  if (completed) {
+                    console.log('✅ [TodayScreen] Session completed today:', session.id, session.title);
+                    markSessionCompletedToday(selectedModuleId, session.id, today);
+                  }
+                }
+                
+                setTodaySessions(sessions);
+              };
+              
               if (result.generated) {
                 console.log('✅ [TodayScreen] Generated new recommendations for module:', selectedModuleId);
-                // Refetch recommendations after generating new ones
-                const refetchRecommendations = async () => {
-                  const recommendations = await getDailyRecommendations(userId);
-                  const sessionPromises = recommendations.map(async (rec) => {
-                    const session = await getSessionById(rec.session_id);
-                    if (session) {
-                      return {
-                        ...session,
-                        isRecommended: rec.is_recommended,
-                        adaptiveReason: rec.is_recommended ? 'Recommended for you' : 'Alternative option',
-                      };
-                    }
-                    return null;
-                  });
-                  const sessions = (await Promise.all(sessionPromises)).filter(
-                    (s): s is Session => s !== null
-                  );
-                  
-                  // Check which recommended sessions are completed today
-                  const today = new Date().toISOString().split('T')[0];
-                  console.log('✅ [TodayScreen] Checking completed sessions for today after module change:', today);
-                  
-                  for (const session of sessions) {
-                    const completed = await isSessionCompleted(userId, session.id, today);
-                    if (completed) {
-                      console.log('✅ [TodayScreen] Session completed today:', session.id, session.title);
-                      markSessionCompletedToday(selectedModuleId, session.id, today);
-                    }
-                  }
-                  
-                  setTodaySessions(sessions);
-                };
-                refetchRecommendations();
               } else {
-                console.log('✅ [TodayScreen] Recommendations already exist for module:', selectedModuleId);
+                console.log('✅ [TodayScreen] Using existing recommendations for today');
               }
+              
+              refetchRecommendations();
             } else {
               console.error('❌ [TodayScreen] Failed to ensure recommendations:', result.error);
+              recommendationCheckInProgressRef.current[selectedModuleId] = false;
             }
+          }).catch((error) => {
+            console.error('❌ [TodayScreen] Error in ensureDailyRecommendations:', error);
+            recommendationCheckInProgressRef.current[selectedModuleId] = false;
           });
         }
       }
@@ -276,13 +294,27 @@ export const TodayScreen: React.FC = () => {
       console.log('📋 [TodayScreen] Fetching daily recommendations...');
       setIsLoadingRecommendations(true);
       
+      // Prevent duplicate checks if one is already in progress
+      if (recommendationCheckInProgressRef.current[selectedModuleId]) {
+        console.log('⏳ [TodayScreen] Recommendation check already in progress, skipping...');
+        setIsLoadingRecommendations(false);
+        return;
+      }
+      
+      recommendationCheckInProgressRef.current[selectedModuleId] = true;
+      
       try {
         // Ensure recommendations exist for the current module
         const recResult = await ensureDailyRecommendations(userId, selectedModuleId, false);
         
-        // Fetch recommendations for today
-        const recommendations = await getDailyRecommendations(userId);
-        console.log('📋 [TodayScreen] Fetched', recommendations.length, 'recommendations');
+        // Fetch recommendations for today and current module
+        const recommendations = await getDailyRecommendations(userId, selectedModuleId);
+        console.log('📋 [TodayScreen] Fetched', recommendations.length, 'recommendations for module:', selectedModuleId);
+        
+        // Ensure we only have max 4 recommendations
+        if (recommendations.length > 4) {
+          console.warn('⚠️ [TodayScreen] More than 4 recommendations found, limiting to 4');
+        }
         
         if (recommendations.length === 0) {
           console.warn('⚠️ [TodayScreen] No recommendations found');
@@ -335,6 +367,7 @@ export const TodayScreen: React.FC = () => {
         setTodaySessions([]);
       } finally {
         setIsLoadingRecommendations(false);
+        recommendationCheckInProgressRef.current[selectedModuleId] = false;
       }
     };
 

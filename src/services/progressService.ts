@@ -12,6 +12,7 @@ export interface CompletedSession {
   context_module?: string;
   completed_date: string;
   minutes_completed: number;
+  created_at?: string; // Timestamp for sorting
 }
 
 /**
@@ -26,8 +27,17 @@ export async function markSessionCompleted(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const completedDate = date || new Date().toISOString().split('T')[0];
+    
+    console.log('💾 [markSessionCompleted] Inserting new session completion:', {
+      userId,
+      sessionId,
+      minutesCompleted,
+      contextModule: contextModule || null,
+      completedDate,
+    });
 
-    const { error } = await supabase
+    // Always insert a new record - created_at timestamp will make each completion unique
+    const { error: insertError } = await supabase
       .from('completed_sessions')
       .insert({
         user_id: userId,
@@ -37,18 +47,17 @@ export async function markSessionCompleted(
         minutes_completed: minutesCompleted,
       });
 
-    if (error) {
-      // If it's a duplicate, that's okay - session already completed today
-      if (error.code === '23505') {
-        return { success: true };
-      }
-      console.error('Error marking session completed:', error);
-      return { success: false, error: error.message };
+    if (insertError) {
+      console.error('❌ [markSessionCompleted] Error inserting session:', insertError);
+      console.error('❌ [markSessionCompleted] Error code:', insertError.code);
+      console.error('❌ [markSessionCompleted] Error message:', insertError.message);
+      return { success: false, error: insertError.message };
     }
 
+    console.log('✅ [markSessionCompleted] Session completion inserted successfully');
     return { success: true };
   } catch (error: any) {
-    console.error('Error in markSessionCompleted:', error);
+    console.error('❌ [markSessionCompleted] Exception:', error);
     return { success: false, error: error.message };
   }
 }
@@ -96,7 +105,7 @@ export async function getUserCompletedSessions(
       .from('completed_sessions')
       .select('*')
       .eq('user_id', userId)
-      .order('completed_date', { ascending: false });
+      .order('created_at', { ascending: false }); // Sort by created_at (timestamp) for most recent first
 
     if (limit) {
       query = query.limit(limit);
@@ -116,6 +125,7 @@ export async function getUserCompletedSessions(
       context_module: session.context_module,
       completed_date: session.completed_date,
       minutes_completed: parseFloat(session.minutes_completed) || 0,
+      created_at: session.created_at, // Include created_at for sorting
     }));
   } catch (error) {
     console.error('Error in getUserCompletedSessions:', error);
@@ -173,6 +183,7 @@ export async function getCompletedSessionsByDateRange(
       context_module: session.context_module,
       completed_date: session.completed_date,
       minutes_completed: parseFloat(session.minutes_completed) || 0,
+      created_at: session.created_at,
     }));
   } catch (error) {
     console.error('Error in getCompletedSessionsByDateRange:', error);

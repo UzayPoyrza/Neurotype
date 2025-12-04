@@ -35,6 +35,8 @@ import { PlayIcon, PauseIcon, SkipForward10Icon, SkipBackward10Icon, HeartIcon, 
 import { createMeditationPlayerBackground, getPrerenderedGradient } from '../utils/gradientBackgrounds';
 import MeditationCompletionLanding from '../components/MeditationCompletionLanding';
 import MeditationFeedbackLanding from '../components/MeditationFeedbackLanding';
+import { markSessionCompleted } from '../services/progressService';
+import { addSessionRating } from '../services/ratingService';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -48,6 +50,9 @@ export const MeditationPlayerScreen: React.FC = () => {
   const toggleLikedSession = useStore((state: any) => state.toggleLikedSession);
   const likedSessionIds = useStore((state: any) => state.likedSessionIds);
   const addEmotionalFeedbackEntry = useStore((state: any) => state.addEmotionalFeedbackEntry);
+  const userId = useStore((state: any) => state.userId);
+  const activeModuleId = useStore((state: any) => state.activeModuleId);
+  const todayModuleId = useStore((state: any) => state.todayModuleId);
   const isLiked = activeSession ? likedSessionIds.includes(activeSession.id) : false;
   const [showTutorial, setShowTutorial] = useState(false);
   const [emotionalRating, setEmotionalRating] = useState(5);
@@ -1690,9 +1695,65 @@ export const MeditationPlayerScreen: React.FC = () => {
       {/* Feedback Landing Overlay */}
       <MeditationFeedbackLanding
         visible={showFeedbackLanding}
-        onFinish={(rating) => {
+        onFinish={async (rating) => {
           if (activeSession) {
-            sessionProgressData.markSessionComplete(activeSession.id, currentTime, rating);
+            console.log('📊 [Session Completion] Starting session completion process...');
+            console.log('📊 [Session Completion] Session ID:', activeSession.id);
+            console.log('📊 [Session Completion] Session Title:', activeSession.title);
+            console.log('📊 [Session Completion] Duration (seconds):', currentTime);
+            console.log('📊 [Session Completion] Duration (minutes):', Math.round(currentTime / 60));
+            console.log('📊 [Session Completion] Rating:', rating);
+            console.log('📊 [Session Completion] User ID:', userId);
+            
+            // Determine module context
+            const moduleContext = activeModuleId || todayModuleId || null;
+            console.log('📊 [Session Completion] Module Context:', moduleContext);
+            
+            if (!userId) {
+              console.warn('⚠️ [Session Completion] No user ID found - skipping database save');
+              // Still call the mock for local state
+              sessionProgressData.markSessionComplete(activeSession.id, currentTime, rating);
+            } else {
+              // Convert seconds to minutes with decimal precision (e.g., 125 seconds = 2.083 minutes)
+              const minutesCompleted = currentTime / 60;
+              console.log('📊 [Session Completion] Calculated minutes (decimal):', minutesCompleted);
+              
+              // Save completed session to database
+              console.log('💾 [Session Completion] Saving completed session to database...');
+              const sessionResult = await markSessionCompleted(
+                userId,
+                activeSession.id,
+                minutesCompleted,
+                moduleContext || undefined
+              );
+              
+              if (sessionResult.success) {
+                console.log('✅ [Session Completion] Session saved to completed_sessions table successfully!');
+                console.log('✅ [Session Completion] Session added to activity history');
+              } else {
+                console.error('❌ [Session Completion] Failed to save session:', sessionResult.error);
+              }
+              
+              // Save session rating to database
+              console.log('💾 [Session Completion] Saving session rating to database...');
+              const ratingResult = await addSessionRating(
+                userId,
+                activeSession.id,
+                rating,
+                moduleContext || undefined
+              );
+              
+              if (ratingResult.success) {
+                console.log('✅ [Session Completion] Rating saved to session_ratings table successfully!');
+              } else {
+                console.error('❌ [Session Completion] Failed to save rating:', ratingResult.error);
+              }
+              
+              // Also call the mock for local state updates
+              sessionProgressData.markSessionComplete(activeSession.id, currentTime, rating);
+              
+              console.log('✅ [Session Completion] Session completion process finished');
+            }
           }
           setActiveSession(null);
         }}

@@ -10,9 +10,11 @@ import { SubscriptionBadge } from '../components/SubscriptionBadge';
 import { mentalHealthModules } from '../data/modules';
 import type { MentalHealthModule } from '../data/modules';
 import { MergedCard } from '../components/MergedCard';
-import { mockSessions } from '../data/mockData';
 import type { Session, EmotionalFeedbackLabel } from '../types';
 import { InfoBox } from '../components/InfoBox';
+import { getUserCompletedSessions } from '../services/progressService';
+import { getSessionById } from '../services/sessionService';
+import { useUserId } from '../hooks/useUserId';
 
 const MAX_VISIBLE_ACTIVITY_ITEMS = 4;
 const APPROX_ACTIVITY_ROW_HEIGHT = 84;
@@ -93,12 +95,10 @@ export const ProfileScreen: React.FC = () => {
   const emotionalFeedbackHistory = useStore(state => state.emotionalFeedbackHistory);
   const removeEmotionalFeedbackEntry = useStore(state => state.removeEmotionalFeedbackEntry);
 
-  const sessionsById = React.useMemo(() => {
-    return mockSessions.reduce<Record<string, Session>>((acc, session) => {
-      acc[session.id] = session;
-      return acc;
-    }, {});
-  }, []);
+  const userId = useUserId();
+  const [completedSessions, setCompletedSessions] = React.useState<any[]>([]);
+  const [sessionsById, setSessionsById] = React.useState<Record<string, Session>>({});
+  const [isLoadingActivity, setIsLoadingActivity] = React.useState(true);
 
   const modulesById = React.useMemo(() => {
     return mentalHealthModules.reduce<Record<string, MentalHealthModule>>((acc, module) => {
@@ -112,8 +112,67 @@ export const ProfileScreen: React.FC = () => {
     setCurrentScreen('profile');
   }, [setCurrentScreen]);
 
-    // Get recent activity from session deltas
-  const recentActivity = userProgress.sessionDeltas.slice(-10).reverse(); // Last 10 sessions, most recent first
+  // Fetch completed sessions from database
+  React.useEffect(() => {
+    const fetchActivityHistory = async () => {
+      if (!userId) {
+        console.log('📊 [ProfileScreen] No user ID, skipping activity history fetch');
+        setIsLoadingActivity(false);
+        return;
+      }
+
+      console.log('📊 [ProfileScreen] Fetching activity history for user:', userId);
+      setIsLoadingActivity(true);
+      
+      try {
+        // Fetch completed sessions (most recent first, limit 20)
+        const completed = await getUserCompletedSessions(userId, 20);
+        console.log('📊 [ProfileScreen] Fetched', completed.length, 'completed sessions');
+        
+        // Fetch session details for each completed session
+        const sessionPromises = completed.map(async (cs) => {
+          const session = await getSessionById(cs.session_id);
+          return { completedSession: cs, session };
+        });
+        
+        const results = await Promise.all(sessionPromises);
+        
+        // Build sessionsById map
+        const sessionsMap: Record<string, Session> = {};
+        results.forEach(({ session }) => {
+          if (session) {
+            sessionsMap[session.id] = session;
+          }
+        });
+        setSessionsById(sessionsMap);
+        
+        // Transform completed sessions to activity format (already sorted by created_at descending from service)
+        const activity = results
+          .filter(({ session }) => session !== null)
+          .map(({ completedSession, session }) => ({
+            id: completedSession.id || completedSession.session_id,
+            sessionId: completedSession.session_id,
+            moduleId: completedSession.context_module || undefined,
+            date: completedSession.completed_date,
+            minutesCompleted: completedSession.minutes_completed,
+            createdAt: completedSession.created_at || completedSession.completed_date, // Use created_at for sorting
+          }));
+        // No need to sort - already sorted by created_at in the service
+        
+        console.log('📊 [ProfileScreen] Processed', activity.length, 'activity items');
+        setCompletedSessions(activity);
+      } catch (error) {
+        console.error('❌ [ProfileScreen] Error fetching activity history:', error);
+      } finally {
+        setIsLoadingActivity(false);
+      }
+    };
+
+    fetchActivityHistory();
+  }, [userId]);
+
+  // Use completed sessions as recent activity (already sorted most recent first)
+  const recentActivity = completedSessions;
   const sortedFeedbackHistory = React.useMemo(() => {
     return [...emotionalFeedbackHistory].sort((a, b) => {
       const dateA = new Date(a.date).getTime();
@@ -374,7 +433,12 @@ export const ProfileScreen: React.FC = () => {
           </View>
           
           <View style={styles.activityContent}>
-            {recentActivity.length === 0 ? (
+            {isLoadingActivity ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateEmoji}>⏳</Text>
+                <Text style={styles.emptyStateTitle}>Loading activity...</Text>
+              </View>
+            ) : recentActivity.length === 0 ? (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyStateEmoji}>🧘‍♀️</Text>
                 <Text style={styles.emptyStateTitle}>No sessions yet</Text>
@@ -403,24 +467,28 @@ export const ProfileScreen: React.FC = () => {
                     onScroll={handleActivityScroll}
                     scrollEventThrottle={16}
                   >
-                    {recentActivity.map((sessionDelta, index) => {
-                      const sessionData = sessionDelta.sessionId ? sessionsById[sessionDelta.sessionId] : undefined;
+                    {recentActivity.map((activityItem, index) => {
+                      const sessionData = activityItem.sessionId ? sessionsById[activityItem.sessionId] : undefined;
                       const moduleData =
-                        (sessionDelta.moduleId && modulesById[sessionDelta.moduleId]) ||
+                        (activityItem.moduleId && modulesById[activityItem.moduleId]) ||
                         (sessionData ? modulesById[sessionData.goal] : undefined);
                       const moduleTitle = moduleData?.title;
                       const moduleColor = moduleData?.color || '#007AFF';
                       const moduleInitial = moduleTitle?.trim().charAt(0)?.toUpperCase() || 'M';
                       const iconBackground = createSubtleBackground(moduleColor);
-                      const formattedDate = formatSessionDate(sessionDelta.date);
+                      const formattedDate = formatSessionDate(activityItem.date);
                       const sessionTitle = sessionData?.title || 'Meditation Session';
                       const truncatedTitle = truncateText(sessionTitle, 28);
-                      const durationMinutes = sessionData?.durationMin ?? null;
-                      const durationLabel = durationMinutes !== null ? `${durationMinutes} min` : '-- min';
+                      const minutesCompleted = activityItem.minutesCompleted ?? 0;
+                      const durationLabel = minutesCompleted > 0 
+                        ? `${minutesCompleted.toFixed(1)} min` 
+                        : sessionData?.durationMin 
+                          ? `${sessionData.durationMin} min` 
+                          : '-- min';
                       const completionLabel = formattedDate ? `Completed ${formattedDate}` : 'Completion date unavailable';
 
                       return (
-                        <View key={`${sessionDelta.date}-${index}`} style={styles.activityItem}>
+                        <View key={activityItem.id || `${activityItem.sessionId}-${activityItem.date}-${index}`} style={styles.activityItem}>
                           <View
                             style={[
                               styles.activityIcon,

@@ -480,8 +480,9 @@ export const ProfileScreen: React.FC = () => {
                       const sessionTitle = sessionData?.title || 'Meditation Session';
                       const truncatedTitle = truncateText(sessionTitle, 28);
                       const minutesCompleted = activityItem.minutesCompleted ?? 0;
+                      const roundedMinutes = Math.round(minutesCompleted);
                       const durationLabel = minutesCompleted > 0 
-                        ? `${minutesCompleted.toFixed(1)} min` 
+                        ? `${roundedMinutes} min` 
                         : sessionData?.durationMin 
                           ? `${sessionData.durationMin} min` 
                           : '-- min';

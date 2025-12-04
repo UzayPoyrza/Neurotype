@@ -54,6 +54,8 @@ export const MeditationPlayerScreen: React.FC = () => {
   const userId = useStore((state: any) => state.userId);
   const activeModuleId = useStore((state: any) => state.activeModuleId);
   const todayModuleId = useStore((state: any) => state.todayModuleId);
+  const markSessionCompletedToday = useStore((state: any) => state.markSessionCompletedToday);
+  const isSessionCompletedToday = useStore((state: any) => state.isSessionCompletedToday);
   const isLiked = activeSession ? likedSessionIds.includes(activeSession.id) : false;
   const [showTutorial, setShowTutorial] = useState(false);
   const [emotionalRating, setEmotionalRating] = useState(5);
@@ -1768,7 +1770,19 @@ export const MeditationPlayerScreen: React.FC = () => {
             
             // Determine module context
             const moduleContext = activeModuleId || todayModuleId || null;
+            const moduleIdForCompletion = moduleContext || todayModuleId || 'anxiety'; // Default to anxiety if no module
             console.log('📊 [Session Completion] Module Context:', moduleContext);
+            
+            // Immediately show checkmark if not already cached (optimistic update)
+            const today = new Date().toISOString().split('T')[0];
+            const alreadyCompleted = isSessionCompletedToday(moduleIdForCompletion, activeSession.id, today);
+            
+            if (!alreadyCompleted) {
+              console.log('✅ [Session Completion] Immediately marking session as completed in store (optimistic update)');
+              markSessionCompletedToday(moduleIdForCompletion, activeSession.id, today);
+            } else {
+              console.log('ℹ️ [Session Completion] Session already marked as completed in store');
+            }
             
             if (!userId) {
               console.warn('⚠️ [Session Completion] No user ID found - skipping database save');
@@ -1779,41 +1793,45 @@ export const MeditationPlayerScreen: React.FC = () => {
               const minutesCompleted = currentTime / 60;
               console.log('📊 [Session Completion] Calculated minutes (decimal):', minutesCompleted);
               
-              // Save completed session to database
-              console.log('💾 [Session Completion] Saving completed session to database...');
-              const sessionResult = await markSessionCompleted(
+              // Save completed session to database (in background)
+              console.log('💾 [Session Completion] Saving completed session to database (background)...');
+              markSessionCompleted(
                 userId,
                 activeSession.id,
                 minutesCompleted,
                 moduleContext || undefined
-              );
+              ).then((sessionResult) => {
+                if (sessionResult.success) {
+                  console.log('✅ [Session Completion] Session saved to completed_sessions table successfully!');
+                  console.log('✅ [Session Completion] Session added to activity history');
+                } else {
+                  console.error('❌ [Session Completion] Failed to save session:', sessionResult.error);
+                }
+              }).catch((error) => {
+                console.error('❌ [Session Completion] Error saving session:', error);
+              });
               
-              if (sessionResult.success) {
-                console.log('✅ [Session Completion] Session saved to completed_sessions table successfully!');
-                console.log('✅ [Session Completion] Session added to activity history');
-              } else {
-                console.error('❌ [Session Completion] Failed to save session:', sessionResult.error);
-              }
-              
-              // Save session rating to database
-              console.log('💾 [Session Completion] Saving session rating to database...');
-              const ratingResult = await addSessionRating(
+              // Save session rating to database (in background)
+              console.log('💾 [Session Completion] Saving session rating to database (background)...');
+              addSessionRating(
                 userId,
                 activeSession.id,
                 rating,
                 moduleContext || undefined
-              );
-              
-              if (ratingResult.success) {
-                console.log('✅ [Session Completion] Rating saved to session_ratings table successfully!');
-              } else {
-                console.error('❌ [Session Completion] Failed to save rating:', ratingResult.error);
-              }
+              ).then((ratingResult) => {
+                if (ratingResult.success) {
+                  console.log('✅ [Session Completion] Rating saved to session_ratings table successfully!');
+                } else {
+                  console.error('❌ [Session Completion] Failed to save rating:', ratingResult.error);
+                }
+              }).catch((error) => {
+                console.error('❌ [Session Completion] Error saving rating:', error);
+              });
               
               // Also call the mock for local state updates
               sessionProgressData.markSessionComplete(activeSession.id, currentTime, rating);
               
-              console.log('✅ [Session Completion] Session completion process finished');
+              console.log('✅ [Session Completion] Session completion process finished (database operations running in background)');
             }
           }
           setActiveSession(null);

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Switch, ScrollView, TouchableOpacity, Alert } f
 import { useNavigation } from '@react-navigation/native';
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
-import { getUserPreferences, updateUserPreferences } from '../services/userService';
+import { updateUserPreferences } from '../services/userService';
 import { useUserId } from '../hooks/useUserId';
 
 export const SettingsScreen: React.FC = () => {
@@ -21,7 +21,6 @@ export const SettingsScreen: React.FC = () => {
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
   const [backButtonWidth, setBackButtonWidth] = React.useState(0);
-  const [isLoadingPreferences, setIsLoadingPreferences] = React.useState(true);
   const handleResetAccount = React.useCallback(() => {
     Alert.alert(
       'Reset Account',
@@ -47,47 +46,6 @@ export const SettingsScreen: React.FC = () => {
   React.useEffect(() => {
     setCurrentScreen('settings');
   }, [setCurrentScreen]);
-
-  // Load user preferences from database on mount
-  React.useEffect(() => {
-    const loadPreferences = async () => {
-      if (!userId) {
-        console.log('📱 [SettingsScreen] No user ID, skipping preferences load');
-        setIsLoadingPreferences(false);
-        return;
-      }
-
-      console.log('📱 [SettingsScreen] Loading user preferences for user:', userId);
-      setIsLoadingPreferences(true);
-      
-      try {
-        const preferences = await getUserPreferences(userId);
-        
-        if (preferences) {
-          console.log('📱 [SettingsScreen] Loaded preferences:', preferences);
-          // Update store with preferences from database
-          // Use store's set function directly to set the value
-          const currentValue = useStore.getState().reminderEnabled;
-          if (preferences.reminder_enabled !== currentValue) {
-            // Only update if different
-            if (preferences.reminder_enabled && !currentValue) {
-              toggleReminder(); // Toggle from false to true
-            } else if (!preferences.reminder_enabled && currentValue) {
-              toggleReminder(); // Toggle from true to false
-            }
-          }
-        } else {
-          console.log('📱 [SettingsScreen] No preferences found, using defaults');
-        }
-      } catch (error) {
-        console.error('❌ [SettingsScreen] Error loading preferences:', error);
-      } finally {
-        setIsLoadingPreferences(false);
-      }
-    };
-
-    loadPreferences();
-  }, [userId]); // Only run when userId changes
 
   // Handle reminder toggle with database save
   const handleToggleReminder = React.useCallback(async (value: boolean) => {
@@ -158,7 +116,6 @@ export const SettingsScreen: React.FC = () => {
               onValueChange={handleToggleReminder}
               trackColor={{ false: '#e0e0e0', true: '#007AFF' }}
               thumbColor={reminderEnabled ? '#ffffff' : '#ffffff'}
-              disabled={isLoadingPreferences}
             />
           </View>
         </View>

@@ -23,6 +23,7 @@ import { useStore } from './src/store/useStore';
 import { supabase } from './src/services/supabase';
 import { getAllSessions, getSessionsByModality, getSessionById } from './src/services/sessionService';
 import { ensureTestUser, verifyTestUserConnection } from './src/services/testUserService';
+import { getUserPreferences } from './src/services/userService';
 
 const Tab = createBottomTabNavigator();
 const TodayStack = createStackNavigator();
@@ -229,7 +230,7 @@ export default function App() {
   const activeSession = useStore(state => state.activeSession);
   const hasCompletedOnboarding = useStore(state => state.hasCompletedOnboarding);
 
-  // Initialize test user
+  // Initialize test user and load preferences
   useEffect(() => {
     const initTestUser = async () => {
       try {
@@ -242,6 +243,27 @@ export default function App() {
         const storeUserId = useStore.getState().userId;
         if (storeUserId === userId) {
           console.log('✅ User ID stored in app state:', userId);
+        }
+        
+        // Load user preferences from database
+        console.log('📱 [App] Loading user preferences...');
+        const preferences = await getUserPreferences(userId);
+        
+        if (preferences) {
+          console.log('📱 [App] Loaded preferences:', preferences);
+          // Update store with preferences from database
+          const currentReminderEnabled = useStore.getState().reminderEnabled;
+          if (preferences.reminder_enabled !== currentReminderEnabled) {
+            // Only update if different to avoid unnecessary state changes
+            if (preferences.reminder_enabled && !currentReminderEnabled) {
+              useStore.getState().toggleReminder(); // Toggle from false to true
+            } else if (!preferences.reminder_enabled && currentReminderEnabled) {
+              useStore.getState().toggleReminder(); // Toggle from true to false
+            }
+            console.log('📱 [App] Updated reminder preference to:', preferences.reminder_enabled);
+          }
+        } else {
+          console.log('📱 [App] No preferences found, using defaults');
         }
       } catch (error) {
         console.error('❌ Failed to initialize test user:', error);

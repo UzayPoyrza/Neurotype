@@ -30,13 +30,14 @@ import Reanimated, {
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
 import { Slider0to10 } from '../components/Slider0to10';
-import { meditationAudioData, emotionalFeedbackData, sessionProgressData, mockAudioPlayer } from '../data/meditationMockData';
+import { meditationAudioData, sessionProgressData, mockAudioPlayer } from '../data/meditationMockData';
 import { PlayIcon, PauseIcon, SkipForward10Icon, SkipBackward10Icon, HeartIcon, HeartOutlineIcon, BackIcon, MoreIcon } from '../components/icons/PlayerIcons';
 import { createMeditationPlayerBackground, getPrerenderedGradient } from '../utils/gradientBackgrounds';
 import MeditationCompletionLanding from '../components/MeditationCompletionLanding';
 import MeditationFeedbackLanding from '../components/MeditationFeedbackLanding';
 import { markSessionCompleted } from '../services/progressService';
 import { addSessionRating } from '../services/ratingService';
+import { addEmotionalFeedback } from '../services/feedbackService';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -93,6 +94,7 @@ export const MeditationPlayerScreen: React.FC = () => {
   const emotionalProgressFillWidth = useSharedValue(0);
   const [actualEmotionalBarWidth, setActualEmotionalBarWidth] = useState(0);
   const [currentEmotionalLabel, setCurrentEmotionalLabel] = useState('');
+  const emotionalLabelRef = useRef<string>(''); // Store label for countdown confirmation
   const [progressBarColor, setProgressBarColor] = useState('rgba(255, 255, 255, 0.8)'); // Start with high opacity white
   const [isProgressBarVisible, setIsProgressBarVisible] = useState(true);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
@@ -298,11 +300,6 @@ export const MeditationPlayerScreen: React.FC = () => {
                 setCurrentSegment(currentSegmentData.text);
               }
             }
-          }
-          
-          // Track emotional feedback every 30 seconds
-          if (newTime % 30 === 0) {
-            emotionalFeedbackData.trackEmotionalState(activeSession?.id || '', newTime, emotionalRating);
           }
           
           if (newTime >= totalDuration) {
@@ -763,6 +760,8 @@ export const MeditationPlayerScreen: React.FC = () => {
 
   // Start countdown confirmation
   const startCountdown = (label: string) => {
+    console.log('💬 [Emotional Feedback] startCountdown called with label:', label);
+    
     // Clear any existing timer
     if (countdownTimerRef.current) {
       clearInterval(countdownTimerRef.current);
@@ -774,6 +773,7 @@ export const MeditationPlayerScreen: React.FC = () => {
     setIsConfirming(true);
     setCountdown(3);
     setConfirmedEmotionalState(label);
+    console.log('💬 [Emotional Feedback] Set confirmedEmotionalState to:', label);
     
     // Reset and animate countdown progress
     countdownProgressAnim.setValue(0);
@@ -803,6 +803,9 @@ export const MeditationPlayerScreen: React.FC = () => {
     );
     pulseAnimationRef.current.start();
     
+    // Store the label in a ref so we can access it even if state hasn't updated
+    emotionalLabelRef.current = label;
+    
     countdownTimerRef.current = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
@@ -811,7 +814,8 @@ export const MeditationPlayerScreen: React.FC = () => {
             pulseAnimationRef.current.stop();
             pulseAnimationRef.current = null;
           }
-          confirmEmotionalState();
+          // Use the label from ref to ensure we have the correct value
+          confirmEmotionalState(emotionalLabelRef.current);
           return 0;
         }
         return prev - 1;
@@ -820,23 +824,68 @@ export const MeditationPlayerScreen: React.FC = () => {
   };
 
   // Confirm the emotional state and reset to default
-  const confirmEmotionalState = () => {
+  const confirmEmotionalState = async (label?: string) => {
     // Clear timer
     if (countdownTimerRef.current) {
       clearInterval(countdownTimerRef.current);
       countdownTimerRef.current = null;
     }
     
-    // Save emotional feedback to store
-    if (activeSession && confirmedEmotionalState) {
+    // Use the passed label parameter, or fall back to state (label parameter takes priority)
+    const emotionalStateToSave = label || confirmedEmotionalState;
+    const timeAtConfirmation = currentTime;
+    
+    console.log('💬 [Emotional Feedback] Confirming emotional state:', emotionalStateToSave);
+    console.log('💬 [Emotional Feedback] Label parameter:', label);
+    console.log('💬 [Emotional Feedback] State value:', confirmedEmotionalState);
+    
+    // Save emotional feedback to store and database
+    if (activeSession && emotionalStateToSave) {
       const feedbackEntry = {
         id: `feedback-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         sessionId: activeSession.id,
-        label: confirmedEmotionalState as any,
-        timestampSeconds: currentTime,
+        label: emotionalStateToSave as any,
+        timestampSeconds: timeAtConfirmation,
         date: new Date().toISOString(),
       };
+      
+      // Add to local store immediately for responsive UI
       addEmotionalFeedbackEntry(feedbackEntry);
+      
+      // Save to database
+      if (userId) {
+        const moduleContext = activeModuleId || todayModuleId || undefined;
+        console.log('💾 [Emotional Feedback] Saving to database:', {
+          userId,
+          sessionId: activeSession.id,
+          label: emotionalStateToSave,
+          timestampSeconds: timeAtConfirmation,
+          contextModule: moduleContext,
+        });
+        
+        const result = await addEmotionalFeedback(
+          userId,
+          activeSession.id,
+          emotionalStateToSave as any,
+          timeAtConfirmation,
+          moduleContext
+        );
+        
+        if (result.success) {
+          console.log('✅ [Emotional Feedback] Saved to database successfully, ID:', result.id);
+        } else {
+          console.error('❌ [Emotional Feedback] Failed to save to database:', result.error);
+        }
+      } else {
+        console.warn('⚠️ [Emotional Feedback] No user ID, cannot save to database');
+      }
+    } else {
+      if (!activeSession) {
+        console.warn('⚠️ [Emotional Feedback] No active session');
+      }
+      if (!emotionalStateToSave) {
+        console.warn('⚠️ [Emotional Feedback] No emotional state to save');
+      }
     }
     
     // First hide the countdown
@@ -880,8 +929,6 @@ export const MeditationPlayerScreen: React.FC = () => {
         setShowConfirmationMessage(false);
       });
     }, 200); // Small delay to ensure countdown disappears first
-    
-    console.log('Emotional state confirmed:', confirmedEmotionalState);
   };
 
   // Cancel countdown (when user clicks X button)
@@ -1017,6 +1064,7 @@ export const MeditationPlayerScreen: React.FC = () => {
     try {
       const label = getEmotionalLabel(position);
       setCurrentEmotionalLabel(label);
+      emotionalLabelRef.current = label; // Also update ref
       
       // Also set interaction state here as a backup
       if (!hasUserInteracted) {

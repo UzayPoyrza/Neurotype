@@ -15,6 +15,7 @@ import { InfoBox } from '../components/InfoBox';
 import { getUserCompletedSessions } from '../services/progressService';
 import { getSessionById } from '../services/sessionService';
 import { useUserId } from '../hooks/useUserId';
+import { getUserEmotionalFeedback, removeEmotionalFeedback as removeEmotionalFeedbackDB } from '../services/feedbackService';
 
 const MAX_VISIBLE_ACTIVITY_ITEMS = 4;
 const APPROX_ACTIVITY_ROW_HEIGHT = 84;
@@ -92,8 +93,8 @@ export const ProfileScreen: React.FC = () => {
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
   const userFirstName = useStore(state => state.userFirstName);
   const todayModuleId = useStore(state => state.todayModuleId);
-  const emotionalFeedbackHistory = useStore(state => state.emotionalFeedbackHistory);
-  const removeEmotionalFeedbackEntry = useStore(state => state.removeEmotionalFeedbackEntry);
+  const [emotionalFeedbackHistory, setEmotionalFeedbackHistory] = React.useState<any[]>([]);
+  const [isLoadingFeedback, setIsLoadingFeedback] = React.useState(true);
 
   const userId = useUserId();
   const [completedSessions, setCompletedSessions] = React.useState<any[]>([]);
@@ -171,15 +172,101 @@ export const ProfileScreen: React.FC = () => {
     fetchActivityHistory();
   }, [userId]);
 
+  // Fetch emotional feedback from database
+  React.useEffect(() => {
+    const fetchEmotionalFeedback = async () => {
+      if (!userId) {
+        console.log('📊 [ProfileScreen] No user ID, skipping emotional feedback fetch');
+        setIsLoadingFeedback(false);
+        return;
+      }
+
+      console.log('📊 [ProfileScreen] Fetching emotional feedback for user:', userId);
+      setIsLoadingFeedback(true);
+      
+      try {
+        // Fetch emotional feedback (most recent first, limit 20)
+        const feedback = await getUserEmotionalFeedback(userId, 20);
+        console.log('📊 [ProfileScreen] Fetched', feedback.length, 'emotional feedback entries');
+        
+        // Fetch session details for each feedback entry
+        const feedbackWithSessions = await Promise.all(
+          feedback.map(async (fb) => {
+            const session = await getSessionById(fb.session_id);
+            return {
+              feedback: fb,
+              session,
+            };
+          })
+        );
+        
+        // Build sessionsById map for feedback entries
+        const feedbackSessionsMap: Record<string, Session> = {};
+        feedbackWithSessions.forEach(({ session }) => {
+          if (session) {
+            feedbackSessionsMap[session.id] = session;
+          }
+        });
+        setSessionsById(prev => ({ ...prev, ...feedbackSessionsMap }));
+        
+        // Transform to match the expected format
+        const transformedFeedback = feedbackWithSessions
+          .filter(({ session }) => session !== null)
+          .map(({ feedback: fb }) => ({
+            id: fb.id || `feedback-${fb.feedback_date}-${fb.session_id}`,
+            sessionId: fb.session_id,
+            label: fb.label,
+            timestampSeconds: fb.timestamp_seconds,
+            date: fb.feedback_date,
+          }));
+        
+        console.log('📊 [ProfileScreen] Processed', transformedFeedback.length, 'emotional feedback items');
+        setEmotionalFeedbackHistory(transformedFeedback);
+      } catch (error) {
+        console.error('❌ [ProfileScreen] Error fetching emotional feedback:', error);
+      } finally {
+        setIsLoadingFeedback(false);
+      }
+    };
+
+    fetchEmotionalFeedback();
+  }, [userId]);
+
+  // Handle removing emotional feedback (both from store and database)
+  const handleRemoveEmotionalFeedback = React.useCallback(async (entryId: string) => {
+    if (!userId) {
+      console.warn('⚠️ [ProfileScreen] No user ID, cannot remove feedback');
+      return;
+    }
+
+    // Optimistically remove from UI
+    setEmotionalFeedbackHistory(prev => prev.filter(entry => entry.id !== entryId));
+    
+    // Remove from database
+    console.log('💾 [ProfileScreen] Removing emotional feedback from database:', entryId);
+    const result = await removeEmotionalFeedbackDB(userId, entryId);
+    
+    if (result.success) {
+      console.log('✅ [ProfileScreen] Emotional feedback removed successfully');
+    } else {
+      console.error('❌ [ProfileScreen] Failed to remove emotional feedback:', result.error);
+      // Re-fetch to restore the correct state
+      const feedback = await getUserEmotionalFeedback(userId, 20);
+      const transformedFeedback = feedback.map(fb => ({
+        id: fb.id || `feedback-${fb.feedback_date}-${fb.session_id}`,
+        sessionId: fb.session_id,
+        label: fb.label,
+        timestampSeconds: fb.timestamp_seconds,
+        date: fb.feedback_date,
+      }));
+      setEmotionalFeedbackHistory(transformedFeedback);
+    }
+  }, [userId]);
+
   // Use completed sessions as recent activity (already sorted most recent first)
   const recentActivity = completedSessions;
-  const sortedFeedbackHistory = React.useMemo(() => {
-    return [...emotionalFeedbackHistory].sort((a, b) => {
-      const dateA = new Date(a.date).getTime();
-      const dateB = new Date(b.date).getTime();
-      return dateB - dateA;
-    });
-  }, [emotionalFeedbackHistory]);
+  // Emotional feedback is already sorted by feedback_date descending from the service
+  const sortedFeedbackHistory = emotionalFeedbackHistory;
 
   const moduleId = todayModuleId || 'anxiety';
   const activeModule = mentalHealthModules.find(module => module.id === moduleId);
@@ -580,7 +667,12 @@ export const ProfileScreen: React.FC = () => {
         </View>
 
           <View style={styles.activityContent}>
-            {sortedFeedbackHistory.length === 0 ? (
+            {isLoadingFeedback ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateEmoji}>⏳</Text>
+                <Text style={styles.emptyStateTitle}>Loading feedback...</Text>
+              </View>
+            ) : sortedFeedbackHistory.length === 0 ? (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyStateEmoji}>🎯</Text>
                 <Text style={styles.emptyStateTitle}>No feedback yet</Text>
@@ -655,7 +747,7 @@ export const ProfileScreen: React.FC = () => {
                           </View>
                           <TouchableOpacity
                             style={styles.deleteFeedbackButton}
-                            onPress={() => removeEmotionalFeedbackEntry(entry.id)}
+                            onPress={() => handleRemoveEmotionalFeedback(entry.id)}
                             hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
                           >
                             <Text style={styles.deleteFeedbackButtonText}>×</Text>

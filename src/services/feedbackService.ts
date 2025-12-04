@@ -67,7 +67,7 @@ export async function getUserEmotionalFeedback(
       .from('emotional_feedback')
       .select('*')
       .eq('user_id', userId)
-      .order('feedback_date', { ascending: false });
+      .order('created_at', { ascending: false }); // Sort by created_at for most recent first
 
     if (limit) {
       query = query.limit(limit);

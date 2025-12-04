@@ -16,8 +16,9 @@ import { InfoBox } from '../components/InfoBox';
 import { MeditationDetailModal } from '../components/MeditationDetailModal';
 import { MergedCard } from '../components/MergedCard';
 import { LineGraphIcon } from '../components/icons/LineGraphIcon';
-import { ensureDailyRecommendations } from '../services/recommendationService';
+import { ensureDailyRecommendations, getDailyRecommendations } from '../services/recommendationService';
 import { useUserId } from '../hooks/useUserId';
+import { getSessionById } from '../services/sessionService';
 
 type SessionState = 'not_started' | 'in_progress' | 'completed' | 'rating';
 
@@ -59,6 +60,10 @@ export const TodayScreen: React.FC = () => {
   const [showModuleToast, setShowModuleToast] = useState(false);
   const [toastModuleName, setToastModuleName] = useState('');
   const prevModuleIdRef = useRef<string | null>(null);
+  
+  // Daily recommendations state
+  const [todaySessions, setTodaySessions] = useState<Session[]>([]);
+  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(true);
   
   // Animation refs - simplified to avoid native driver conflicts
   const heroCardScale = useRef(new Animated.Value(1)).current;
@@ -133,6 +138,26 @@ export const TodayScreen: React.FC = () => {
             if (result.success) {
               if (result.generated) {
                 console.log('✅ [TodayScreen] Generated new recommendations for module:', selectedModuleId);
+                // Refetch recommendations after generating new ones
+                const refetchRecommendations = async () => {
+                  const recommendations = await getDailyRecommendations(userId);
+                  const sessionPromises = recommendations.map(async (rec) => {
+                    const session = await getSessionById(rec.session_id);
+                    if (session) {
+                      return {
+                        ...session,
+                        isRecommended: rec.is_recommended,
+                        adaptiveReason: rec.is_recommended ? 'Recommended for you' : 'Alternative option',
+                      };
+                    }
+                    return null;
+                  });
+                  const sessions = (await Promise.all(sessionPromises)).filter(
+                    (s): s is Session => s !== null
+                  );
+                  setTodaySessions(sessions);
+                };
+                refetchRecommendations();
               } else {
                 console.log('✅ [TodayScreen] Recommendations already exist for module:', selectedModuleId);
               }
@@ -225,44 +250,69 @@ export const TodayScreen: React.FC = () => {
 
   // Note: Scroll-down pill hiding is now handled immediately in the scroll handler
 
-  
-  // Generate adaptive sessions based on module and progress
-  const getTodaySessions = () => {
-    const relevantGoals = {
-      'anxiety': ['anxiety'],
-      'adhd': ['focus'],
-      'depression': ['sleep', 'focus'],
-      'bipolar': ['anxiety', 'sleep'],
-      'panic': ['anxiety'],
-      'ptsd': ['anxiety', 'sleep'],
-      'stress': ['anxiety', 'focus'],
-      'sleep': ['sleep'],
-      'focus': ['focus'],
-      'emotional-regulation': ['anxiety', 'focus'],
-      'mindfulness': ['focus', 'sleep'],
-      'self-compassion': ['sleep', 'focus'],
-    };
-    
-    const goals = relevantGoals[selectedModule.id as keyof typeof relevantGoals] || ['focus'];
-    const moduleSessions = mockSessions.filter(session => goals.includes(session.goal));
-    
-    // Return up to four sessions with one marked as recommended
-    return moduleSessions.slice(0, 4).map((session, index) => ({
-      ...session,
-      id: `${session.id}-today`,
-      isRecommended: index === 0,
-      adaptiveReason: index === 0 ? 'Based on your recent progress' : 'Alternative option'
-    }));
-  };
+  // Fetch daily recommendations from database
+  useEffect(() => {
+    const fetchRecommendations = async () => {
+      if (!userId) {
+        console.log('📋 [TodayScreen] No user ID, skipping recommendations fetch');
+        setIsLoadingRecommendations(false);
+        return;
+      }
 
-  const todaySessions = getTodaySessions();
+      console.log('📋 [TodayScreen] Fetching daily recommendations...');
+      setIsLoadingRecommendations(true);
+      
+      try {
+        // Ensure recommendations exist for the current module
+        await ensureDailyRecommendations(userId, selectedModuleId, false);
+        
+        // Fetch recommendations for today
+        const recommendations = await getDailyRecommendations(userId);
+        console.log('📋 [TodayScreen] Fetched', recommendations.length, 'recommendations');
+        
+        if (recommendations.length === 0) {
+          console.warn('⚠️ [TodayScreen] No recommendations found');
+          setTodaySessions([]);
+          setIsLoadingRecommendations(false);
+          return;
+        }
+        
+        // Fetch session details for each recommendation
+        const sessionPromises = recommendations.map(async (rec) => {
+          const session = await getSessionById(rec.session_id);
+          if (session) {
+            return {
+              ...session,
+              isRecommended: rec.is_recommended,
+              adaptiveReason: rec.is_recommended ? 'Recommended for you' : 'Alternative option',
+            };
+          }
+          return null;
+        });
+        
+        const sessions = (await Promise.all(sessionPromises)).filter(
+          (s): s is Session => s !== null
+        );
+        
+        console.log('📋 [TodayScreen] Loaded', sessions.length, 'sessions from recommendations');
+        setTodaySessions(sessions);
+      } catch (error) {
+        console.error('❌ [TodayScreen] Error fetching recommendations:', error);
+        setTodaySessions([]);
+      } finally {
+        setIsLoadingRecommendations(false);
+      }
+    };
+
+    fetchRecommendations();
+  }, [userId, selectedModuleId]);
+
   const recommendedSession = todaySessions.find(s => s.isRecommended) || todaySessions[0];
   
   // Check if recommended session is completed
-  const isRecommendedCompleted = isSessionCompletedToday(
-    selectedModuleId, 
-    recommendedSession.id.replace('-today', '')
-  );
+  const isRecommendedCompleted = recommendedSession 
+    ? isSessionCompletedToday(selectedModuleId, recommendedSession.id)
+    : false;
   
   const moduleSessionsForRoadmap = useMemo(() => {
     const relevantGoals = {
@@ -299,7 +349,7 @@ export const TodayScreen: React.FC = () => {
   }, [userProgress.sessionDeltas, selectedModuleId]);
 
   const upcomingPreviewSessions = useMemo(() => {
-    const todayIds = todaySessions.map(session => session.id.replace('-today', ''));
+    const todayIds = todaySessions.map(session => session.id);
     return moduleSessionsForRoadmap
       .filter(session => !todayIds.includes(session.id))
       .slice(0, 2);
@@ -669,50 +719,64 @@ export const TodayScreen: React.FC = () => {
             </Text>
 
             {/* Recommended Session */}
-            <Animated.View
-              style={[
-                styles.recommendedSessionContainer,
-                {
-                  transform: [{ scale: heroCardScale }],
-                }
-              ]}
-            >
-              <TouchableOpacity
-                style={[styles.recommendedSession, { 
-                  backgroundColor: (todayCompleted || isRecommendedCompleted) ? '#f2f2f7' : '#ffffff'
-                }]}
-                onPress={() => handleSessionSelect(recommendedSession)}
-                onPressIn={handleHeroCardPressIn}
-                onPressOut={handleHeroCardPressOut}
-                activeOpacity={1}
+            {isLoadingRecommendations ? (
+              <View style={styles.recommendedSessionContainer}>
+                <View style={[styles.recommendedSession, { backgroundColor: '#f2f2f7' }]}>
+                  <Text style={styles.sessionTitle}>Loading recommendations...</Text>
+                </View>
+              </View>
+            ) : recommendedSession ? (
+              <Animated.View
+                style={[
+                  styles.recommendedSessionContainer,
+                  {
+                    transform: [{ scale: heroCardScale }],
+                  }
+                ]}
               >
-                <View style={styles.sessionContent}>
-                  <Text style={styles.sessionTitle}>{recommendedSession.title}</Text>
-                  <Text style={styles.sessionSubtitle}>
-                    {recommendedSession.adaptiveReason || 'Recommended for you'}
-                  </Text>
-                  
-                  <View style={styles.sessionMeta}>
-                    <Text style={styles.sessionMetaText}>
-                      {recommendedSession.durationMin} min • {recommendedSession.modality}
+                <TouchableOpacity
+                  style={[styles.recommendedSession, { 
+                    backgroundColor: (todayCompleted || isRecommendedCompleted) ? '#f2f2f7' : '#ffffff'
+                  }]}
+                  onPress={() => handleSessionSelect(recommendedSession)}
+                  onPressIn={handleHeroCardPressIn}
+                  onPressOut={handleHeroCardPressOut}
+                  activeOpacity={1}
+                >
+                  <View style={styles.sessionContent}>
+                    <Text style={styles.sessionTitle}>{recommendedSession.title}</Text>
+                    <Text style={styles.sessionSubtitle}>
+                      {recommendedSession.adaptiveReason || 'Recommended for you'}
                     </Text>
-                    <View style={styles.recommendedBadge}>
-                      <Text style={styles.recommendedBadgeText}>Recommended</Text>
+                    
+                    <View style={styles.sessionMeta}>
+                      <Text style={styles.sessionMetaText}>
+                        {recommendedSession.durationMin} min • {recommendedSession.modality}
+                      </Text>
+                      <View style={styles.recommendedBadge}>
+                        <Text style={styles.recommendedBadgeText}>Recommended</Text>
+                      </View>
                     </View>
                   </View>
-                </View>
 
-                {(todayCompleted || isRecommendedCompleted) ? (
-                  <View style={[styles.sessionPlayButton, styles.sessionCompletedButton]}>
-                    <Text style={styles.sessionCompletedCheckmark}>✓</Text>
-                  </View>
-                ) : (
-                  <View style={[styles.sessionPlayButton, { backgroundColor: selectedModule.color }]}>
-                    <Text style={styles.sessionPlayText}>▶</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            </Animated.View>
+                  {(todayCompleted || isRecommendedCompleted) ? (
+                    <View style={[styles.sessionPlayButton, styles.sessionCompletedButton]}>
+                      <Text style={styles.sessionCompletedCheckmark}>✓</Text>
+                    </View>
+                  ) : (
+                    <View style={[styles.sessionPlayButton, { backgroundColor: selectedModule.color }]}>
+                      <Text style={styles.sessionPlayText}>▶</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </Animated.View>
+            ) : (
+              <View style={styles.recommendedSessionContainer}>
+                <View style={[styles.recommendedSession, { backgroundColor: '#f2f2f7' }]}>
+                  <Text style={styles.sessionTitle}>No recommendations available</Text>
+                </View>
+              </View>
+            )}
           </MergedCard.Section>
 
           <MergedCard.Section style={styles.mergedSectionList}>
@@ -721,9 +785,13 @@ export const TodayScreen: React.FC = () => {
             </View>
             
             <View style={styles.alternativeSessionsList}>
-              {todaySessions.filter(s => !s.isRecommended).map((session) => {
-                const originalSessionId = session.id.replace('-today', '');
-                const isCompleted = isSessionCompletedToday(selectedModuleId, originalSessionId);
+              {isLoadingRecommendations ? (
+                <View style={styles.alternativeSession}>
+                  <Text style={styles.alternativeSessionTitle}>Loading...</Text>
+                </View>
+              ) : todaySessions.filter(s => !s.isRecommended).length > 0 ? (
+                todaySessions.filter(s => !s.isRecommended).map((session) => {
+                const isCompleted = isSessionCompletedToday(selectedModuleId, session.id);
                 
                 return (
                   <TouchableOpacity
@@ -760,7 +828,12 @@ export const TodayScreen: React.FC = () => {
                     )}
                   </TouchableOpacity>
                 );
-              })}
+              })
+              ) : (
+                <View style={styles.alternativeSession}>
+                  <Text style={styles.alternativeSessionTitle}>No alternative sessions available</Text>
+                </View>
+              )}
             </View>
           </MergedCard.Section>
         </MergedCard>

@@ -24,6 +24,7 @@ import { supabase } from './src/services/supabase';
 import { getAllSessions, getSessionsByModality, getSessionById } from './src/services/sessionService';
 import { ensureTestUser, verifyTestUserConnection } from './src/services/testUserService';
 import { getUserPreferences } from './src/services/userService';
+import { ensureDailyRecommendations } from './src/services/recommendationService';
 
 const Tab = createBottomTabNavigator();
 const TodayStack = createStackNavigator();
@@ -264,6 +265,21 @@ export default function App() {
           }
         } else {
           console.log('📱 [App] No preferences found, using defaults');
+        }
+        
+        // Ensure daily recommendations exist for today (default module: anxiety)
+        console.log('🎯 [App] Checking daily recommendations...');
+        const defaultModuleId = 'anxiety'; // Default module
+        const recResult = await ensureDailyRecommendations(userId, defaultModuleId);
+        
+        if (recResult.success) {
+          if (recResult.generated) {
+            console.log('✅ [App] Generated new daily recommendations');
+          } else {
+            console.log('✅ [App] Daily recommendations already exist for today');
+          }
+        } else {
+          console.error('❌ [App] Failed to ensure daily recommendations:', recResult.error);
         }
       } catch (error) {
         console.error('❌ Failed to initialize test user:', error);

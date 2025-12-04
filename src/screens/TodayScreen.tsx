@@ -16,6 +16,8 @@ import { InfoBox } from '../components/InfoBox';
 import { MeditationDetailModal } from '../components/MeditationDetailModal';
 import { MergedCard } from '../components/MergedCard';
 import { LineGraphIcon } from '../components/icons/LineGraphIcon';
+import { ensureDailyRecommendations } from '../services/recommendationService';
+import { useUserId } from '../hooks/useUserId';
 
 type SessionState = 'not_started' | 'in_progress' | 'completed' | 'rating';
 
@@ -30,6 +32,7 @@ type TodayScreenNavigationProp = StackNavigationProp<TodayStackParamList, 'Today
 
 export const TodayScreen: React.FC = () => {
   const navigation = useNavigation<TodayScreenNavigationProp>();
+  const userId = useUserId();
   const { setActiveSession, setGlobalBackgroundColor, setCurrentScreen, setTodayModuleId, markSessionCompletedToday, isSessionCompletedToday } = useStore();
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const userProgress = useStore(state => state.userProgress);
@@ -121,6 +124,23 @@ export const TodayScreen: React.FC = () => {
         ]).start(() => {
           setShowModuleToast(false);
         });
+        
+        // Check and generate recommendations for the new module
+        // Force regenerate when module changes to ensure recommendations match the new module
+        if (userId) {
+          console.log('🎯 [TodayScreen] Module changed to:', selectedModuleId);
+          ensureDailyRecommendations(userId, selectedModuleId, true).then(result => {
+            if (result.success) {
+              if (result.generated) {
+                console.log('✅ [TodayScreen] Generated new recommendations for module:', selectedModuleId);
+              } else {
+                console.log('✅ [TodayScreen] Recommendations already exist for module:', selectedModuleId);
+              }
+            } else {
+              console.error('❌ [TodayScreen] Failed to ensure recommendations:', result.error);
+            }
+          });
+        }
       }
     }
     

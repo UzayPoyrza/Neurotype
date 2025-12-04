@@ -849,10 +849,7 @@ export const MeditationPlayerScreen: React.FC = () => {
         date: new Date().toISOString(),
       };
       
-      // Add to local store immediately for responsive UI
-      addEmotionalFeedbackEntry(feedbackEntry);
-      
-      // Save to database
+      // Save to database first
       if (userId) {
         const moduleContext = activeModuleId || todayModuleId || undefined;
         console.log('💾 [Emotional Feedback] Saving to database:', {
@@ -873,11 +870,27 @@ export const MeditationPlayerScreen: React.FC = () => {
         
         if (result.success) {
           console.log('✅ [Emotional Feedback] Saved to database successfully, ID:', result.id);
+          // Update the entry with the database ID if available
+          if (result.id) {
+            feedbackEntry.id = result.id;
+          }
+          // Add to local store after database save (deferred to avoid render issues)
+          setTimeout(() => {
+            addEmotionalFeedbackEntry(feedbackEntry);
+          }, 0);
         } else {
           console.error('❌ [Emotional Feedback] Failed to save to database:', result.error);
+          // Still add to store even if database save fails (for offline support)
+          setTimeout(() => {
+            addEmotionalFeedbackEntry(feedbackEntry);
+          }, 0);
         }
       } else {
         console.warn('⚠️ [Emotional Feedback] No user ID, cannot save to database');
+        // Add to store anyway (will be synced later when user ID is available)
+        setTimeout(() => {
+          addEmotionalFeedbackEntry(feedbackEntry);
+        }, 0);
       }
     } else {
       if (!activeSession) {

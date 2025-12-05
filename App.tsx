@@ -267,6 +267,10 @@ export default function App() {
           console.log('📱 [App] No preferences found, using defaults');
         }
         
+        // Sync today's completed sessions from database (clear cache and reload)
+        console.log('🔄 [App] Syncing today\'s completed sessions from database...');
+        await useStore.getState().syncTodayCompletedSessionsFromDatabase(userId);
+        
         // Ensure daily recommendations exist for today (default module: anxiety)
         console.log('🎯 [App] Checking daily recommendations...');
         const defaultModuleId = 'anxiety'; // Default module

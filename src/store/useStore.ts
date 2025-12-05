@@ -3,6 +3,7 @@ import { UserProgress, FilterState, SessionDelta, Session, EmotionalFeedbackEntr
 import { initialUserProgress } from '../data/mockData';
 import { mentalHealthModules } from '../data/modules';
 import { toggleLikedSession as toggleLikedSessionDB } from '../services/likedService';
+import { getCompletedSessionsByDateRange, markSessionCompleted, isSessionCompleted } from '../services/progressService';
 
 // Helper function to create subtle background colors from module colors
 export const createSubtleBackground = (moduleColor: string): string => {
@@ -225,22 +226,8 @@ const buildInitialStoreData = () => {
     likedSessionIds: [] as string[],
     isTransitioning: false,
     emotionalFeedbackHistory: emotionalFeedbackHistorySeed.map(entry => ({ ...entry })),
-    // Placeholder data: some completed sessions for different modules (using today's date)
-    completedTodaySessions: (() => {
-      const today = new Date().toISOString().split('T')[0];
-      return {
-        // Anxiety module - recommended session completed
-        [`anxiety-${today}`]: ['1'],
-        // Focus module - recommended and one alternative completed
-        [`focus-${today}`]: ['2', '5'],
-        // Sleep module - one alternative completed (not recommended)
-        [`sleep-${today}`]: ['10'],
-        // Stress module - recommended completed
-        [`stress-${today}`]: ['11'],
-        // Mindfulness module - two sessions completed (recommended + one alternative)
-        [`mindfulness-${today}`]: ['12', '13'],
-      } as Record<string, string[]>;
-    })(),
+    // Start with empty cache - will be populated from database on app open
+    completedTodaySessions: {},
     isLoggedIn: false,
     hasCompletedOnboarding: false,
     sessionCache: {} as Record<string, Session>,
@@ -291,8 +278,10 @@ interface AppState {
   setIsTransitioning: (isTransitioning: boolean) => void;
   addEmotionalFeedbackEntry: (entry: EmotionalFeedbackEntry) => void;
   removeEmotionalFeedbackEntry: (entryId: string) => void;
-  markSessionCompletedToday: (moduleId: string, sessionId: string, date?: string) => void;
+  markSessionCompletedToday: (moduleId: string, sessionId: string, date?: string, minutesCompleted?: number) => Promise<void>;
   isSessionCompletedToday: (moduleId: string, sessionId: string, date?: string) => boolean;
+  syncTodayCompletedSessionsFromDatabase: (userId: string) => Promise<void>;
+  cleanupOldCompletedSessions: () => void;
   cacheSessions: (sessions: Session[]) => void;
   getCachedSession: (sessionId: string) => Session | null;
   addCompletedSessionToCache: (entry: CompletedSessionCacheEntry) => void;
@@ -418,9 +407,79 @@ export const useStore = create<AppState>((set, get) => ({
       emotionalFeedbackHistory: state.emotionalFeedbackHistory.filter(entry => entry.id !== entryId)
     })),
 
-  markSessionCompletedToday: (moduleId: string, sessionId: string, date?: string) => {
+  cleanupOldCompletedSessions: () => {
+    const today = new Date().toISOString().split('T')[0];
+    set((state) => {
+      const cleaned: Record<string, string[]> = {};
+      let hasChanges = false;
+      
+      Object.keys(state.completedTodaySessions).forEach((key) => {
+        // Extract date from key (format: "moduleId-YYYY-MM-DD")
+        // Handle keys like "anxiety-2025-01-15" or "module-id-2025-01-15"
+        const parts = key.split('-');
+        if (parts.length >= 4) {
+          // Reconstruct date from last 3 parts (YYYY-MM-DD)
+          const sessionDate = `${parts[parts.length - 3]}-${parts[parts.length - 2]}-${parts[parts.length - 1]}`;
+          if (sessionDate === today) {
+            cleaned[key] = state.completedTodaySessions[key];
+          } else {
+            hasChanges = true; // Mark that we're removing old entries
+          }
+        } else {
+          // If key format is unexpected, keep it to be safe
+          cleaned[key] = state.completedTodaySessions[key];
+        }
+      });
+      
+      if (hasChanges) {
+        console.log('🧹 [Store] Cleaned up old completed session entries, keeping only today:', today);
+        return { completedTodaySessions: cleaned };
+      }
+      return state;
+    });
+  },
+
+  syncTodayCompletedSessionsFromDatabase: async (userId: string) => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      console.log('🔄 [Store] Syncing today\'s completed sessions from database for date:', today);
+      
+      // Clear existing cache first
+      set({ completedTodaySessions: {} });
+      
+      // Fetch all completed sessions for today from database
+      const completedSessions = await getCompletedSessionsByDateRange(userId, today, today);
+      console.log('📊 [Store] Found', completedSessions.length, 'completed sessions for today in database');
+      
+      // Group by module and populate cache
+      const cache: Record<string, string[]> = {};
+      completedSessions.forEach((session) => {
+        const moduleId = session.context_module || 'anxiety'; // Default to anxiety if no module
+        const key = `${moduleId}-${today}`;
+        if (!cache[key]) {
+          cache[key] = [];
+        }
+        if (!cache[key].includes(session.session_id)) {
+          cache[key].push(session.session_id);
+        }
+      });
+      
+      console.log('✅ [Store] Populated cache with', Object.keys(cache).length, 'module entries');
+      set({ completedTodaySessions: cache });
+    } catch (error) {
+      console.error('❌ [Store] Error syncing completed sessions from database:', error);
+      // On error, keep empty cache
+      set({ completedTodaySessions: {} });
+    }
+  },
+
+  markSessionCompletedToday: async (moduleId: string, sessionId: string, date?: string, minutesCompleted: number = 0) => {
     const today = date || new Date().toISOString().split('T')[0];
     const key = `${moduleId}-${today}`;
+    const state = get();
+    const userId = state.userId;
+    
+    // Immediately add to cache (optimistic update)
     set((state) => {
       const completed = state.completedTodaySessions[key] || [];
       if (!completed.includes(sessionId)) {
@@ -433,6 +492,23 @@ export const useStore = create<AppState>((set, get) => ({
       }
       return state;
     });
+    
+    // Save to database in background
+    if (userId) {
+      try {
+        const result = await markSessionCompleted(userId, sessionId, minutesCompleted, moduleId, today);
+        if (!result.success) {
+          console.error('❌ [Store] Failed to save completion to database:', result.error);
+          // Optionally remove from cache on error, but for now keep it for better UX
+        } else {
+          console.log('✅ [Store] Session completion saved to database');
+        }
+      } catch (error) {
+        console.error('❌ [Store] Error saving completion to database:', error);
+      }
+    } else {
+      console.warn('⚠️ [Store] No userId, cannot save to database');
+    }
   },
 
   isSessionCompletedToday: (moduleId: string, sessionId: string, date?: string): boolean => {

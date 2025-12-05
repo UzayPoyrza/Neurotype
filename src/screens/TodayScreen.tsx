@@ -175,7 +175,7 @@ export const TodayScreen: React.FC = () => {
                   const completed = await isSessionCompleted(userId, session.id, today);
                   if (completed) {
                     console.log('✅ [TodayScreen] Session completed today:', session.id, session.title);
-                    markSessionCompletedToday(selectedModuleId, session.id, today);
+                    await markSessionCompletedToday(selectedModuleId, session.id, today);
                   }
                 }
                 
@@ -354,7 +354,7 @@ export const TodayScreen: React.FC = () => {
             if (completed) {
               console.log('✅ [TodayScreen] Session completed today:', session.id, session.title);
               // Mark as completed in store so UI shows checkmark
-              markSessionCompletedToday(selectedModuleId, session.id, today);
+              await markSessionCompletedToday(selectedModuleId, session.id, today);
             }
           }
         } else {
@@ -514,11 +514,11 @@ export const TodayScreen: React.FC = () => {
     setSessionState('rating');
   };
 
-  const handleRatingSubmit = (rating: number) => {
+  const handleRatingSubmit = async (rating: number) => {
     // Mark session as completed in store
     if (selectedSession) {
       const originalSessionId = selectedSession.id.replace('-today', '');
-      markSessionCompletedToday(selectedModuleId, originalSessionId);
+      await markSessionCompletedToday(selectedModuleId, originalSessionId);
     }
     
     // Mark today as completed and trigger unlock animation

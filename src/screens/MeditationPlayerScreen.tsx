@@ -35,7 +35,6 @@ import { PlayIcon, PauseIcon, SkipForward10Icon, SkipBackward10Icon, HeartIcon, 
 import { createMeditationPlayerBackground, getPrerenderedGradient } from '../utils/gradientBackgrounds';
 import MeditationCompletionLanding from '../components/MeditationCompletionLanding';
 import MeditationFeedbackLanding from '../components/MeditationFeedbackLanding';
-import { markSessionCompleted } from '../services/progressService';
 import { addSessionRating } from '../services/ratingService';
 import { addEmotionalFeedback } from '../services/feedbackService';
 
@@ -1774,56 +1773,34 @@ export const MeditationPlayerScreen: React.FC = () => {
             const moduleIdForCompletion = moduleContext || todayModuleId || 'anxiety'; // Default to anxiety if no module
             console.log('📊 [Session Completion] Module Context:', moduleContext);
             
-            // Immediately show checkmark if not already cached (optimistic update)
+            // Immediately show checkmark and save to database (markSessionCompletedToday handles both)
             const today = new Date().toISOString().split('T')[0];
+            const minutesCompleted = Math.round(currentTime / 60);
             const alreadyCompleted = isSessionCompletedToday(moduleIdForCompletion, activeSession.id, today);
             
             if (!alreadyCompleted) {
-              console.log('✅ [Session Completion] Immediately marking session as completed in store (optimistic update)');
-              markSessionCompletedToday(moduleIdForCompletion, activeSession.id, today);
+              console.log('✅ [Session Completion] Marking session as completed (cache + database)');
+              await markSessionCompletedToday(moduleIdForCompletion, activeSession.id, today, minutesCompleted);
             } else {
-              console.log('ℹ️ [Session Completion] Session already marked as completed in store');
+              console.log('ℹ️ [Session Completion] Session already marked as completed');
             }
             
             if (!userId) {
-              console.warn('⚠️ [Session Completion] No user ID found - skipping database save');
+              console.warn('⚠️ [Session Completion] No user ID found - checkmark shown in cache only');
               // Still call the mock for local state
               sessionProgressData.markSessionComplete(activeSession.id, currentTime, rating);
             } else {
-              // Convert seconds to minutes with decimal precision (e.g., 125 seconds = 2.083 minutes)
-              const minutesCompleted = currentTime / 60;
-              console.log('📊 [Session Completion] Calculated minutes (decimal):', minutesCompleted);
-              
-              // Save completed session to database (in background)
-              console.log('💾 [Session Completion] Saving completed session to database (background)...');
-              
-              // Add to cache immediately for instant UI update
+              // Add to completed sessions cache for activity history
               const cacheEntry: CompletedSessionCacheEntry = {
                 id: `temp-${Date.now()}`, // Temporary ID, will be replaced on next DB fetch
                 sessionId: activeSession.id,
                 moduleId: moduleContext || undefined,
-                date: new Date().toISOString().split('T')[0],
-                minutesCompleted,
+                date: today,
+                minutesCompleted: currentTime / 60, // Use decimal precision
                 createdAt: new Date().toISOString(),
               };
               addCompletedSessionToCache(cacheEntry);
-              console.log('✅ [Session Completion] Session added to cache immediately');
-              
-              markSessionCompleted(
-                userId,
-                activeSession.id,
-                minutesCompleted,
-                moduleContext || undefined
-              ).then((sessionResult) => {
-                if (sessionResult.success) {
-                  console.log('✅ [Session Completion] Session saved to completed_sessions table successfully!');
-                  console.log('✅ [Session Completion] Session added to activity history');
-                } else {
-                  console.error('❌ [Session Completion] Failed to save session:', sessionResult.error);
-                }
-              }).catch((error) => {
-                console.error('❌ [Session Completion] Error saving session:', error);
-              });
+              console.log('✅ [Session Completion] Session added to activity cache');
               
               // Save session rating to database (in background)
               console.log('💾 [Session Completion] Saving session rating to database (background)...');

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, NativeSyntheticEvent, NativeScrollEvent, Dimensions } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import Svg, { Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,9 +10,13 @@ import { SubscriptionBadge } from '../components/SubscriptionBadge';
 import { mentalHealthModules } from '../data/modules';
 import type { MentalHealthModule } from '../data/modules';
 import { MergedCard } from '../components/MergedCard';
-import { mockSessions } from '../data/mockData';
 import type { Session, EmotionalFeedbackLabel } from '../types';
 import { InfoBox } from '../components/InfoBox';
+import { getUserCompletedSessions } from '../services/progressService';
+import { getSessionById } from '../services/sessionService';
+import { useUserId } from '../hooks/useUserId';
+import { getUserEmotionalFeedback, removeEmotionalFeedback as removeEmotionalFeedbackDB } from '../services/feedbackService';
+import type { CompletedSessionCacheEntry } from '../store/useStore';
 
 const MAX_VISIBLE_ACTIVITY_ITEMS = 4;
 const APPROX_ACTIVITY_ROW_HEIGHT = 84;
@@ -84,21 +88,29 @@ export const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const { 
     userProgress,
-    subscriptionType
+    subscriptionType,
+    completedSessionsCache,
+    emotionalFeedbackHistory: emotionalFeedbackHistoryFromStore,
+    removeDuplicateCacheEntries,
   } = useStore();
+  
+  // Get store instance for accessing state outside of render
+  const getStoreState = useStore.getState;
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
   const userFirstName = useStore(state => state.userFirstName);
   const todayModuleId = useStore(state => state.todayModuleId);
-  const emotionalFeedbackHistory = useStore(state => state.emotionalFeedbackHistory);
-  const removeEmotionalFeedbackEntry = useStore(state => state.removeEmotionalFeedbackEntry);
+  const [emotionalFeedbackHistory, setEmotionalFeedbackHistory] = React.useState<any[]>([]);
 
-  const sessionsById = React.useMemo(() => {
-    return mockSessions.reduce<Record<string, Session>>((acc, session) => {
-      acc[session.id] = session;
-      return acc;
-    }, {});
-  }, []);
+  const userId = useUserId();
+  const [completedSessions, setCompletedSessions] = React.useState<any[]>([]);
+  const [sessionsById, setSessionsById] = React.useState<Record<string, Session>>({});
+  // Initialize loading state: false if cache has data, true otherwise
+  const [isLoadingActivity, setIsLoadingActivity] = React.useState(completedSessionsCache.length === 0);
+  const [isLoadingFeedback, setIsLoadingFeedback] = React.useState(emotionalFeedbackHistoryFromStore.length === 0);
+  
+  // Track processed cache entries to avoid reprocessing
+  const processedCacheKeysRef = React.useRef<Set<string>>(new Set());
 
   const modulesById = React.useMemo(() => {
     return mentalHealthModules.reduce<Record<string, MentalHealthModule>>((acc, module) => {
@@ -107,20 +119,486 @@ export const ProfileScreen: React.FC = () => {
     }, {});
   }, []);
 
+  // Helper function to process cache entries into activity format
+  const processCacheToActivity = React.useCallback(async (cacheEntries: CompletedSessionCacheEntry[]) => {
+    if (cacheEntries.length === 0) return [];
+    
+    // Fetch session details for cache entries
+    const sessionPromises = cacheEntries.map(async (entry) => {
+      const session = await getSessionById(entry.sessionId);
+      return {
+        completedSession: {
+          id: entry.id,
+          session_id: entry.sessionId,
+          context_module: entry.moduleId || null,
+          completed_date: entry.date,
+          minutes_completed: entry.minutesCompleted,
+          created_at: entry.createdAt,
+        },
+        session,
+      };
+    });
+    
+    const results = await Promise.all(sessionPromises);
+    
+    // Build sessionsById map
+    const sessionsMap: Record<string, Session> = {};
+    results.forEach(({ session }) => {
+      if (session) {
+        sessionsMap[session.id] = session;
+      }
+    });
+    setSessionsById(prev => ({ ...prev, ...sessionsMap }));
+    
+    // Transform to activity format
+    return results
+      .filter(({ session }) => session !== null)
+      .map(({ completedSession, session }) => ({
+        id: completedSession.id || completedSession.session_id,
+        sessionId: completedSession.session_id,
+        moduleId: completedSession.context_module || undefined,
+        date: completedSession.completed_date,
+        minutesCompleted: completedSession.minutes_completed,
+        createdAt: completedSession.created_at || completedSession.completed_date,
+      }));
+  }, []);
+
+  // Helper function to process store feedback entries
+  const processStoreFeedback = React.useCallback(async (storeEntries: typeof emotionalFeedbackHistoryFromStore) => {
+    if (storeEntries.length === 0) return [];
+    
+    // Fetch session details for feedback entries
+    const feedbackWithSessions = await Promise.all(
+      storeEntries.map(async (entry) => {
+        const session = await getSessionById(entry.sessionId);
+        return {
+          feedback: {
+            id: entry.id || `feedback-${entry.date}-${entry.sessionId}`,
+            session_id: entry.sessionId,
+            label: entry.label,
+            timestamp_seconds: entry.timestampSeconds,
+            feedback_date: entry.date,
+          },
+          session,
+        };
+      })
+    );
+    
+    // Build sessionsById map
+    const feedbackSessionsMap: Record<string, Session> = {};
+    feedbackWithSessions.forEach(({ session }) => {
+      if (session) {
+        feedbackSessionsMap[session.id] = session;
+      }
+    });
+    setSessionsById(prev => ({ ...prev, ...feedbackSessionsMap }));
+    
+    // Transform to expected format
+    return feedbackWithSessions
+      .filter(({ session }) => session !== null)
+      .map(({ feedback: fb }) => ({
+        id: fb.id || `feedback-${fb.feedback_date}-${fb.session_id}`,
+        sessionId: fb.session_id,
+        label: fb.label,
+        timestampSeconds: fb.timestamp_seconds,
+        date: fb.feedback_date,
+      }));
+  }, []);
+
+  // Initialize from cache immediately on mount
+  React.useEffect(() => {
+    const initializeFromCache = async () => {
+      if (completedSessionsCache.length > 0) {
+        console.log('📊 [ProfileScreen] Initializing from cache:', completedSessionsCache.length, 'entries');
+        const activity = await processCacheToActivity(completedSessionsCache);
+        setCompletedSessions(activity);
+        
+        // Mark all initialized entries as processed
+        activity.forEach(item => {
+          const key = `${item.sessionId}-${item.createdAt}`;
+          processedCacheKeysRef.current.add(key);
+        });
+        
+        setIsLoadingActivity(false);
+      }
+      
+      if (emotionalFeedbackHistoryFromStore.length > 0) {
+        console.log('📊 [ProfileScreen] Initializing feedback from store:', emotionalFeedbackHistoryFromStore.length, 'entries');
+        const feedback = await processStoreFeedback(emotionalFeedbackHistoryFromStore);
+        setEmotionalFeedbackHistory(feedback);
+        setIsLoadingFeedback(false);
+      }
+    };
+    
+    initializeFromCache();
+  }, []); // Only run on mount
+
+  // Update UI immediately when cache changes (e.g., when meditation completes)
+  // Merges new cache entries with existing completedSessions instead of replacing
+  React.useEffect(() => {
+    const updateFromCache = async () => {
+      if (completedSessionsCache.length === 0) return;
+      
+      // Find new cache entries that haven't been processed yet
+      const newCacheEntries = completedSessionsCache.filter(entry => {
+        const key = `${entry.sessionId}-${entry.createdAt}`;
+        return !processedCacheKeysRef.current.has(key);
+      });
+      
+      if (newCacheEntries.length === 0) {
+        console.log('📊 [ProfileScreen] No new cache entries to add');
+        return;
+      }
+      
+      console.log('📊 [ProfileScreen] Cache updated, adding', newCacheEntries.length, 'new entries');
+      
+      // Mark these entries as processed
+      newCacheEntries.forEach(entry => {
+        const key = `${entry.sessionId}-${entry.createdAt}`;
+        processedCacheKeysRef.current.add(key);
+      });
+      
+      // Process new cache entries
+      const sessionPromises = newCacheEntries.map(async (entry) => {
+        const session = await getSessionById(entry.sessionId);
+        return {
+          completedSession: {
+            id: entry.id,
+            session_id: entry.sessionId,
+            context_module: entry.moduleId || null,
+            completed_date: entry.date,
+            minutes_completed: entry.minutesCompleted,
+            created_at: entry.createdAt,
+          },
+          session,
+        };
+      });
+      
+      const results = await Promise.all(sessionPromises);
+      
+      // Build sessionsById map for new entries
+      const newSessionsMap: Record<string, Session> = {};
+      results.forEach(({ session }) => {
+        if (session) {
+          newSessionsMap[session.id] = session;
+        }
+      });
+      setSessionsById(prev => ({ ...prev, ...newSessionsMap }));
+      
+      // Transform new entries to activity format
+      const newActivity = results
+        .filter(({ session }) => session !== null)
+        .map(({ completedSession, session }) => ({
+          id: completedSession.id || completedSession.session_id,
+          sessionId: completedSession.session_id,
+          moduleId: completedSession.context_module || undefined,
+          date: completedSession.completed_date,
+          minutesCompleted: completedSession.minutes_completed,
+          createdAt: completedSession.created_at || completedSession.completed_date,
+        }));
+      
+      // Merge with existing sessions, deduplicate, and sort
+      setCompletedSessions(prev => {
+        const merged = [...newActivity, ...prev]
+          .filter((entry, index, self) => {
+            const key = `${entry.sessionId}-${entry.createdAt}`;
+            return index === self.findIndex(e => `${e.sessionId}-${e.createdAt}` === key);
+          })
+          .sort((a, b) => {
+            const aTime = new Date(a.createdAt).getTime();
+            const bTime = new Date(b.createdAt).getTime();
+            return bTime - aTime; // Most recent first
+          })
+          .slice(0, 20); // Keep top 20
+        
+        console.log('📊 [ProfileScreen] Merged to', merged.length, 'total sessions');
+        return merged;
+      });
+      
+      setIsLoadingActivity(false);
+    };
+    
+    updateFromCache();
+  }, [completedSessionsCache]);
+
+  // Update UI immediately when store feedback changes
+  React.useEffect(() => {
+    const updateFromStore = async () => {
+      if (emotionalFeedbackHistoryFromStore.length > 0) {
+        console.log('📊 [ProfileScreen] Store feedback updated, refreshing from store');
+        const feedback = await processStoreFeedback(emotionalFeedbackHistoryFromStore);
+        setEmotionalFeedbackHistory(feedback);
+        setIsLoadingFeedback(false);
+      }
+    };
+    
+    updateFromStore();
+  }, [emotionalFeedbackHistoryFromStore, processStoreFeedback]);
+
   // Set screen context when component mounts
   React.useEffect(() => {
     setCurrentScreen('profile');
   }, [setCurrentScreen]);
 
-    // Get recent activity from session deltas
-  const recentActivity = userProgress.sessionDeltas.slice(-10).reverse(); // Last 10 sessions, most recent first
-  const sortedFeedbackHistory = React.useMemo(() => {
-    return [...emotionalFeedbackHistory].sort((a, b) => {
-      const dateA = new Date(a.date).getTime();
-      const dateB = new Date(b.date).getTime();
-      return dateB - dateA;
-    });
-  }, [emotionalFeedbackHistory]);
+  // Fetch completed sessions from database (only on app open, not on focus)
+  // Removes duplicate cache entries before adding DB entries
+  const fetchActivityHistory = React.useCallback(async () => {
+    if (!userId) {
+      console.log('📊 [ProfileScreen] No user ID, skipping activity history fetch');
+      setIsLoadingActivity(false);
+      return;
+    }
+
+    console.log('📊 [ProfileScreen] Fetching activity history from database (app open)...');
+    // Only show loading if we don't have cache data
+    if (completedSessionsCache.length === 0) {
+      setIsLoadingActivity(true);
+    }
+    
+    try {
+      // Fetch completed sessions from database (most recent first, limit 20)
+      const completed = await getUserCompletedSessions(userId, 20);
+      console.log('📊 [ProfileScreen] Fetched', completed.length, 'completed sessions from database');
+      console.log('📊 [ProfileScreen] Cache has', completedSessionsCache.length, 'entries');
+      
+      // Remove duplicate cache entries that match DB entries
+      if (completed.length > 0) {
+        removeDuplicateCacheEntries(completed.map(c => ({
+          session_id: c.session_id,
+          created_at: c.created_at || c.completed_date,
+        })));
+      }
+      
+      // Get updated cache after removing duplicates
+      const updatedCache = getStoreState().completedSessionsCache;
+      console.log('📊 [ProfileScreen] Cache after deduplication:', updatedCache.length, 'entries');
+      
+      // Convert remaining cache entries to same format as DB entries
+      const cacheEntries = updatedCache.map(entry => ({
+        id: entry.id,
+        session_id: entry.sessionId,
+        context_module: entry.moduleId || null,
+        completed_date: entry.date,
+        minutes_completed: entry.minutesCompleted,
+        created_at: entry.createdAt,
+      }));
+      
+      // Combine remaining cache and DB (DB takes precedence, cache is for new entries not yet in DB)
+      const allSessions = [...cacheEntries, ...completed]
+        .filter((entry, index, self) => {
+          const key = `${entry.session_id}-${entry.created_at}`;
+          return index === self.findIndex(e => `${e.session_id}-${e.created_at}` === key);
+        })
+        .sort((a, b) => {
+          const aTime = new Date(a.created_at || a.completed_date).getTime();
+          const bTime = new Date(b.created_at || b.completed_date).getTime();
+          return bTime - aTime; // Most recent first
+        })
+        .slice(0, 20); // Keep top 20
+      
+      console.log('📊 [ProfileScreen] Final merged count:', allSessions.length, 'total sessions');
+      
+      // Fetch session details for each completed session
+      const sessionPromises = allSessions.map(async (cs) => {
+        const session = await getSessionById(cs.session_id);
+        return { completedSession: cs, session };
+      });
+      
+      const results = await Promise.all(sessionPromises);
+      
+      // Build sessionsById map
+      const sessionsMap: Record<string, Session> = {};
+      results.forEach(({ session }) => {
+        if (session) {
+          sessionsMap[session.id] = session;
+        }
+      });
+      setSessionsById(sessionsMap);
+      
+      // Transform completed sessions to activity format
+      const activity = results
+        .filter(({ session }) => session !== null)
+        .map(({ completedSession, session }) => ({
+          id: completedSession.id || completedSession.session_id,
+          sessionId: completedSession.session_id,
+          moduleId: completedSession.context_module || undefined,
+          date: completedSession.completed_date,
+          minutesCompleted: completedSession.minutes_completed,
+          createdAt: completedSession.created_at || completedSession.completed_date,
+        }));
+      
+      console.log('📊 [ProfileScreen] Processed', activity.length, 'activity items');
+      setCompletedSessions(activity);
+      
+      // Mark all processed entries in the ref
+      activity.forEach(item => {
+        const key = `${item.sessionId}-${item.createdAt}`;
+        processedCacheKeysRef.current.add(key);
+      });
+    } catch (error) {
+      console.error('❌ [ProfileScreen] Error fetching activity history:', error);
+    } finally {
+      setIsLoadingActivity(false);
+    }
+  }, [userId, completedSessionsCache, removeDuplicateCacheEntries, processCacheToActivity]);
+
+  // Fetch from database ONLY on app open (when userId is first set)
+  // This runs once when the app opens, not on every focus
+  const hasFetchedOnOpen = React.useRef(false);
+  React.useEffect(() => {
+    if (userId && !hasFetchedOnOpen.current) {
+      console.log('📊 [ProfileScreen] App opened, fetching activity history from database...');
+      hasFetchedOnOpen.current = true;
+      // Small delay to let cache initialization complete first
+      const timer = setTimeout(() => {
+        fetchActivityHistory();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [userId, fetchActivityHistory]);
+
+  // Fetch emotional feedback from database and merge with cache
+  const fetchEmotionalFeedback = React.useCallback(async () => {
+    if (!userId) {
+      console.log('📊 [ProfileScreen] No user ID, skipping emotional feedback fetch');
+      setIsLoadingFeedback(false);
+      return;
+    }
+
+    console.log('📊 [ProfileScreen] Fetching emotional feedback for user:', userId);
+    // Only show loading if we don't have store data
+    if (emotionalFeedbackHistoryFromStore.length === 0) {
+      setIsLoadingFeedback(true);
+    }
+    
+    try {
+      // Fetch emotional feedback from database (most recent first, limit 20)
+      const feedback = await getUserEmotionalFeedback(userId, 20);
+      console.log('📊 [ProfileScreen] Fetched', feedback.length, 'emotional feedback entries from database');
+      console.log('📊 [ProfileScreen] Store has', emotionalFeedbackHistoryFromStore.length, 'entries');
+      
+      // Merge store cache with database data
+      // Convert store entries to same format as DB entries for easier merging
+      const storeEntries = emotionalFeedbackHistoryFromStore.map(entry => ({
+        id: entry.id || `feedback-${entry.date}-${entry.sessionId}`,
+        session_id: entry.sessionId,
+        label: entry.label,
+        timestamp_seconds: entry.timestampSeconds,
+        feedback_date: entry.date,
+      }));
+      
+      // Combine store and DB, deduplicate by id or session_id + date
+      const allFeedback = [...storeEntries, ...feedback]
+        .filter((entry, index, self) => {
+          const key = entry.id || `${entry.session_id}-${entry.feedback_date}`;
+          return index === self.findIndex(e => (e.id || `${e.session_id}-${e.feedback_date}`) === key);
+        })
+        .sort((a, b) => {
+          const aTime = new Date(a.feedback_date).getTime();
+          const bTime = new Date(b.feedback_date).getTime();
+          return bTime - aTime; // Most recent first
+        })
+        .slice(0, 20); // Keep top 20
+      
+      console.log('📊 [ProfileScreen] Merged to', allFeedback.length, 'total feedback entries');
+      
+      // Fetch session details for each feedback entry
+      const feedbackWithSessions = await Promise.all(
+        allFeedback.map(async (fb) => {
+          const session = await getSessionById(fb.session_id);
+          return {
+            feedback: fb,
+            session,
+          };
+        })
+      );
+      
+      // Build sessionsById map for feedback entries
+      const feedbackSessionsMap: Record<string, Session> = {};
+      feedbackWithSessions.forEach(({ session }) => {
+        if (session) {
+          feedbackSessionsMap[session.id] = session;
+        }
+      });
+      setSessionsById(prev => ({ ...prev, ...feedbackSessionsMap }));
+      
+      // Transform to match the expected format
+      const transformedFeedback = feedbackWithSessions
+        .filter(({ session }) => session !== null)
+        .map(({ feedback: fb }) => ({
+          id: fb.id || `feedback-${fb.feedback_date}-${fb.session_id}`,
+          sessionId: fb.session_id,
+          label: fb.label,
+          timestampSeconds: fb.timestamp_seconds,
+          date: fb.feedback_date,
+        }));
+      
+      console.log('📊 [ProfileScreen] Processed', transformedFeedback.length, 'emotional feedback items');
+      setEmotionalFeedbackHistory(transformedFeedback);
+    } catch (error) {
+      console.error('❌ [ProfileScreen] Error fetching emotional feedback:', error);
+    } finally {
+      setIsLoadingFeedback(false);
+    }
+  }, [userId, emotionalFeedbackHistoryFromStore, processStoreFeedback]);
+
+  // Fetch from database in background (runs after cache initialization)
+  // This merges store with DB to ensure we have the complete picture
+  React.useEffect(() => {
+    if (userId) {
+      // Small delay to let cache initialization complete first
+      const timer = setTimeout(() => {
+        fetchEmotionalFeedback();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [userId, fetchEmotionalFeedback]);
+
+  // Refresh when screen comes into focus (only emotional feedback, not activity history)
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('📊 [ProfileScreen] Screen focused, refreshing emotional feedback...');
+      // Only refresh emotional feedback on focus, not activity history
+      // Activity history only loads from DB on app open
+      fetchEmotionalFeedback();
+    }, [fetchEmotionalFeedback])
+  );
+
+  // Handle removing emotional feedback (both from store and database)
+  const handleRemoveEmotionalFeedback = React.useCallback(async (entryId: string) => {
+    if (!userId) {
+      console.warn('⚠️ [ProfileScreen] No user ID, cannot remove feedback');
+      return;
+    }
+
+    // Optimistically remove from UI
+    setEmotionalFeedbackHistory(prev => prev.filter(entry => entry.id !== entryId));
+    
+    // Remove from database
+    console.log('💾 [ProfileScreen] Removing emotional feedback from database:', entryId);
+    const result = await removeEmotionalFeedbackDB(userId, entryId);
+    
+    if (result.success) {
+      console.log('✅ [ProfileScreen] Emotional feedback removed successfully');
+    } else {
+      console.error('❌ [ProfileScreen] Failed to remove emotional feedback:', result.error);
+      // Re-fetch to restore the correct state
+      const feedback = await getUserEmotionalFeedback(userId, 20);
+      const transformedFeedback = feedback.map(fb => ({
+        id: fb.id || `feedback-${fb.feedback_date}-${fb.session_id}`,
+        sessionId: fb.session_id,
+        label: fb.label,
+        timestampSeconds: fb.timestamp_seconds,
+        date: fb.feedback_date,
+      }));
+      setEmotionalFeedbackHistory(transformedFeedback);
+    }
+  }, [userId]);
+
+  // Use completed sessions as recent activity (already sorted most recent first)
+  const recentActivity = completedSessions;
+  // Emotional feedback is already sorted by feedback_date descending from the service
+  const sortedFeedbackHistory = emotionalFeedbackHistory;
 
   const moduleId = todayModuleId || 'anxiety';
   const activeModule = mentalHealthModules.find(module => module.id === moduleId);
@@ -374,7 +852,12 @@ export const ProfileScreen: React.FC = () => {
           </View>
           
           <View style={styles.activityContent}>
-            {recentActivity.length === 0 ? (
+            {isLoadingActivity ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateEmoji}>⏳</Text>
+                <Text style={styles.emptyStateTitle}>Loading activity...</Text>
+              </View>
+            ) : recentActivity.length === 0 ? (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyStateEmoji}>🧘‍♀️</Text>
                 <Text style={styles.emptyStateTitle}>No sessions yet</Text>
@@ -403,24 +886,29 @@ export const ProfileScreen: React.FC = () => {
                     onScroll={handleActivityScroll}
                     scrollEventThrottle={16}
                   >
-                    {recentActivity.map((sessionDelta, index) => {
-                      const sessionData = sessionDelta.sessionId ? sessionsById[sessionDelta.sessionId] : undefined;
+                    {recentActivity.map((activityItem, index) => {
+                      const sessionData = activityItem.sessionId ? sessionsById[activityItem.sessionId] : undefined;
                       const moduleData =
-                        (sessionDelta.moduleId && modulesById[sessionDelta.moduleId]) ||
+                        (activityItem.moduleId && modulesById[activityItem.moduleId]) ||
                         (sessionData ? modulesById[sessionData.goal] : undefined);
                       const moduleTitle = moduleData?.title;
                       const moduleColor = moduleData?.color || '#007AFF';
                       const moduleInitial = moduleTitle?.trim().charAt(0)?.toUpperCase() || 'M';
                       const iconBackground = createSubtleBackground(moduleColor);
-                      const formattedDate = formatSessionDate(sessionDelta.date);
+                      const formattedDate = formatSessionDate(activityItem.date);
                       const sessionTitle = sessionData?.title || 'Meditation Session';
                       const truncatedTitle = truncateText(sessionTitle, 28);
-                      const durationMinutes = sessionData?.durationMin ?? null;
-                      const durationLabel = durationMinutes !== null ? `${durationMinutes} min` : '-- min';
+                      const minutesCompleted = activityItem.minutesCompleted ?? 0;
+                      const roundedMinutes = Math.round(minutesCompleted);
+                      const durationLabel = minutesCompleted > 0 
+                        ? `${roundedMinutes} min` 
+                        : sessionData?.durationMin 
+                          ? `${sessionData.durationMin} min` 
+                          : '-- min';
                       const completionLabel = formattedDate ? `Completed ${formattedDate}` : 'Completion date unavailable';
 
                       return (
-                        <View key={`${sessionDelta.date}-${index}`} style={styles.activityItem}>
+                        <View key={activityItem.id || `${activityItem.sessionId}-${activityItem.date}-${index}`} style={styles.activityItem}>
                           <View
                             style={[
                               styles.activityIcon,
@@ -511,7 +999,12 @@ export const ProfileScreen: React.FC = () => {
         </View>
 
           <View style={styles.activityContent}>
-            {sortedFeedbackHistory.length === 0 ? (
+            {isLoadingFeedback ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateEmoji}>⏳</Text>
+                <Text style={styles.emptyStateTitle}>Loading feedback...</Text>
+              </View>
+            ) : sortedFeedbackHistory.length === 0 ? (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyStateEmoji}>🎯</Text>
                 <Text style={styles.emptyStateTitle}>No feedback yet</Text>
@@ -586,7 +1079,7 @@ export const ProfileScreen: React.FC = () => {
                           </View>
                           <TouchableOpacity
                             style={styles.deleteFeedbackButton}
-                            onPress={() => removeEmotionalFeedbackEntry(entry.id)}
+                            onPress={() => handleRemoveEmotionalFeedback(entry.id)}
                             hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
                           >
                             <Text style={styles.deleteFeedbackButtonText}>×</Text>

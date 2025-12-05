@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
@@ -20,6 +20,11 @@ import { MeditationDetailScreen } from './src/screens/MeditationDetailScreen';
 import { SplashScreen } from './src/screens/SplashScreen';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { useStore } from './src/store/useStore';
+import { supabase } from './src/services/supabase';
+import { getAllSessions, getSessionsByModality, getSessionById } from './src/services/sessionService';
+import { ensureTestUser, verifyTestUserConnection } from './src/services/testUserService';
+import { getUserPreferences } from './src/services/userService';
+import { ensureDailyRecommendations } from './src/services/recommendationService';
 
 const Tab = createBottomTabNavigator();
 const TodayStack = createStackNavigator();
@@ -225,6 +230,143 @@ export default function App() {
   const [showSplash, setShowSplash] = useState(true);
   const activeSession = useStore(state => state.activeSession);
   const hasCompletedOnboarding = useStore(state => state.hasCompletedOnboarding);
+
+  // Initialize test user and load preferences
+  useEffect(() => {
+    const initTestUser = async () => {
+      try {
+        const userId = await ensureTestUser();
+        useStore.setState({ userId });
+        console.log('👤 Test user connected to app:', userId);
+        console.log('✅ You are now logged in as user:', userId);
+        
+        // Verify user ID is in store
+        const storeUserId = useStore.getState().userId;
+        if (storeUserId === userId) {
+          console.log('✅ User ID stored in app state:', userId);
+        }
+        
+        // Load user preferences from database
+        console.log('📱 [App] Loading user preferences...');
+        const preferences = await getUserPreferences(userId);
+        
+        if (preferences) {
+          console.log('📱 [App] Loaded preferences:', preferences);
+          // Update store with preferences from database
+          const currentReminderEnabled = useStore.getState().reminderEnabled;
+          if (preferences.reminder_enabled !== currentReminderEnabled) {
+            // Only update if different to avoid unnecessary state changes
+            if (preferences.reminder_enabled && !currentReminderEnabled) {
+              useStore.getState().toggleReminder(); // Toggle from false to true
+            } else if (!preferences.reminder_enabled && currentReminderEnabled) {
+              useStore.getState().toggleReminder(); // Toggle from true to false
+            }
+            console.log('📱 [App] Updated reminder preference to:', preferences.reminder_enabled);
+          }
+        } else {
+          console.log('📱 [App] No preferences found, using defaults');
+        }
+        
+        // Ensure daily recommendations exist for today (default module: anxiety)
+        console.log('🎯 [App] Checking daily recommendations...');
+        const defaultModuleId = 'anxiety'; // Default module
+        const recResult = await ensureDailyRecommendations(userId, defaultModuleId);
+        
+        if (recResult.success) {
+          if (recResult.generated) {
+            console.log('✅ [App] Generated new daily recommendations');
+          } else {
+            console.log('✅ [App] Daily recommendations already exist for today');
+          }
+        } else {
+          console.error('❌ [App] Failed to ensure daily recommendations:', recResult.error);
+        }
+      } catch (error) {
+        console.error('❌ Failed to initialize test user:', error);
+        // Set test user ID anyway as fallback
+        useStore.setState({ userId: '00000000-0000-0000-0000-000000000001' });
+      }
+    };
+    
+    initTestUser();
+  }, []);
+
+  // Test Supabase connection and session migration
+  useEffect(() => {
+    const testSupabaseConnection = async () => {
+      try {
+        console.log('\n🧪 Testing Supabase connection and session migration...\n');
+        
+        // Test 1: Fetch all sessions
+        console.log('📋 Test 1: Fetching all sessions...');
+        const allSessions = await getAllSessions();
+        console.log(`✅ Found ${allSessions.length} sessions`);
+        
+        if (allSessions.length > 0) {
+          console.log('📝 Sessions:');
+          allSessions.slice(0, 5).forEach(s => {
+            console.log(`   - ${s.title} (${s.durationMin}min, ${s.modality})`);
+          });
+          if (allSessions.length > 5) {
+            console.log(`   ... and ${allSessions.length - 5} more`);
+          }
+        } else {
+          console.log('⚠️ No sessions found - database might be empty');
+        }
+        
+        // Test 2: Fetch sessions by modality (anxiety)
+        console.log('\n📋 Test 2: Fetching anxiety sessions...');
+        const anxietySessions = await getSessionsByModality('anxiety');
+        console.log(`✅ Found ${anxietySessions.length} anxiety sessions`);
+        if (anxietySessions.length > 0) {
+          console.log('📝 Anxiety sessions:', anxietySessions.map(s => s.title).join(', '));
+        }
+        
+        // Test 3: Fetch sessions by modality (stress) - should have cross-module sessions
+        console.log('\n📋 Test 3: Fetching stress sessions (testing cross-module)...');
+        const stressSessions = await getSessionsByModality('stress');
+        console.log(`✅ Found ${stressSessions.length} stress sessions`);
+        if (stressSessions.length > 0) {
+          console.log('📝 Stress sessions:', stressSessions.map(s => s.title).join(', '));
+        }
+        
+        // Test 4: Check for cross-module session (Ocean Waves should be in both)
+        console.log('\n📋 Test 4: Verifying cross-module sessions...');
+        const oceanWaves = anxietySessions.find(s => s.title.includes('Ocean Waves'));
+        if (oceanWaves) {
+          const alsoInStress = stressSessions.find(s => s.id === oceanWaves.id);
+          if (alsoInStress) {
+            console.log(`✅ Cross-module verified: "${oceanWaves.title}" appears in both anxiety and stress`);
+          } else {
+            console.log(`⚠️ Cross-module check: "${oceanWaves.title}" not found in stress sessions`);
+          }
+        }
+        
+        // Test 5: Fetch single session by ID
+        if (allSessions.length > 0) {
+          console.log('\n📋 Test 5: Fetching single session by ID...');
+          const firstSession = await getSessionById(allSessions[0].id);
+          if (firstSession) {
+            console.log(`✅ Retrieved session: "${firstSession.title}"`);
+          } else {
+            console.log('⚠️ Could not retrieve session by ID');
+          }
+        }
+        
+        console.log('\n✅ All tests completed successfully!\n');
+        
+      } catch (error) {
+        console.error('❌ Connection test failed:', error);
+      }
+    };
+
+    // Run test after a short delay to ensure app is initialized
+    const timer = setTimeout(() => {
+      testSupabaseConnection();
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleSplashFinish = () => {
     setShowSplash(false);

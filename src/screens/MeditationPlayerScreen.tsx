@@ -27,14 +27,17 @@ import Reanimated, {
   interpolate,
   Extrapolate,
 } from 'react-native-reanimated';
-import { useStore } from '../store/useStore';
+import { useStore, type CompletedSessionCacheEntry } from '../store/useStore';
 import { theme } from '../styles/theme';
 import { Slider0to10 } from '../components/Slider0to10';
-import { meditationAudioData, emotionalFeedbackData, sessionProgressData, mockAudioPlayer } from '../data/meditationMockData';
+import { meditationAudioData, sessionProgressData, mockAudioPlayer } from '../data/meditationMockData';
 import { PlayIcon, PauseIcon, SkipForward10Icon, SkipBackward10Icon, HeartIcon, HeartOutlineIcon, BackIcon, MoreIcon } from '../components/icons/PlayerIcons';
 import { createMeditationPlayerBackground, getPrerenderedGradient } from '../utils/gradientBackgrounds';
 import MeditationCompletionLanding from '../components/MeditationCompletionLanding';
 import MeditationFeedbackLanding from '../components/MeditationFeedbackLanding';
+import { markSessionCompleted } from '../services/progressService';
+import { addSessionRating } from '../services/ratingService';
+import { addEmotionalFeedback } from '../services/feedbackService';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -48,6 +51,12 @@ export const MeditationPlayerScreen: React.FC = () => {
   const toggleLikedSession = useStore((state: any) => state.toggleLikedSession);
   const likedSessionIds = useStore((state: any) => state.likedSessionIds);
   const addEmotionalFeedbackEntry = useStore((state: any) => state.addEmotionalFeedbackEntry);
+  const addCompletedSessionToCache = useStore((state: any) => state.addCompletedSessionToCache);
+  const userId = useStore((state: any) => state.userId);
+  const activeModuleId = useStore((state: any) => state.activeModuleId);
+  const todayModuleId = useStore((state: any) => state.todayModuleId);
+  const markSessionCompletedToday = useStore((state: any) => state.markSessionCompletedToday);
+  const isSessionCompletedToday = useStore((state: any) => state.isSessionCompletedToday);
   const isLiked = activeSession ? likedSessionIds.includes(activeSession.id) : false;
   const [showTutorial, setShowTutorial] = useState(false);
   const [emotionalRating, setEmotionalRating] = useState(5);
@@ -88,6 +97,7 @@ export const MeditationPlayerScreen: React.FC = () => {
   const emotionalProgressFillWidth = useSharedValue(0);
   const [actualEmotionalBarWidth, setActualEmotionalBarWidth] = useState(0);
   const [currentEmotionalLabel, setCurrentEmotionalLabel] = useState('');
+  const emotionalLabelRef = useRef<string>(''); // Store label for countdown confirmation
   const [progressBarColor, setProgressBarColor] = useState('rgba(255, 255, 255, 0.8)'); // Start with high opacity white
   const [isProgressBarVisible, setIsProgressBarVisible] = useState(true);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
@@ -293,11 +303,6 @@ export const MeditationPlayerScreen: React.FC = () => {
                 setCurrentSegment(currentSegmentData.text);
               }
             }
-          }
-          
-          // Track emotional feedback every 30 seconds
-          if (newTime % 30 === 0) {
-            emotionalFeedbackData.trackEmotionalState(activeSession?.id || '', newTime, emotionalRating);
           }
           
           if (newTime >= totalDuration) {
@@ -758,6 +763,8 @@ export const MeditationPlayerScreen: React.FC = () => {
 
   // Start countdown confirmation
   const startCountdown = (label: string) => {
+    console.log('💬 [Emotional Feedback] startCountdown called with label:', label);
+    
     // Clear any existing timer
     if (countdownTimerRef.current) {
       clearInterval(countdownTimerRef.current);
@@ -769,6 +776,7 @@ export const MeditationPlayerScreen: React.FC = () => {
     setIsConfirming(true);
     setCountdown(3);
     setConfirmedEmotionalState(label);
+    console.log('💬 [Emotional Feedback] Set confirmedEmotionalState to:', label);
     
     // Reset and animate countdown progress
     countdownProgressAnim.setValue(0);
@@ -798,6 +806,9 @@ export const MeditationPlayerScreen: React.FC = () => {
     );
     pulseAnimationRef.current.start();
     
+    // Store the label in a ref so we can access it even if state hasn't updated
+    emotionalLabelRef.current = label;
+    
     countdownTimerRef.current = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
@@ -806,7 +817,8 @@ export const MeditationPlayerScreen: React.FC = () => {
             pulseAnimationRef.current.stop();
             pulseAnimationRef.current = null;
           }
-          confirmEmotionalState();
+          // Use the label from ref to ensure we have the correct value
+          confirmEmotionalState(emotionalLabelRef.current);
           return 0;
         }
         return prev - 1;
@@ -815,23 +827,81 @@ export const MeditationPlayerScreen: React.FC = () => {
   };
 
   // Confirm the emotional state and reset to default
-  const confirmEmotionalState = () => {
+  const confirmEmotionalState = async (label?: string) => {
     // Clear timer
     if (countdownTimerRef.current) {
       clearInterval(countdownTimerRef.current);
       countdownTimerRef.current = null;
     }
     
-    // Save emotional feedback to store
-    if (activeSession && confirmedEmotionalState) {
+    // Use the passed label parameter, or fall back to state (label parameter takes priority)
+    const emotionalStateToSave = label || confirmedEmotionalState;
+    const timeAtConfirmation = currentTime;
+    
+    console.log('💬 [Emotional Feedback] Confirming emotional state:', emotionalStateToSave);
+    console.log('💬 [Emotional Feedback] Label parameter:', label);
+    console.log('💬 [Emotional Feedback] State value:', confirmedEmotionalState);
+    
+    // Save emotional feedback to store and database
+    if (activeSession && emotionalStateToSave) {
       const feedbackEntry = {
         id: `feedback-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         sessionId: activeSession.id,
-        label: confirmedEmotionalState as any,
-        timestampSeconds: currentTime,
+        label: emotionalStateToSave as any,
+        timestampSeconds: timeAtConfirmation,
         date: new Date().toISOString(),
       };
-      addEmotionalFeedbackEntry(feedbackEntry);
+      
+      // Save to database first
+      if (userId) {
+        const moduleContext = activeModuleId || todayModuleId || undefined;
+        console.log('💾 [Emotional Feedback] Saving to database:', {
+          userId,
+          sessionId: activeSession.id,
+          label: emotionalStateToSave,
+          timestampSeconds: timeAtConfirmation,
+          contextModule: moduleContext,
+        });
+        
+        const result = await addEmotionalFeedback(
+          userId,
+          activeSession.id,
+          emotionalStateToSave as any,
+          timeAtConfirmation,
+          moduleContext
+        );
+        
+        if (result.success) {
+          console.log('✅ [Emotional Feedback] Saved to database successfully, ID:', result.id);
+          // Update the entry with the database ID if available
+          if (result.id) {
+            feedbackEntry.id = result.id;
+          }
+          // Add to local store after database save (deferred to avoid render issues)
+          setTimeout(() => {
+            addEmotionalFeedbackEntry(feedbackEntry);
+          }, 0);
+        } else {
+          console.error('❌ [Emotional Feedback] Failed to save to database:', result.error);
+          // Still add to store even if database save fails (for offline support)
+          setTimeout(() => {
+            addEmotionalFeedbackEntry(feedbackEntry);
+          }, 0);
+        }
+      } else {
+        console.warn('⚠️ [Emotional Feedback] No user ID, cannot save to database');
+        // Add to store anyway (will be synced later when user ID is available)
+        setTimeout(() => {
+          addEmotionalFeedbackEntry(feedbackEntry);
+        }, 0);
+      }
+    } else {
+      if (!activeSession) {
+        console.warn('⚠️ [Emotional Feedback] No active session');
+      }
+      if (!emotionalStateToSave) {
+        console.warn('⚠️ [Emotional Feedback] No emotional state to save');
+      }
     }
     
     // First hide the countdown
@@ -875,8 +945,6 @@ export const MeditationPlayerScreen: React.FC = () => {
         setShowConfirmationMessage(false);
       });
     }, 200); // Small delay to ensure countdown disappears first
-    
-    console.log('Emotional state confirmed:', confirmedEmotionalState);
   };
 
   // Cancel countdown (when user clicks X button)
@@ -1012,6 +1080,7 @@ export const MeditationPlayerScreen: React.FC = () => {
     try {
       const label = getEmotionalLabel(position);
       setCurrentEmotionalLabel(label);
+      emotionalLabelRef.current = label; // Also update ref
       
       // Also set interaction state here as a backup
       if (!hasUserInteracted) {
@@ -1690,9 +1759,94 @@ export const MeditationPlayerScreen: React.FC = () => {
       {/* Feedback Landing Overlay */}
       <MeditationFeedbackLanding
         visible={showFeedbackLanding}
-        onFinish={(rating) => {
+        onFinish={async (rating) => {
           if (activeSession) {
-            sessionProgressData.markSessionComplete(activeSession.id, currentTime, rating);
+            console.log('📊 [Session Completion] Starting session completion process...');
+            console.log('📊 [Session Completion] Session ID:', activeSession.id);
+            console.log('📊 [Session Completion] Session Title:', activeSession.title);
+            console.log('📊 [Session Completion] Duration (seconds):', currentTime);
+            console.log('📊 [Session Completion] Duration (minutes):', Math.round(currentTime / 60));
+            console.log('📊 [Session Completion] Rating:', rating);
+            console.log('📊 [Session Completion] User ID:', userId);
+            
+            // Determine module context
+            const moduleContext = activeModuleId || todayModuleId || null;
+            const moduleIdForCompletion = moduleContext || todayModuleId || 'anxiety'; // Default to anxiety if no module
+            console.log('📊 [Session Completion] Module Context:', moduleContext);
+            
+            // Immediately show checkmark if not already cached (optimistic update)
+            const today = new Date().toISOString().split('T')[0];
+            const alreadyCompleted = isSessionCompletedToday(moduleIdForCompletion, activeSession.id, today);
+            
+            if (!alreadyCompleted) {
+              console.log('✅ [Session Completion] Immediately marking session as completed in store (optimistic update)');
+              markSessionCompletedToday(moduleIdForCompletion, activeSession.id, today);
+            } else {
+              console.log('ℹ️ [Session Completion] Session already marked as completed in store');
+            }
+            
+            if (!userId) {
+              console.warn('⚠️ [Session Completion] No user ID found - skipping database save');
+              // Still call the mock for local state
+              sessionProgressData.markSessionComplete(activeSession.id, currentTime, rating);
+            } else {
+              // Convert seconds to minutes with decimal precision (e.g., 125 seconds = 2.083 minutes)
+              const minutesCompleted = currentTime / 60;
+              console.log('📊 [Session Completion] Calculated minutes (decimal):', minutesCompleted);
+              
+              // Save completed session to database (in background)
+              console.log('💾 [Session Completion] Saving completed session to database (background)...');
+              
+              // Add to cache immediately for instant UI update
+              const cacheEntry: CompletedSessionCacheEntry = {
+                id: `temp-${Date.now()}`, // Temporary ID, will be replaced on next DB fetch
+                sessionId: activeSession.id,
+                moduleId: moduleContext || undefined,
+                date: new Date().toISOString().split('T')[0],
+                minutesCompleted,
+                createdAt: new Date().toISOString(),
+              };
+              addCompletedSessionToCache(cacheEntry);
+              console.log('✅ [Session Completion] Session added to cache immediately');
+              
+              markSessionCompleted(
+                userId,
+                activeSession.id,
+                minutesCompleted,
+                moduleContext || undefined
+              ).then((sessionResult) => {
+                if (sessionResult.success) {
+                  console.log('✅ [Session Completion] Session saved to completed_sessions table successfully!');
+                  console.log('✅ [Session Completion] Session added to activity history');
+                } else {
+                  console.error('❌ [Session Completion] Failed to save session:', sessionResult.error);
+                }
+              }).catch((error) => {
+                console.error('❌ [Session Completion] Error saving session:', error);
+              });
+              
+              // Save session rating to database (in background)
+              console.log('💾 [Session Completion] Saving session rating to database (background)...');
+              addSessionRating(
+                userId,
+                activeSession.id,
+                rating,
+                moduleContext || undefined
+              ).then((ratingResult) => {
+                if (ratingResult.success) {
+                  console.log('✅ [Session Completion] Rating saved to session_ratings table successfully!');
+                } else {
+                  console.error('❌ [Session Completion] Failed to save rating:', ratingResult.error);
+                }
+              }).catch((error) => {
+                console.error('❌ [Session Completion] Error saving rating:', error);
+              });
+              
+              // Also call the mock for local state updates
+              sessionProgressData.markSessionComplete(activeSession.id, currentTime, rating);
+              
+              console.log('✅ [Session Completion] Session completion process finished (database operations running in background)');
+            }
           }
           setActiveSession(null);
         }}

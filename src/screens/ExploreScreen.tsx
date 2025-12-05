@@ -6,6 +6,7 @@ import Animated, {
   withTiming, 
   withSequence,
   withDelay,
+  withRepeat,
   Easing,
   runOnJS 
 } from 'react-native-reanimated';
@@ -19,10 +20,10 @@ import { SearchBar } from '../components/SearchBar';
 import { FilterCategory, FilterSelection } from '../components/SpotifyFilterBar';
 import { ExploreIcon } from '../components/icons';
 import { useStore } from '../store/useStore';
-import { mockSessions } from '../data/mockData';
 import { mentalHealthModules, MentalHealthModule } from '../data/modules';
 import { theme } from '../styles/theme';
 import { ExploreScreen as ExploreScreenComponent } from '../components/ExploreScreen';
+import { getAllSessions } from '../services/sessionService';
 
 type ExploreStackParamList = {
   ExploreMain: undefined;
@@ -32,6 +33,48 @@ type ExploreStackParamList = {
 
 type ExploreScreenNavigationProp = StackNavigationProp<ExploreStackParamList, 'ExploreMain'>;
 
+// Animated Current Module Indicator Component
+const CurrentModuleIndicator: React.FC<{ isVisible: boolean }> = ({ isVisible }) => {
+  const opacity = useSharedValue(isVisible ? 1 : 0);
+  const scale = useSharedValue(isVisible ? 1 : 0.8);
+  const pulseScale = useSharedValue(1);
+
+  useEffect(() => {
+    if (isVisible) {
+      // Fade in and scale up animation
+      opacity.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.cubic) });
+      scale.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.back(1.2)) });
+      
+      // Subtle pulse animation
+      pulseScale.value = withRepeat(
+        withSequence(
+          withTiming(1.05, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) })
+        ),
+        -1,
+        false
+      );
+    } else {
+      opacity.value = withTiming(0, { duration: 200 });
+      scale.value = withTiming(0.8, { duration: 200 });
+      pulseScale.value = 1;
+    }
+  }, [isVisible]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [
+      { scale: scale.value * pulseScale.value }
+    ],
+  }));
+
+  return (
+    <Animated.View style={[styles.currentModuleBadge, animatedStyle]} pointerEvents="none">
+      <Text style={styles.currentModuleText}>Current Module</Text>
+    </Animated.View>
+  );
+};
+
 export const ExploreScreen: React.FC = () => {
   const navigation = useNavigation<ExploreScreenNavigationProp>();
   const addRecentModule = useStore(state => state.addRecentModule);
@@ -40,6 +83,7 @@ export const ExploreScreen: React.FC = () => {
   const setGlobalBackgroundColor = useStore(state => state.setGlobalBackgroundColor);
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
   const likedSessionIds = useStore(state => state.likedSessionIds);
+  const todayModuleId = useStore(state => state.todayModuleId);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [selectedSort, setSelectedSort] = useState<string>('recents');
@@ -50,11 +94,26 @@ export const ExploreScreen: React.FC = () => {
   const [isShuffling, setIsShuffling] = useState(false);
   const moduleOpacity = useSharedValue(1);
   const moduleScale = useSharedValue(1);
+  const [allSessions, setAllSessions] = useState<any[]>([]);
 
   // Set screen context when component mounts
   useEffect(() => {
     setCurrentScreen('explore');
   }, [setCurrentScreen]);
+
+  // Fetch all sessions for liked meditations count only
+  useEffect(() => {
+    const fetchSessions = async () => {
+      try {
+        const sessions = await getAllSessions();
+        setAllSessions(sessions);
+        console.log('[ExploreScreen] ✅ Fetched sessions for liked meditations count:', sessions.length);
+      } catch (error) {
+        console.error('Error fetching sessions for liked meditations:', error);
+      }
+    };
+    fetchSessions();
+  }, []);
 
   // Define filter categories for top nav pill filters
   const filterCategories: FilterCategory[] = [
@@ -84,8 +143,8 @@ export const ExploreScreen: React.FC = () => {
     },
   ];
 
-  // Get liked sessions
-  const likedSessions = mockSessions.filter(session => likedSessionIds.includes(session.id));
+  // Get liked sessions from database
+  const likedSessions = allSessions.filter(session => likedSessionIds.includes(session.id));
 
   // Filter and sort modules
   const filteredModules = useMemo(() => {
@@ -94,13 +153,12 @@ export const ExploreScreen: React.FC = () => {
     const likedMeditationsItem = {
       id: 'liked-meditations',
       title: 'Liked Meditations',
-      description: likedSessions.length > 0 
-        ? `${likedSessions.length} favorite meditation session${likedSessions.length === 1 ? '' : 's'}`
-        : 'No favorite sessions yet',
-      category: 'wellness' as const, // Use a valid category type
+      description: 'View hearted meditations',
+      category: 'wellness' as const, // Category for display, but it's its own special item
       color: '#E74C3C',
       meditationCount: likedSessions.length,
       isPinned: true,
+      isLikedMeditations: true, // Special flag to identify this as liked meditations
       likedSessions: likedSessions, // Store the actual liked sessions
     };
 
@@ -159,11 +217,13 @@ export const ExploreScreen: React.FC = () => {
 
     // Return pinned modules first, then regular modules
     return [...pinnedModules, ...regularModules];
-  }, [searchQuery, selectedSort, recentModuleIds, likedSessionIds]);
+  }, [searchQuery, selectedSort, recentModuleIds, likedSessionIds, likedSessions]);
 
   const handleModulePress = (moduleId: string) => {
+    console.log('[ExploreScreen] 👆 User clicked module:', moduleId);
     addRecentModule(moduleId);
     // Don't change global background color - let the detail screen handle its own background
+    console.log('[ExploreScreen] 🚀 Navigating to ModuleDetail for:', moduleId);
     navigation.navigate('ModuleDetail', { moduleId });
   };
 
@@ -316,6 +376,7 @@ export const ExploreScreen: React.FC = () => {
                 <View key={rowIndex} style={styles.moduleRow}>
                   {modulesInRow.map((module, moduleIndex) => {
                     const isPinned = 'isPinned' in module && module.isPinned;
+                    const isCurrentModule = module.id === todayModuleId;
                   
                   // Apply animation only to non-pinned modules
                   if (isPinned) {
@@ -336,7 +397,11 @@ export const ExploreScreen: React.FC = () => {
                           <View style={styles.moduleCardHeader}>
                             <View style={styles.moduleHeaderLeft}>
                               <View style={[styles.moduleIndicator, { backgroundColor: module.color }]} />
-                              <Text style={styles.moduleCategory}>{module.category.toUpperCase()}</Text>
+                              <Text style={styles.moduleCategory}>
+                                {('isLikedMeditations' in module && module.isLikedMeditations) 
+                                  ? 'PINNED' 
+                                  : module.category.toUpperCase()}
+                              </Text>
                             </View>
                             <View style={styles.pinBadge}>
                               <Text style={styles.pinIcon}>📌</Text>
@@ -357,12 +422,7 @@ export const ExploreScreen: React.FC = () => {
                           </Text>
                           
                           <View style={styles.moduleFooter}>
-                            <Text style={[
-                              styles.sessionCount,
-                              styles.pinnedSessionCount
-                            ]}>
-                              {module.meditationCount} session{module.meditationCount === 1 ? '' : 's'}
-                            </Text>
+                            <CurrentModuleIndicator isVisible={isCurrentModule} />
                             <View style={styles.moduleArrow}>
                               <Text style={styles.moduleArrowText}>→</Text>
                             </View>
@@ -399,9 +459,7 @@ export const ExploreScreen: React.FC = () => {
                           </Text>
                           
                           <View style={styles.moduleFooter}>
-                            <Text style={styles.sessionCount}>
-                              {module.meditationCount} session{module.meditationCount === 1 ? '' : 's'}
-                            </Text>
+                            <CurrentModuleIndicator isVisible={isCurrentModule} />
                             <View style={styles.moduleArrow}>
                               <Text style={styles.moduleArrowText}>→</Text>
                             </View>
@@ -718,6 +776,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#000000',
+  },
+  currentModuleBadge: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  currentModuleText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
   },
   emptyState: {
     alignItems: 'center',

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { UserProgress, FilterState, SessionDelta, Session, EmotionalFeedbackEntry } from '../types';
 import { initialUserProgress } from '../data/mockData';
 import { mentalHealthModules } from '../data/modules';
+import { toggleLikedSession as toggleLikedSessionDB } from '../services/likedService';
 
 // Helper function to create subtle background colors from module colors
 export const createSubtleBackground = (moduleColor: string): string => {
@@ -144,6 +145,16 @@ mentalHealthModules.forEach(module => {
   prerenderedModuleBackgrounds[module.id] = createSubtleBackground(module.color);
 });
 
+// Cache entry for completed sessions
+export interface CompletedSessionCacheEntry {
+  id: string;
+  sessionId: string;
+  moduleId?: string;
+  date: string;
+  minutesCompleted: number;
+  createdAt: string;
+}
+
 const buildInitialStoreData = () => {
   const emotionalFeedbackHistorySeed: EmotionalFeedbackEntry[] = [
     {
@@ -232,6 +243,9 @@ const buildInitialStoreData = () => {
     })(),
     isLoggedIn: false,
     hasCompletedOnboarding: false,
+    sessionCache: {} as Record<string, Session>,
+    userId: null as string | null,
+    completedSessionsCache: [] as CompletedSessionCacheEntry[],
   };
 };
 
@@ -255,6 +269,10 @@ interface AppState {
   completedTodaySessions: Record<string, string[]>; // Key: "moduleId-date", Value: array of session IDs
   isLoggedIn: boolean;
   hasCompletedOnboarding: boolean;
+  sessionCache: Record<string, Session>;
+  userId: string | null;
+  completedSessionsCache: CompletedSessionCacheEntry[];
+  setUserId: (userId: string | null) => void;
   addSessionDelta: (delta: SessionDelta) => void;
   setFilters: (filters: FilterState) => void;
   toggleReminder: () => void;
@@ -268,13 +286,18 @@ interface AppState {
   setGlobalBackgroundColor: (color: string) => void;
   setCurrentScreen: (screen: 'today' | 'explore' | 'progress' | 'profile' | 'settings' | 'module-detail') => void;
   setTodayModuleId: (moduleId: string | null) => void;
-  toggleLikedSession: (sessionId: string) => void;
+  toggleLikedSession: (sessionId: string) => Promise<void>;
   isSessionLiked: (sessionId: string) => boolean;
   setIsTransitioning: (isTransitioning: boolean) => void;
   addEmotionalFeedbackEntry: (entry: EmotionalFeedbackEntry) => void;
   removeEmotionalFeedbackEntry: (entryId: string) => void;
   markSessionCompletedToday: (moduleId: string, sessionId: string, date?: string) => void;
   isSessionCompletedToday: (moduleId: string, sessionId: string, date?: string) => boolean;
+  cacheSessions: (sessions: Session[]) => void;
+  getCachedSession: (sessionId: string) => Session | null;
+  addCompletedSessionToCache: (entry: CompletedSessionCacheEntry) => void;
+  removeCompletedSessionFromCache: (sessionId: string, createdAt: string) => void;
+  removeDuplicateCacheEntries: (dbEntries: Array<{ session_id: string; created_at: string }>) => void;
   resetAppData: () => void;
   logout: () => void;
 }
@@ -332,12 +355,50 @@ export const useStore = create<AppState>((set, get) => ({
   setTodayModuleId: (moduleId: string | null) => 
     set({ todayModuleId: moduleId }),
     
-  toggleLikedSession: (sessionId: string) => 
+  toggleLikedSession: async (sessionId: string) => {
+    const state = get();
+    const userId = state.userId;
+    
+    console.log('👆 Like button pressed for session:', sessionId);
+    
+    if (!userId) {
+      console.warn('⚠️ Cannot save like to database: user ID not set');
+      // Still update local state for immediate UI feedback
+      set((state) => ({
+        likedSessionIds: state.likedSessionIds.includes(sessionId)
+          ? state.likedSessionIds.filter(id => id !== sessionId)
+          : [...state.likedSessionIds, sessionId]
+      }));
+      return;
+    }
+
+    const isCurrentlyLiked = state.likedSessionIds.includes(sessionId);
+    console.log('📊 Current like status:', isCurrentlyLiked ? 'liked' : 'not liked');
+    
+    // Optimistically update UI first
     set((state) => ({
-      likedSessionIds: state.likedSessionIds.includes(sessionId)
+      likedSessionIds: isCurrentlyLiked
         ? state.likedSessionIds.filter(id => id !== sessionId)
         : [...state.likedSessionIds, sessionId]
-    })),
+    }));
+
+    // Then save to database
+    console.log('💾 Saving like to database...');
+    const result = await toggleLikedSessionDB(userId, sessionId);
+    
+    if (result.success) {
+      console.log('✅ Like saved to database successfully!');
+      console.log('✅ New like status:', result.isLiked ? 'liked' : 'unliked');
+    } else {
+      console.error('❌ Failed to save like to database:', result.error);
+      // Revert optimistic update on error
+      set((state) => ({
+        likedSessionIds: isCurrentlyLiked
+          ? [...state.likedSessionIds, sessionId]
+          : state.likedSessionIds.filter(id => id !== sessionId)
+      }));
+    }
+  },
     
   isSessionLiked: (sessionId: string): boolean => {
     const state = get();
@@ -383,6 +444,57 @@ export const useStore = create<AppState>((set, get) => ({
     return completed.includes(sessionId) || completed.includes(sessionId.replace('-today', ''));
   },
 
+  cacheSessions: (sessions: Session[]) =>
+    set((state) => {
+      const newCache = { ...state.sessionCache };
+      sessions.forEach((session) => {
+        newCache[session.id] = session;
+      });
+      return { sessionCache: newCache };
+    }),
+
+  getCachedSession: (sessionId: string): Session | null => {
+    const state = get();
+    return state.sessionCache[sessionId] || null;
+  },
+
+  addCompletedSessionToCache: (entry: CompletedSessionCacheEntry) =>
+    set((state) => ({
+      completedSessionsCache: [entry, ...state.completedSessionsCache]
+        .filter((e, index, self) => 
+          index === self.findIndex(item => 
+            item.sessionId === e.sessionId && 
+            item.createdAt === e.createdAt
+          )
+        )
+        .slice(0, 50) // Keep last 50 entries
+    })),
+
+  removeCompletedSessionFromCache: (sessionId: string, createdAt: string) =>
+    set((state) => ({
+      completedSessionsCache: state.completedSessionsCache.filter(
+        entry => !(entry.sessionId === sessionId && entry.createdAt === createdAt)
+      )
+    })),
+
+  removeDuplicateCacheEntries: (dbEntries: Array<{ session_id: string; created_at: string }>) =>
+    set((state) => {
+      // Create a set of DB entry keys for fast lookup
+      const dbKeys = new Set(
+        dbEntries.map(e => `${e.session_id}-${e.created_at}`)
+      );
+      
+      // Remove cache entries that match DB entries
+      const filteredCache = state.completedSessionsCache.filter(entry => {
+        const cacheKey = `${entry.sessionId}-${entry.createdAt}`;
+        return !dbKeys.has(cacheKey);
+      });
+      
+      console.log(`🧹 [Store] Removed ${state.completedSessionsCache.length - filteredCache.length} duplicate cache entries`);
+      
+      return { completedSessionsCache: filteredCache };
+    }),
+
   resetAppData: () => {
     const defaults = buildInitialStoreData();
     set((state) => ({
@@ -399,4 +511,7 @@ export const useStore = create<AppState>((set, get) => ({
   completeOnboarding: () => {
     set({ hasCompletedOnboarding: true });
   },
+
+  setUserId: (userId: string | null) => 
+    set({ userId }),
 })); 

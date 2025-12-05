@@ -88,7 +88,6 @@ export const SessionCard: React.FC<SessionCardProps> = ({
                 <Text style={styles.modalityIcon}>{getModalityIcon(session.modality)}</Text>
                 <Text style={styles.modalityText}>{session.modality}</Text>
               </View>
-              <Text style={styles.goalText}>{session.goal}</Text>
             </View>
           </View>
         </View>

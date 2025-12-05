@@ -1,13 +1,13 @@
 import React, { useMemo, useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Animated, ActivityIndicator } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { SessionCard } from '../components/SessionCard';
 import { Session } from '../types';
-import { mockSessions } from '../data/mockData';
 import { mentalHealthModules } from '../data/modules';
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
+import { getAllSessions, getSessionsByModality } from '../services/sessionService';
 
 type ExploreStackParamList = {
   ExploreMain: undefined;
@@ -79,6 +79,12 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
   const { moduleId } = route.params;
   const module = mentalHealthModules.find(m => m.id === moduleId);
   const likedSessionIds = useStore(state => state.likedSessionIds);
+  const cacheSessions = useStore(state => state.cacheSessions);
+  
+  // Session state from database
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   // Message state for "Added to Liked meditations" or "Removed from Liked meditations"
   const [showAddedMessage, setShowAddedMessage] = useState(false);
@@ -157,43 +163,151 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
       setCurrentScreen('explore');
     };
   }, [setCurrentScreen]);
+
+  // Fetch sessions from database based on module (only when module changes)
+  useEffect(() => {
+    const fetchSessions = async () => {
+      console.log('[ModuleDetailScreen] 🔄 Starting to fetch sessions for module:', moduleId);
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        let fetchedSessions: Session[] = [];
+        
+        // Handle liked meditations case - fetch all sessions and filter by liked
+        if (moduleId === 'liked-meditations') {
+          console.log('[ModuleDetailScreen] 📥 Fetching all sessions for liked meditations...');
+          const allSessions = await getAllSessions();
+          console.log('[ModuleDetailScreen] ✅ Fetched', allSessions.length, 'total sessions');
+          // Only filter by likedSessionIds here - removingSessionIds is handled by moduleSessions useMemo
+          fetchedSessions = allSessions.filter(session => 
+            likedSessionIds.includes(session.id)
+          );
+          console.log('[ModuleDetailScreen] 🔍 Filtered to', fetchedSessions.length, 'liked sessions');
+        } else if (module) {
+          console.log('[ModuleDetailScreen] 📥 Fetching sessions by modality:', moduleId);
+          fetchedSessions = await getSessionsByModality(moduleId);
+          console.log('[ModuleDetailScreen] ✅ Fetched', fetchedSessions.length, 'sessions for modality', moduleId);
+        }
+        
+        // Log session data to verify what we're getting
+        if (fetchedSessions.length > 0) {
+          console.log('[ModuleDetailScreen] 📋 Sample session data:', {
+            id: fetchedSessions[0].id,
+            title: fetchedSessions[0].title,
+            hasDescription: !!fetchedSessions[0].description,
+            hasWhyItWorks: !!fetchedSessions[0].whyItWorks,
+            description: fetchedSessions[0].description?.substring(0, 50) + '...',
+            whyItWorks: fetchedSessions[0].whyItWorks?.substring(0, 50) + '...',
+          });
+        }
+        
+        setSessions(fetchedSessions);
+        // Cache all sessions with their full data (description, whyItWorks, thumbnail_url, etc.)
+        console.log('[ModuleDetailScreen] 💾 Caching', fetchedSessions.length, 'sessions...');
+        cacheSessions(fetchedSessions);
+        console.log('[ModuleDetailScreen] ✅ Sessions cached successfully');
+      } catch (err) {
+        console.error('[ModuleDetailScreen] ❌ Error fetching sessions:', err);
+        setError('Failed to load sessions. Please try again.');
+      } finally {
+        setIsLoading(false);
+        console.log('[ModuleDetailScreen] ✨ Finished loading sessions');
+      }
+    };
+
+    fetchSessions();
+  }, [moduleId, module, cacheSessions]); // Only refetch when module changes, not on like/unlike or removal animation
+
+  // Track previous likedSessionIds to detect if we're adding or removing
+  const prevLikedSessionIdsRef = useRef<string[]>(likedSessionIds);
   
-  // Filter sessions based on module type
+  // Background sync when likedSessionIds changes (only for adding new liked sessions)
+  useEffect(() => {
+    // Only sync for liked meditations module, and only if not currently loading
+    if (moduleId === 'liked-meditations' && !isLoading) {
+      const prevLikedIds = prevLikedSessionIdsRef.current;
+      const isAdding = likedSessionIds.length > prevLikedIds.length;
+      
+      // INSTANT UPDATE: The moduleSessions useMemo already filters based on likedSessionIds
+      // So unliking is instant - no state updates needed, just let useMemo handle it
+      
+      // If unliking, instantly update sessions state to remove unliked session (optimistic update)
+      if (!isAdding) {
+        // Immediately filter out unliked sessions from state (instant, no loading)
+        const updatedSessions = sessions.filter(session => 
+          likedSessionIds.includes(session.id) || removingSessionIds.has(session.id)
+        );
+        setSessions(updatedSessions);
+        prevLikedSessionIdsRef.current = likedSessionIds;
+        return; // Early return - skip all background processing for unliking
+      }
+      
+      // Only do background sync if we're ADDING new likes
+      if (isAdding) {
+        const getCachedSession = useStore.getState().getCachedSession;
+        const sessionCache = useStore.getState().sessionCache;
+        const cachedSessionIds = Object.keys(sessionCache);
+        
+        // Find newly liked sessions that aren't in cache yet
+        const newLikedIds = likedSessionIds.filter(id => !prevLikedIds.includes(id));
+        const missingSessionIds = newLikedIds.filter(id => !cachedSessionIds.includes(id));
+        
+        if (missingSessionIds.length > 0) {
+          // New liked sessions not in cache - fetch in background (silent, no loading screen)
+          console.log('[ModuleDetailScreen] 📥 Background sync: Fetching', missingSessionIds.length, 'new liked sessions...');
+          getAllSessions()
+            .then(allSessions => {
+              // Get the newly liked sessions
+              const newSessions = allSessions.filter(session => 
+                missingSessionIds.includes(session.id)
+              );
+              
+              // Add to cache
+              if (newSessions.length > 0) {
+                cacheSessions(newSessions);
+                console.log('[ModuleDetailScreen] ✅ Background sync: Cached', newSessions.length, 'new sessions');
+              }
+              
+              // Update sessions list with all liked sessions (including new ones)
+              const allLikedSessions = allSessions.filter(session => 
+                likedSessionIds.includes(session.id)
+              );
+              setSessions(allLikedSessions);
+            })
+            .catch(err => {
+              console.error('[ModuleDetailScreen] ❌ Background sync error (silent):', err);
+              // Don't show error - UI already works with existing sessions
+            });
+        } else {
+          // All new likes are already in cache, just update the sessions list
+          const getCachedSession = useStore.getState().getCachedSession;
+          const allLikedSessions = likedSessionIds
+            .map(id => getCachedSession(id))
+            .filter((session): session is Session => session !== null);
+          setSessions(allLikedSessions);
+        }
+      }
+      
+      // Update ref for next comparison (only if we processed adding)
+      prevLikedSessionIdsRef.current = likedSessionIds;
+    }
+  }, [likedSessionIds, moduleId, cacheSessions, isLoading]);
+
+  // Filter sessions based on module type (for liked meditations with removing animation)
   const moduleSessions = useMemo(() => {
-    // Handle liked meditations case
     if (moduleId === 'liked-meditations') {
-      return mockSessions.filter(session => 
+      return sessions.filter(session => 
         likedSessionIds.includes(session.id) || removingSessionIds.has(session.id)
       );
     }
-    
-    if (!module) return [];
-    
-    // Map module IDs to session goals/types
-    const moduleToGoalMap: Record<string, string[]> = {
-      'anxiety': ['anxiety'],
-      'adhd': ['focus'],
-      'depression': ['stress', 'sleep'],
-      'bipolar': ['stress'],
-      'panic': ['anxiety'],
-      'ptsd': ['stress'],
-      'stress': ['stress'],
-      'sleep': ['sleep'],
-      'focus': ['focus'],
-      'emotional-regulation': ['anxiety', 'stress'],
-      'mindfulness': ['anxiety', 'focus', 'stress'],
-      'self-compassion': ['stress'],
-    };
-    
-    const relevantGoals = moduleToGoalMap[moduleId] || ['anxiety'];
-    
-    return mockSessions.filter(session => 
-      relevantGoals.includes(session.goal)
-    );
-  }, [moduleId, module, likedSessionIds, removingSessionIds]);
+    return sessions;
+  }, [sessions, moduleId, likedSessionIds, removingSessionIds]);
 
   const handleSessionStart = (session: Session) => {
+    console.log('[ModuleDetailScreen] 👆 User clicked session:', session.id, session.title);
     // Navigate to MeditationDetail screen instead of setting active session
+    console.log('[ModuleDetailScreen] 🚀 Navigating to MeditationDetail for session:', session.id);
     navigation.navigate('MeditationDetail', { sessionId: session.id });
   };
 
@@ -226,11 +340,14 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
             </Text>
           </View>
           <Text style={styles.moduleTitle}>
-            {moduleId === 'liked-meditations' ? 'Liked Meditations' : module?.title}
+            {moduleId === 'liked-meditations' 
+              ? `${moduleSessions.length} favorite meditation${moduleSessions.length === 1 ? '' : 's'}`
+              : module?.title
+            }
           </Text>
           <Text style={styles.moduleDescription}>
             {moduleId === 'liked-meditations' 
-              ? `${moduleSessions.length} favorite meditation session${moduleSessions.length === 1 ? '' : 's'}`
+              ? 'View hearted meditations'
               : module?.description
             }
           </Text>
@@ -239,40 +356,56 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
 
       {/* Sessions List */}
       <View style={styles.content}>
-        <FlatList
-          data={moduleSessions}
-          renderItem={({ item }) => {
-            const isRemoving = removingSessionIds.has(item.id);
-            return (
-              <AnimatedSessionCard
-                session={item}
-                onStart={() => handleSessionStart(item)}
-                variant="list"
-                onLike={(isLiked) => handleLike(isLiked, item.id)}
-                isRemoving={isRemoving}
-              />
-            );
-          }}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContainer}
-          ItemSeparatorComponent={() => <View style={{ height: theme.spacing.md }} />}
-        />
-
-        {moduleSessions.length === 0 && (
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text style={styles.loadingText}>Loading sessions...</Text>
+          </View>
+        ) : error ? (
           <View style={styles.emptyStateContainer}>
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>
-                {moduleId === 'liked-meditations' ? 'No Liked Meditations' : 'Coming Soon'}
-              </Text>
-              <Text style={styles.emptySubtext}>
-                {moduleId === 'liked-meditations' 
-                  ? 'Heart meditations you enjoy to see them here'
-                  : `Meditations for ${module?.title} are being prepared`
-                }
-              </Text>
+              <Text style={styles.emptyText}>Error Loading Sessions</Text>
+              <Text style={styles.emptySubtext}>{error}</Text>
             </View>
           </View>
+        ) : (
+          <>
+            <FlatList
+              data={moduleSessions}
+              renderItem={({ item }) => {
+                const isRemoving = removingSessionIds.has(item.id);
+                return (
+                  <AnimatedSessionCard
+                    session={item}
+                    onStart={() => handleSessionStart(item)}
+                    variant="list"
+                    onLike={(isLiked) => handleLike(isLiked, item.id)}
+                    isRemoving={isRemoving}
+                  />
+                );
+              }}
+              keyExtractor={(item) => item.id}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.listContainer}
+              ItemSeparatorComponent={() => <View style={{ height: theme.spacing.md }} />}
+            />
+
+            {moduleSessions.length === 0 && (
+              <View style={styles.emptyStateContainer}>
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyText}>
+                    {moduleId === 'liked-meditations' ? 'No Liked Meditations' : 'Coming Soon'}
+                  </Text>
+                  <Text style={styles.emptySubtext}>
+                    {moduleId === 'liked-meditations' 
+                      ? 'Heart meditations you enjoy to see them here'
+                      : `Meditations for ${module?.title} are being prepared`
+                    }
+                  </Text>
+                </View>
+              </View>
+            )}
+          </>
         )}
       </View>
       
@@ -376,6 +509,18 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 12,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 17,
+    color: '#8e8e93',
+    fontWeight: '400',
   },
   sectionHeader: {
     marginBottom: 24,

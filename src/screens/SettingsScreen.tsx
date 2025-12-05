@@ -3,9 +3,12 @@ import { View, Text, StyleSheet, Switch, ScrollView, TouchableOpacity, Alert } f
 import { useNavigation } from '@react-navigation/native';
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
+import { updateUserPreferences } from '../services/userService';
+import { useUserId } from '../hooks/useUserId';
 
 export const SettingsScreen: React.FC = () => {
   const navigation = useNavigation();
+  const userId = useUserId();
   const {
     reminderEnabled,
     toggleReminder,
@@ -44,6 +47,42 @@ export const SettingsScreen: React.FC = () => {
     setCurrentScreen('settings');
   }, [setCurrentScreen]);
 
+  // Handle reminder toggle with database save
+  const handleToggleReminder = React.useCallback(async (value: boolean) => {
+    console.log('📱 [SettingsScreen] Toggling reminder to:', value);
+    
+    const currentValue = reminderEnabled;
+    
+    // Update local state immediately for responsive UI
+    if (currentValue !== value) {
+      toggleReminder(); // This will toggle to the new value
+    }
+    
+    // Save to database
+    if (userId) {
+      console.log('💾 [SettingsScreen] Saving reminder preference to database...');
+      const result = await updateUserPreferences(userId, {
+        reminder_enabled: value,
+      });
+      
+      if (result.success) {
+        console.log('✅ [SettingsScreen] Reminder preference saved successfully');
+      } else {
+        console.error('❌ [SettingsScreen] Failed to save reminder preference:', result.error);
+        // Revert local state on error
+        if (currentValue !== value) {
+          toggleReminder(); // Toggle back
+        }
+      }
+    } else {
+      console.warn('⚠️ [SettingsScreen] No user ID, cannot save to database');
+      // Revert if no user ID
+      if (currentValue !== value) {
+        toggleReminder(); // Toggle back
+      }
+    }
+  }, [userId, reminderEnabled, toggleReminder]);
+
   return (
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
       {/* Header */}
@@ -74,7 +113,7 @@ export const SettingsScreen: React.FC = () => {
             </View>
             <Switch
               value={reminderEnabled}
-              onValueChange={toggleReminder}
+              onValueChange={handleToggleReminder}
               trackColor={{ false: '#e0e0e0', true: '#007AFF' }}
               thumbColor={reminderEnabled ? '#ffffff' : '#ffffff'}
             />

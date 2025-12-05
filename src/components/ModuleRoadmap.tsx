@@ -8,6 +8,9 @@ import { MentalHealthModule } from '../data/modules';
 import { mockSessions } from '../data/mockData';
 import { useStore, createCompletionBackground } from '../store/useStore';
 import { theme } from '../styles/theme';
+import { useUserId } from '../hooks/useUserId';
+import { getUserCompletedSessions } from '../services/progressService';
+import { getSessionById } from '../services/sessionService';
 
 type TodayStackParamList = {
   TodayMain: undefined;
@@ -211,6 +214,58 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   const scrollViewWidth = useRef(0);
 
   const userProgress = useStore(state => state.userProgress);
+  const userId = useUserId();
+  const [fetchedCompletedSessions, setFetchedCompletedSessions] = useState<CompletedMeditation[]>([]);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
+  
+  // Fetch actual completed sessions from database
+  useEffect(() => {
+    const fetchCompletedSessions = async () => {
+      if (!userId) {
+        setFetchedCompletedSessions([]);
+        return;
+      }
+
+      setIsLoadingSessions(true);
+      try {
+        // Fetch all completed sessions (we'll filter by module later)
+        const completedSessionsData = await getUserCompletedSessions(userId, 50); // Get up to 50 most recent
+        
+        // Filter by current module
+        const moduleCompletedSessions = completedSessionsData.filter(
+          cs => cs.context_module === module.id
+        );
+
+        // Fetch session details for each completed session
+        const sessionPromises = moduleCompletedSessions.map(async (cs) => {
+          const session = await getSessionById(cs.session_id);
+          if (!session) return null;
+          
+          return {
+            id: cs.id || `${module.id}-completed-${cs.session_id}-${cs.completed_date}`,
+            session: session,
+            completedDate: new Date(cs.completed_date || cs.created_at || Date.now()),
+          } as CompletedMeditation;
+        });
+
+        const results = await Promise.all(sessionPromises);
+        const validSessions = results.filter((item): item is CompletedMeditation => item !== null);
+        
+        // Sort by completed date (most recent first) - most recent on the left
+        validSessions.sort((a, b) => b.completedDate.getTime() - a.completedDate.getTime());
+        
+        // Limit to 6 most recent
+        setFetchedCompletedSessions(validSessions.slice(0, 6));
+      } catch (error) {
+        console.error('Error fetching completed sessions:', error);
+        setFetchedCompletedSessions([]);
+      } finally {
+        setIsLoadingSessions(false);
+      }
+    };
+
+    fetchCompletedSessions();
+  }, [userId, module.id]);
   
   const roadmapData = useMemo(() => {
     const relevantGoals = {
@@ -231,27 +286,9 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
     const goals = relevantGoals[module.id as keyof typeof relevantGoals] || ['focus'];
     const moduleSessions = mockSessions.filter(session => goals.includes(session.goal));
 
-    // Get actual completed sessions for this module from userProgress
-    const actualCompletedSessions: CompletedMeditation[] = userProgress.sessionDeltas
-      .filter(delta => delta.moduleId === module.id)
-      .map(delta => {
-        const session = mockSessions.find(s => s.id === delta.sessionId);
-        if (!session) return null;
-        return {
-          id: `${module.id}-completed-${delta.sessionId}-${delta.date}`,
-          session: {
-            ...session,
-            id: delta.sessionId,
-          },
-          completedDate: new Date(delta.date),
-        };
-      })
-      .filter((item): item is CompletedMeditation => item !== null)
-      .sort((a, b) => b.completedDate.getTime() - a.completedDate.getTime())
-      .slice(0, 6); // Limit to 6 most recent
-
-    // Use actual completed sessions if available, otherwise use empty array
-    const completedSessions = actualCompletedSessions;
+    // Use fetched completed sessions from database (already sorted with most recent first)
+    // Most recent will appear on the left (first in array)
+    const completedSessions = fetchedCompletedSessions;
 
     const todayCount = Math.min(3, Math.max(1, moduleSessions.length - completedSessions.length));
 
@@ -282,7 +319,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
       todaySessions,
       tomorrowSession,
     };
-  }, [module, userProgress]);
+  }, [module, fetchedCompletedSessions]);
 
   const { completedSessions, todaySessions, tomorrowSession } = roadmapData;
   const todayRecommendedSessionId = todaySessions[0]?.id;

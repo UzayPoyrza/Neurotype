@@ -27,7 +27,7 @@ import Reanimated, {
   interpolate,
   Extrapolate,
 } from 'react-native-reanimated';
-import { useStore } from '../store/useStore';
+import { useStore, type CompletedSessionCacheEntry } from '../store/useStore';
 import { theme } from '../styles/theme';
 import { Slider0to10 } from '../components/Slider0to10';
 import { meditationAudioData, sessionProgressData, mockAudioPlayer } from '../data/meditationMockData';
@@ -51,6 +51,7 @@ export const MeditationPlayerScreen: React.FC = () => {
   const toggleLikedSession = useStore((state: any) => state.toggleLikedSession);
   const likedSessionIds = useStore((state: any) => state.likedSessionIds);
   const addEmotionalFeedbackEntry = useStore((state: any) => state.addEmotionalFeedbackEntry);
+  const addCompletedSessionToCache = useStore((state: any) => state.addCompletedSessionToCache);
   const userId = useStore((state: any) => state.userId);
   const activeModuleId = useStore((state: any) => state.activeModuleId);
   const todayModuleId = useStore((state: any) => state.todayModuleId);
@@ -1795,6 +1796,19 @@ export const MeditationPlayerScreen: React.FC = () => {
               
               // Save completed session to database (in background)
               console.log('💾 [Session Completion] Saving completed session to database (background)...');
+              
+              // Add to cache immediately for instant UI update
+              const cacheEntry: CompletedSessionCacheEntry = {
+                id: `temp-${Date.now()}`, // Temporary ID, will be replaced on next DB fetch
+                sessionId: activeSession.id,
+                moduleId: moduleContext || undefined,
+                date: new Date().toISOString().split('T')[0],
+                minutesCompleted,
+                createdAt: new Date().toISOString(),
+              };
+              addCompletedSessionToCache(cacheEntry);
+              console.log('✅ [Session Completion] Session added to cache immediately');
+              
               markSessionCompleted(
                 userId,
                 activeSession.id,

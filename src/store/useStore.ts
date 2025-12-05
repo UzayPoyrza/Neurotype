@@ -145,6 +145,16 @@ mentalHealthModules.forEach(module => {
   prerenderedModuleBackgrounds[module.id] = createSubtleBackground(module.color);
 });
 
+// Cache entry for completed sessions
+export interface CompletedSessionCacheEntry {
+  id: string;
+  sessionId: string;
+  moduleId?: string;
+  date: string;
+  minutesCompleted: number;
+  createdAt: string;
+}
+
 const buildInitialStoreData = () => {
   const emotionalFeedbackHistorySeed: EmotionalFeedbackEntry[] = [
     {
@@ -235,6 +245,7 @@ const buildInitialStoreData = () => {
     hasCompletedOnboarding: false,
     sessionCache: {} as Record<string, Session>,
     userId: null as string | null,
+    completedSessionsCache: [] as CompletedSessionCacheEntry[],
   };
 };
 
@@ -260,6 +271,7 @@ interface AppState {
   hasCompletedOnboarding: boolean;
   sessionCache: Record<string, Session>;
   userId: string | null;
+  completedSessionsCache: CompletedSessionCacheEntry[];
   setUserId: (userId: string | null) => void;
   addSessionDelta: (delta: SessionDelta) => void;
   setFilters: (filters: FilterState) => void;
@@ -283,6 +295,9 @@ interface AppState {
   isSessionCompletedToday: (moduleId: string, sessionId: string, date?: string) => boolean;
   cacheSessions: (sessions: Session[]) => void;
   getCachedSession: (sessionId: string) => Session | null;
+  addCompletedSessionToCache: (entry: CompletedSessionCacheEntry) => void;
+  removeCompletedSessionFromCache: (sessionId: string, createdAt: string) => void;
+  removeDuplicateCacheEntries: (dbEntries: Array<{ session_id: string; created_at: string }>) => void;
   resetAppData: () => void;
   logout: () => void;
 }
@@ -442,6 +457,43 @@ export const useStore = create<AppState>((set, get) => ({
     const state = get();
     return state.sessionCache[sessionId] || null;
   },
+
+  addCompletedSessionToCache: (entry: CompletedSessionCacheEntry) =>
+    set((state) => ({
+      completedSessionsCache: [entry, ...state.completedSessionsCache]
+        .filter((e, index, self) => 
+          index === self.findIndex(item => 
+            item.sessionId === e.sessionId && 
+            item.createdAt === e.createdAt
+          )
+        )
+        .slice(0, 50) // Keep last 50 entries
+    })),
+
+  removeCompletedSessionFromCache: (sessionId: string, createdAt: string) =>
+    set((state) => ({
+      completedSessionsCache: state.completedSessionsCache.filter(
+        entry => !(entry.sessionId === sessionId && entry.createdAt === createdAt)
+      )
+    })),
+
+  removeDuplicateCacheEntries: (dbEntries: Array<{ session_id: string; created_at: string }>) =>
+    set((state) => {
+      // Create a set of DB entry keys for fast lookup
+      const dbKeys = new Set(
+        dbEntries.map(e => `${e.session_id}-${e.created_at}`)
+      );
+      
+      // Remove cache entries that match DB entries
+      const filteredCache = state.completedSessionsCache.filter(entry => {
+        const cacheKey = `${entry.sessionId}-${entry.createdAt}`;
+        return !dbKeys.has(cacheKey);
+      });
+      
+      console.log(`🧹 [Store] Removed ${state.completedSessionsCache.length - filteredCache.length} duplicate cache entries`);
+      
+      return { completedSessionsCache: filteredCache };
+    }),
 
   resetAppData: () => {
     const defaults = buildInitialStoreData();

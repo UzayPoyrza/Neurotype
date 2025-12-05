@@ -293,7 +293,7 @@ export const ProfileScreen: React.FC = () => {
 
         {/* Share & Stats Merged Card */}
         <MergedCard>
-          <MergedCard.Section style={styles.mergedSectionTop}>
+          <MergedCard.Section style={[styles.mergedSectionTop, styles.mergedSectionReducedBottomPadding]}>
             <View style={styles.cardHeader}>
               <View style={styles.cardHeaderTop}>
                 <Text style={styles.cardTitle}>🎁 Share & Earn</Text>
@@ -350,13 +350,7 @@ export const ProfileScreen: React.FC = () => {
             </View>
           </MergedCard.Section>
 
-          <MergedCard.Section style={[styles.mergedSectionAfterDivider, styles.statsSection]} hideDividerBefore>
-            <View style={styles.cardHeader}>
-              <View style={styles.cardHeaderTop}>
-                <Text style={styles.cardTitle}>📊 Your Stats</Text>
-              </View>
-            </View>
-            
+          <MergedCard.Section style={[styles.mergedSectionAfterDivider, styles.statsSection, styles.mergedSectionIncreasedTopPadding]}>
             <View style={styles.statsContent}>
               <View style={styles.statItem}>
                 <Text style={styles.statNumber}>0</Text>
@@ -733,10 +727,16 @@ const styles = StyleSheet.create({
   mergedSectionTop: {
     paddingTop: 0,
   },
+  mergedSectionReducedBottomPadding: {
+    paddingBottom: 8,
+  },
   mergedSectionAfterDivider: {
     paddingTop: 0,
   },
-  profileName: {
+  mergedSectionIncreasedTopPadding: {
+    paddingTop: 8,
+  },
+div  profileName: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#000000',

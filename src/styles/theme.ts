@@ -226,12 +226,14 @@ export const theme = {
       alignItems: 'center' as const,
       paddingHorizontal: 16,
       paddingTop: 16,
-      paddingBottom: 8,
+      paddingBottom: 12,
     },
     cardTitle: {
-      fontSize: 17,
+      fontSize: 13,
       fontWeight: '600' as const,
       color: '#000000',
+      textTransform: 'uppercase' as const,
+      letterSpacing: 0.5,
     },
     cardSubtitle: {
       fontSize: 15,

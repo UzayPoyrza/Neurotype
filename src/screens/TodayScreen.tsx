@@ -25,7 +25,7 @@ type SessionState = 'not_started' | 'in_progress' | 'completed' | 'rating';
 
 type TodayStackParamList = {
   TodayMain: undefined;
-  Roadmap: undefined;
+  Roadmap: { recommendedSession?: Session };
   MeditationDetail: { sessionId: string };
   Player: undefined;
 };
@@ -575,7 +575,7 @@ export const TodayScreen: React.FC = () => {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      navigation.navigate('Roadmap' as never);
+      navigation.navigate('Roadmap', { recommendedSession: recommendedSession || undefined });
       // Reset scale after navigation
       roadmapCardScale.setValue(1);
     });

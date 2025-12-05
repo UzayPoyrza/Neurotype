@@ -9,7 +9,7 @@ import { mockSessions } from '../data/mockData';
 import { useStore, createCompletionBackground } from '../store/useStore';
 import { theme } from '../styles/theme';
 import { useUserId } from '../hooks/useUserId';
-import { getUserCompletedSessions } from '../services/progressService';
+import { getUserCompletedSessions, isSessionCompleted } from '../services/progressService';
 import { getSessionById } from '../services/sessionService';
 
 type TodayStackParamList = {
@@ -28,6 +28,7 @@ interface CompletedMeditation {
 
 interface ModuleRoadmapProps {
   module: MentalHealthModule;
+  recommendedSession?: Session;
   todayCompleted?: boolean;
   triggerUnlockAnimation?: boolean;
   onUnlockComplete?: () => void;
@@ -190,6 +191,7 @@ const NeuroadaptationCard: React.FC<NeuroadaptationCardProps> = ({
 
 export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   module,
+  recommendedSession,
   todayCompleted = false,
   triggerUnlockAnimation = false,
   onUnlockComplete,
@@ -283,46 +285,31 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
       'self-compassion': ['sleep', 'focus'],
     };
 
-    const goals = relevantGoals[module.id as keyof typeof relevantGoals] || ['focus'];
-    const moduleSessions = mockSessions.filter(session => goals.includes(session.goal));
-
     // Use fetched completed sessions from database (already sorted with most recent first)
     // Most recent will appear on the left (first in array)
     const completedSessions = fetchedCompletedSessions;
 
-    const todayCount = Math.min(3, Math.max(1, moduleSessions.length - completedSessions.length));
-
-    const todaySessions = moduleSessions
-      .slice(completedSessions.length, completedSessions.length + todayCount)
-      .map((session, idx) => ({
-        ...session,
-        id: `${session.id}-today-${idx}`,
-      }));
-
-    const tomorrowCandidate = moduleSessions[completedSessions.length + todayCount];
+    // For tomorrow session, we can keep using a placeholder from mock data for now
+    const goals = relevantGoals[module.id as keyof typeof relevantGoals] || ['focus'];
+    const moduleSessions = mockSessions.filter(session => goals.includes(session.goal));
+    const tomorrowCandidate = moduleSessions[0];
     
-    // Always create a tomorrow session - use a placeholder if none available
     const tomorrowSession = tomorrowCandidate
       ? {
           ...tomorrowCandidate,
           id: `${tomorrowCandidate.id}-tomorrow`,
         }
-      : moduleSessions.length > 0
-      ? {
-          ...moduleSessions[0],
-          id: `${moduleSessions[0].id}-tomorrow-placeholder`,
-        }
       : undefined;
 
     return {
       completedSessions,
-      todaySessions,
       tomorrowSession,
     };
   }, [module, fetchedCompletedSessions]);
 
-  const { completedSessions, todaySessions, tomorrowSession } = roadmapData;
-  const todayRecommendedSessionId = todaySessions[0]?.id;
+  const { completedSessions, tomorrowSession } = roadmapData;
+  // Use the recommended session passed as prop (from TodayScreen)
+  const todayRecommendedSessionId = recommendedSession?.id;
   
   const titleText = `${module.title} Journey`;
   // Use smaller font for longer titles
@@ -583,16 +570,13 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   };
 
   const renderTodayPlan = () => {
-    // Only show the recommended session
-    const recommendedSession = todaySessions.find(session => session.id === todayRecommendedSessionId);
-    
+    // Use the recommended session passed as prop from TodayScreen
     if (!recommendedSession) {
       return null;
     }
 
-    // Check if this session is completed (remove -today suffix to get original ID)
-    const originalSessionId = recommendedSession.id.split('-today')[0];
-    const isCompleted = isSessionCompletedToday(module.id, originalSessionId) || todayCompleted;
+    // Check if this session is completed
+    const isCompleted = isSessionCompletedToday(module.id, recommendedSession.id) || todayCompleted;
     
     // Get completion background color
     const completionBackgroundColor = createCompletionBackground(
@@ -877,7 +861,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
             </View>
             <View style={styles.summaryDivider} />
             <View style={styles.summaryStat}>
-              <Text style={styles.summaryStatValue}>{todaySessions.length}</Text>
+              <Text style={styles.summaryStatValue}>{recommendedSession ? 1 : 0}</Text>
               <Text style={styles.summaryStatLabel}>Today</Text>
             </View>
           </View>

@@ -736,7 +736,7 @@ const styles = StyleSheet.create({
   mergedSectionIncreasedTopPadding: {
     paddingTop: 8,
   },
-div  profileName: {
+  profileName: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#000000',

@@ -631,22 +631,23 @@ export const TodayScreen: React.FC = () => {
         <MergedCard>
           <MergedCard.Section style={styles.mergedSectionTop}>
             <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>🧘‍♀️ Today's Focus</Text>
-              <TouchableOpacity 
-                style={styles.moduleButton}
-                onPress={handleModuleButtonPress}
-                activeOpacity={1}
-              >
-                <Animated.View style={{ opacity: moduleButtonFade, flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={[styles.moduleIndicator, { backgroundColor: selectedModule.color }]} />
-                  <Text style={styles.moduleButtonText}>{selectedModule.title}</Text>
-                </Animated.View>
-              </TouchableOpacity>
+              <View style={styles.cardHeaderTop}>
+                <Text style={styles.cardTitle}>🧘‍♀️ Today's Focus</Text>
+                <TouchableOpacity 
+                  style={styles.moduleButton}
+                  onPress={handleModuleButtonPress}
+                  activeOpacity={1}
+                >
+                  <Animated.View style={{ opacity: moduleButtonFade, flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={[styles.moduleIndicator, { backgroundColor: selectedModule.color }]} />
+                    <Text style={styles.moduleButtonText}>{selectedModule.title}</Text>
+                  </Animated.View>
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.focusSubtitle}>
+                Personalized for your {selectedModule.title.toLowerCase()} journey
+              </Text>
             </View>
-            
-            <Text style={styles.focusSubtitle}>
-              Personalized for your {selectedModule.title.toLowerCase()} journey
-            </Text>
 
             {/* Recommended Session */}
             <Animated.View
@@ -697,7 +698,9 @@ export const TodayScreen: React.FC = () => {
 
           <MergedCard.Section style={styles.mergedSectionList}>
             <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>💡 Other Options</Text>
+              <View style={styles.cardHeaderTop}>
+                <Text style={styles.cardTitle}>💡 Other Options</Text>
+              </View>
             </View>
             
             <View style={styles.alternativeSessionsList}>
@@ -748,7 +751,9 @@ export const TodayScreen: React.FC = () => {
         {/* Progress Path Card */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>🗺️ Progress Path</Text>
+            <View style={styles.cardHeaderTop}>
+              <Text style={styles.cardTitle}>🗺️ Progress Path</Text>
+            </View>
           </View>
 
           <Animated.View
@@ -1053,12 +1058,17 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     paddingBottom: 0,
   },
+  cardHeaderTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
   focusSubtitle: {
     fontSize: 15,
     color: '#8e8e93',
     fontWeight: '400',
-    paddingHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 0,
   },
   recommendedSessionContainer: {
     paddingHorizontal: 16,
@@ -1123,6 +1133,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   alternativeSessionsList: {
+    paddingTop: 0,
     paddingBottom: 20,
   },
   alternativeSession: {
@@ -1188,6 +1199,7 @@ const styles = StyleSheet.create({
   },
   progressPreviewContainer: {
     paddingHorizontal: 16,
+    paddingTop: 0,
     paddingBottom: 20,
   },
   progressPreviewCard: {

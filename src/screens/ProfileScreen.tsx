@@ -295,13 +295,15 @@ export const ProfileScreen: React.FC = () => {
         <MergedCard>
           <MergedCard.Section style={styles.mergedSectionTop}>
             <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>🎁 Share & Earn</Text>
-            </View>
-            
-            <View style={styles.shareContent}>
+              <View style={styles.cardHeaderTop}>
+                <Text style={styles.cardTitle}>🎁 Share & Earn</Text>
+              </View>
               <Text style={styles.shareSubtitle}>
                 Give your friends 30 days of premium meditation
               </Text>
+            </View>
+            
+            <View style={styles.shareContent}>
 
               <View style={styles.stepsList}>
                 <View style={styles.step}>
@@ -350,7 +352,9 @@ export const ProfileScreen: React.FC = () => {
 
           <MergedCard.Section style={[styles.mergedSectionAfterDivider, styles.statsSection]}>
             <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>📊 Your Stats</Text>
+              <View style={styles.cardHeaderTop}>
+                <Text style={styles.cardTitle}>📊 Your Stats</Text>
+              </View>
             </View>
             
             <View style={styles.statsContent}>
@@ -370,7 +374,14 @@ export const ProfileScreen: React.FC = () => {
         {/* Activity History Card */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>📈 Activity History</Text>
+            <View style={styles.cardHeaderTop}>
+              <Text style={styles.cardTitle}>📈 Activity History</Text>
+            </View>
+            {recentActivity.length > 0 && (
+              <Text style={styles.activitySubtitle}>
+                Recently completed meditations
+              </Text>
+            )}
           </View>
           
           <View style={styles.activityContent}>
@@ -384,9 +395,6 @@ export const ProfileScreen: React.FC = () => {
               </View>
             ) : (
               <>
-                <Text style={styles.activitySubtitle}>
-                  Recently completed meditations
-                </Text>
                 <View style={styles.activityListWrapper}>
                   <ScrollView
                     style={[
@@ -497,17 +505,24 @@ export const ProfileScreen: React.FC = () => {
         {/* Emotional Feedback History Card */}
         <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>💬 Emotional Feedback History</Text>
-          <TouchableOpacity
-            ref={feedbackInfoButtonRef}
-            style={[styles.infoButton, isFeedbackInfoActive && styles.infoButtonActive]}
-            onPress={handleFeedbackInfoPress}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.infoButtonText, isFeedbackInfoActive && styles.infoButtonTextActive]}>
-              i
+          <View style={styles.cardHeaderTop}>
+            <Text style={styles.cardTitle}>💬 Emotional Feedback History</Text>
+            <TouchableOpacity
+              ref={feedbackInfoButtonRef}
+              style={[styles.infoButton, isFeedbackInfoActive && styles.infoButtonActive]}
+              onPress={handleFeedbackInfoPress}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.infoButtonText, isFeedbackInfoActive && styles.infoButtonTextActive]}>
+                i
+              </Text>
+            </TouchableOpacity>
+          </View>
+          {sortedFeedbackHistory.length > 0 && (
+            <Text style={styles.activitySubtitle}>
+              Moments you captured during sessions
             </Text>
-          </TouchableOpacity>
+          )}
         </View>
 
           <View style={styles.activityContent}>
@@ -521,9 +536,6 @@ export const ProfileScreen: React.FC = () => {
               </View>
             ) : (
               <>
-                <Text style={styles.activitySubtitle}>
-                  Moments you captured during sessions
-                </Text>
                 <View style={styles.activityListWrapper}>
                   <ScrollView
                     style={[
@@ -744,17 +756,24 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     alignItems: 'center',
   },
+  cardHeaderTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
   shareContent: {
-    marginTop: 12,
+    paddingTop: 0,
     gap: 14,
     paddingHorizontal: 16,
+    paddingBottom: 20,
   },
   shareSubtitle: {
     fontSize: 15,
     color: '#8e8e93',
     fontWeight: '400',
-    marginBottom: 12,
-    textAlign: 'center',
+    marginBottom: 0,
+    textAlign: 'left',
   },
   stepsList: {
     marginBottom: 16,
@@ -851,8 +870,9 @@ const styles = StyleSheet.create({
   statsContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 12,
+    paddingTop: 0,
     paddingHorizontal: 16,
+    paddingBottom: 20,
   },
   statItem: {
     flex: 1,
@@ -877,6 +897,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
   },
   activityContent: {
+    paddingTop: 0,
     paddingHorizontal: 16,
     paddingBottom: 20,
   },
@@ -884,7 +905,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#8e8e93',
     fontWeight: '400',
-    marginBottom: 16,
+    marginTop: 0,
+    marginBottom: 0,
+    lineHeight: 20,
   },
   emptyState: {
     alignItems: 'center',

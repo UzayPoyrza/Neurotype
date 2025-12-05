@@ -89,7 +89,9 @@ export const ProgressScreen: React.FC = () => {
         {/* Sessions Card */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>📊 Sessions</Text>
+            <View style={styles.cardHeaderTop}>
+              <Text style={styles.cardTitle}>📊 Sessions</Text>
+            </View>
           </View>
           
           <View style={styles.sessionsContent}>
@@ -180,9 +182,16 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingTop: 120, // Account for shorter sticky header height (same as Today page)
   },
+  cardHeaderTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 0,
+  },
   sessionsContent: {
     flexDirection: 'row',
     paddingHorizontal: 16,
+    paddingTop: 0,
     paddingBottom: 20,
   },
   sessionStat: {

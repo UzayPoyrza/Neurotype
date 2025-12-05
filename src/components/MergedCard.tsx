@@ -4,6 +4,7 @@ import { StyleSheet, StyleProp, View, ViewStyle } from 'react-native';
 type MergedCardSectionProps = {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
+  hideDividerBefore?: boolean;
 };
 
 type MergedCardProps = {
@@ -34,14 +35,19 @@ const MergedCardBase: React.FC<MergedCardProps> = ({
       <View style={[styles.card, cardStyle]}>
         {childArray.map((child, index) => {
           if (React.isValidElement(child) && child.type === SectionComponent) {
-            const { style: childStyle, children: sectionChildren } =
+            const { style: childStyle, children: sectionChildren, hideDividerBefore } =
               child.props as MergedCardSectionProps;
+            const nextChild = childArray[index + 1];
+            const nextChildHideDividerBefore = React.isValidElement(nextChild) && 
+              nextChild.type === SectionComponent && 
+              (nextChild.props as MergedCardSectionProps).hideDividerBefore;
+            
             return (
               <React.Fragment key={index}>
                 <View style={[styles.section, sectionStyle, childStyle]}>
                   {sectionChildren}
                 </View>
-                {index < childArray.length - 1 && (
+                {index < childArray.length - 1 && !nextChildHideDividerBefore && (
                   <View style={[styles.divider, dividerStyle]} />
                 )}
               </React.Fragment>

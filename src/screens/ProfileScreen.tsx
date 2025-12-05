@@ -350,7 +350,7 @@ export const ProfileScreen: React.FC = () => {
             </View>
           </MergedCard.Section>
 
-          <MergedCard.Section style={[styles.mergedSectionAfterDivider, styles.statsSection]}>
+          <MergedCard.Section style={[styles.mergedSectionAfterDivider, styles.statsSection]} hideDividerBefore>
             <View style={styles.cardHeader}>
               <View style={styles.cardHeaderTop}>
                 <Text style={styles.cardTitle}>📊 Your Stats</Text>

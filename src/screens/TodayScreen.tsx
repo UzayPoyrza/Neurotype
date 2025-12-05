@@ -696,7 +696,7 @@ export const TodayScreen: React.FC = () => {
             </Animated.View>
           </MergedCard.Section>
 
-          <MergedCard.Section style={styles.mergedSectionList}>
+          <MergedCard.Section style={styles.mergedSectionList} hideDividerBefore>
             <View style={styles.cardHeader}>
               <View style={styles.cardHeaderTop}>
                 <Text style={styles.cardTitle}>💡 Other Options</Text>

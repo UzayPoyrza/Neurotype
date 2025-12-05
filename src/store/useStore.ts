@@ -4,6 +4,7 @@ import { initialUserProgress } from '../data/mockData';
 import { mentalHealthModules } from '../data/modules';
 import { toggleLikedSession as toggleLikedSessionDB } from '../services/likedService';
 import { getCompletedSessionsByDateRange, markSessionCompleted, isSessionCompleted } from '../services/progressService';
+import { getSessionModules } from '../services/sessionService';
 
 // Helper function to create subtle background colors from module colors
 export const createSubtleBackground = (moduleColor: string): string => {
@@ -452,17 +453,29 @@ export const useStore = create<AppState>((set, get) => ({
       console.log('📊 [Store] Found', completedSessions.length, 'completed sessions for today in database');
       
       // Group by module and populate cache
+      // For each completed session, add it to ALL modules it belongs to (so checkmarks show across modules)
       const cache: Record<string, string[]> = {};
-      completedSessions.forEach((session) => {
-        const moduleId = session.context_module || 'anxiety'; // Default to anxiety if no module
-        const key = `${moduleId}-${today}`;
-        if (!cache[key]) {
-          cache[key] = [];
-        }
-        if (!cache[key].includes(session.session_id)) {
-          cache[key].push(session.session_id);
-        }
-      });
+      
+      for (const session of completedSessions) {
+        // Get all modules this session belongs to
+        const sessionModules = await getSessionModules(session.session_id);
+        
+        // If no modules found, use the context_module from the completion record
+        const modulesToAdd = sessionModules.length > 0 
+          ? sessionModules 
+          : [session.context_module || 'anxiety'];
+        
+        // Add session to cache for each module it belongs to
+        modulesToAdd.forEach((moduleId) => {
+          const key = `${moduleId}-${today}`;
+          if (!cache[key]) {
+            cache[key] = [];
+          }
+          if (!cache[key].includes(session.session_id)) {
+            cache[key].push(session.session_id);
+          }
+        });
+      }
       
       console.log('✅ [Store] Populated cache with', Object.keys(cache).length, 'module entries');
       set({ completedTodaySessions: cache });
@@ -475,28 +488,48 @@ export const useStore = create<AppState>((set, get) => ({
 
   markSessionCompletedToday: async (moduleId: string, sessionId: string, date?: string, minutesCompleted: number = 0) => {
     const today = date || new Date().toISOString().split('T')[0];
-    const key = `${moduleId}-${today}`;
     const state = get();
     const userId = state.userId;
+    const sessionIdClean = sessionId.replace('-today', '');
     
-    // Immediately add to cache (optimistic update)
-    set((state) => {
-      const completed = state.completedTodaySessions[key] || [];
-      if (!completed.includes(sessionId)) {
-        return {
-          completedTodaySessions: {
-            ...state.completedTodaySessions,
-            [key]: [...completed, sessionId]
-          }
-        };
+    // Check if session is already completed TODAY (any module) - prevent duplicates
+    const alreadyCompleted = get().isSessionCompletedToday(moduleId, sessionIdClean, today);
+    
+    // Get all modules this session belongs to, so we can add it to all relevant module caches
+    let sessionModules: string[] = [];
+    try {
+      sessionModules = await getSessionModules(sessionIdClean);
+      // If no modules found, use the current module
+      if (sessionModules.length === 0) {
+        sessionModules = [moduleId];
       }
-      return state;
+    } catch (error) {
+      console.error('❌ [Store] Error fetching session modules, using current module only:', error);
+      sessionModules = [moduleId];
+    }
+    
+    // Immediately add to cache for ALL modules this session belongs to (optimistic update)
+    // This allows checkmark to show in all relevant modules immediately
+    set((state) => {
+      const updatedCache = { ...state.completedTodaySessions };
+      let hasChanges = false;
+      
+      sessionModules.forEach((modId) => {
+        const moduleKey = `${modId}-${today}`;
+        const completed = updatedCache[moduleKey] || [];
+        if (!completed.includes(sessionIdClean) && !completed.includes(sessionId)) {
+          updatedCache[moduleKey] = [...completed, sessionIdClean];
+          hasChanges = true;
+        }
+      });
+      
+      return hasChanges ? { completedTodaySessions: updatedCache } : state;
     });
     
-    // Save to database in background
-    if (userId) {
+    // Only save to database if not already completed today (prevent duplicates)
+    if (userId && !alreadyCompleted) {
       try {
-        const result = await markSessionCompleted(userId, sessionId, minutesCompleted, moduleId, today);
+        const result = await markSessionCompleted(userId, sessionIdClean, minutesCompleted, moduleId, today);
         if (!result.success) {
           console.error('❌ [Store] Failed to save completion to database:', result.error);
           // Optionally remove from cache on error, but for now keep it for better UX
@@ -506,6 +539,8 @@ export const useStore = create<AppState>((set, get) => ({
       } catch (error) {
         console.error('❌ [Store] Error saving completion to database:', error);
       }
+    } else if (alreadyCompleted) {
+      console.log('ℹ️ [Store] Session already completed today, skipping database save (preventing duplicate)');
     } else {
       console.warn('⚠️ [Store] No userId, cannot save to database');
     }
@@ -513,11 +548,28 @@ export const useStore = create<AppState>((set, get) => ({
 
   isSessionCompletedToday: (moduleId: string, sessionId: string, date?: string): boolean => {
     const today = date || new Date().toISOString().split('T')[0];
-    const key = `${moduleId}-${today}`;
     const state = get();
-    const completed = state.completedTodaySessions[key] || [];
-    // Check both with and without -today suffix
-    return completed.includes(sessionId) || completed.includes(sessionId.replace('-today', ''));
+    
+    // Check ALL module keys for today (session might be completed in a different module)
+    // This allows checkmarks to show across all modules that include the session
+    const sessionIdClean = sessionId.replace('-today', '');
+    const allModuleKeys = Object.keys(state.completedTodaySessions);
+    
+    for (const key of allModuleKeys) {
+      // Check if this key is for today
+      const parts = key.split('-');
+      if (parts.length >= 4) {
+        const sessionDate = `${parts[parts.length - 3]}-${parts[parts.length - 2]}-${parts[parts.length - 1]}`;
+        if (sessionDate === today) {
+          const completed = state.completedTodaySessions[key] || [];
+          if (completed.includes(sessionId) || completed.includes(sessionIdClean)) {
+            return true;
+          }
+        }
+      }
+    }
+    
+    return false;
   },
 
   cacheSessions: (sessions: Session[]) =>

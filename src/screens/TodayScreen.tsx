@@ -167,15 +167,16 @@ export const TodayScreen: React.FC = () => {
                   (s): s is Session => s !== null
                 );
                 
-                // Check which recommended sessions are completed today
+                // Check which recommended sessions are completed today (from cache)
+                // Note: We don't re-mark sessions here - syncTodayCompletedSessionsFromDatabase already
+                // populated the cache on app open. We just check the cache to show checkmarks.
                 const today = new Date().toISOString().split('T')[0];
-                console.log('✅ [TodayScreen] Checking completed sessions for today after module change:', today);
+                console.log('✅ [TodayScreen] Checking completed sessions from cache after module change:', today);
                 
                 for (const session of sessions) {
-                  const completed = await isSessionCompleted(userId, session.id, today);
+                  const completed = isSessionCompletedToday(selectedModuleId, session.id, today);
                   if (completed) {
-                    console.log('✅ [TodayScreen] Session completed today:', session.id, session.title);
-                    await markSessionCompletedToday(selectedModuleId, session.id, today);
+                    console.log('✅ [TodayScreen] Session completed today (from cache):', session.id, session.title);
                   }
                 }
                 
@@ -344,17 +345,17 @@ export const TodayScreen: React.FC = () => {
         
         // Only check completed sessions if recommendations were not regenerated (already existed)
         // This means the recommendations are stable and we should check completion status
+        // Note: We don't re-mark sessions here - syncTodayCompletedSessionsFromDatabase already
+        // populated the cache on app open. We just check the cache to show checkmarks.
         if (!recResult.generated) {
           const today = new Date().toISOString().split('T')[0];
-          console.log('✅ [TodayScreen] Recommendations already exist, checking completed sessions for today:', today);
+          console.log('✅ [TodayScreen] Recommendations already exist, checking completion status from cache');
           
-          // Check each recommended session if it's completed today
+          // Check each recommended session if it's completed today (from cache)
           for (const session of sessions) {
-            const completed = await isSessionCompleted(userId, session.id, today);
+            const completed = isSessionCompletedToday(selectedModuleId, session.id, today);
             if (completed) {
-              console.log('✅ [TodayScreen] Session completed today:', session.id, session.title);
-              // Mark as completed in store so UI shows checkmark
-              await markSessionCompletedToday(selectedModuleId, session.id, today);
+              console.log('✅ [TodayScreen] Session completed today (from cache):', session.id, session.title);
             }
           }
         } else {

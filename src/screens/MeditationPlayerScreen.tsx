@@ -1774,16 +1774,14 @@ export const MeditationPlayerScreen: React.FC = () => {
             console.log('📊 [Session Completion] Module Context:', moduleContext);
             
             // Immediately show checkmark and save to database (markSessionCompletedToday handles both)
+            // Always call markSessionCompletedToday - it handles update/create logic internally:
+            // - Same session + same context_module + same day: UPDATE existing entry
+            // - Different day OR different context_module: CREATE new entry
             const today = new Date().toISOString().split('T')[0];
             const minutesCompleted = Math.round(currentTime / 60);
-            const alreadyCompleted = isSessionCompletedToday(moduleIdForCompletion, activeSession.id, today);
             
-            if (!alreadyCompleted) {
-              console.log('✅ [Session Completion] Marking session as completed (cache + database)');
-              await markSessionCompletedToday(moduleIdForCompletion, activeSession.id, today, minutesCompleted);
-            } else {
-              console.log('ℹ️ [Session Completion] Session already marked as completed');
-            }
+            console.log('✅ [Session Completion] Marking session as completed (cache + database)');
+            await markSessionCompletedToday(moduleIdForCompletion, activeSession.id, today, minutesCompleted);
             
             if (!userId) {
               console.warn('⚠️ [Session Completion] No user ID found - checkmark shown in cache only');

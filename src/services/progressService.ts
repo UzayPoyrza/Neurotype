@@ -16,7 +16,67 @@ export interface CompletedSession {
 }
 
 /**
+ * Find existing completion entry for same session, context_module, and date
+ * Returns the entry ID if found, null otherwise
+ */
+async function findExistingCompletionByContext(
+  userId: string,
+  sessionId: string,
+  contextModule: string | null,
+  date: string
+): Promise<{ id: string } | null> {
+  try {
+    // Normalize context_module: empty string becomes null, trim whitespace
+    const normalizedContextModule = contextModule && contextModule.trim() ? contextModule.trim() : null;
+    
+    console.log('🔍 [findExistingCompletionByContext] Searching for existing entry:', {
+      userId,
+      sessionId,
+      contextModule: normalizedContextModule,
+      date,
+      originalContextModule: contextModule,
+    });
+
+    let query = supabase
+      .from('completed_sessions')
+      .select('id, context_module')
+      .eq('user_id', userId)
+      .eq('session_id', sessionId)
+      .eq('completed_date', date);
+
+    // Handle null context_module correctly
+    // Also check for empty string as fallback (legacy data might have empty strings)
+    if (normalizedContextModule === null) {
+      query = query.or('context_module.is.null,context_module.eq.');
+    } else {
+      query = query.eq('context_module', normalizedContextModule);
+    }
+
+    const { data, error } = await query.limit(1);
+
+    if (error) {
+      console.error('❌ [findExistingCompletionByContext] Error finding existing completion entry:', error);
+      return null;
+    }
+
+    if (data && data.length > 0) {
+      console.log('✅ [findExistingCompletionByContext] Found existing entry:', data[0]);
+      return { id: data[0].id };
+    }
+
+    console.log('ℹ️ [findExistingCompletionByContext] No existing entry found');
+    return null;
+  } catch (error) {
+    console.error('❌ [findExistingCompletionByContext] Exception:', error);
+    return null;
+  }
+}
+
+/**
  * Mark a session as completed
+ * Logic:
+ * - If same session + same context_module + same day: UPDATE existing entry
+ * - If different day OR different context_module: CREATE new entry
  */
 export async function markSessionCompleted(
   userId: string,
@@ -27,35 +87,157 @@ export async function markSessionCompleted(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const completedDate = date || new Date().toISOString().split('T')[0];
+    // Normalize context_module: empty string or undefined becomes null, trim whitespace
+    const contextModuleValue = contextModule && contextModule.trim() ? contextModule.trim() : null;
     
-    console.log('💾 [markSessionCompleted] Inserting new session completion:', {
+    console.log('💾 [markSessionCompleted] Processing session completion:', {
       userId,
       sessionId,
       minutesCompleted,
-      contextModule: contextModule || null,
+      contextModule: contextModuleValue,
       completedDate,
     });
 
-    // Always insert a new record - created_at timestamp will make each completion unique
-    const { error: insertError } = await supabase
+    // Debug: Check all entries for this session+date to see what's in the database
+    const { data: allEntries } = await supabase
       .from('completed_sessions')
-      .insert({
-        user_id: userId,
-        session_id: sessionId,
-        context_module: contextModule || null,
-        completed_date: completedDate,
-        minutes_completed: minutesCompleted,
+      .select('id, context_module, completed_date, minutes_completed')
+      .eq('user_id', userId)
+      .eq('session_id', sessionId)
+      .eq('completed_date', completedDate);
+    
+    console.log('🔍 [markSessionCompleted] All existing entries for this session+date:', allEntries);
+
+    // Check if there's an existing entry with same session + context_module + date
+    const existingEntry = await findExistingCompletionByContext(
+      userId,
+      sessionId,
+      contextModuleValue,
+      completedDate
+    );
+    
+    console.log('🔍 [markSessionCompleted] Existing entry result:', existingEntry);
+
+    if (existingEntry) {
+      // Same session + same context_module + same day: UPDATE existing entry
+      // Use upsert approach since RLS might block direct updates
+      console.log('🔄 [markSessionCompleted] Upserting existing entry (same context_module + same day)', {
+        entryId: existingEntry.id,
+        newMinutesCompleted: minutesCompleted,
+        oldMinutesCompleted: allEntries?.find(e => e.id === existingEntry.id)?.minutes_completed,
       });
+      
+      // Use upsert with conflict resolution on unique constraint
+      // This works better with RLS policies than direct UPDATE
+      const { data: upsertData, error: upsertError } = await supabase
+        .from('completed_sessions')
+        .upsert({
+          id: existingEntry.id, // Include ID to update existing row
+          user_id: userId,
+          session_id: sessionId,
+          context_module: contextModuleValue,
+          completed_date: completedDate,
+          minutes_completed: minutesCompleted,
+          created_at: new Date().toISOString(), // Update timestamp to move it up in activity history
+        }, {
+          onConflict: 'id', // Conflict on ID to update existing row
+          ignoreDuplicates: false,
+        })
+        .select();
 
-    if (insertError) {
-      console.error('❌ [markSessionCompleted] Error inserting session:', insertError);
-      console.error('❌ [markSessionCompleted] Error code:', insertError.code);
-      console.error('❌ [markSessionCompleted] Error message:', insertError.message);
-      return { success: false, error: insertError.message };
+      if (upsertError) {
+        console.error('❌ [markSessionCompleted] Error upserting session:', upsertError);
+        console.error('❌ [markSessionCompleted] Upsert error details:', {
+          code: upsertError.code,
+          message: upsertError.message,
+          details: upsertError.details,
+          hint: upsertError.hint,
+        });
+        
+        // Fallback: Delete and re-insert (works if RLS allows DELETE and INSERT)
+        console.log('🔄 [markSessionCompleted] Trying delete + insert as fallback...');
+        
+        // First delete the old entry
+        const { data: deleteData, error: deleteError, count: deleteCount } = await supabase
+          .from('completed_sessions')
+          .delete()
+          .eq('id', existingEntry.id)
+          .select(); // Select to see what was deleted
+
+        if (deleteError) {
+          console.error('❌ [markSessionCompleted] Delete failed:', deleteError);
+          return { success: false, error: deleteError.message || upsertError.message };
+        }
+
+        if (!deleteData || deleteData.length === 0) {
+          console.error('❌ [markSessionCompleted] Delete returned no rows - RLS may have blocked deletion');
+          return { success: false, error: 'Delete blocked by RLS policy' };
+        }
+
+        console.log('✅ [markSessionCompleted] Old entry deleted successfully:', {
+          deletedEntry: deleteData[0],
+          deletedId: existingEntry.id,
+        });
+        
+        // Then insert the new entry with updated values
+        const { data: insertData, error: insertError } = await supabase
+          .from('completed_sessions')
+          .insert({
+            user_id: userId,
+            session_id: sessionId,
+            context_module: contextModuleValue,
+            completed_date: completedDate,
+            minutes_completed: minutesCompleted,
+            created_at: new Date().toISOString(), // New timestamp to move it up in activity history
+          })
+          .select();
+        
+        if (insertError) {
+          console.error('❌ [markSessionCompleted] Insert after delete failed:', insertError);
+          return { success: false, error: insertError.message };
+        }
+        
+        console.log('✅ [markSessionCompleted] Session completion updated via delete+insert method', {
+          updatedEntry: insertData?.[0],
+        });
+        return { success: true };
+      }
+
+      if (!upsertData || upsertData.length === 0) {
+        console.error('❌ [markSessionCompleted] Upsert returned no rows');
+        return { success: false, error: 'Upsert returned no rows' };
+      }
+
+      console.log('✅ [markSessionCompleted] Session completion upserted successfully', {
+        updatedEntry: upsertData[0],
+        oldMinutesCompleted: allEntries?.find(e => e.id === existingEntry.id)?.minutes_completed,
+        newMinutesCompleted: minutesCompleted,
+      });
+      return { success: true };
+    } else {
+      // Different day OR different context_module: CREATE new entry
+      console.log('➕ [markSessionCompleted] Creating new entry (different day or different context_module)');
+      
+      const { error: insertError } = await supabase
+        .from('completed_sessions')
+        .insert({
+          user_id: userId,
+          session_id: sessionId,
+          context_module: contextModuleValue,
+          completed_date: completedDate,
+          minutes_completed: minutesCompleted,
+        });
+
+      if (insertError) {
+        console.error('❌ [markSessionCompleted] Error inserting session:', insertError);
+        console.error('❌ [markSessionCompleted] Error code:', insertError.code);
+        console.error('❌ [markSessionCompleted] Error message:', insertError.message);
+        return { success: false, error: insertError.message };
+      }
+
+      console.log('✅ [markSessionCompleted] Session completion inserted successfully');
+      return { success: true };
     }
-
-    console.log('✅ [markSessionCompleted] Session completion inserted successfully');
-    return { success: true };
   } catch (error: any) {
     console.error('❌ [markSessionCompleted] Exception:', error);
     return { success: false, error: error.message };

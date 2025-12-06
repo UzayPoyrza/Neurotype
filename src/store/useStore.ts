@@ -492,9 +492,6 @@ export const useStore = create<AppState>((set, get) => ({
     const userId = state.userId;
     const sessionIdClean = sessionId.replace('-today', '');
     
-    // Check if session is already completed TODAY (any module) - prevent duplicates
-    const alreadyCompleted = get().isSessionCompletedToday(moduleId, sessionIdClean, today);
-    
     // Get all modules this session belongs to, so we can add it to all relevant module caches
     let sessionModules: string[] = [];
     try {
@@ -526,21 +523,21 @@ export const useStore = create<AppState>((set, get) => ({
       return hasChanges ? { completedTodaySessions: updatedCache } : state;
     });
     
-    // Only save to database if not already completed today (prevent duplicates)
-    if (userId && !alreadyCompleted) {
+    // Always save to database - markSessionCompleted handles update/create logic:
+    // - Same session + same context_module + same day: UPDATE existing entry
+    // - Different day OR different context_module: CREATE new entry
+    if (userId) {
       try {
         const result = await markSessionCompleted(userId, sessionIdClean, minutesCompleted, moduleId, today);
         if (!result.success) {
           console.error('❌ [Store] Failed to save completion to database:', result.error);
           // Optionally remove from cache on error, but for now keep it for better UX
         } else {
-          console.log('✅ [Store] Session completion saved to database');
+          console.log('✅ [Store] Session completion saved/updated to database');
         }
       } catch (error) {
         console.error('❌ [Store] Error saving completion to database:', error);
       }
-    } else if (alreadyCompleted) {
-      console.log('ℹ️ [Store] Session already completed today, skipping database save (preventing duplicate)');
     } else {
       console.warn('⚠️ [Store] No userId, cannot save to database');
     }

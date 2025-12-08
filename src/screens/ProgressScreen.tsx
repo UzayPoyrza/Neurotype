@@ -24,6 +24,11 @@ export const ProgressScreen: React.FC = () => {
   const [showStreakInfo, setShowStreakInfo] = useState(false);
   const [streakButtonActive, setStreakButtonActive] = useState(false);
   const streakButtonRef = useRef<any>(null);
+  
+  // State for session stats from database
+  const [totalSessions, setTotalSessions] = useState(0);
+  const [thisWeekSessions, setThisWeekSessions] = useState(0);
+  const [thisMonthSessions, setThisMonthSessions] = useState(0);
 
   // Set screen context when component mounts
   React.useEffect(() => {
@@ -79,6 +84,47 @@ export const ProgressScreen: React.FC = () => {
     populateCacheFromDatabase();
   }, [userId]); // Only run when userId changes - cache persists across navigation
 
+  // Fetch session stats from database
+  React.useEffect(() => {
+    const fetchSessionStats = async () => {
+      if (!userId) return;
+
+      try {
+        // Fetch all completed sessions (no limit) to get accurate counts
+        const allSessions = await getUserCompletedSessions(userId);
+        
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        
+        // Calculate this week (last 7 days)
+        const weekAgo = new Date(today);
+        weekAgo.setDate(today.getDate() - 7);
+        const weekAgoStr = weekAgo.toISOString().split('T')[0];
+        
+        // Calculate this month
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth();
+        
+        const total = allSessions.length;
+        const thisWeek = allSessions.filter(session => {
+          return session.completed_date >= weekAgoStr && session.completed_date <= todayStr;
+        }).length;
+        const thisMonth = allSessions.filter(session => {
+          const sessionDate = new Date(session.completed_date);
+          return sessionDate.getFullYear() === currentYear && sessionDate.getMonth() === currentMonth;
+        }).length;
+        
+        setTotalSessions(total);
+        setThisWeekSessions(thisWeek);
+        setThisMonthSessions(thisMonth);
+      } catch (error) {
+        console.error('❌ [ProgressScreen] Error fetching session stats:', error);
+      }
+    };
+
+    fetchSessionStats();
+  }, [userId]);
+
   // Handle streak info display
   const handleStreakPress = () => {
     setShowStreakInfo(true);
@@ -89,10 +135,6 @@ export const ProgressScreen: React.FC = () => {
     setShowStreakInfo(false);
     setStreakButtonActive(false);
   };
-  const today = new Date();
-
-  // Calculate stats
-  const totalSessions = userProgress.sessionDeltas.length;
 
   // Format date for header
   const formatDate = (date: Date) => {
@@ -158,12 +200,12 @@ export const ProgressScreen: React.FC = () => {
             
             <View style={styles.sessionStat}>
               <Text style={styles.sessionLabel}>This Week</Text>
-              <Text style={styles.sessionValue}>{Math.min(totalSessions, 7)}</Text>
+              <Text style={styles.sessionValue}>{thisWeekSessions}</Text>
             </View>
             
             <View style={styles.sessionStat}>
               <Text style={styles.sessionLabel}>This Month</Text>
-              <Text style={styles.sessionValue}>{Math.min(totalSessions, 30)}</Text>
+              <Text style={styles.sessionValue}>{thisMonthSessions}</Text>
             </View>
           </View>
         </View>

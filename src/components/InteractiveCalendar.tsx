@@ -23,7 +23,8 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
   onDateSelect,
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const userProgress = useStore(state => state.userProgress);
+  // Use completedSessionsCache from store instead of userProgress.sessionDeltas
+  const completedSessionsCache = useStore(state => state.completedSessionsCache);
   
   // Animation refs
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -38,10 +39,11 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
     return module?.color || theme.colors.primary;
   };
 
-  // Get completed meditation for a specific date
+  // Get completed meditation for a specific date (returns first entry for that date)
   const getCompletedMeditation = (date: Date) => {
     const dateStr = date.toISOString().split('T')[0];
-    return userProgress.sessionDeltas.find(session => session.date === dateStr);
+    // Find first entry for this date (show all completed sessions, even without moduleId)
+    return completedSessionsCache.find(entry => entry.date === dateStr);
   };
 
   // Check if there are any meditations in the current month
@@ -49,8 +51,8 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     
-    return userProgress.sessionDeltas.some(session => {
-      const sessionDate = new Date(session.date);
+    return completedSessionsCache.some(entry => {
+      const sessionDate = new Date(entry.date);
       return sessionDate.getFullYear() === year && sessionDate.getMonth() === month;
     });
   };
@@ -206,11 +208,15 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
                   {date.getDate()}
                 </Text>
                 
-                {completedMeditation && completedMeditation.moduleId && (
+                {completedMeditation && (
                   <View 
                     style={[
                       styles.meditationDot,
-                      { backgroundColor: getModuleColor(completedMeditation.moduleId) }
+                      { 
+                        backgroundColor: completedMeditation.moduleId 
+                          ? getModuleColor(completedMeditation.moduleId)
+                          : theme.colors.primary // Default color if no moduleId
+                      }
                     ]}
                   />
                 )}
@@ -241,13 +247,12 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     
-    const completedModules = userProgress.sessionDeltas
-      .filter(session => {
-        if (!session.moduleId) return false;
-        const sessionDate = new Date(session.date);
+    const completedModules = completedSessionsCache
+      .filter(entry => {
+        const sessionDate = new Date(entry.date);
         return sessionDate.getFullYear() === year && sessionDate.getMonth() === month;
       })
-      .map(session => session.moduleId!)
+      .map(entry => entry.moduleId || 'other') // Use 'other' for entries without moduleId
       .filter((value, index, self) => self.indexOf(value) === index);
     
     if (completedModules.length === 0) {
@@ -263,10 +268,12 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
               <View 
                 style={[
                   styles.legendDot,
-                  { backgroundColor: getModuleColor(moduleId) }
+                  { backgroundColor: moduleId === 'other' ? theme.colors.primary : getModuleColor(moduleId) }
                 ]}
               />
-              <Text style={styles.legendText}>{getModuleName(moduleId)}</Text>
+              <Text style={styles.legendText}>
+                {moduleId === 'other' ? 'Other' : getModuleName(moduleId)}
+              </Text>
             </View>
           ))}
         </View>

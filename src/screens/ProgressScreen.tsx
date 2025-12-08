@@ -6,13 +6,19 @@ import { mentalHealthModules } from '../data/modules';
 import { InteractiveCalendar } from '../components/InteractiveCalendar';
 import { TechniqueEffectivenessChart } from '../components/TechniqueEffectivenessChart';
 import { InfoBox } from '../components/InfoBox';
+import { getUserCompletedSessions } from '../services/progressService';
+import { useUserId } from '../hooks/useUserId';
+import { CompletedSessionCacheEntry } from '../store/useStore';
 
 
 
 export const ProgressScreen: React.FC = () => {
   const userProgress = useStore(state => state.userProgress);
+  const completedSessionsCache = useStore(state => state.completedSessionsCache);
+  const addCompletedSessionToCache = useStore(state => state.addCompletedSessionToCache);
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
+  const userId = useUserId();
   
   // State for streak info box
   const [showStreakInfo, setShowStreakInfo] = useState(false);
@@ -23,6 +29,59 @@ export const ProgressScreen: React.FC = () => {
   React.useEffect(() => {
     setCurrentScreen('progress');
   }, [setCurrentScreen]);
+
+  // Populate cache from database when screen loads or userId changes
+  React.useEffect(() => {
+    const populateCacheFromDatabase = async () => {
+      if (!userId) {
+        console.log('📊 [ProgressScreen] No user ID, skipping cache population');
+        return;
+      }
+
+      console.log('📊 [ProgressScreen] Populating cache from database...');
+      try {
+        // Fetch completed sessions from database (get more entries for calendar)
+        const completedSessions = await getUserCompletedSessions(userId, 100);
+        console.log('📊 [ProgressScreen] Fetched', completedSessions.length, 'completed sessions from database');
+
+        // Get current cache to check for existing entries
+        const getStoreState = useStore.getState;
+        const currentCache = getStoreState().completedSessionsCache;
+        const existingCacheKeys = new Set(
+          currentCache.map(entry => `${entry.sessionId}-${entry.createdAt}`)
+        );
+
+        // Convert database entries to cache format and add to cache
+        // Only add entries that aren't already in cache
+        let addedCount = 0;
+        for (const session of completedSessions) {
+          const cacheKey = `${session.session_id}-${session.created_at || session.completed_date}`;
+          if (!existingCacheKeys.has(cacheKey)) {
+            const cacheEntry: CompletedSessionCacheEntry = {
+              id: session.id || `db-${session.session_id}-${session.completed_date}`,
+              sessionId: session.session_id,
+              moduleId: session.context_module || undefined,
+              date: session.completed_date,
+              minutesCompleted: session.minutes_completed,
+              createdAt: session.created_at || session.completed_date,
+            };
+            addCompletedSessionToCache(cacheEntry);
+            addedCount++;
+          }
+        }
+
+        if (addedCount > 0) {
+          console.log('✅ [ProgressScreen] Added', addedCount, 'entries to cache from database');
+        } else {
+          console.log('ℹ️ [ProgressScreen] No new entries to add (all already in cache)');
+        }
+      } catch (error) {
+        console.error('❌ [ProgressScreen] Error populating cache from database:', error);
+      }
+    };
+
+    populateCacheFromDatabase();
+  }, [userId]); // Only run when userId changes, not on every cache update
 
   // Handle streak info display
   const handleStreakPress = () => {
@@ -74,12 +133,13 @@ export const ProgressScreen: React.FC = () => {
         {/* Interactive Calendar */}
         <InteractiveCalendar onDateSelect={(date) => {
           // Handle date selection - could show meditation details for that date
-          const completedMeditation = userProgress.sessionDeltas.find(
-            session => session.date === date.toISOString().split('T')[0]
+          const dateStr = date.toISOString().split('T')[0];
+          const completedMeditations = completedSessionsCache.filter(
+            entry => entry.date === dateStr && entry.moduleId
           );
-          if (completedMeditation) {
+          if (completedMeditations.length > 0) {
             // Could show a modal with meditation details
-            console.log('Completed meditation on', date.toDateString(), completedMeditation);
+            console.log('Completed meditations on', date.toDateString(), completedMeditations);
           }
         }} />
 

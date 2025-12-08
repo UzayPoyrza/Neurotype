@@ -39,11 +39,20 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
     return module?.color || theme.colors.primary;
   };
 
-  // Get completed meditation for a specific date (returns first entry for that date)
-  const getCompletedMeditation = (date: Date) => {
+  // Get all unique moduleIds for completed meditations on a specific date
+  const getCompletedMeditationsForDate = (date: Date): string[] => {
     const dateStr = date.toISOString().split('T')[0];
-    // Find first entry for this date (show all completed sessions, even without moduleId)
-    return completedSessionsCache.find(entry => entry.date === dateStr);
+    // Get all entries for this date
+    const entriesForDate = completedSessionsCache.filter(entry => entry.date === dateStr);
+    
+    // Extract unique moduleIds (use 'other' for entries without moduleId)
+    const uniqueModuleIds = Array.from(
+      new Set(
+        entriesForDate.map(entry => entry.moduleId || 'other')
+      )
+    );
+    
+    return uniqueModuleIds;
   };
 
   // Check if there are any meditations in the current month
@@ -188,7 +197,7 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
               return <View key={`empty-${index}`} style={styles.emptyCell} />;
             }
             
-            const completedMeditation = getCompletedMeditation(date);
+            const completedModuleIds = getCompletedMeditationsForDate(date);
             const isTodayDate = isToday(date);
             
             return (
@@ -208,17 +217,23 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
                   {date.getDate()}
                 </Text>
                 
-                {completedMeditation && (
-                  <View 
-                    style={[
-                      styles.meditationDot,
-                      { 
-                        backgroundColor: completedMeditation.moduleId 
-                          ? getModuleColor(completedMeditation.moduleId)
-                          : theme.colors.primary // Default color if no moduleId
-                      }
-                    ]}
-                  />
+                {completedModuleIds.length > 0 && (
+                  <View style={styles.dotsContainer}>
+                    {completedModuleIds.map((moduleId, dotIndex) => (
+                      <View
+                        key={`${moduleId}-${dotIndex}`}
+                        style={[
+                          styles.meditationDot,
+                          dotIndex > 0 && styles.meditationDotSpacing,
+                          { 
+                            backgroundColor: moduleId === 'other'
+                              ? theme.colors.primary
+                              : getModuleColor(moduleId),
+                          }
+                        ]}
+                      />
+                    ))}
+                  </View>
                 )}
               </TouchableOpacity>
             );
@@ -437,9 +452,16 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
     fontWeight: '600',
   },
-  meditationDot: {
+  dotsContainer: {
     position: 'absolute',
     bottom: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    maxWidth: '100%',
+  },
+  meditationDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
@@ -448,6 +470,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 1,
     elevation: 1,
+  },
+  meditationDotSpacing: {
+    marginLeft: 4, // Spacing between multiple dots
   },
   legendContainer: {
     marginBottom: 16,

@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { theme } from '../styles/theme';
 import { useStore } from '../store/useStore';
-import { mentalHealthModules } from '../data/modules';
+import { mentalHealthModules, getCategoryColor, categoryColors } from '../data/modules';
 
 const { width } = Dimensions.get('window');
 
@@ -33,26 +33,33 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
   const leftButtonScale = useRef(new Animated.Value(1)).current;
   const rightButtonScale = useRef(new Animated.Value(1)).current;
 
-  // Helper function to get module color by ID
-  const getModuleColor = (moduleId: string): string => {
+  // Helper function to get category from moduleId
+  const getCategoryFromModuleId = (moduleId: string | undefined): 'disorder' | 'wellness' | 'skill' | 'other' => {
+    if (!moduleId) return 'other';
     const module = mentalHealthModules.find(m => m.id === moduleId);
-    return module?.color || theme.colors.primary;
+    return module?.category || 'other';
   };
 
-  // Get all unique moduleIds for completed meditations on a specific date
-  const getCompletedMeditationsForDate = (date: Date): string[] => {
+  // Helper function to get category color
+  const getCategoryColorForCalendar = (category: 'disorder' | 'wellness' | 'skill' | 'other'): string => {
+    if (category === 'other') return theme.colors.primary;
+    return getCategoryColor(category);
+  };
+
+  // Get all unique categories for completed meditations on a specific date
+  const getCompletedCategoriesForDate = (date: Date): Array<'disorder' | 'wellness' | 'skill' | 'other'> => {
     const dateStr = date.toISOString().split('T')[0];
     // Get all entries for this date
     const entriesForDate = completedSessionsCache.filter(entry => entry.date === dateStr);
     
-    // Extract unique moduleIds (use 'other' for entries without moduleId)
-    const uniqueModuleIds = Array.from(
+    // Extract unique categories
+    const uniqueCategories = Array.from(
       new Set(
-        entriesForDate.map(entry => entry.moduleId || 'other')
+        entriesForDate.map(entry => getCategoryFromModuleId(entry.moduleId))
       )
-    );
+    ) as Array<'disorder' | 'wellness' | 'skill' | 'other'>;
     
-    return uniqueModuleIds;
+    return uniqueCategories;
   };
 
   // Check if there are any meditations in the current month
@@ -66,10 +73,15 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
     });
   };
 
-  // Get module name by ID
-  const getModuleName = (moduleId: string): string => {
-    const module = mentalHealthModules.find(m => m.id === moduleId);
-    return module?.title || moduleId;
+  // Get category display name
+  const getCategoryDisplayName = (category: 'disorder' | 'wellness' | 'skill' | 'other'): string => {
+    const categoryNames = {
+      disorder: 'Disorder',
+      wellness: 'Wellness',
+      skill: 'Skill',
+      other: 'Other',
+    };
+    return categoryNames[category];
   };
 
   // Get all dates for current month
@@ -197,7 +209,7 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
               return <View key={`empty-${index}`} style={styles.emptyCell} />;
             }
             
-            const completedModuleIds = getCompletedMeditationsForDate(date);
+            const completedCategories = getCompletedCategoriesForDate(date);
             const isTodayDate = isToday(date);
             
             return (
@@ -217,18 +229,16 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
                   {date.getDate()}
                 </Text>
                 
-                {completedModuleIds.length > 0 && (
+                {completedCategories.length > 0 && (
                   <View style={styles.dotsContainer}>
-                    {completedModuleIds.map((moduleId, dotIndex) => (
+                    {completedCategories.map((category, dotIndex) => (
                       <View
-                        key={`${moduleId}-${dotIndex}`}
+                        key={`${category}-${dotIndex}`}
                         style={[
                           styles.meditationDot,
                           dotIndex > 0 && styles.meditationDotSpacing,
                           { 
-                            backgroundColor: moduleId === 'other'
-                              ? theme.colors.primary
-                              : getModuleColor(moduleId),
+                            backgroundColor: getCategoryColorForCalendar(category),
                           }
                         ]}
                       />
@@ -258,19 +268,19 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
   };
 
   const renderMeditationLegend = () => {
-    // Get unique modules from completed meditations in the CURRENT MONTH only
+    // Get unique categories from completed meditations in the CURRENT MONTH only
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     
-    const completedModules = completedSessionsCache
+    const completedCategories = completedSessionsCache
       .filter(entry => {
         const sessionDate = new Date(entry.date);
         return sessionDate.getFullYear() === year && sessionDate.getMonth() === month;
       })
-      .map(entry => entry.moduleId || 'other') // Use 'other' for entries without moduleId
-      .filter((value, index, self) => self.indexOf(value) === index);
+      .map(entry => getCategoryFromModuleId(entry.moduleId))
+      .filter((value, index, self) => self.indexOf(value) === index) as Array<'disorder' | 'wellness' | 'skill' | 'other'>;
     
-    if (completedModules.length === 0) {
+    if (completedCategories.length === 0) {
       return null;
     }
     
@@ -278,16 +288,16 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
       <View style={styles.legendContainer}>
         <Text style={styles.legendTitle}>Meditations Completed:</Text>
         <View style={styles.legendItems}>
-          {completedModules.map((moduleId) => (
-            <View key={moduleId} style={styles.legendItem}>
+          {completedCategories.map((category) => (
+            <View key={category} style={styles.legendItem}>
               <View 
                 style={[
                   styles.legendDot,
-                  { backgroundColor: moduleId === 'other' ? theme.colors.primary : getModuleColor(moduleId) }
+                  { backgroundColor: getCategoryColorForCalendar(category) }
                 ]}
               />
               <Text style={styles.legendText}>
-                {moduleId === 'other' ? 'Other' : getModuleName(moduleId)}
+                {getCategoryDisplayName(category)}
               </Text>
             </View>
           ))}

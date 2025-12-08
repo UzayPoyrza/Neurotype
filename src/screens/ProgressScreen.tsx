@@ -245,7 +245,7 @@ export const ProgressScreen: React.FC = () => {
         isVisible={showStreakInfo}
         onClose={handleCloseStreakInfo}
         title="Streak Information"
-        content={`Current Streak: ${userProgress.streak} days\nBest Streak: ${userProgress.bestStreak} days`}
+        content={`Current Streak: ${userProgress.streak} days`}
         position={{ top: 101, right: 20 }}
       />
     </View>

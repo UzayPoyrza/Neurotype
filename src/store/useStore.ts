@@ -3,7 +3,7 @@ import { UserProgress, FilterState, SessionDelta, Session, EmotionalFeedbackEntr
 import { initialUserProgress } from '../data/mockData';
 import { mentalHealthModules } from '../data/modules';
 import { toggleLikedSession as toggleLikedSessionDB } from '../services/likedService';
-import { getCompletedSessionsByDateRange, markSessionCompleted, isSessionCompleted, CompletedSession } from '../services/progressService';
+import { getCompletedSessionsByDateRange, markSessionCompleted, isSessionCompleted, CompletedSession, calculateUserStreak } from '../services/progressService';
 import { getSessionModules } from '../services/sessionService';
 
 // Helper function to get category from moduleId
@@ -562,6 +562,19 @@ export const useStore = create<AppState>((set, get) => ({
           // Increment sessions cache (only if it's a new entry, not an update)
           if (!wasUpdate) {
             get().incrementSessionsCache();
+            
+            // Recalculate streak after new session completion
+            calculateUserStreak(userId).then((newStreak) => {
+              set((state) => ({
+                userProgress: {
+                  ...state.userProgress,
+                  streak: newStreak,
+                },
+              }));
+              console.log(`🔥 [Store] Streak updated after session completion: ${newStreak} days`);
+            }).catch((error) => {
+              console.error('❌ [Store] Error updating streak:', error);
+            });
           }
           
           // Add to calendar cache (only if category not already present for that day)

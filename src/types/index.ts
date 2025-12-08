@@ -41,7 +41,6 @@ export interface TechniqueEffectiveness {
 
 export interface UserProgress {
   streak: number;
-  bestStreak: number;
   sessionDeltas: SessionDelta[];
   techniqueEffectiveness: TechniqueEffectiveness[];
 }

@@ -236,7 +236,6 @@ export const mockSessions: Session[] = [
 
 export const initialUserProgress: UserProgress = {
   streak: 5,
-  bestStreak: 20,
   sessionDeltas: [
     { date: '2024-01-15', before: 7, after: 4, sessionId: '1', moduleId: 'anxiety' },
     { date: '2024-01-16', before: 6, after: 3, sessionId: '2', moduleId: 'focus' },

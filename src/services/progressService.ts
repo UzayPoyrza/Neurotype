@@ -316,20 +316,77 @@ export async function getUserCompletedSessions(
 }
 
 /**
- * Calculate user streak (using database function)
+ * Calculate current streak from completed sessions
+ * Returns the number of consecutive days with at least one completed session
+ * starting from today/yesterday going backwards
+ */
+export function calculateCurrentStreak(completedSessions: CompletedSession[]): number {
+  if (completedSessions.length === 0) return 0;
+
+  // Get unique dates (one entry per day is enough for streak)
+  const uniqueDates = Array.from(
+    new Set(completedSessions.map(s => s.completed_date))
+  ).sort((a, b) => b.localeCompare(a)); // Sort descending (most recent first)
+
+  if (uniqueDates.length === 0) return 0;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = today.toISOString().split('T')[0];
+
+  // Check if user completed a session today or yesterday
+  // (allow 1 day gap for timezone/edge cases)
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+  const mostRecentDate = uniqueDates[0];
+  
+  // If most recent session is more than 1 day ago, streak is broken
+  if (mostRecentDate !== todayStr && mostRecentDate !== yesterdayStr) {
+    return 0;
+  }
+
+  // Count consecutive days starting from most recent
+  let streak = 0;
+  let expectedDate = new Date(mostRecentDate);
+  expectedDate.setHours(0, 0, 0, 0);
+
+  for (const dateStr of uniqueDates) {
+    const sessionDate = new Date(dateStr);
+    sessionDate.setHours(0, 0, 0, 0);
+
+    // Check if this date matches expected date (allowing for consecutive days)
+    const daysDiff = Math.floor(
+      (expectedDate.getTime() - sessionDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    if (daysDiff === 0) {
+      streak++;
+      expectedDate.setDate(expectedDate.getDate() - 1);
+    } else if (daysDiff > 0) {
+      // Gap found, streak broken
+      break;
+    }
+  }
+
+  return streak;
+}
+
+/**
+ * Calculate user streak from completed sessions
  */
 export async function calculateUserStreak(userId: string): Promise<number> {
   try {
-    const { data, error } = await supabase.rpc('calculate_user_streak', {
-      user_uuid: userId,
-    });
-
-    if (error) {
-      console.error('Error calculating streak:', error);
-      return 0;
-    }
-
-    return data || 0;
+    // Fetch all completed sessions
+    const allSessions = await getUserCompletedSessions(userId);
+    
+    // Calculate streak from completed sessions
+    const streak = calculateCurrentStreak(allSessions);
+    
+    console.log(`🔥 [calculateUserStreak] Calculated streak: ${streak} days`);
+    
+    return streak;
   } catch (error) {
     console.error('Error in calculateUserStreak:', error);
     return 0;

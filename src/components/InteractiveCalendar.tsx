@@ -10,21 +10,21 @@ import {
   Easing,
 } from 'react-native';
 import { theme } from '../styles/theme';
-import { useStore } from '../store/useStore';
 import { mentalHealthModules, getCategoryColor, categoryColors } from '../data/modules';
+import { CompletedSession } from '../services/progressService';
 
 const { width } = Dimensions.get('window');
 
 interface InteractiveCalendarProps {
+  completedSessions?: CompletedSession[];
   onDateSelect?: (date: Date) => void;
 }
 
 export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
+  completedSessions = [],
   onDateSelect,
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  // Use completedSessionsCache from store instead of userProgress.sessionDeltas
-  const completedSessionsCache = useStore(state => state.completedSessionsCache);
   
   // Animation refs
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -50,12 +50,12 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
   const getCompletedCategoriesForDate = (date: Date): Array<'disorder' | 'wellness' | 'skill' | 'other'> => {
     const dateStr = date.toISOString().split('T')[0];
     // Get all entries for this date
-    const entriesForDate = completedSessionsCache.filter(entry => entry.date === dateStr);
+    const entriesForDate = completedSessions.filter(entry => entry.completed_date === dateStr);
     
     // Extract unique categories
     const uniqueCategories = Array.from(
       new Set(
-        entriesForDate.map(entry => getCategoryFromModuleId(entry.moduleId))
+        entriesForDate.map(entry => getCategoryFromModuleId(entry.context_module))
       )
     ) as Array<'disorder' | 'wellness' | 'skill' | 'other'>;
     
@@ -67,8 +67,8 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     
-    return completedSessionsCache.some(entry => {
-      const sessionDate = new Date(entry.date);
+    return completedSessions.some(entry => {
+      const sessionDate = new Date(entry.completed_date);
       return sessionDate.getFullYear() === year && sessionDate.getMonth() === month;
     });
   };
@@ -272,12 +272,12 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     
-    const completedCategories = completedSessionsCache
+    const completedCategories = completedSessions
       .filter(entry => {
-        const sessionDate = new Date(entry.date);
+        const sessionDate = new Date(entry.completed_date);
         return sessionDate.getFullYear() === year && sessionDate.getMonth() === month;
       })
-      .map(entry => getCategoryFromModuleId(entry.moduleId))
+      .map(entry => getCategoryFromModuleId(entry.context_module))
       .filter((value, index, self) => self.indexOf(value) === index) as Array<'disorder' | 'wellness' | 'skill' | 'other'>;
     
     if (completedCategories.length === 0) {

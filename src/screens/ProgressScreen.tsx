@@ -6,90 +6,83 @@ import { mentalHealthModules } from '../data/modules';
 import { InteractiveCalendar } from '../components/InteractiveCalendar';
 import { TechniqueEffectivenessChart } from '../components/TechniqueEffectivenessChart';
 import { InfoBox } from '../components/InfoBox';
-import { getUserCompletedSessions } from '../services/progressService';
+import { getUserCompletedSessions, CompletedSession } from '../services/progressService';
 import { useUserId } from '../hooks/useUserId';
-import { CompletedSessionCacheEntry } from '../store/useStore';
 
 
 
 export const ProgressScreen: React.FC = () => {
   const userProgress = useStore(state => state.userProgress);
-  const completedSessionsCache = useStore(state => state.completedSessionsCache);
-  const addCompletedSessionToCache = useStore(state => state.addCompletedSessionToCache);
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
   const userId = useUserId();
+  
+  // Get cache from store
+  const sessionsCache = useStore(state => state.sessionsCache);
+  const calendarCache = useStore(state => state.calendarCache);
+  const setSessionsCache = useStore(state => state.setSessionsCache);
+  const setCalendarCache = useStore(state => state.setCalendarCache);
+  
+  // Get store instance for accessing state outside of render
+  const getStoreState = useStore.getState;
   
   // State for streak info box
   const [showStreakInfo, setShowStreakInfo] = useState(false);
   const [streakButtonActive, setStreakButtonActive] = useState(false);
   const streakButtonRef = useRef<any>(null);
   
-  // State for session stats from database
-  const [totalSessions, setTotalSessions] = useState(0);
-  const [thisWeekSessions, setThisWeekSessions] = useState(0);
-  const [thisMonthSessions, setThisMonthSessions] = useState(0);
+  // State for session stats from cache
+  const [totalSessions, setTotalSessions] = useState(sessionsCache.total);
+  const [thisWeekSessions, setThisWeekSessions] = useState(sessionsCache.thisWeek);
+  const [thisMonthSessions, setThisMonthSessions] = useState(sessionsCache.thisMonth);
+  const [completedSessionsForCalendar, setCompletedSessionsForCalendar] = useState<CompletedSession[]>(calendarCache);
+  
+  // Initialize loading state: false if cache has data, true otherwise
+  const [isLoadingSessions, setIsLoadingSessions] = React.useState(sessionsCache.total === 0 && sessionsCache.thisWeek === 0 && sessionsCache.thisMonth === 0);
+  const [isLoadingCalendar, setIsLoadingCalendar] = React.useState(calendarCache.length === 0);
 
   // Set screen context when component mounts
   React.useEffect(() => {
     setCurrentScreen('progress');
   }, [setCurrentScreen]);
 
-  // Populate cache from database only once on mount or when userId changes
-  // Don't refetch when navigating to the screen - rely on cache that's already populated
+  // Update local state when cache changes
   React.useEffect(() => {
-    const populateCacheFromDatabase = async () => {
-      if (!userId) {
-        console.log('📊 [ProgressScreen] No user ID, skipping cache population');
-        return;
-      }
+    setTotalSessions(sessionsCache.total);
+    setThisWeekSessions(sessionsCache.thisWeek);
+    setThisMonthSessions(sessionsCache.thisMonth);
+  }, [sessionsCache]);
 
-      // If cache already has entries, don't fetch - cache is already populated
-      // This prevents clearing the cache when navigating to the screen
-      if (completedSessionsCache.length > 0) {
-        console.log('📊 [ProgressScreen] Cache already has', completedSessionsCache.length, 'entries, skipping fetch');
-        return;
-      }
+  React.useEffect(() => {
+    setCompletedSessionsForCalendar(calendarCache);
+  }, [calendarCache]);
 
-      console.log('📊 [ProgressScreen] Cache is empty, populating from database...');
-      try {
-        // Fetch completed sessions from database (get more entries for calendar)
-        const completedSessions = await getUserCompletedSessions(userId, 100);
-        console.log('📊 [ProgressScreen] Fetched', completedSessions.length, 'completed sessions from database');
-
-        // Convert database entries to cache format and add to cache
-        // Since cache is empty, we can add all entries
-        let addedCount = 0;
-        for (const session of completedSessions) {
-          const cacheEntry: CompletedSessionCacheEntry = {
-            id: session.id || `db-${session.session_id}-${session.completed_date}`,
-            sessionId: session.session_id,
-            moduleId: session.context_module || undefined,
-            date: session.completed_date,
-            minutesCompleted: session.minutes_completed,
-            createdAt: session.created_at || session.completed_date,
-          };
-          addCompletedSessionToCache(cacheEntry);
-          addedCount++;
-        }
-
-        if (addedCount > 0) {
-          console.log('✅ [ProgressScreen] Added', addedCount, 'entries to cache from database');
-        }
-      } catch (error) {
-        console.error('❌ [ProgressScreen] Error populating cache from database:', error);
-      }
-    };
-
-    populateCacheFromDatabase();
-  }, [userId]); // Only run when userId changes - cache persists across navigation
-
-  // Fetch session stats from database
+  // Fetch session stats and calendar data from database
+  // Only fetch on app open (when userId is first set)
+  const hasFetchedOnOpen = React.useRef(false);
   React.useEffect(() => {
     const fetchSessionStats = async () => {
-      if (!userId) return;
+      if (!userId) {
+        console.log('📊 [ProgressScreen] No user ID, skipping session stats fetch');
+        setIsLoadingSessions(false);
+        setIsLoadingCalendar(false);
+        return;
+      }
+
+      // Get current cache state
+      const currentSessionsCache = getStoreState().sessionsCache;
+      const currentCalendarCache = getStoreState().calendarCache;
+
+      // Only show loading if we don't have cache data
+      if (currentSessionsCache.total === 0 && currentSessionsCache.thisWeek === 0 && currentSessionsCache.thisMonth === 0) {
+        setIsLoadingSessions(true);
+      }
+      if (currentCalendarCache.length === 0) {
+        setIsLoadingCalendar(true);
+      }
 
       try {
+        console.log('📊 [ProgressScreen] Fetching session stats and calendar data from database (app open)...');
         // Fetch all completed sessions (no limit) to get accurate counts
         const allSessions = await getUserCompletedSessions(userId);
         
@@ -114,16 +107,46 @@ export const ProgressScreen: React.FC = () => {
           return sessionDate.getFullYear() === currentYear && sessionDate.getMonth() === currentMonth;
         }).length;
         
-        setTotalSessions(total);
-        setThisWeekSessions(thisWeek);
-        setThisMonthSessions(thisMonth);
+        // Update cache
+        setSessionsCache({ total, thisWeek, thisMonth });
+        setCalendarCache(allSessions);
+        
+        console.log('✅ [ProgressScreen] Session stats and calendar data loaded from database', {
+          total,
+          thisWeek,
+          thisMonth,
+          calendarEntries: allSessions.length,
+        });
       } catch (error) {
         console.error('❌ [ProgressScreen] Error fetching session stats:', error);
+      } finally {
+        setIsLoadingSessions(false);
+        setIsLoadingCalendar(false);
       }
     };
 
-    fetchSessionStats();
-  }, [userId]);
+    // Only fetch once on app open (when userId is first set and cache is empty)
+    if (userId && !hasFetchedOnOpen.current) {
+      const currentSessionsCache = getStoreState().sessionsCache;
+      const currentCalendarCache = getStoreState().calendarCache;
+      
+      // Only fetch if cache is empty (app just opened, cache was cleared)
+      if ((currentSessionsCache.total === 0 && currentSessionsCache.thisWeek === 0 && currentSessionsCache.thisMonth === 0) && currentCalendarCache.length === 0) {
+        console.log('📊 [ProgressScreen] App opened, fetching session stats and calendar data from database...');
+        hasFetchedOnOpen.current = true;
+        // Small delay to let cache initialization complete first
+        const timer = setTimeout(() => {
+          fetchSessionStats();
+        }, 100);
+        return () => clearTimeout(timer);
+      } else {
+        // Cache has data, use it
+        setIsLoadingSessions(false);
+        setIsLoadingCalendar(false);
+        hasFetchedOnOpen.current = true;
+      }
+    }
+  }, [userId, setSessionsCache, setCalendarCache]);
 
   // Handle streak info display
   const handleStreakPress = () => {
@@ -169,17 +192,20 @@ export const ProgressScreen: React.FC = () => {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
         {/* Interactive Calendar */}
-        <InteractiveCalendar onDateSelect={(date) => {
-          // Handle date selection - could show meditation details for that date
-          const dateStr = date.toISOString().split('T')[0];
-          const completedMeditations = completedSessionsCache.filter(
-            entry => entry.date === dateStr && entry.moduleId
-          );
-          if (completedMeditations.length > 0) {
-            // Could show a modal with meditation details
-            console.log('Completed meditations on', date.toDateString(), completedMeditations);
-          }
-        }} />
+        <InteractiveCalendar 
+          completedSessions={completedSessionsForCalendar}
+          onDateSelect={(date) => {
+            // Handle date selection - could show meditation details for that date
+            const dateStr = date.toISOString().split('T')[0];
+            const completedMeditations = completedSessionsForCalendar.filter(
+              entry => entry.completed_date === dateStr && entry.context_module
+            );
+            if (completedMeditations.length > 0) {
+              // Could show a modal with meditation details
+              console.log('Completed meditations on', date.toDateString(), completedMeditations);
+            }
+          }} 
+        />
 
         {/* Most Effective Techniques Chart */}
         <TechniqueEffectivenessChart techniques={userProgress.techniqueEffectiveness} />

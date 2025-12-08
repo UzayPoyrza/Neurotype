@@ -271,6 +271,11 @@ export default function App() {
         console.log('🔄 [App] Syncing today\'s completed sessions from database...');
         await useStore.getState().syncTodayCompletedSessionsFromDatabase(userId);
         
+        // Clear sessions and calendar caches on app open
+        console.log('🧹 [App] Clearing sessions and calendar caches on app open...');
+        useStore.getState().clearSessionsCache();
+        useStore.getState().clearCalendarCache();
+        
         // Ensure daily recommendations exist for today (default module: anxiety)
         console.log('🎯 [App] Checking daily recommendations...');
         const defaultModuleId = 'anxiety'; // Default module

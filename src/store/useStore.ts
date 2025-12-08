@@ -3,7 +3,7 @@ import { UserProgress, FilterState, SessionDelta, Session, EmotionalFeedbackEntr
 import { initialUserProgress } from '../data/mockData';
 import { mentalHealthModules } from '../data/modules';
 import { toggleLikedSession as toggleLikedSessionDB } from '../services/likedService';
-import { getCompletedSessionsByDateRange, markSessionCompleted, isSessionCompleted } from '../services/progressService';
+import { getCompletedSessionsByDateRange, markSessionCompleted, isSessionCompleted, CompletedSession } from '../services/progressService';
 import { getSessionModules } from '../services/sessionService';
 
 // Helper function to get category from moduleId
@@ -241,6 +241,14 @@ const buildInitialStoreData = () => {
     sessionCache: {} as Record<string, Session>,
     userId: null as string | null,
     completedSessionsCache: [] as CompletedSessionCacheEntry[],
+    // Sessions cache for ProgressScreen
+    sessionsCache: {
+      total: 0,
+      thisWeek: 0,
+      thisMonth: 0,
+    },
+    // Calendar cache for ProgressScreen
+    calendarCache: [] as CompletedSession[],
   };
 };
 
@@ -267,6 +275,8 @@ interface AppState {
   sessionCache: Record<string, Session>;
   userId: string | null;
   completedSessionsCache: CompletedSessionCacheEntry[];
+  sessionsCache: { total: number; thisWeek: number; thisMonth: number };
+  calendarCache: CompletedSession[];
   setUserId: (userId: string | null) => void;
   addSessionDelta: (delta: SessionDelta) => void;
   setFilters: (filters: FilterState) => void;
@@ -294,6 +304,12 @@ interface AppState {
   getCachedSession: (sessionId: string) => Session | null;
   addCompletedSessionToCache: (entry: CompletedSessionCacheEntry) => void;
   removeDuplicateCacheEntries: (dbEntries: Array<{ session_id: string; created_at: string }>) => void;
+  incrementSessionsCache: () => void;
+  addToCalendarCache: (entry: CompletedSession) => void;
+  clearSessionsCache: () => void;
+  clearCalendarCache: () => void;
+  setSessionsCache: (sessions: { total: number; thisWeek: number; thisMonth: number }) => void;
+  setCalendarCache: (sessions: CompletedSession[]) => void;
   resetAppData: () => void;
   logout: () => void;
 }
@@ -542,6 +558,24 @@ export const useStore = create<AppState>((set, get) => ({
         } else {
           wasUpdate = result.wasUpdate || false;
           console.log('✅ [Store] Session completion saved/updated to database', { wasUpdate });
+          
+          // Increment sessions cache (only if it's a new entry, not an update)
+          if (!wasUpdate) {
+            get().incrementSessionsCache();
+          }
+          
+          // Add to calendar cache (only if category not already present for that day)
+          // Create a CompletedSession entry for calendar cache
+          const calendarEntry: CompletedSession = {
+            id: result.updatedEntryId || `temp-${Date.now()}`,
+            user_id: userId,
+            session_id: sessionIdClean,
+            context_module: moduleId || null,
+            completed_date: today,
+            minutes_completed: minutesCompleted,
+            created_at: new Date().toISOString(),
+          };
+          get().addToCalendarCache(calendarEntry);
         }
       } catch (error) {
         console.error('❌ [Store] Error saving completion to database:', error);
@@ -668,6 +702,126 @@ export const useStore = create<AppState>((set, get) => ({
       console.log(`🧹 [Store] Removed ${state.completedSessionsCache.length - filteredCache.length} duplicate cache entries`);
       
       return { completedSessionsCache: filteredCache };
+    }),
+
+  incrementSessionsCache: () =>
+    set((state) => {
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+      
+      // Calculate this week (last 7 days)
+      const weekAgo = new Date(today);
+      weekAgo.setDate(today.getDate() - 7);
+      const weekAgoStr = weekAgo.toISOString().split('T')[0];
+      
+      // Calculate this month
+      const currentYear = today.getFullYear();
+      const currentMonth = today.getMonth();
+      
+      // Increment total
+      const newTotal = state.sessionsCache.total + 1;
+      
+      // Check if today is within this week
+      const isThisWeek = todayStr >= weekAgoStr;
+      const newThisWeek = isThisWeek ? state.sessionsCache.thisWeek + 1 : state.sessionsCache.thisWeek;
+      
+      // Check if today is within this month
+      const isThisMonth = today.getFullYear() === currentYear && today.getMonth() === currentMonth;
+      const newThisMonth = isThisMonth ? state.sessionsCache.thisMonth + 1 : state.sessionsCache.thisMonth;
+      
+      console.log(`📊 [Store] Incremented sessions cache: total=${newTotal}, thisWeek=${newThisWeek}, thisMonth=${newThisMonth}`);
+      
+      return {
+        sessionsCache: {
+          total: newTotal,
+          thisWeek: newThisWeek,
+          thisMonth: newThisMonth,
+        },
+      };
+    }),
+
+  addToCalendarCache: (entry: CompletedSession) =>
+    set((state) => {
+      // Get the category of the new entry
+      const newEntryCategory = getCategoryFromModuleId(entry.context_module || undefined);
+      
+      // Check if this category already exists for this date
+      const categoryExistsForDate = state.calendarCache.some(existingEntry => {
+        if (existingEntry.completed_date !== entry.completed_date) return false;
+        const existingCategory = getCategoryFromModuleId(existingEntry.context_module || undefined);
+        return existingCategory === newEntryCategory;
+      });
+      
+      // If category already exists for this date, do nothing (don't add)
+      if (categoryExistsForDate) {
+        console.log(`⚠️ [Store] Category ${newEntryCategory} already exists in calendar cache for date ${entry.completed_date}, skipping add`);
+        return state; // Return unchanged state - don't modify cache at all
+      }
+      
+      // Category doesn't exist for this date, so add the entry
+      // Check if entry with same session_id + context_module + completed_date exists (for updates)
+      const isSameCompletion = (existingEntry: CompletedSession): boolean => {
+        const sameSession = existingEntry.session_id === entry.session_id;
+        const sameDate = existingEntry.completed_date === entry.completed_date;
+        // Handle context_module: both undefined, both null, or both same string value
+        const sameModule = (
+          (existingEntry.context_module === undefined && entry.context_module === undefined) ||
+          (existingEntry.context_module === null && entry.context_module === null) ||
+          (existingEntry.context_module === entry.context_module && existingEntry.context_module !== undefined && existingEntry.context_module !== null)
+        );
+        
+        // Match on session_id + context_module + completed_date
+        return sameSession && sameDate && sameModule;
+      };
+      
+      // Remove entries that match session_id + context_module + completed_date (to replace with updated entry)
+      const filteredCache = state.calendarCache.filter(
+        existingEntry => !isSameCompletion(existingEntry)
+      );
+      
+      // Add new entry at the beginning, keep all existing entries
+      const newCache = [entry, ...filteredCache];
+      
+      const removedCount = state.calendarCache.length - filteredCache.length;
+      if (removedCount > 0) {
+        console.log(`🔄 [Store] Replaced ${removedCount} entry(ies) in calendar cache for ${entry.completed_date} (same session+module+date)`);
+      } else {
+        console.log(`➕ [Store] Added new entry to calendar cache for category ${newEntryCategory} on ${entry.completed_date}`);
+      }
+      
+      console.log(`✅ [Store] Calendar cache now has ${newCache.length} entries (was ${state.calendarCache.length})`);
+      
+      return { calendarCache: newCache };
+    }),
+
+  clearSessionsCache: () =>
+    set(() => {
+      console.log('🧹 [Store] Clearing sessions cache');
+      return {
+        sessionsCache: {
+          total: 0,
+          thisWeek: 0,
+          thisMonth: 0,
+        },
+      };
+    }),
+
+  clearCalendarCache: () =>
+    set(() => {
+      console.log('🧹 [Store] Clearing calendar cache');
+      return { calendarCache: [] };
+    }),
+
+  setSessionsCache: (sessions: { total: number; thisWeek: number; thisMonth: number }) =>
+    set(() => {
+      console.log(`📊 [Store] Setting sessions cache: total=${sessions.total}, thisWeek=${sessions.thisWeek}, thisMonth=${sessions.thisMonth}`);
+      return { sessionsCache: sessions };
+    }),
+
+  setCalendarCache: (sessions: CompletedSession[]) =>
+    set(() => {
+      console.log(`📅 [Store] Setting calendar cache with ${sessions.length} entries`);
+      return { calendarCache: sessions };
     }),
 
   resetAppData: () => {

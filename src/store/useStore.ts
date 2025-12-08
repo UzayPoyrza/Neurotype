@@ -6,6 +6,13 @@ import { toggleLikedSession as toggleLikedSessionDB } from '../services/likedSer
 import { getCompletedSessionsByDateRange, markSessionCompleted, isSessionCompleted } from '../services/progressService';
 import { getSessionModules } from '../services/sessionService';
 
+// Helper function to get category from moduleId
+const getCategoryFromModuleId = (moduleId: string | undefined): 'disorder' | 'wellness' | 'skill' | 'other' => {
+  if (!moduleId) return 'other';
+  const module = mentalHealthModules.find(m => m.id === moduleId);
+  return module?.category || 'other';
+};
+
 // Helper function to create subtle background colors from module colors
 export const createSubtleBackground = (moduleColor: string): string => {
   // Convert hex to RGB
@@ -286,7 +293,6 @@ interface AppState {
   cacheSessions: (sessions: Session[]) => void;
   getCachedSession: (sessionId: string) => Session | null;
   addCompletedSessionToCache: (entry: CompletedSessionCacheEntry) => void;
-  removeCompletedSessionFromCache: (sessionId: string, createdAt: string) => void;
   removeDuplicateCacheEntries: (dbEntries: Array<{ session_id: string; created_at: string }>) => void;
   resetAppData: () => void;
   logout: () => void;
@@ -589,63 +595,62 @@ export const useStore = create<AppState>((set, get) => ({
 
   addCompletedSessionToCache: (entry: CompletedSessionCacheEntry) =>
     set((state) => {
+      // Get the category of the new entry
+      const newEntryCategory = getCategoryFromModuleId(entry.moduleId);
+      
+      // Check if this category already exists for this date
+      const categoryExistsForDate = state.completedSessionsCache.some(existingEntry => {
+        if (existingEntry.date !== entry.date) return false;
+        const existingCategory = getCategoryFromModuleId(existingEntry.moduleId);
+        return existingCategory === newEntryCategory;
+      });
+      
+      // If category already exists for this date, do nothing (don't add)
+      if (categoryExistsForDate) {
+        console.log(`⚠️ [Store] Category ${newEntryCategory} already exists for date ${entry.date}, skipping add`);
+        return state; // Return unchanged state - don't modify cache at all
+      }
+      
+      // Category doesn't exist for this date, so add the entry
       // Clean sessionId (remove -today suffix if present) for comparison
       const cleanSessionId = entry.sessionId.replace('-today', '');
       
-      // Remove any existing entries with same sessionId + moduleId + date (for overwrites)
-      // This handles the case where the same meditation is completed twice from the same module on the same day
+      // Check if entry with same sessionId + moduleId + date exists (for updates)
+      const isSameCompletion = (existingEntry: CompletedSessionCacheEntry): boolean => {
+        const existingCleanId = existingEntry.sessionId.replace('-today', '');
+        const sameSession = existingCleanId === cleanSessionId;
+        const sameDate = existingEntry.date === entry.date;
+        // Handle moduleId: both undefined, both null, or both same string value
+        const sameModule = (
+          (existingEntry.moduleId === undefined && entry.moduleId === undefined) ||
+          (existingEntry.moduleId === null && entry.moduleId === null) ||
+          (existingEntry.moduleId === entry.moduleId && existingEntry.moduleId !== undefined && existingEntry.moduleId !== null)
+        );
+        
+        // Match on sessionId + moduleId + date (NOT createdAt, since DB updates change createdAt)
+        return sameSession && sameDate && sameModule;
+      };
+      
+      // Remove entries that match sessionId + moduleId + date (to replace with updated entry)
+      // Keep all other entries (different sessions, dates, or modules)
       const filteredCache = state.completedSessionsCache.filter(
-        existingEntry => {
-          const existingCleanId = existingEntry.sessionId.replace('-today', '');
-          const sameSession = existingCleanId === cleanSessionId;
-          const sameDate = existingEntry.date === entry.date;
-          // Handle moduleId: both undefined, both null, or both same string value
-          const sameModule = (
-            (existingEntry.moduleId === undefined && entry.moduleId === undefined) ||
-            (existingEntry.moduleId === null && entry.moduleId === null) ||
-            (existingEntry.moduleId === entry.moduleId && existingEntry.moduleId !== undefined && existingEntry.moduleId !== null)
-          );
-          
-          // Keep entry if it doesn't match all three criteria
-          return !(sameSession && sameDate && sameModule);
-        }
+        existingEntry => !isSameCompletion(existingEntry)
       );
       
-      // Add the new entry at the beginning
-      const newCache = [entry, ...filteredCache]
-        .filter((e, index, self) => {
-          const eCleanId = e.sessionId.replace('-today', '');
-          return index === self.findIndex(item => {
-            const itemCleanId = item.sessionId.replace('-today', '');
-            return itemCleanId === eCleanId && item.createdAt === e.createdAt;
-          });
-        })
-        .slice(0, 50); // Keep last 50 entries
+      // Add new entry at the beginning, keep all existing entries
+      const newCache = [entry, ...filteredCache].slice(0, 50);
       
-      // Log if we removed duplicates
       const removedCount = state.completedSessionsCache.length - filteredCache.length;
       if (removedCount > 0) {
-        console.log(`🧹 [Store] Removed ${removedCount} old cache entry(ies) for overwrite:`, {
-          sessionId: entry.sessionId,
-          cleanSessionId,
-          moduleId: entry.moduleId,
-          date: entry.date,
-          removedEntries: state.completedSessionsCache.filter(e => {
-            const eCleanId = e.sessionId.replace('-today', '');
-            return eCleanId === cleanSessionId && e.date === entry.date && e.moduleId === entry.moduleId;
-          }),
-        });
+        console.log(`🔄 [Store] Replaced ${removedCount} entry(ies) for ${entry.date} (same session+module+date, updated createdAt)`);
+      } else {
+        console.log(`➕ [Store] Added new entry to cache for category ${newEntryCategory} on ${entry.date}`);
       }
+      
+      console.log(`✅ [Store] Cache now has ${newCache.length} entries (was ${state.completedSessionsCache.length})`);
       
       return { completedSessionsCache: newCache };
     }),
-
-  removeCompletedSessionFromCache: (sessionId: string, createdAt: string) =>
-    set((state) => ({
-      completedSessionsCache: state.completedSessionsCache.filter(
-        entry => !(entry.sessionId === sessionId && entry.createdAt === createdAt)
-      )
-    })),
 
   removeDuplicateCacheEntries: (dbEntries: Array<{ session_id: string; created_at: string }>) =>
     set((state) => {

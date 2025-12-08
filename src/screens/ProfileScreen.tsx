@@ -1002,7 +1002,7 @@ export const ProfileScreen: React.FC = () => {
                       const completionLabel = formattedDate ? `Completed ${formattedDate}` : 'Completion date unavailable';
 
                       return (
-                        <View key={activityItem.id || `${activityItem.sessionId}-${activityItem.date}-${index}`} style={styles.activityItem}>
+                        <View key={`${activityItem.id || activityItem.sessionId}-${activityItem.createdAt || activityItem.date}-${index}`} style={styles.activityItem}>
                           <View
                             style={[
                               styles.activityIcon,
@@ -1131,18 +1131,18 @@ export const ProfileScreen: React.FC = () => {
                     onScroll={handleFeedbackScroll}
                     scrollEventThrottle={16}
                   >
-                    {sortedFeedbackHistory.map(entry => {
+                    {sortedFeedbackHistory.map((entry, index) => {
                       const sessionData = sessionsById[entry.sessionId];
                       const sessionTitle = sessionData?.title || 'Meditation Session';
                       const truncatedTitle = truncateText(sessionTitle, 28);
-                      const feedbackLabel = entry.label;
-                      const feedbackColor = feedbackColorMap[feedbackLabel];
+                      const feedbackLabel = entry.label as EmotionalFeedbackLabel;
+                      const feedbackColor = feedbackColorMap[feedbackLabel] || theme.colors.primary;
                       const feedbackBackground = feedbackColor;
                       const formattedDate = formatSessionDate(entry.date) || 'Date unavailable';
                       const formattedTimestamp = formatTimestamp(entry.timestampSeconds);
 
                       return (
-                        <View key={entry.id} style={styles.activityItem}>
+                        <View key={`${entry.id}-${entry.timestampSeconds}-${index}`} style={styles.activityItem}>
                           <View
                             style={[
                               styles.activityIcon,

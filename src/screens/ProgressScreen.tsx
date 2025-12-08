@@ -30,7 +30,8 @@ export const ProgressScreen: React.FC = () => {
     setCurrentScreen('progress');
   }, [setCurrentScreen]);
 
-  // Populate cache from database when screen loads or userId changes
+  // Populate cache from database only once on mount or when userId changes
+  // Don't refetch when navigating to the screen - rely on cache that's already populated
   React.useEffect(() => {
     const populateCacheFromDatabase = async () => {
       if (!userId) {
@@ -38,42 +39,37 @@ export const ProgressScreen: React.FC = () => {
         return;
       }
 
-      console.log('📊 [ProgressScreen] Populating cache from database...');
+      // If cache already has entries, don't fetch - cache is already populated
+      // This prevents clearing the cache when navigating to the screen
+      if (completedSessionsCache.length > 0) {
+        console.log('📊 [ProgressScreen] Cache already has', completedSessionsCache.length, 'entries, skipping fetch');
+        return;
+      }
+
+      console.log('📊 [ProgressScreen] Cache is empty, populating from database...');
       try {
         // Fetch completed sessions from database (get more entries for calendar)
         const completedSessions = await getUserCompletedSessions(userId, 100);
         console.log('📊 [ProgressScreen] Fetched', completedSessions.length, 'completed sessions from database');
 
-        // Get current cache to check for existing entries
-        const getStoreState = useStore.getState;
-        const currentCache = getStoreState().completedSessionsCache;
-        const existingCacheKeys = new Set(
-          currentCache.map(entry => `${entry.sessionId}-${entry.createdAt}`)
-        );
-
         // Convert database entries to cache format and add to cache
-        // Only add entries that aren't already in cache
+        // Since cache is empty, we can add all entries
         let addedCount = 0;
         for (const session of completedSessions) {
-          const cacheKey = `${session.session_id}-${session.created_at || session.completed_date}`;
-          if (!existingCacheKeys.has(cacheKey)) {
-            const cacheEntry: CompletedSessionCacheEntry = {
-              id: session.id || `db-${session.session_id}-${session.completed_date}`,
-              sessionId: session.session_id,
-              moduleId: session.context_module || undefined,
-              date: session.completed_date,
-              minutesCompleted: session.minutes_completed,
-              createdAt: session.created_at || session.completed_date,
-            };
-            addCompletedSessionToCache(cacheEntry);
-            addedCount++;
-          }
+          const cacheEntry: CompletedSessionCacheEntry = {
+            id: session.id || `db-${session.session_id}-${session.completed_date}`,
+            sessionId: session.session_id,
+            moduleId: session.context_module || undefined,
+            date: session.completed_date,
+            minutesCompleted: session.minutes_completed,
+            createdAt: session.created_at || session.completed_date,
+          };
+          addCompletedSessionToCache(cacheEntry);
+          addedCount++;
         }
 
         if (addedCount > 0) {
           console.log('✅ [ProgressScreen] Added', addedCount, 'entries to cache from database');
-        } else {
-          console.log('ℹ️ [ProgressScreen] No new entries to add (all already in cache)');
         }
       } catch (error) {
         console.error('❌ [ProgressScreen] Error populating cache from database:', error);
@@ -81,7 +77,7 @@ export const ProgressScreen: React.FC = () => {
     };
 
     populateCacheFromDatabase();
-  }, [userId]); // Only run when userId changes, not on every cache update
+  }, [userId]); // Only run when userId changes - cache persists across navigation
 
   // Handle streak info display
   const handleStreakPress = () => {

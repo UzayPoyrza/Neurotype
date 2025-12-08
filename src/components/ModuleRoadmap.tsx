@@ -256,8 +256,8 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         // Sort by completed date (most recent first) - most recent on the left
         validSessions.sort((a, b) => b.completedDate.getTime() - a.completedDate.getTime());
         
-        // Limit to 6 most recent
-        setFetchedCompletedSessions(validSessions.slice(0, 6));
+        // Store all sessions for counting (Completed and Today)
+        setFetchedCompletedSessions(validSessions);
       } catch (error) {
         console.error('Error fetching completed sessions:', error);
         setFetchedCompletedSessions([]);
@@ -285,9 +285,11 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
       'self-compassion': ['sleep', 'focus'],
     };
 
-    // Use fetched completed sessions from database (already sorted with most recent first)
-    // Most recent will appear on the left (first in array)
+    // Use all fetched completed sessions from database for counting (already sorted with most recent first)
     const completedSessions = fetchedCompletedSessions;
+    
+    // Limit to 6 most recent for display purposes only
+    const displaySessions = fetchedCompletedSessions.slice(0, 6);
 
     // For tomorrow session, we can keep using a placeholder from mock data for now
     const goals = relevantGoals[module.id as keyof typeof relevantGoals] || ['focus'];
@@ -303,13 +305,22 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
 
     return {
       completedSessions,
+      displaySessions,
       tomorrowSession,
     };
   }, [module, fetchedCompletedSessions]);
 
-  const { completedSessions, tomorrowSession } = roadmapData;
+  const { completedSessions, displaySessions, tomorrowSession } = roadmapData;
   // Use the recommended session passed as prop (from TodayScreen)
   const todayRecommendedSessionId = recommendedSession?.id;
+  
+  // Calculate number of sessions completed today
+  const todayCount = useMemo(() => {
+    const today = new Date();
+    return completedSessions.filter(item => {
+      return item.completedDate.toDateString() === today.toDateString();
+    }).length;
+  }, [completedSessions]);
   
   const titleText = `${module.title} Journey`;
   // Use smaller font for longer titles
@@ -530,7 +541,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
               }}
               scrollEventThrottle={16}
             >
-              {completedSessions.map(item => (
+              {displaySessions.map(item => (
                 <TouchableOpacity
                   key={item.id}
                   style={styles.completedCard}
@@ -861,7 +872,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
             </View>
             <View style={styles.summaryDivider} />
             <View style={styles.summaryStat}>
-              <Text style={styles.summaryStatValue}>{recommendedSession ? 1 : 0}</Text>
+              <Text style={styles.summaryStatValue}>{todayCount}</Text>
               <Text style={styles.summaryStatLabel}>Today</Text>
             </View>
           </View>

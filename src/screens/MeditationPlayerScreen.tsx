@@ -1781,24 +1781,32 @@ export const MeditationPlayerScreen: React.FC = () => {
             const minutesCompleted = Math.round(currentTime / 60);
             
             console.log('✅ [Session Completion] Marking session as completed (cache + database)');
-            await markSessionCompletedToday(moduleIdForCompletion, activeSession.id, today, minutesCompleted);
+            const result = await markSessionCompletedToday(moduleIdForCompletion, activeSession.id, today, minutesCompleted);
             
             if (!userId) {
               console.warn('⚠️ [Session Completion] No user ID found - checkmark shown in cache only');
               // Still call the mock for local state
               sessionProgressData.markSessionComplete(activeSession.id, currentTime, rating);
             } else {
+              // Clean sessionId (remove -today suffix if present)
+              const cleanSessionId = activeSession.id.replace('-today', '');
+              
               // Add to completed sessions cache for activity history
+              // The cache function will automatically remove old entries with same sessionId + moduleId + date
               const cacheEntry: CompletedSessionCacheEntry = {
                 id: `temp-${Date.now()}`, // Temporary ID, will be replaced on next DB fetch
-                sessionId: activeSession.id,
+                sessionId: cleanSessionId, // Use cleaned sessionId
                 moduleId: moduleContext || undefined,
                 date: today,
                 minutesCompleted: currentTime / 60, // Use decimal precision
                 createdAt: new Date().toISOString(),
               };
               addCompletedSessionToCache(cacheEntry);
-              console.log('✅ [Session Completion] Session added to activity cache');
+              console.log('✅ [Session Completion] Session added to activity cache', {
+                wasUpdate: result.wasUpdate,
+                sessionId: cleanSessionId,
+                moduleId: moduleContext,
+              });
               
               // Save session rating to database (in background)
               console.log('💾 [Session Completion] Saving session rating to database (background)...');

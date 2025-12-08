@@ -279,7 +279,7 @@ interface AppState {
   setIsTransitioning: (isTransitioning: boolean) => void;
   addEmotionalFeedbackEntry: (entry: EmotionalFeedbackEntry) => void;
   removeEmotionalFeedbackEntry: (entryId: string) => void;
-  markSessionCompletedToday: (moduleId: string, sessionId: string, date?: string, minutesCompleted?: number) => Promise<void>;
+  markSessionCompletedToday: (moduleId: string, sessionId: string, date?: string, minutesCompleted?: number) => Promise<{ wasUpdate: boolean }>;
   isSessionCompletedToday: (moduleId: string, sessionId: string, date?: string) => boolean;
   syncTodayCompletedSessionsFromDatabase: (userId: string) => Promise<void>;
   cleanupOldCompletedSessions: () => void;
@@ -486,7 +486,7 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
-  markSessionCompletedToday: async (moduleId: string, sessionId: string, date?: string, minutesCompleted: number = 0) => {
+  markSessionCompletedToday: async (moduleId: string, sessionId: string, date?: string, minutesCompleted: number = 0): Promise<{ wasUpdate: boolean }> => {
     const today = date || new Date().toISOString().split('T')[0];
     const state = get();
     const userId = state.userId;
@@ -526,6 +526,7 @@ export const useStore = create<AppState>((set, get) => ({
     // Always save to database - markSessionCompleted handles update/create logic:
     // - Same session + same context_module + same day: UPDATE existing entry
     // - Different day OR different context_module: CREATE new entry
+    let wasUpdate = false;
     if (userId) {
       try {
         const result = await markSessionCompleted(userId, sessionIdClean, minutesCompleted, moduleId, today);
@@ -533,7 +534,8 @@ export const useStore = create<AppState>((set, get) => ({
           console.error('❌ [Store] Failed to save completion to database:', result.error);
           // Optionally remove from cache on error, but for now keep it for better UX
         } else {
-          console.log('✅ [Store] Session completion saved/updated to database');
+          wasUpdate = result.wasUpdate || false;
+          console.log('✅ [Store] Session completion saved/updated to database', { wasUpdate });
         }
       } catch (error) {
         console.error('❌ [Store] Error saving completion to database:', error);
@@ -541,6 +543,8 @@ export const useStore = create<AppState>((set, get) => ({
     } else {
       console.warn('⚠️ [Store] No userId, cannot save to database');
     }
+    
+    return { wasUpdate };
   },
 
   isSessionCompletedToday: (moduleId: string, sessionId: string, date?: string): boolean => {
@@ -584,16 +588,57 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   addCompletedSessionToCache: (entry: CompletedSessionCacheEntry) =>
-    set((state) => ({
-      completedSessionsCache: [entry, ...state.completedSessionsCache]
-        .filter((e, index, self) => 
-          index === self.findIndex(item => 
-            item.sessionId === e.sessionId && 
-            item.createdAt === e.createdAt
-          )
-        )
-        .slice(0, 50) // Keep last 50 entries
-    })),
+    set((state) => {
+      // Clean sessionId (remove -today suffix if present) for comparison
+      const cleanSessionId = entry.sessionId.replace('-today', '');
+      
+      // Remove any existing entries with same sessionId + moduleId + date (for overwrites)
+      // This handles the case where the same meditation is completed twice from the same module on the same day
+      const filteredCache = state.completedSessionsCache.filter(
+        existingEntry => {
+          const existingCleanId = existingEntry.sessionId.replace('-today', '');
+          const sameSession = existingCleanId === cleanSessionId;
+          const sameDate = existingEntry.date === entry.date;
+          // Handle moduleId: both undefined, both null, or both same string value
+          const sameModule = (
+            (existingEntry.moduleId === undefined && entry.moduleId === undefined) ||
+            (existingEntry.moduleId === null && entry.moduleId === null) ||
+            (existingEntry.moduleId === entry.moduleId && existingEntry.moduleId !== undefined && existingEntry.moduleId !== null)
+          );
+          
+          // Keep entry if it doesn't match all three criteria
+          return !(sameSession && sameDate && sameModule);
+        }
+      );
+      
+      // Add the new entry at the beginning
+      const newCache = [entry, ...filteredCache]
+        .filter((e, index, self) => {
+          const eCleanId = e.sessionId.replace('-today', '');
+          return index === self.findIndex(item => {
+            const itemCleanId = item.sessionId.replace('-today', '');
+            return itemCleanId === eCleanId && item.createdAt === e.createdAt;
+          });
+        })
+        .slice(0, 50); // Keep last 50 entries
+      
+      // Log if we removed duplicates
+      const removedCount = state.completedSessionsCache.length - filteredCache.length;
+      if (removedCount > 0) {
+        console.log(`🧹 [Store] Removed ${removedCount} old cache entry(ies) for overwrite:`, {
+          sessionId: entry.sessionId,
+          cleanSessionId,
+          moduleId: entry.moduleId,
+          date: entry.date,
+          removedEntries: state.completedSessionsCache.filter(e => {
+            const eCleanId = e.sessionId.replace('-today', '');
+            return eCleanId === cleanSessionId && e.date === entry.date && e.moduleId === entry.moduleId;
+          }),
+        });
+      }
+      
+      return { completedSessionsCache: newCache };
+    }),
 
   removeCompletedSessionFromCache: (sessionId: string, createdAt: string) =>
     set((state) => ({

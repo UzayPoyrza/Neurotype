@@ -84,7 +84,7 @@ export async function markSessionCompleted(
   minutesCompleted: number,
   contextModule?: string,
   date?: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; wasUpdate?: boolean; updatedEntryId?: string }> {
   try {
     const completedDate = date || new Date().toISOString().split('T')[0];
     // Normalize context_module: empty string or undefined becomes null, trim whitespace
@@ -200,7 +200,7 @@ export async function markSessionCompleted(
         console.log('✅ [markSessionCompleted] Session completion updated via delete+insert method', {
           updatedEntry: insertData?.[0],
         });
-        return { success: true };
+        return { success: true, wasUpdate: true, updatedEntryId: insertData?.[0]?.id };
       }
 
       if (!upsertData || upsertData.length === 0) {
@@ -213,7 +213,7 @@ export async function markSessionCompleted(
         oldMinutesCompleted: allEntries?.find(e => e.id === existingEntry.id)?.minutes_completed,
         newMinutesCompleted: minutesCompleted,
       });
-      return { success: true };
+      return { success: true, wasUpdate: true, updatedEntryId: upsertData[0]?.id };
     } else {
       // Different day OR different context_module: CREATE new entry
       console.log('➕ [markSessionCompleted] Creating new entry (different day or different context_module)');
@@ -236,7 +236,7 @@ export async function markSessionCompleted(
       }
 
       console.log('✅ [markSessionCompleted] Session completion inserted successfully');
-      return { success: true };
+      return { success: true, wasUpdate: false };
     }
   } catch (error: any) {
     console.error('❌ [markSessionCompleted] Exception:', error);

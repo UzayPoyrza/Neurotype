@@ -183,6 +183,45 @@ export const ShimmerSessionsCard: React.FC<ShimmerCardProps> = ({ style }) => {
   );
 };
 
+export const ShimmerActivityHistory: React.FC<ShimmerCardProps> = ({ style }) => {
+  return (
+    <View style={[{ gap: 12 }, style]}>
+      {[...Array(4)].map((_, i) => (
+        <View key={i} style={styles.activityItemContainer}>
+          <ShimmerSkeleton width={40} height={40} borderRadius={20} style={styles.activityIconSkeleton} />
+          <View style={styles.activityInfoSkeleton}>
+            <ShimmerSkeleton width="70%" height={15} borderRadius={6} style={styles.activityTitleSkeleton} />
+            <ShimmerSkeleton width="50%" height={13} borderRadius={6} style={styles.activityDateSkeleton} />
+            <ShimmerSkeleton width="40%" height={13} borderRadius={6} style={styles.activityMetaSkeleton} />
+          </View>
+          <ShimmerSkeleton width={50} height={28} borderRadius={8} style={styles.activityDurationBadgeSkeleton} />
+        </View>
+      ))}
+    </View>
+  );
+};
+
+export const ShimmerEmotionalFeedbackHistory: React.FC<ShimmerCardProps> = ({ style }) => {
+  return (
+    <View style={[{ gap: 12 }, style]}>
+      {[...Array(4)].map((_, i) => (
+        <View key={i} style={styles.feedbackItemContainer}>
+          <ShimmerSkeleton width={40} height={40} borderRadius={20} style={styles.feedbackIconSkeleton} />
+          <View style={styles.feedbackInfoSkeleton}>
+            <ShimmerSkeleton width="65%" height={15} borderRadius={6} style={styles.feedbackTitleSkeleton} />
+            <ShimmerSkeleton width="45%" height={13} borderRadius={6} style={styles.feedbackDateSkeleton} />
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <ShimmerSkeleton width={60} height={20} borderRadius={8} style={styles.feedbackTagSkeleton} />
+              <ShimmerSkeleton width="35%" height={13} borderRadius={6} style={styles.feedbackTimestampSkeleton} />
+            </View>
+          </View>
+          <ShimmerSkeleton width={24} height={24} borderRadius={12} style={styles.feedbackDeleteButtonSkeleton} />
+        </View>
+      ))}
+    </View>
+  );
+};
+
 export const ShimmerProgressPathCard: React.FC<ShimmerCardProps> = ({ style }) => {
   return (
     <View style={[styles.progressPathCardContainer, style]}>
@@ -561,6 +600,94 @@ const styles = StyleSheet.create({
     width: '40%',
     height: 24,
     borderRadius: 6,
+  },
+  activityItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    padding: 12,
+    overflow: 'hidden',
+  },
+  activityIconSkeleton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
+  },
+  activityInfoSkeleton: {
+    flex: 1,
+    paddingRight: 8,
+  },
+  activityTitleSkeleton: {
+    width: '70%',
+    height: 15,
+    borderRadius: 6,
+    marginBottom: 6,
+  },
+  activityDateSkeleton: {
+    width: '50%',
+    height: 13,
+    borderRadius: 6,
+    marginBottom: 4,
+  },
+  activityMetaSkeleton: {
+    width: '40%',
+    height: 13,
+    borderRadius: 6,
+  },
+  activityDurationBadgeSkeleton: {
+    width: 50,
+    height: 28,
+    borderRadius: 8,
+    marginLeft: 12,
+  },
+  feedbackItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    padding: 12,
+    overflow: 'hidden',
+  },
+  feedbackIconSkeleton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
+  },
+  feedbackInfoSkeleton: {
+    flex: 1,
+    paddingRight: 8,
+  },
+  feedbackTitleSkeleton: {
+    width: '65%',
+    height: 15,
+    borderRadius: 6,
+    marginBottom: 6,
+  },
+  feedbackDateSkeleton: {
+    width: '45%',
+    height: 13,
+    borderRadius: 6,
+    marginBottom: 4,
+  },
+  feedbackTagSkeleton: {
+    width: 60,
+    height: 20,
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  feedbackTimestampSkeleton: {
+    width: '35%',
+    height: 13,
+    borderRadius: 6,
+  },
+  feedbackDeleteButtonSkeleton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    marginLeft: 8,
   },
 });
 

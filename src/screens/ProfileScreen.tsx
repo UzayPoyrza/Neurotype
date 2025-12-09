@@ -17,6 +17,7 @@ import { getSessionById } from '../services/sessionService';
 import { useUserId } from '../hooks/useUserId';
 import { getUserEmotionalFeedback, removeEmotionalFeedback as removeEmotionalFeedbackDB } from '../services/feedbackService';
 import type { CompletedSessionCacheEntry } from '../store/useStore';
+import { ShimmerActivityHistory, ShimmerEmotionalFeedbackHistory } from '../components/ShimmerSkeleton';
 
 const MAX_VISIBLE_ACTIVITY_ITEMS = 4;
 const APPROX_ACTIVITY_ROW_HEIGHT = 84;
@@ -950,9 +951,8 @@ export const ProfileScreen: React.FC = () => {
           
           <View style={styles.activityContent}>
             {isLoadingActivity ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyStateEmoji}>⏳</Text>
-                <Text style={styles.emptyStateTitle}>Loading activity...</Text>
+              <View style={styles.activityList}>
+                <ShimmerActivityHistory />
               </View>
             ) : recentActivity.length === 0 ? (
               <View style={styles.emptyState}>
@@ -1101,9 +1101,8 @@ export const ProfileScreen: React.FC = () => {
 
           <View style={styles.activityContent}>
             {isLoadingFeedback ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyStateEmoji}>⏳</Text>
-                <Text style={styles.emptyStateTitle}>Loading feedback...</Text>
+              <View style={styles.activityList}>
+                <ShimmerEmotionalFeedbackHistory />
               </View>
             ) : sortedFeedbackHistory.length === 0 ? (
               <View style={styles.emptyState}>

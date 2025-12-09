@@ -673,9 +673,12 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
               {/* Footer with CTA */}
               <View style={[styles.todayCardFooter, isCompleted && styles.todayCardFooterCompleted]}>
                 {isCompleted ? (
-                  <View style={styles.todayCompletedButton}>
-                    <Text style={styles.todayCompletedCheckmark}>✓</Text>
-                  </View>
+                  <>
+                    <Text style={styles.todayCardCompletedText}>You already completed this session today.</Text>
+                    <View style={styles.todayCompletedButton}>
+                      <Text style={styles.todayCompletedCheckmark}>✓</Text>
+                    </View>
+                  </>
                 ) : (
                   <Text style={styles.todayCardCTA}>Tap to begin session</Text>
                 )}
@@ -1323,9 +1326,16 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   todayCardFooterCompleted: {
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     borderTopWidth: 0,
     paddingTop: 0,
+  },
+  todayCardCompletedText: {
+    fontSize: 16,
+    fontWeight: '400',
+    fontStyle: 'italic',
+    color: '#8E8E93',
+    letterSpacing: -0.2,
   },
   todayCardCTA: {
     fontSize: 16,

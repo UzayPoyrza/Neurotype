@@ -872,17 +872,26 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
       }}
     >
       <View style={styles.contentWrapper} onLayout={handleContentLayout}>
-        <View style={[styles.summaryCard, { borderColor: module.color }]}>
-          <Text style={styles.summaryTitle}>{module.title} Progress</Text>
-          <View style={styles.summaryStatsRow}>
-            <View style={styles.summaryStat}>
-              <Text style={styles.summaryStatValue}>{completedSessions.length}</Text>
-              <Text style={styles.summaryStatLabel}>Completed</Text>
-            </View>
-            <View style={styles.summaryDivider} />
-            <View style={styles.summaryStat}>
-              <Text style={styles.summaryStatValue}>{todayCount}</Text>
-              <Text style={styles.summaryStatLabel}>Today</Text>
+        <View
+          style={[styles.section, styles.sectionFirst]}
+        >
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{module.title} Progress</Text>
+            <Text style={styles.sectionSubtitle}>
+              Track your journey and milestones
+            </Text>
+          </View>
+          <View style={[styles.summaryCard, { borderColor: module.color }]}>
+            <View style={styles.summaryStatsRow}>
+              <View style={styles.summaryStat}>
+                <Text style={styles.summaryStatValue}>{completedSessions.length}</Text>
+                <Text style={styles.summaryStatLabel}>Completed</Text>
+              </View>
+              <View style={styles.summaryDivider} />
+              <View style={styles.summaryStat}>
+                <Text style={styles.summaryStatValue}>{todayCount}</Text>
+                <Text style={styles.summaryStatLabel}>Today</Text>
+              </View>
             </View>
           </View>
         </View>

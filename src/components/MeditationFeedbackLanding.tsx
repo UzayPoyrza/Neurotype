@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 28,
     paddingBottom: 48,
-    paddingTop: 32,
+    paddingTop: 60,
     gap: 36,
   },
   congratsScreen: {

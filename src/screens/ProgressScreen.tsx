@@ -6,6 +6,7 @@ import { mentalHealthModules } from '../data/modules';
 import { InteractiveCalendar } from '../components/InteractiveCalendar';
 import { TechniqueEffectivenessChart } from '../components/TechniqueEffectivenessChart';
 import { InfoBox } from '../components/InfoBox';
+import { ShimmerCalendarCard, ShimmerSessionsCard } from '../components/ShimmerSkeleton';
 import { getUserCompletedSessions, CompletedSession } from '../services/progressService';
 import { useUserId } from '../hooks/useUserId';
 
@@ -192,49 +193,57 @@ export const ProgressScreen: React.FC = () => {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
         {/* Interactive Calendar */}
-        <InteractiveCalendar 
-          completedSessions={completedSessionsForCalendar}
-          onDateSelect={(date) => {
-            // Handle date selection - could show meditation details for that date
-            const dateStr = date.toISOString().split('T')[0];
-            const completedMeditations = completedSessionsForCalendar.filter(
-              entry => entry.completed_date === dateStr && entry.context_module
-            );
-            if (completedMeditations.length > 0) {
-              // Could show a modal with meditation details
-              console.log('Completed meditations on', date.toDateString(), completedMeditations);
-            }
-          }} 
-        />
+        {isLoadingCalendar ? (
+          <ShimmerCalendarCard />
+        ) : (
+          <InteractiveCalendar 
+            completedSessions={completedSessionsForCalendar}
+            onDateSelect={(date) => {
+              // Handle date selection - could show meditation details for that date
+              const dateStr = date.toISOString().split('T')[0];
+              const completedMeditations = completedSessionsForCalendar.filter(
+                entry => entry.completed_date === dateStr && entry.context_module
+              );
+              if (completedMeditations.length > 0) {
+                // Could show a modal with meditation details
+                console.log('Completed meditations on', date.toDateString(), completedMeditations);
+              }
+            }} 
+          />
+        )}
 
         {/* Most Effective Techniques Chart */}
         <TechniqueEffectivenessChart techniques={userProgress.techniqueEffectiveness} />
 
         {/* Sessions Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={styles.cardHeaderTop}>
-              <Text style={styles.cardTitle}>📊 Sessions</Text>
-            </View>
-          </View>
-          
-          <View style={styles.sessionsContent}>
-            <View style={styles.sessionStat}>
-              <Text style={styles.sessionLabel}>Total</Text>
-              <Text style={styles.sessionValue}>{totalSessions}</Text>
+        {isLoadingSessions ? (
+          <ShimmerSessionsCard />
+        ) : (
+          <View style={[styles.card, styles.sessionsCard]}>
+            <View style={styles.cardHeader}>
+              <View style={styles.cardHeaderTop}>
+                <Text style={styles.cardTitle}>📊 Sessions</Text>
+              </View>
             </View>
             
-            <View style={styles.sessionStat}>
-              <Text style={styles.sessionLabel}>This Week</Text>
-              <Text style={styles.sessionValue}>{thisWeekSessions}</Text>
-            </View>
-            
-            <View style={styles.sessionStat}>
-              <Text style={styles.sessionLabel}>This Month</Text>
-              <Text style={styles.sessionValue}>{thisMonthSessions}</Text>
+            <View style={styles.sessionsContent}>
+              <View style={styles.sessionStat}>
+                <Text style={styles.sessionLabel}>Total</Text>
+                <Text style={styles.sessionValue}>{totalSessions}</Text>
+              </View>
+              
+              <View style={styles.sessionStat}>
+                <Text style={styles.sessionLabel}>This Week</Text>
+                <Text style={styles.sessionValue}>{thisWeekSessions}</Text>
+              </View>
+              
+              <View style={styles.sessionStat}>
+                <Text style={styles.sessionLabel}>This Month</Text>
+                <Text style={styles.sessionValue}>{thisMonthSessions}</Text>
+              </View>
             </View>
           </View>
-        </View>
+        )}
 
         {/* Bottom spacing */}
         <View style={styles.bottomSpacing} />
@@ -318,9 +327,13 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     paddingBottom: 20,
   },
+  sessionsCard: {
+    minHeight: 140, // Constant size to match shimmer skeleton
+  },
   sessionStat: {
     flex: 1,
     alignItems: 'center',
+    minHeight: 80, // Constant size for consistent layout
   },
   sessionLabel: {
     fontSize: 15,

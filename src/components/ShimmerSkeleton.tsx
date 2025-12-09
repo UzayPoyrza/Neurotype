@@ -118,6 +118,71 @@ export const ShimmerAlternativeSessionCard: React.FC<ShimmerCardProps> = ({ styl
   );
 };
 
+export const ShimmerCalendarCard: React.FC<ShimmerCardProps> = ({ style }) => {
+  return (
+    <View style={[styles.calendarCardContainer, style]}>
+      {/* Header */}
+      <View style={styles.calendarHeader}>
+        <ShimmerSkeleton width={36} height={36} borderRadius={18} />
+        <ShimmerSkeleton width="40%" height={20} borderRadius={6} />
+        <ShimmerSkeleton width={36} height={36} borderRadius={18} />
+      </View>
+
+      {/* Day Headers */}
+      <View style={styles.calendarDayHeaders}>
+        {[...Array(7)].map((_, i) => (
+          <ShimmerSkeleton key={i} width="100%" height={14} borderRadius={4} style={styles.calendarDayHeader} />
+        ))}
+      </View>
+
+      {/* Calendar Grid */}
+      <View style={styles.calendarGrid}>
+        {[...Array(6)].map((_, rowIndex) => (
+          <View key={rowIndex} style={styles.calendarRow}>
+            {[...Array(7)].map((_, colIndex) => (
+              <ShimmerSkeleton key={colIndex} width="100%" height={40} borderRadius={8} style={styles.calendarCell} />
+            ))}
+          </View>
+        ))}
+      </View>
+
+      {/* Legend */}
+      <View style={styles.calendarLegend}>
+        <ShimmerSkeleton width="30%" height={16} borderRadius={6} style={styles.calendarLegendTitle} />
+        <View style={styles.calendarLegendItems}>
+          {[...Array(3)].map((_, i) => (
+            <View key={i} style={styles.calendarLegendItem}>
+              <ShimmerSkeleton width={12} height={12} borderRadius={6} style={styles.calendarLegendDot} />
+              <ShimmerSkeleton width={60} height={14} borderRadius={4} style={styles.calendarLegendText} />
+            </View>
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+};
+
+export const ShimmerSessionsCard: React.FC<ShimmerCardProps> = ({ style }) => {
+  return (
+    <View style={[styles.sessionsCardContainer, style]}>
+      {/* Card Header */}
+      <View style={styles.cardHeaderTop}>
+        <ShimmerSkeleton width="30%" height={17} borderRadius={6} />
+      </View>
+
+      {/* Sessions Content */}
+      <View style={styles.sessionsContent}>
+        {[...Array(3)].map((_, i) => (
+          <View key={i} style={styles.sessionStatSkeleton}>
+            <ShimmerSkeleton width="60%" height={15} borderRadius={6} style={styles.sessionLabelSkeleton} />
+            <ShimmerSkeleton width="40%" height={24} borderRadius={6} style={styles.sessionValueSkeleton} />
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+};
+
 export const ShimmerProgressPathCard: React.FC<ShimmerCardProps> = ({ style }) => {
   return (
     <View style={[styles.progressPathCardContainer, style]}>
@@ -367,6 +432,126 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  calendarCardContainer: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    marginHorizontal: 20,
+    marginBottom: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    minHeight: 450, // Constant size to match calendar
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  calendarNavButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  calendarHeaderTitle: {
+    width: '40%',
+    height: 20,
+    borderRadius: 6,
+  },
+  calendarDayHeaders: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  calendarDayHeader: {
+    flex: 1,
+    height: 14,
+    borderRadius: 4,
+    marginHorizontal: 2,
+  },
+  calendarGrid: {
+    height: 280, // Match calendar height
+    marginBottom: 12,
+  },
+  calendarRow: {
+    flexDirection: 'row',
+    marginBottom: 4,
+  },
+  calendarCell: {
+    width: '14.28%',
+    height: 40,
+    borderRadius: 8,
+    marginHorizontal: 1,
+  },
+  calendarLegend: {
+    marginBottom: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  calendarLegendTitle: {
+    width: '30%',
+    height: 16,
+    borderRadius: 6,
+    marginBottom: 8,
+  },
+  calendarLegendItems: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  calendarLegendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 16,
+    marginBottom: 6,
+  },
+  calendarLegendDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 6,
+  },
+  calendarLegendText: {
+    width: 60,
+    height: 14,
+    borderRadius: 4,
+  },
+  sessionsCardContainer: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    marginHorizontal: 20,
+    marginBottom: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    minHeight: 140, // Constant size
+  },
+  sessionsContent: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingTop: 0,
+    paddingBottom: 20,
+  },
+  sessionStatSkeleton: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  sessionLabelSkeleton: {
+    width: '60%',
+    height: 15,
+    borderRadius: 6,
+    marginBottom: 8,
+  },
+  sessionValueSkeleton: {
+    width: '40%',
+    height: 24,
+    borderRadius: 6,
   },
 });
 

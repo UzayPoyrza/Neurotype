@@ -12,6 +12,7 @@ import { useUserId } from '../hooks/useUserId';
 import { getUserCompletedSessions, isSessionCompleted } from '../services/progressService';
 import { getSessionById } from '../services/sessionService';
 import { supabase } from '../services/supabase';
+import { ShimmerNeuroadaptationCard } from './ShimmerSkeleton';
 
 type TodayStackParamList = {
   TodayMain: undefined;
@@ -220,13 +221,14 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   const userProgress = useStore(state => state.userProgress);
   const userId = useUserId();
   const [fetchedCompletedSessions, setFetchedCompletedSessions] = useState<CompletedMeditation[]>([]);
-  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(true); // Start with loading true
   
   // Fetch actual completed sessions from database
   useEffect(() => {
     const fetchCompletedSessions = async () => {
       if (!userId) {
         setFetchedCompletedSessions([]);
+        setIsLoadingSessions(false);
         return;
       }
 
@@ -960,24 +962,36 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.timelineContainer}>
-          {milestones.map((milestone, index) => {
-            const progress = Math.min(100, (totalSessions / milestone.sessionsRequired) * 100);
-            const isUnlocked = totalSessions >= milestone.sessionsRequired;
-            const isPartiallyComplete = totalSessions > 0 && totalSessions < milestone.sessionsRequired;
-            
-            return (
-              <NeuroadaptationCard
-                key={milestone.id}
-                milestone={milestone}
-                progress={progress}
-                isUnlocked={isUnlocked}
-                isPartiallyComplete={isPartiallyComplete}
-                totalSessions={totalSessions}
-                index={index}
-                accentColor={module.color}
-              />
-            );
-          })}
+          {isLoadingSessions ? (
+            // Show shimmer loading for all 6 milestones
+            <>
+              <ShimmerNeuroadaptationCard />
+              <ShimmerNeuroadaptationCard />
+              <ShimmerNeuroadaptationCard />
+              <ShimmerNeuroadaptationCard />
+              <ShimmerNeuroadaptationCard />
+              <ShimmerNeuroadaptationCard />
+            </>
+          ) : (
+            milestones.map((milestone, index) => {
+              const progress = Math.min(100, (totalSessions / milestone.sessionsRequired) * 100);
+              const isUnlocked = totalSessions >= milestone.sessionsRequired;
+              const isPartiallyComplete = totalSessions > 0 && totalSessions < milestone.sessionsRequired;
+              
+              return (
+                <NeuroadaptationCard
+                  key={milestone.id}
+                  milestone={milestone}
+                  progress={progress}
+                  isUnlocked={isUnlocked}
+                  isPartiallyComplete={isPartiallyComplete}
+                  totalSessions={totalSessions}
+                  index={index}
+                  accentColor={module.color}
+                />
+              );
+            })
+          )}
         </View>
       </ScrollView>
     );

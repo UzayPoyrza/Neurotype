@@ -274,6 +274,41 @@ export const ShimmerMeditationDetailContent: React.FC<ShimmerCardProps> = ({ sty
   );
 };
 
+export const ShimmerNeuroadaptationCard: React.FC<ShimmerCardProps> = ({ style }) => {
+  return (
+    <View style={[styles.neuroadaptationCardContainer, style]}>
+      {/* Header */}
+      <View style={styles.neuroadaptationCardHeader}>
+        <View style={styles.neuroadaptationCardTitleRow}>
+          <ShimmerSkeleton width="100%" height={18} borderRadius={6} style={styles.neuroadaptationCardTitleSkeleton} />
+          {/* Optional checkmark - sometimes shown */}
+        </View>
+        <ShimmerSkeleton width="50%" height={14} borderRadius={6} style={styles.neuroadaptationCardTimeRangeSkeleton} />
+      </View>
+
+      {/* Progress Bar */}
+      <View style={styles.neuroadaptationProgressBarContainer}>
+        <ShimmerSkeleton width="100%" height={8} borderRadius={4} style={styles.neuroadaptationProgressBarTrack} />
+        <ShimmerSkeleton width={40} height={14} borderRadius={6} style={styles.neuroadaptationProgressPercentageSkeleton} />
+      </View>
+
+      {/* Description */}
+      <View style={{ marginBottom: 12 }}>
+        <ShimmerSkeleton width="100%" height={15} borderRadius={6} style={styles.neuroadaptationCardDescriptionSkeleton} />
+        <ShimmerSkeleton width="95%" height={15} borderRadius={6} style={styles.neuroadaptationCardDescriptionSkeleton} />
+        <ShimmerSkeleton width="90%" height={15} borderRadius={6} style={styles.neuroadaptationCardDescriptionSkeleton} />
+      </View>
+
+      {/* What You Feel or Sessions Required */}
+      <View style={styles.neuroadaptationWhatYouFeelContainer}>
+        <ShimmerSkeleton width="40%" height={13} borderRadius={6} style={styles.neuroadaptationWhatYouFeelLabelSkeleton} />
+        <ShimmerSkeleton width="100%" height={14} borderRadius={6} style={styles.neuroadaptationWhatYouFeelTextSkeleton} />
+        <ShimmerSkeleton width="95%" height={14} borderRadius={6} style={styles.neuroadaptationWhatYouFeelTextSkeleton} />
+      </View>
+    </View>
+  );
+};
+
 export const ShimmerProgressPathCard: React.FC<ShimmerCardProps> = ({ style }) => {
   return (
     <View style={[styles.progressPathCardContainer, style]}>
@@ -834,6 +869,90 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 15,
     borderRadius: 6,
+  },
+  neuroadaptationCardContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+    borderLeftWidth: 3,
+    borderLeftColor: '#e5e5ea',
+  },
+  neuroadaptationCardHeader: {
+    marginBottom: 12,
+  },
+  neuroadaptationCardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  neuroadaptationCardTitleSkeleton: {
+    flex: 1,
+    height: 18,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  neuroadaptationCardCheckmarkSkeleton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+  },
+  neuroadaptationCardTimeRangeSkeleton: {
+    width: '50%',
+    height: 14,
+    borderRadius: 6,
+  },
+  neuroadaptationProgressBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  neuroadaptationProgressBarTrack: {
+    flex: 1,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 12,
+  },
+  neuroadaptationProgressPercentageSkeleton: {
+    width: 40,
+    height: 14,
+    borderRadius: 6,
+  },
+  neuroadaptationCardDescriptionSkeleton: {
+    width: '100%',
+    height: 15,
+    borderRadius: 6,
+    marginBottom: 4,
+  },
+  neuroadaptationWhatYouFeelContainer: {
+    borderRadius: 12,
+    padding: 12,
+    borderLeftWidth: 3,
+    backgroundColor: '#f8f9fa',
+    marginTop: 12,
+  },
+  neuroadaptationWhatYouFeelLabelSkeleton: {
+    width: '40%',
+    height: 13,
+    borderRadius: 6,
+    marginBottom: 6,
+  },
+  neuroadaptationWhatYouFeelTextSkeleton: {
+    width: '100%',
+    height: 14,
+    borderRadius: 6,
+    marginBottom: 4,
+  },
+  neuroadaptationSessionsRequiredSkeleton: {
+    width: '60%',
+    height: 14,
+    borderRadius: 6,
+    marginTop: 12,
   },
 });
 

@@ -25,6 +25,8 @@ import { meditationAudioData } from '../data/meditationMockData';
 import { getSessionById, getSessionModules } from '../services/sessionService';
 import { ShimmerMeditationDetailMedia, ShimmerMeditationDetailContent, ShimmerSkeleton } from '../components/ShimmerSkeleton';
 import { mentalHealthModules, getCategoryColor, MentalHealthModule } from '../data/modules';
+import { useUserId } from '../hooks/useUserId';
+import { supabase } from '../services/supabase';
 
 type MeditationDetailStackParamList = {
   MeditationDetail: {
@@ -51,9 +53,13 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [sessionModules, setSessionModules] = useState<string[]>([]);
+  const [sessionHistory, setSessionHistory] = useState<Array<{ id: string; duration: number; date: string; time: string; dateObj: Date }>>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [hasFetchedHistory, setHasFetchedHistory] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('summary');
   const [historySortOrder, setHistorySortOrder] = useState<'latest' | 'earliest'>('latest');
   const [showSortOptions, setShowSortOptions] = useState(false);
+  const userId = useUserId();
   const scrollX = useRef(new Animated.Value(0)).current;
   const horizontalScrollRef = useRef<ScrollView>(null);
   const draggableActionBarRef = useRef<any>(null);
@@ -145,6 +151,78 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
       console.log('[MeditationDetailScreen] ⚠️ Session is null');
     }
   }, [session]);
+
+  // Fetch session history only when user enters history tab
+  useEffect(() => {
+    const fetchSessionHistory = async () => {
+      // Only fetch if user is on history tab and hasn't fetched yet
+      if (activeTab !== 'history' || hasFetchedHistory) {
+        return;
+      }
+
+      if (!sessionId || !userId) {
+        setSessionHistory([]);
+        setIsLoadingHistory(false);
+        setHasFetchedHistory(true);
+        return;
+      }
+
+      setIsLoadingHistory(true);
+      try {
+        console.log('[MeditationDetailScreen] 📜 Fetching history for session:', sessionId);
+        
+        const { data, error } = await supabase
+          .from('completed_sessions')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('session_id', sessionId)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('[MeditationDetailScreen] ❌ Error fetching session history:', error);
+          setSessionHistory([]);
+          setHasFetchedHistory(true);
+          return;
+        }
+
+        console.log('[MeditationDetailScreen] ✅ Fetched', data?.length || 0, 'history entries');
+
+        // Format the history data
+        const formattedHistory = (data || []).map((entry) => {
+          const completedDate = new Date(entry.completed_date || entry.created_at);
+          const dateStr = completedDate.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric' 
+          });
+          const timeStr = completedDate.toLocaleTimeString('en-US', { 
+            hour: 'numeric', 
+            minute: '2-digit',
+            hour12: true 
+          });
+
+          return {
+            id: entry.id,
+            duration: Math.round(entry.minutes_completed || 0),
+            date: dateStr,
+            time: timeStr,
+            dateObj: completedDate,
+          };
+        });
+
+        setSessionHistory(formattedHistory);
+        setHasFetchedHistory(true);
+      } catch (error) {
+        console.error('[MeditationDetailScreen] ❌ Error in fetchSessionHistory:', error);
+        setSessionHistory([]);
+        setHasFetchedHistory(true);
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    };
+
+    fetchSessionHistory();
+  }, [activeTab, sessionId, userId, hasFetchedHistory]);
 
   const hasTutorial = !!(session && (meditationAudioData[session.id as keyof typeof meditationAudioData] as any)?.tutorialBackgroundAudio);
   const sessionShareLink = session ? `https://neurotype.app/sessions/${session.id}` : '';
@@ -527,27 +605,23 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   };
 
   const renderHistoryPage = () => {
-    // Check if this is "Gentle Stretching Flow" to show placeholder data
-    const showPlaceholderData = session?.title === 'Gentle Stretching Flow';
-    
-    // Placeholder session data with proper date objects for sorting
-    const sessionHistory = showPlaceholderData ? [
-      { id: '1', duration: 15, date: 'Dec 15, 2024', time: '2:30 PM', dateObj: new Date('2024-12-15') },
-      { id: '2', duration: 12, date: 'Dec 12, 2024', time: '7:15 AM', dateObj: new Date('2024-12-12') },
-      { id: '3', duration: 18, date: 'Dec 10, 2024', time: '6:45 PM', dateObj: new Date('2024-12-10') },
-      { id: '4', duration: 15, date: 'Dec 8, 2024', time: '8:00 AM', dateObj: new Date('2024-12-08') },
-      { id: '5', duration: 20, date: 'Dec 5, 2024', time: '9:30 PM', dateObj: new Date('2024-12-05') },
-    ].sort((a, b) => {
+    // Sort history based on sort order
+    const sortedHistory = [...sessionHistory].sort((a, b) => {
       return historySortOrder === 'latest' 
         ? b.dateObj.getTime() - a.dateObj.getTime()
         : a.dateObj.getTime() - b.dateObj.getTime();
-    }) : [];
+    });
     
     return (
       <ScrollView style={styles.pageContainer} contentContainerStyle={styles.pageContent}>
         <TouchableWithoutFeedback onPress={() => setShowSortOptions(false)}>
           <View style={styles.historySection}>
-            {sessionHistory.length > 0 ? (
+            {isLoadingHistory ? (
+              <View style={styles.historyLoadingState}>
+                <ActivityIndicator size="large" color="#007AFF" />
+                <Text style={styles.historyLoadingText}>Loading history...</Text>
+              </View>
+            ) : sortedHistory.length > 0 ? (
               <>
                 {/* Filter Dropdown */}
                 <View style={styles.historyFilterContainer}>
@@ -616,7 +690,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
               </View>
               
               <View style={styles.historyListContainer}>
-              {sessionHistory.map((sessionItem, index) => (
+              {sortedHistory.map((sessionItem, index) => (
                 <View key={sessionItem.id} style={styles.historyCard}>
                   <View style={styles.historyCardContent}>
                     <View style={styles.historyItemLeft}>
@@ -1339,6 +1413,16 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  historyLoadingState: {
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  historyLoadingText: {
+    fontSize: 15,
+    color: theme.colors.text.secondary,
+    marginTop: 16,
+    fontWeight: '500',
   },
   historyListContainer: {
     gap: 4,

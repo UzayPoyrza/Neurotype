@@ -639,6 +639,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
                 },
               ]}
             >
+              {/* Header with badge */}
               <View style={styles.todayCardHeader}>
                 <View style={[styles.recommendedBadge, { backgroundColor: module.color }]}>
                   <Text style={styles.recommendedBadgeText}>
@@ -646,27 +647,37 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
                   </Text>
                 </View>
               </View>
-              <Text
-                style={[styles.todayCardTitle, { color: module.color }]}
-                numberOfLines={2}
-              >
-                {recommendedSession.title}
-              </Text>
-              <Text style={styles.todayCardDuration}>
-                {recommendedSession.durationMin} min • {recommendedSession.modality}
-              </Text>
+              
+              {/* Content area with text and play button */}
+              <View style={styles.todayCardContentWrapper}>
+                <View style={styles.todayCardTextSection}>
+                  <Text
+                    style={[styles.todayCardTitle, { color: module.color }]}
+                    numberOfLines={2}
+                  >
+                    {recommendedSession.title}
+                  </Text>
+                  <Text style={styles.todayCardDuration}>
+                    {recommendedSession.durationMin} min • {recommendedSession.modality}
+                  </Text>
+                </View>
+                
+                {/* Play button positioned center-right */}
+                {!isCompleted && (
+                  <View style={[styles.todayPlayButton, { backgroundColor: module.color }]}>
+                    <Text style={styles.todayPlayIcon}>▶</Text>
+                  </View>
+                )}
+              </View>
+              
+              {/* Footer with CTA */}
               <View style={[styles.todayCardFooter, isCompleted && styles.todayCardFooterCompleted]}>
                 {isCompleted ? (
                   <View style={styles.todayCompletedButton}>
                     <Text style={styles.todayCompletedCheckmark}>✓</Text>
                   </View>
                 ) : (
-                  <>
-                    <Text style={styles.todayCardCTA}>Begin session</Text>
-                    <View style={[styles.todayPlayButton, { backgroundColor: module.color }]}>
-                      <Text style={styles.todayPlayIcon}>▶</Text>
-                    </View>
-                  </>
+                  <Text style={styles.todayCardCTA}>Begin session</Text>
                 )}
               </View>
             </TouchableOpacity>
@@ -1222,17 +1233,14 @@ const styles = StyleSheet.create({
   },
   todayCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 14,
-    paddingBottom: 12,
-    borderWidth: 2,
-    borderColor: '#F2F2F7',
+    borderRadius: 20,
+    padding: 18,
     position: 'relative',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
   },
   todayCardCheckmark: {
     position: 'absolute',
@@ -1258,68 +1266,93 @@ const styles = StyleSheet.create({
   },
   todayCardHeader: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
     marginBottom: 10,
   },
-  todayCardBadge: {
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+  todayCardContentWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    position: 'relative',
   },
-  todayCardBadgeText: {
-    fontSize: 12,
+  todayCardTextSection: {
+    flex: 1,
+    marginRight: 12,
+  },
+  todayCardTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1D1D1F',
+    fontFamily: 'System',
+    marginBottom: 8,
+    lineHeight: 28,
+    letterSpacing: -0.4,
+  },
+  todayCardDuration: {
+    fontSize: 15,
+    color: '#8E8E93',
+    fontFamily: 'System',
+    marginTop: 0,
+    lineHeight: 21,
+    letterSpacing: 0.1,
+  },
+  recommendedBadge: {
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  recommendedBadgeText: {
+    fontSize: 10,
     fontWeight: '700',
     color: '#FFFFFF',
     fontFamily: 'System',
-  },
-  todayCardDuration: {
-    fontSize: 13,
-    color: '#8E8E93',
-    fontFamily: 'System',
-    marginTop: 6,
-    marginBottom: 12,
-  },
-  todayCardTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#1D1D1F',
-    fontFamily: 'System',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
   todayCardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 12,
-    marginBottom: 0,
+    justifyContent: 'flex-start',
+    marginTop: 0,
+    paddingTop: 0,
   },
   todayCardFooterCompleted: {
     justifyContent: 'flex-end',
+    borderTopWidth: 0,
+    paddingTop: 0,
   },
   todayCardCTA: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
     color: '#1D1D1F',
     fontFamily: 'System',
+    letterSpacing: -0.2,
   },
   todayPlayButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+    alignSelf: 'center',
   },
   todayPlayIcon: {
-    fontSize: 15,
+    fontSize: 20,
     color: '#FFFFFF',
     fontWeight: '700',
     fontFamily: 'System',
-    marginLeft: 1,
+    marginLeft: 2,
   },
   todayCompletedButton: {
     width: 38,
@@ -1338,19 +1371,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#ffffff',
     fontWeight: 'bold',
-  },
-  recommendedBadge: {
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  recommendedBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    fontFamily: 'System',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   tomorrowCard: {
     backgroundColor: '#FFFFFF',

@@ -325,15 +325,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingTop: 0,
-    paddingBottom: 20,
+    paddingBottom: 8,
   },
   sessionsCard: {
-    minHeight: 140, // Constant size to match shimmer skeleton
+    minHeight: 100, // Constant size to match shimmer skeleton
   },
   sessionStat: {
     flex: 1,
     alignItems: 'center',
-    minHeight: 80, // Constant size for consistent layout
+    minHeight: 65, // Constant size for consistent layout
   },
   sessionLabel: {
     fontSize: 15,

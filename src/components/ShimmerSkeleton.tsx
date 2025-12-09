@@ -50,7 +50,7 @@ export const ShimmerSkeleton: React.FC<ShimmerSkeletonProps> = ({
       style={[
         styles.container,
         {
-          width,
+          width: width as any,
           height,
           borderRadius,
         },
@@ -530,13 +530,22 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
-    minHeight: 140, // Constant size
+    minHeight: 100, // Constant size
+  },
+  cardHeaderTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 0,
+    paddingHorizontal: 0,
+    paddingTop: 0,
+    paddingBottom: 16,
   },
   sessionsContent: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingTop: 0,
-    paddingBottom: 20,
+    paddingBottom: 8,
   },
   sessionStatSkeleton: {
     flex: 1,

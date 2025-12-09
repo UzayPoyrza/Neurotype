@@ -634,8 +634,8 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
               style={[
                 styles.todayCard,
                 { 
-                  borderColor: module.color, 
-                  backgroundColor: isCompleted ? completionBackgroundColor : '#F7F9FF' 
+                  borderWidth: 0,
+                  backgroundColor: '#FFFFFF'
                 },
               ]}
             >
@@ -1226,6 +1226,11 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#F2F2F7',
     position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   todayCardCheckmark: {
     position: 'absolute',

@@ -16,6 +16,7 @@ import { InfoBox } from '../components/InfoBox';
 import { MeditationDetailModal } from '../components/MeditationDetailModal';
 import { MergedCard } from '../components/MergedCard';
 import { LineGraphIcon } from '../components/icons/LineGraphIcon';
+import { ShimmerSessionCard, ShimmerAlternativeSessionCard, ShimmerProgressPathCard } from '../components/ShimmerSkeleton';
 import { ensureDailyRecommendations, getDailyRecommendations } from '../services/recommendationService';
 import { useUserId } from '../hooks/useUserId';
 import { getSessionById } from '../services/sessionService';
@@ -72,6 +73,7 @@ export const TodayScreen: React.FC = () => {
   const [fetchedCompletedSessions, setFetchedCompletedSessions] = useState<Array<Session & { completedDate: string }>>([]);
   // All completed sessions for neuroadaptation counting (not limited to 3)
   const [allCompletedSessionsForCounting, setAllCompletedSessionsForCounting] = useState<Array<Session & { completedDate: string }>>([]);
+  const [isLoadingCompletedSessions, setIsLoadingCompletedSessions] = useState(true);
   
   // Animation refs - simplified to avoid native driver conflicts
   const heroCardScale = useRef(new Animated.Value(1)).current;
@@ -387,9 +389,11 @@ export const TodayScreen: React.FC = () => {
       if (!userId) {
         setFetchedCompletedSessions([]);
         setAllCompletedSessionsForCounting([]);
+        setIsLoadingCompletedSessions(false);
         return;
       }
 
+      setIsLoadingCompletedSessions(true);
       try {
         // 1. Fetch ALL completed sessions (don't filter by context_module yet)
         const completedSessionsData = await getUserCompletedSessions(userId, 50);
@@ -500,6 +504,8 @@ export const TodayScreen: React.FC = () => {
         console.error('Error fetching completed sessions:', error);
         setFetchedCompletedSessions([]);
         setAllCompletedSessionsForCounting([]);
+      } finally {
+        setIsLoadingCompletedSessions(false);
       }
     };
 
@@ -929,9 +935,7 @@ export const TodayScreen: React.FC = () => {
             {/* Recommended Session */}
             {isLoadingRecommendations ? (
               <View style={styles.recommendedSessionContainer}>
-                <View style={[styles.recommendedSession, { backgroundColor: '#f2f2f7' }]}>
-                  <Text style={styles.sessionTitle}>Loading recommendations...</Text>
-                </View>
+                <ShimmerSessionCard />
               </View>
             ) : recommendedSession ? (
               <Animated.View
@@ -996,9 +1000,11 @@ export const TodayScreen: React.FC = () => {
             
             <View style={styles.alternativeSessionsList}>
               {isLoadingRecommendations ? (
-                <View style={styles.alternativeSession}>
-                  <Text style={styles.alternativeSessionTitle}>Loading...</Text>
-                </View>
+                <>
+                  <ShimmerAlternativeSessionCard />
+                  <ShimmerAlternativeSessionCard />
+                  <ShimmerAlternativeSessionCard />
+                </>
               ) : todaySessions.filter(s => !s.isRecommended).length > 0 ? (
                 todaySessions.filter(s => !s.isRecommended).map((session) => {
                 const isCompleted = isSessionCompletedToday(selectedModuleId, session.id);
@@ -1056,21 +1062,26 @@ export const TodayScreen: React.FC = () => {
             </View>
           </View>
 
-          <Animated.View
-            style={[
-              styles.progressPreviewContainer,
-              {
-                transform: [{ scale: roadmapCardScale }],
-              }
-            ]}
-          >
-            <TouchableOpacity
-              style={styles.progressPreviewCard}
-              onPress={handleRoadmapCardPress}
-              onPressIn={handleRoadmapCardPressIn}
-              onPressOut={handleRoadmapCardPressOut}
-              activeOpacity={1}
+          {isLoadingCompletedSessions ? (
+            <View style={styles.progressPreviewContainer}>
+              <ShimmerProgressPathCard />
+            </View>
+          ) : (
+            <Animated.View
+              style={[
+                styles.progressPreviewContainer,
+                {
+                  transform: [{ scale: roadmapCardScale }],
+                }
+              ]}
             >
+              <TouchableOpacity
+                style={styles.progressPreviewCard}
+                onPress={handleRoadmapCardPress}
+                onPressIn={handleRoadmapCardPressIn}
+                onPressOut={handleRoadmapCardPressOut}
+                activeOpacity={1}
+              >
               <View style={styles.progressPreviewHeader}>
                 <View style={[styles.progressPreviewBadge, { backgroundColor: selectedModule.color }]}>
                   <LineGraphIcon size={24} color="#FFFFFF" accentColor="#FFFFFF" />
@@ -1186,6 +1197,7 @@ export const TodayScreen: React.FC = () => {
               </View>
             </TouchableOpacity>
           </Animated.View>
+          )}
         </View>
 
         {/* Bottom spacing */}
@@ -1360,6 +1372,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
     position: 'relative',
+    minHeight: 88, // Standardized height
   },
   sessionContent: {
     flex: 1,
@@ -1424,6 +1437,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: '#e0e0e0',
+    minHeight: 64, // Standardized height to match recommendedSession proportions
   },
   alternativeSessionCompleted: {
     borderColor: 'transparent',

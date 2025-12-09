@@ -1758,6 +1758,11 @@ export const MeditationPlayerScreen: React.FC = () => {
       {/* Feedback Landing Overlay */}
       <MeditationFeedbackLanding
         visible={showFeedbackLanding}
+        onComplete={() => {
+          // Immediately hide feedback landing and close session when congrats completes
+          setShowFeedbackLanding(false);
+          setActiveSession(null);
+        }}
         onFinish={async (rating) => {
           if (activeSession) {
             console.log('📊 [Session Completion] Starting session completion process...');
@@ -1831,10 +1836,7 @@ export const MeditationPlayerScreen: React.FC = () => {
               console.log('✅ [Session Completion] Session completion process finished (database operations running in background)');
             }
           }
-          // Delay closing session to allow congrats screen animation to complete (~2.8 seconds)
-          setTimeout(() => {
-            setActiveSession(null);
-          }, 2800);
+          // Note: Session will be closed via onComplete callback when congrats screen finishes
         }}
       />
       </SafeAreaView>

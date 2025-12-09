@@ -12,9 +12,10 @@ const { width: screenWidth } = Dimensions.get('window');
 interface MeditationFeedbackLandingProps {
   visible: boolean;
   onFinish: (rating: number) => void;
+  onComplete?: () => void;
 }
 
-export const MeditationFeedbackLanding: React.FC<MeditationFeedbackLandingProps> = ({ visible, onFinish }) => {
+export const MeditationFeedbackLanding: React.FC<MeditationFeedbackLandingProps> = ({ visible, onFinish, onComplete }) => {
   const { activeSession, userProgress } = useStore();
   const [rating, setRating] = useState<number | null>(null);
   const [showCongrats, setShowCongrats] = useState(false);
@@ -146,6 +147,10 @@ export const MeditationFeedbackLanding: React.FC<MeditationFeedbackLandingProps>
   };
 
   const handleCongratsComplete = () => {
+    // Immediately hide the entire component to prevent showing feedback screen again
+    if (onComplete) {
+      onComplete();
+    }
     setShowCongrats(false);
   };
 
@@ -180,7 +185,7 @@ export const MeditationFeedbackLanding: React.FC<MeditationFeedbackLandingProps>
           style={[
             styles.screenContainer,
             {
-              opacity: contentAnim,
+              opacity: showCongrats ? 0 : contentAnim,
               transform: [
                 {
                   translateX: feedbackScreenTranslateX,
@@ -191,6 +196,7 @@ export const MeditationFeedbackLanding: React.FC<MeditationFeedbackLandingProps>
               ],
             },
           ]}
+          pointerEvents={showCongrats ? 'none' : 'auto'}
         >
           <View style={styles.content}>
             {/* Top: Streak */}

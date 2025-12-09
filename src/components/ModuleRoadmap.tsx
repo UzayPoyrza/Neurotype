@@ -640,15 +640,20 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
               ]}
             >
               <View style={styles.todayCardHeader}>
-                <Text style={styles.todayCardDuration}>
-                  {recommendedSession.durationMin} min • {recommendedSession.modality}
-                </Text>
+                <View style={[styles.recommendedBadge, { backgroundColor: module.color }]}>
+                  <Text style={styles.recommendedBadgeText}>
+                    Recommended for you today
+                  </Text>
+                </View>
               </View>
               <Text
                 style={[styles.todayCardTitle, { color: module.color }]}
                 numberOfLines={2}
               >
                 {recommendedSession.title}
+              </Text>
+              <Text style={styles.todayCardDuration}>
+                {recommendedSession.durationMin} min • {recommendedSession.modality}
               </Text>
               <View style={[styles.todayCardFooter, isCompleted && styles.todayCardFooterCompleted]}>
                 {isCompleted ? (
@@ -663,11 +668,6 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
                     </View>
                   </>
                 )}
-              </View>
-              <View style={[styles.recommendedBadge, { backgroundColor: module.color }]}>
-                <Text style={styles.recommendedBadgeText}>
-                  Recommended for you today
-                </Text>
               </View>
             </TouchableOpacity>
           </Animated.View>
@@ -1258,7 +1258,7 @@ const styles = StyleSheet.create({
   },
   todayCardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     marginBottom: 10,
   },
@@ -1277,6 +1277,8 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#8E8E93',
     fontFamily: 'System',
+    marginTop: 6,
+    marginBottom: 12,
   },
   todayCardTitle: {
     fontSize: 17,
@@ -1338,8 +1340,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   recommendedBadge: {
-    marginTop: 8,
-    alignSelf: 'flex-start',
     borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 6,

@@ -564,12 +564,12 @@ export const TodayScreen: React.FC = () => {
     
     // Calculate average sessions required based on time ranges (matching ModuleRoadmap)
     const milestones = [
-      { sessionsRequired: Math.round((5 + 7) / 2), timeRange: '5-7 daily sessions' }, // 6
-      { sessionsRequired: Math.round((3 * 7 + 4 * 7) / 2), timeRange: '3-4 weeks of daily sessions' }, // 25
-      { sessionsRequired: Math.round((6 * 7 + 8 * 7) / 2), timeRange: '6–8 Weeks of daily sessions' }, // 49
-      { sessionsRequired: Math.round(3 * 30.44), timeRange: '3 Months of daily sessions' }, // 91
-      { sessionsRequired: Math.round(6 * 30.44), timeRange: '6 Months of daily sessions' }, // 183
-      { sessionsRequired: 365, timeRange: '1 Year of daily sessions' },
+      { title: 'Reduced amygdala activity', sessionsRequired: Math.round((5 + 7) / 2), timeRange: '5-7 daily sessions' }, // 6
+      { title: 'Increased prefrontal cortex regulation', sessionsRequired: Math.round((3 * 7 + 4 * 7) / 2), timeRange: '3-4 weeks of daily sessions' }, // 25
+      { title: 'Amygdala density reduction', sessionsRequired: Math.round((6 * 7 + 8 * 7) / 2), timeRange: '6–8 Weeks of daily sessions' }, // 49
+      { title: 'Stronger frontal-limbic connectivity', sessionsRequired: Math.round(3 * 30.44), timeRange: '3 Months of daily sessions' }, // 91
+      { title: 'Permanent structural changes', sessionsRequired: Math.round(6 * 30.44), timeRange: '6 Months of daily sessions' }, // 183
+      { title: 'Deep neural transformation', sessionsRequired: 365, timeRange: '1 Year of daily sessions' },
     ];
     
     // Calculate progress for each milestone and find the highest progress one that isn't completed
@@ -1153,7 +1153,7 @@ export const TodayScreen: React.FC = () => {
               {/* Timeline Progress Preview */}
               <View style={styles.progressPreviewTimelineSection}>
                 <View style={styles.progressPreviewTimelineHeader}>
-                  <Text style={styles.progressPreviewTimelineLabel}>Neuroadaptation</Text>
+                  <Text style={styles.progressPreviewTimelineLabel}>{timelineProgress.nextMilestone.title}</Text>
                   <Text style={[styles.progressPreviewTimelineProgress, { color: selectedModule.color }]}>
                     {Math.round(timelineProgress.progress)}%
                   </Text>
@@ -1173,8 +1173,8 @@ export const TodayScreen: React.FC = () => {
                 </View>
                 <Text style={styles.progressPreviewTimelineText}>
                   {timelineProgress.sessionsRemaining > 0 
-                    ? `${timelineProgress.sessionsRemaining} more sessions to ${timelineProgress.nextMilestone.timeRange}`
-                    : `Completed ${timelineProgress.nextMilestone.timeRange} milestone`}
+                    ? `${timelineProgress.sessionsRemaining} more sessions to see full benefits`
+                    : `Completed ${timelineProgress.nextMilestone.title}`}
                 </Text>
               </View>
 

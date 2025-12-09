@@ -1093,7 +1093,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 14,
-    borderWidth: 2,
+    borderWidth: 1,
   },
   summaryTitle: {
     fontSize: 16,

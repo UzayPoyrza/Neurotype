@@ -70,6 +70,8 @@ export const TodayScreen: React.FC = () => {
   
   // Completed sessions for preview
   const [fetchedCompletedSessions, setFetchedCompletedSessions] = useState<Array<Session & { completedDate: string }>>([]);
+  // All completed sessions for neuroadaptation counting (not limited to 3)
+  const [allCompletedSessionsForCounting, setAllCompletedSessionsForCounting] = useState<Array<Session & { completedDate: string }>>([]);
   
   // Animation refs - simplified to avoid native driver conflicts
   const heroCardScale = useRef(new Animated.Value(1)).current;
@@ -384,6 +386,7 @@ export const TodayScreen: React.FC = () => {
     const fetchCompletedSessions = async () => {
       if (!userId) {
         setFetchedCompletedSessions([]);
+        setAllCompletedSessionsForCounting([]);
         return;
       }
 
@@ -393,6 +396,7 @@ export const TodayScreen: React.FC = () => {
         
         if (completedSessionsData.length === 0) {
           setFetchedCompletedSessions([]);
+          setAllCompletedSessionsForCounting([]);
           return;
         }
 
@@ -410,6 +414,7 @@ export const TodayScreen: React.FC = () => {
         if (modalitiesError) {
           console.error('Error fetching session modalities:', modalitiesError);
           setFetchedCompletedSessions([]);
+          setAllCompletedSessionsForCounting([]);
           return;
         }
 
@@ -432,6 +437,7 @@ export const TodayScreen: React.FC = () => {
         if (sessionsError) {
           console.error('Error fetching sessions:', sessionsError);
           setFetchedCompletedSessions([]);
+          setAllCompletedSessionsForCounting([]);
           return;
         }
 
@@ -479,17 +485,21 @@ export const TodayScreen: React.FC = () => {
           }
         }
 
-        // 8. Sort by completed_date (most recent first) and limit to 3
+        // 8. Sort by completed_date (most recent first)
         moduleCompletedSessions.sort((a, b) => {
           const dateA = new Date(a.completedDate).getTime();
           const dateB = new Date(b.completedDate).getTime();
           return dateB - dateA;
         });
         
+        // Store all sessions for neuroadaptation counting
+        setAllCompletedSessionsForCounting(moduleCompletedSessions);
+        // Limit to 3 for display only
         setFetchedCompletedSessions(moduleCompletedSessions.slice(0, 3));
       } catch (error) {
         console.error('Error fetching completed sessions:', error);
         setFetchedCompletedSessions([]);
+        setAllCompletedSessionsForCounting([]);
       }
     };
 
@@ -536,49 +546,73 @@ export const TodayScreen: React.FC = () => {
     });
   }, [todaySessions, selectedModuleId, isSessionCompletedToday]);
 
-  // Calculate timeline progress for preview
-  const timelineProgress = useMemo(() => {
-    const totalSessions = userProgress.sessionDeltas.length;
+  // Filter to only count one session per day for neuroadaptation
+  const uniqueDailySessionsCount = useMemo(() => {
+    const seenDates = new Set<string>();
     
-    const milestones = [
-      { sessionsRequired: 7, timeRange: '0–1 Week' },
-      { sessionsRequired: 28, timeRange: '2–4 Weeks' },
-      { sessionsRequired: 56, timeRange: '6–8 Weeks' },
-      { sessionsRequired: 90, timeRange: '3 Months' },
-      { sessionsRequired: 180, timeRange: '6 Months' },
-      { sessionsRequired: 365, timeRange: '1 Year' },
-    ];
-    
-    // Find current milestone - the one the user is working towards
-    let nextMilestone = milestones[0];
-    let isCompleted = false;
-    
-    for (let i = 0; i < milestones.length; i++) {
-      if (totalSessions < milestones[i].sessionsRequired) {
-        nextMilestone = milestones[i];
-        break;
-      }
-      // If we've completed all milestones, use the last one
-      if (i === milestones.length - 1 && totalSessions >= milestones[i].sessionsRequired) {
-        nextMilestone = milestones[i];
-        isCompleted = true;
-      }
+    for (const session of allCompletedSessionsForCounting) {
+      const dateKey = new Date(session.completedDate).toDateString();
+      seenDates.add(dateKey);
     }
     
-    const progress = isCompleted 
-      ? 100 
-      : Math.min(100, (totalSessions / nextMilestone.sessionsRequired) * 100);
-    const sessionsRemaining = isCompleted 
+    return seenDates.size;
+  }, [allCompletedSessionsForCounting]);
+
+  // Calculate timeline progress for preview
+  const timelineProgress = useMemo(() => {
+    const totalSessions = uniqueDailySessionsCount;
+    
+    // Calculate average sessions required based on time ranges (matching ModuleRoadmap)
+    const milestones = [
+      { sessionsRequired: Math.round((5 + 7) / 2), timeRange: '5-7 daily sessions' }, // 6
+      { sessionsRequired: Math.round((3 * 7 + 4 * 7) / 2), timeRange: '3-4 weeks of daily sessions' }, // 25
+      { sessionsRequired: Math.round((6 * 7 + 8 * 7) / 2), timeRange: '6–8 Weeks of daily sessions' }, // 49
+      { sessionsRequired: Math.round(3 * 30.44), timeRange: '3 Months of daily sessions' }, // 91
+      { sessionsRequired: Math.round(6 * 30.44), timeRange: '6 Months of daily sessions' }, // 183
+      { sessionsRequired: 365, timeRange: '1 Year of daily sessions' },
+    ];
+    
+    // Calculate progress for each milestone and find the highest progress one that isn't completed
+    const milestoneProgresses = milestones.map(milestone => {
+      const progress = Math.min(100, (totalSessions / milestone.sessionsRequired) * 100);
+      const isCompleted = totalSessions >= milestone.sessionsRequired;
+      return {
+        milestone,
+        progress,
+        isCompleted,
+      };
+    });
+    
+    // Find the highest progress milestone that isn't completed
+    const incompleteMilestones = milestoneProgresses.filter(m => !m.isCompleted);
+    
+    let highestProgressMilestone;
+    let highestProgress;
+    
+    if (incompleteMilestones.length > 0) {
+      // Find the one with highest progress
+      const highest = incompleteMilestones.reduce((prev, current) => 
+        current.progress > prev.progress ? current : prev
+      );
+      highestProgressMilestone = highest.milestone;
+      highestProgress = highest.progress;
+    } else {
+      // All milestones completed, use the last one
+      highestProgressMilestone = milestones[milestones.length - 1];
+      highestProgress = 100;
+    }
+    
+    const sessionsRemaining = highestProgress >= 100
       ? 0 
-      : Math.max(0, nextMilestone.sessionsRequired - totalSessions);
+      : Math.max(0, highestProgressMilestone.sessionsRequired - totalSessions);
     
     return {
       totalSessions,
-      nextMilestone,
-      progress,
+      nextMilestone: highestProgressMilestone,
+      progress: highestProgress,
       sessionsRemaining,
     };
-  }, [userProgress]);
+  }, [uniqueDailySessionsCount]);
 
   const formatCompletedLabel = useCallback((index: number) => {
     if (index === 0) return 'Yesterday';

@@ -23,6 +23,7 @@ import { ShareIcon } from '../components/icons';
 import { DraggableActionBar } from '../components/DraggableActionBar';
 import { meditationAudioData } from '../data/meditationMockData';
 import { getSessionById } from '../services/sessionService';
+import { ShimmerMeditationDetailMedia, ShimmerMeditationDetailContent, ShimmerSkeleton } from '../components/ShimmerSkeleton';
 
 type MeditationDetailStackParamList = {
   MeditationDetail: {
@@ -284,9 +285,57 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   if (isLoading) {
     return (
       <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-        </View>
+        <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+        <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+          {/* Sticky Header */}
+          <View style={styles.stickyHeader}>
+            <View style={styles.headerContent}>
+              <TouchableOpacity 
+                style={styles.backButton}
+                onPress={() => navigation.goBack()}
+              >
+                <Text style={styles.backButtonText}>←</Text>
+              </TouchableOpacity>
+              <ShimmerSkeleton width="60%" height={17} borderRadius={6} />
+              <View style={styles.headerActions}>
+                <View style={{ width: 24, height: 24 }} />
+              </View>
+            </View>
+            
+            {/* Tabs in Header */}
+            <View style={styles.tabsContainer}>
+              <View style={styles.tab}>
+                <ShimmerSkeleton width={60} height={15} borderRadius={6} />
+              </View>
+              <View style={styles.tab}>
+                <ShimmerSkeleton width={60} height={15} borderRadius={6} />
+              </View>
+              <View style={styles.tab}>
+                <ShimmerSkeleton width={60} height={15} borderRadius={6} />
+              </View>
+            </View>
+          </View>
+
+          {/* Horizontal ScrollView for pages */}
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            scrollEventThrottle={16}
+            style={styles.horizontalScrollView}
+            bounces={false}
+          >
+            {/* Summary Page */}
+            <ScrollView 
+              style={[styles.page, { width: screenWidth }]} 
+              contentContainerStyle={styles.pageContent}
+              scrollEventThrottle={16}
+            >
+              <ShimmerMeditationDetailMedia />
+              <ShimmerMeditationDetailContent />
+            </ScrollView>
+          </ScrollView>
+        </SafeAreaView>
       </View>
     );
   }

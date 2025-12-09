@@ -222,6 +222,58 @@ export const ShimmerEmotionalFeedbackHistory: React.FC<ShimmerCardProps> = ({ st
   );
 };
 
+export const ShimmerMeditationDetailMedia: React.FC<ShimmerCardProps> = ({ style }) => {
+  return (
+    <View style={[styles.meditationDetailMediaContainer, style]}>
+      <ShimmerSkeleton width={60} height={60} borderRadius={30} style={styles.meditationDetailMediaIcon} />
+      <ShimmerSkeleton width={32} height={32} borderRadius={16} style={styles.meditationDetailMediaPlayButton} />
+    </View>
+  );
+};
+
+export const ShimmerMeditationDetailContent: React.FC<ShimmerCardProps> = ({ style }) => {
+  return (
+    <View style={[styles.meditationDetailContentContainer, style]}>
+      {/* Title */}
+      <ShimmerSkeleton width="80%" height={21} borderRadius={6} style={styles.meditationDetailTitleSkeleton} />
+      
+      {/* Tags */}
+      <View style={styles.meditationDetailTagsContainer}>
+        <ShimmerSkeleton width={80} height={28} borderRadius={12} style={styles.meditationDetailTagSkeleton} />
+        <ShimmerSkeleton width={100} height={28} borderRadius={12} style={styles.meditationDetailTagSkeleton} />
+        <ShimmerSkeleton width={70} height={28} borderRadius={12} style={styles.meditationDetailTagSkeleton} />
+      </View>
+      
+      {/* Description Section */}
+      <View style={{ paddingHorizontal: 0, paddingTop: 0, paddingBottom: 20 }}>
+        <ShimmerSkeleton width="40%" height={20} borderRadius={6} style={styles.meditationDetailDescriptionTitleSkeleton} />
+        <ShimmerSkeleton width="100%" height={16} borderRadius={6} style={styles.meditationDetailDescriptionTextSkeleton} />
+        <ShimmerSkeleton width="95%" height={16} borderRadius={6} style={styles.meditationDetailDescriptionTextSkeleton} />
+        <ShimmerSkeleton width="90%" height={16} borderRadius={6} style={styles.meditationDetailDescriptionTextSkeleton} />
+        <ShimmerSkeleton width="85%" height={16} borderRadius={6} style={styles.meditationDetailDescriptionTextSkeleton} />
+      </View>
+      
+      {/* Benefits Section */}
+      <View style={{ paddingHorizontal: 0, paddingTop: 0, paddingBottom: 24 }}>
+        <ShimmerSkeleton width="50%" height={20} borderRadius={6} style={styles.meditationDetailBenefitsTitleSkeleton} />
+        <ShimmerSkeleton width="100%" height={15} borderRadius={6} style={styles.meditationDetailBenefitsTextSkeleton} />
+        <ShimmerSkeleton width="98%" height={15} borderRadius={6} style={styles.meditationDetailBenefitsTextSkeleton} />
+        <ShimmerSkeleton width="95%" height={15} borderRadius={6} style={styles.meditationDetailBenefitsTextSkeleton} />
+        <ShimmerSkeleton width="92%" height={15} borderRadius={6} style={styles.meditationDetailBenefitsTextSkeleton} />
+        
+        {/* Unique Benefits */}
+        <ShimmerSkeleton width="45%" height={17} borderRadius={6} style={styles.meditationDetailUniqueBenefitsTitleSkeleton} />
+        {[...Array(3)].map((_, i) => (
+          <View key={i} style={styles.meditationDetailBenefitItemSkeleton}>
+            <ShimmerSkeleton width={18} height={18} borderRadius={9} style={styles.meditationDetailBenefitIconSkeleton} />
+            <ShimmerSkeleton width="100%" height={15} borderRadius={6} style={styles.meditationDetailBenefitTextSkeleton} />
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+};
+
 export const ShimmerProgressPathCard: React.FC<ShimmerCardProps> = ({ style }) => {
   return (
     <View style={[styles.progressPathCardContainer, style]}>
@@ -688,6 +740,100 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     marginLeft: 8,
+  },
+  meditationDetailMediaContainer: {
+    height: 200,
+    width: '100%',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  meditationDetailMediaIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+  },
+  meditationDetailMediaPlayButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  meditationDetailContentContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+  },
+  meditationDetailTitleSkeleton: {
+    width: '80%',
+    height: 21,
+    borderRadius: 6,
+    marginBottom: 12,
+  },
+  meditationDetailTagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  meditationDetailTagSkeleton: {
+    width: 80,
+    height: 28,
+    borderRadius: 12,
+  },
+  meditationDetailDescriptionTitleSkeleton: {
+    width: '40%',
+    height: 20,
+    borderRadius: 6,
+    marginBottom: 8,
+    marginTop: 0,
+  },
+  meditationDetailDescriptionTextSkeleton: {
+    width: '100%',
+    height: 16,
+    borderRadius: 6,
+    marginBottom: 6,
+  },
+  meditationDetailBenefitsTitleSkeleton: {
+    width: '50%',
+    height: 20,
+    borderRadius: 6,
+    marginBottom: 8,
+    marginTop: 0,
+  },
+  meditationDetailBenefitsTextSkeleton: {
+    width: '100%',
+    height: 15,
+    borderRadius: 6,
+    marginBottom: 6,
+  },
+  meditationDetailUniqueBenefitsTitleSkeleton: {
+    width: '45%',
+    height: 17,
+    borderRadius: 6,
+    marginBottom: 12,
+    marginTop: 20,
+  },
+  meditationDetailBenefitItemSkeleton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 8,
+  },
+  meditationDetailBenefitIconSkeleton: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    marginRight: 10,
+  },
+  meditationDetailBenefitTextSkeleton: {
+    flex: 1,
+    height: 15,
+    borderRadius: 6,
   },
 });
 

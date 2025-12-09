@@ -22,8 +22,9 @@ import { useStore } from '../store/useStore';
 import { ShareIcon } from '../components/icons';
 import { DraggableActionBar } from '../components/DraggableActionBar';
 import { meditationAudioData } from '../data/meditationMockData';
-import { getSessionById } from '../services/sessionService';
+import { getSessionById, getSessionModules } from '../services/sessionService';
 import { ShimmerMeditationDetailMedia, ShimmerMeditationDetailContent, ShimmerSkeleton } from '../components/ShimmerSkeleton';
+import { mentalHealthModules, getCategoryColor, MentalHealthModule } from '../data/modules';
 
 type MeditationDetailStackParamList = {
   MeditationDetail: {
@@ -49,6 +50,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [sessionModules, setSessionModules] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<TabType>('summary');
   const [historySortOrder, setHistorySortOrder] = useState<'latest' | 'earliest'>('latest');
   const [showSortOptions, setShowSortOptions] = useState(false);
@@ -80,6 +82,12 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         });
         console.log('[MeditationDetailScreen] 📄 Full cached session object:', JSON.stringify(cachedSession, null, 2));
         setSession(cachedSession);
+        
+        // Fetch modules for this session even if cached
+        const modules = await getSessionModules(sessionId);
+        console.log('[MeditationDetailScreen] 📦 Fetched modules:', modules);
+        setSessionModules(modules);
+        
         setIsLoading(false);
         return;
       }
@@ -102,6 +110,11 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           // Cache for future use
           console.log('[MeditationDetailScreen] 💾 Caching fetched session...');
           cacheSessions([fetchedSession]);
+          
+          // Fetch modules for this session
+          const modules = await getSessionModules(sessionId);
+          console.log('[MeditationDetailScreen] 📦 Fetched modules:', modules);
+          setSessionModules(modules);
         } else {
           console.log('[MeditationDetailScreen] ⚠️ Session not found in database');
         }
@@ -383,25 +396,41 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
     </View>
   );
 
-  const renderMeditationInfo = (showTags = true) => (
-    <View style={styles.meditationInfo}>
-      <Text style={styles.meditationTitle}>{session.title}</Text>
-      
-      {showTags && (
-        <View style={styles.tagsContainer}>
-          <View style={[styles.tag, { backgroundColor: getGoalColor(session.goal) }]}>
-            <Text style={styles.tagText}>{session.goal}</Text>
+  const renderMeditationInfo = (showTags = true) => {
+    // Get unique module objects from module IDs (remove duplicates)
+    const uniqueModuleIds = Array.from(new Set(sessionModules));
+    const moduleObjects: MentalHealthModule[] = uniqueModuleIds
+      .map(moduleId => mentalHealthModules.find(m => m.id === moduleId))
+      .filter((module): module is MentalHealthModule => module !== undefined);
+
+    return (
+      <View style={styles.meditationInfo}>
+        <Text style={styles.meditationTitle}>{session.title}</Text>
+        
+        {showTags && (
+          <View style={styles.tagsContainer}>
+            <View style={[styles.tag, { backgroundColor: getGoalColor(session.goal) }]}>
+              <Text style={styles.tagText}>{session.goal}</Text>
+            </View>
+            <View style={styles.tag}>
+              <Text style={styles.tagText}>{session.modality}</Text>
+            </View>
+            {moduleObjects.map((module, index) => (
+              <View 
+                key={module.id} 
+                style={[styles.tag, { backgroundColor: getCategoryColor(module.category) }]}
+              >
+                <Text style={styles.tagText}>{module.title}</Text>
+              </View>
+            ))}
+            <View style={styles.tag}>
+              <Text style={styles.tagText}>{session.durationMin} min</Text>
+            </View>
           </View>
-          <View style={styles.tag}>
-            <Text style={styles.tagText}>{session.modality}</Text>
-          </View>
-          <View style={styles.tag}>
-            <Text style={styles.tagText}>{session.durationMin} min</Text>
-          </View>
-        </View>
-      )}
-    </View>
-  );
+        )}
+      </View>
+    );
+  };
 
   const renderDescription = () => {
     if (!session || !session.description) {

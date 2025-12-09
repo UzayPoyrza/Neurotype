@@ -391,6 +391,19 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
     }).length;
   }, [completedSessions]);
   
+  // Filter to only count one session per day for neuroadaptation
+  // We only need the count, so we just track unique dates
+  const uniqueDailySessionsCount = useMemo(() => {
+    const seenDates = new Set<string>();
+    
+    for (const session of completedSessions) {
+      const dateKey = session.completedDate.toDateString();
+      seenDates.add(dateKey);
+    }
+    
+    return seenDates.size;
+  }, [completedSessions]);
+  
   const titleText = `${module.title} Journey`;
   // Use smaller font for longer titles
   // <= 20 chars: 30px, 21-24 chars: 26px, > 24 chars: 22px
@@ -877,7 +890,16 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   }, []);
 
   const renderTimelinePage = () => {
-    const totalSessions = userProgress.sessionDeltas.length;
+    // Use filtered count (one per day) for neuroadaptation progress
+    const totalSessions = uniqueDailySessionsCount;
+    
+    // Calculate average sessions required based on time ranges
+    // 5-7 daily sessions: (5+7)/2 = 6
+    // 3-4 weeks of daily sessions: (3*7 + 4*7)/2 = (21+28)/2 = 24.5, rounded to 25
+    // 6-8 Weeks of daily sessions: (6*7 + 8*7)/2 = (42+56)/2 = 49
+    // 3 Months of daily sessions: 3 * 30.44 = 91.32, rounded to 91
+    // 6 Months of daily sessions: 6 * 30.44 = 182.64, rounded to 183
+    // 1 Year of daily sessions: 365
     
     // Calculate progress for each milestone based on sessions completed
     const milestones = [
@@ -885,7 +907,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         id: 'week1',
         title: 'Reduced amygdala activity',
         timeRange: '5-7 daily sessions',
-        sessionsRequired: 7,
+        sessionsRequired: Math.round((5 + 7) / 2), // 6
         description: 'Lower acute stress reactivity. Heart rate decreases, parasympathetic activation increases. Improved attention for short periods.',
         whatYouFeel: 'Slight calm after sessions, more aware of anxious thoughts, some restlessness (very normal at start)',
       },
@@ -893,7 +915,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         id: 'weeks2-4',
         title: 'Increased prefrontal cortex regulation',
         timeRange: '3-4 weeks of daily sessions',
-        sessionsRequired: 28,
+        sessionsRequired: Math.round((3 * 7 + 4 * 7) / 2), // 25
         description: 'Better impulse control & emotional regulation. Reduced cortisol baseline levels. Thicker hippocampal gray matter begins.',
         whatYouFeel: 'Anxiety decreases slightly but consistently, better sleep onset, you notice reactions before they happen, mood is more stable',
       },
@@ -901,7 +923,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         id: 'weeks6-8',
         title: 'Amygdala density reduction',
         timeRange: '6–8 Weeks of daily sessions',
-        sessionsRequired: 56,
+        sessionsRequired: Math.round((6 * 7 + 8 * 7) / 2), // 49
         description: 'Amygdala shrinks in density. Hippocampus increases (memory + learning). Default Mode Network activity decreases → Less rumination.',
         whatYouFeel: 'Noticeably lower anxiety baseline, stress hits you less intensely, emotional resilience increases, mind wandering drops',
       },
@@ -909,7 +931,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         id: '3months',
         title: 'Stronger frontal-limbic connectivity',
         timeRange: '3 Months of daily sessions',
-        sessionsRequired: 90,
+        sessionsRequired: Math.round(3 * 30.44), // 91
         description: 'You regulate emotions automatically. Significant improvements in working memory. Lower blood pressure in many adults.',
         whatYouFeel: 'Anxiety triggers don\'t hit as hard, you handle conflict more smoothly, you recover from stress much faster',
       },
@@ -917,7 +939,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         id: '6months',
         title: 'Permanent structural changes',
         timeRange: '6 Months of daily sessions',
-        sessionsRequired: 180,
+        sessionsRequired: Math.round(6 * 30.44), // 183
         description: 'Permanent structural changes in prefrontal cortex, anterior cingulate cortex, and insula. DMN quieting becomes your default.',
         whatYouFeel: 'Overall anxiety level drops 30–40% on average, you begin feeling "centered" most days, your mind feels clearer',
       },

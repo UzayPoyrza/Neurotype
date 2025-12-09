@@ -213,6 +213,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   const completedScrollRef = useRef<ScrollView>(null);
   const [showScrollArrow, setShowScrollArrow] = useState(true);
   const scrollArrowOpacity = useRef(new Animated.Value(1)).current;
+  const scrollArrowScale = useRef(new Animated.Value(0)).current;
   const scrollViewWidth = useRef(0);
 
   const userProgress = useStore(state => state.userProgress);
@@ -434,6 +435,29 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
     glow();
   }, [glowAnim]);
 
+  useEffect(() => {
+    // Pulse animation for scroll arrow (scale)
+    const pulseArrow = () => {
+      Animated.sequence([
+        Animated.timing(scrollArrowScale, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scrollArrowScale, {
+          toValue: 0,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ]).start(() => pulseArrow());
+    };
+    
+    pulseArrow();
+    return () => {
+      scrollArrowScale.stopAnimation();
+    };
+  }, [scrollArrowScale]);
+
   const completedSectionY = useRef(0);
   const todaySectionY = useRef(0);
   const tomorrowSectionY = useRef(0);
@@ -567,6 +591,14 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
                   styles.scrollArrow,
                   {
                     opacity: scrollArrowOpacity,
+                    transform: [
+                      {
+                        scale: scrollArrowScale.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [1, 1.1],
+                        }),
+                      },
+                    ],
                   },
                 ]}
                 pointerEvents="none"

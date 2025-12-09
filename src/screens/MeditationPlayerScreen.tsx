@@ -1831,7 +1831,10 @@ export const MeditationPlayerScreen: React.FC = () => {
               console.log('✅ [Session Completion] Session completion process finished (database operations running in background)');
             }
           }
-          setActiveSession(null);
+          // Delay closing session to allow congrats screen animation to complete (~2.8 seconds)
+          setTimeout(() => {
+            setActiveSession(null);
+          }, 2800);
         }}
       />
       </SafeAreaView>

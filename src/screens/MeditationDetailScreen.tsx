@@ -618,7 +618,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           <View style={styles.historySection}>
             {isLoadingHistory ? (
               <View style={styles.historyLoadingState}>
-                <ActivityIndicator size="large" color="#007AFF" />
+                <ActivityIndicator size="large" color="#8e8e93" />
                 <Text style={styles.historyLoadingText}>Loading history...</Text>
               </View>
             ) : sortedHistory.length > 0 ? (

@@ -398,10 +398,13 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
 
   const renderMeditationInfo = (showTags = true) => {
     // Get unique module objects from module IDs (remove duplicates)
+    // Also filter out the goal if it matches a module ID to avoid duplicates
     const uniqueModuleIds = Array.from(new Set(sessionModules));
     const moduleObjects: MentalHealthModule[] = uniqueModuleIds
       .map(moduleId => mentalHealthModules.find(m => m.id === moduleId))
-      .filter((module): module is MentalHealthModule => module !== undefined);
+      .filter((module): module is MentalHealthModule => module !== undefined)
+      // Filter out module if its ID matches the goal to avoid duplicate tags
+      .filter(module => module.id !== session.goal);
 
     return (
       <View style={styles.meditationInfo}>
@@ -412,10 +415,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
             <View style={[styles.tag, { backgroundColor: getGoalColor(session.goal) }]}>
               <Text style={styles.tagText}>{session.goal}</Text>
             </View>
-            <View style={styles.tag}>
-              <Text style={styles.tagText}>{session.modality}</Text>
-            </View>
-            {moduleObjects.map((module, index) => (
+            {moduleObjects.map((module) => (
               <View 
                 key={module.id} 
                 style={[styles.tag, { backgroundColor: getCategoryColor(module.category) }]}
@@ -423,6 +423,9 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
                 <Text style={styles.tagText}>{module.title}</Text>
               </View>
             ))}
+            <View style={styles.tag}>
+              <Text style={styles.tagText}>{session.modality}</Text>
+            </View>
             <View style={styles.tag}>
               <Text style={styles.tagText}>{session.durationMin} min</Text>
             </View>

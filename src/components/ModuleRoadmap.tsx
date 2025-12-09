@@ -298,6 +298,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         // 7. Filter: Include sessions that belong to current module (based on session_modalities)
         // Use completed_date from completed_sessions for dates
         const moduleCompletedSessions: CompletedMeditation[] = [];
+        const seenKeys = new Set<string>(); // Track seen keys to prevent duplicates
         
         for (const cs of completedSessionsData) {
           const sessionModules = sessionModulesMap.get(cs.session_id) || [];
@@ -306,11 +307,18 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
           if (sessionModules.includes(module.id)) {
             const session = sessionsMap.get(cs.session_id);
             if (session) {
-              moduleCompletedSessions.push({
-                id: cs.id || `${module.id}-completed-${cs.session_id}-${cs.completed_date}`,
-                session: session,
-                completedDate: new Date(cs.completed_date || cs.created_at || Date.now()),
-              });
+              // Create a unique key - use cs.id if available, otherwise combine session_id, completed_date, and created_at for uniqueness
+              const uniqueKey = cs.id || `${module.id}-completed-${cs.session_id}-${cs.completed_date}-${cs.created_at || Date.now()}`;
+              
+              // Skip if we've already added this exact completion
+              if (!seenKeys.has(uniqueKey)) {
+                seenKeys.add(uniqueKey);
+                moduleCompletedSessions.push({
+                  id: uniqueKey,
+                  session: session,
+                  completedDate: new Date(cs.completed_date || cs.created_at || Date.now()),
+                });
+              }
             }
           }
         }

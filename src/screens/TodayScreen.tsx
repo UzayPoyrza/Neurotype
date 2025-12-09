@@ -19,7 +19,8 @@ import { LineGraphIcon } from '../components/icons/LineGraphIcon';
 import { ensureDailyRecommendations, getDailyRecommendations } from '../services/recommendationService';
 import { useUserId } from '../hooks/useUserId';
 import { getSessionById } from '../services/sessionService';
-import { getCompletedSessionsByDateRange, isSessionCompleted } from '../services/progressService';
+import { getCompletedSessionsByDateRange, isSessionCompleted, getUserCompletedSessions } from '../services/progressService';
+import { supabase } from '../services/supabase';
 
 type SessionState = 'not_started' | 'in_progress' | 'completed' | 'rating';
 
@@ -66,6 +67,9 @@ export const TodayScreen: React.FC = () => {
   // Daily recommendations state
   const [todaySessions, setTodaySessions] = useState<Session[]>([]);
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(true);
+  
+  // Completed sessions for preview
+  const [fetchedCompletedSessions, setFetchedCompletedSessions] = useState<Array<Session & { completedDate: string }>>([]);
   
   // Animation refs - simplified to avoid native driver conflicts
   const heroCardScale = useRef(new Animated.Value(1)).current;
@@ -375,6 +379,123 @@ export const TodayScreen: React.FC = () => {
     fetchRecommendations();
   }, [userId, selectedModuleId]);
 
+  // Fetch completed sessions for preview (up to 3 most recent)
+  useEffect(() => {
+    const fetchCompletedSessions = async () => {
+      if (!userId) {
+        setFetchedCompletedSessions([]);
+        return;
+      }
+
+      try {
+        // 1. Fetch ALL completed sessions (don't filter by context_module yet)
+        const completedSessionsData = await getUserCompletedSessions(userId, 50);
+        
+        if (completedSessionsData.length === 0) {
+          setFetchedCompletedSessions([]);
+          return;
+        }
+
+        // 2. Get unique session IDs from all completed sessions
+        const uniqueSessionIds = Array.from(
+          new Set(completedSessionsData.map(cs => cs.session_id))
+        );
+
+        // 3. Batch fetch session_modalities for all unique sessions (1 query)
+        const { data: modalitiesData, error: modalitiesError } = await supabase
+          .from('session_modalities')
+          .select('session_id, modality')
+          .in('session_id', uniqueSessionIds);
+
+        if (modalitiesError) {
+          console.error('Error fetching session modalities:', modalitiesError);
+          setFetchedCompletedSessions([]);
+          return;
+        }
+
+        // 4. Create a map: session_id -> array of modules it belongs to
+        const sessionModulesMap = new Map<string, string[]>();
+        (modalitiesData || []).forEach(item => {
+          if (!sessionModulesMap.has(item.session_id)) {
+            sessionModulesMap.set(item.session_id, []);
+          }
+          sessionModulesMap.get(item.session_id)!.push(item.modality);
+        });
+
+        // 5. Batch fetch session details for all unique sessions (1 query)
+        const { data: sessionsData, error: sessionsError } = await supabase
+          .from('sessions')
+          .select('id, title, duration_min, technique, description, why_it_works, audio_url, thumbnail_url, is_active')
+          .in('id', uniqueSessionIds)
+          .eq('is_active', true);
+
+        if (sessionsError) {
+          console.error('Error fetching sessions:', sessionsError);
+          setFetchedCompletedSessions([]);
+          return;
+        }
+
+        // 6. Create a map: session_id -> session details
+        const sessionsMap = new Map<string, any>();
+        (sessionsData || []).forEach(session => {
+          sessionsMap.set(session.id, {
+            id: session.id,
+            title: session.title,
+            durationMin: session.duration_min,
+            modality: session.technique,
+            goal: 'anxiety' as any,
+            description: session.description || undefined,
+            whyItWorks: session.why_it_works || undefined,
+            isRecommended: false,
+            isTutorial: false,
+          });
+        });
+
+        // 7. Filter: Include sessions that belong to current module (based on session_modalities)
+        // Use completed_date from completed_sessions for dates
+        const moduleCompletedSessions: Array<Session & { completedDate: string }> = [];
+        const seenKeys = new Set<string>(); // Track seen keys to prevent duplicates
+        
+        for (const cs of completedSessionsData) {
+          const sessionModules = sessionModulesMap.get(cs.session_id) || [];
+          
+          // Count this session if it belongs to the current module
+          if (sessionModules.includes(selectedModuleId)) {
+            const session = sessionsMap.get(cs.session_id);
+            if (session) {
+              // Create a unique key combining session_id and completed_date
+              const completedDate = cs.completed_date || cs.created_at || new Date().toISOString().split('T')[0];
+              const uniqueKey = `${cs.session_id}-${completedDate}`;
+              
+              // Skip if we've already added this exact completion
+              if (!seenKeys.has(uniqueKey)) {
+                seenKeys.add(uniqueKey);
+                moduleCompletedSessions.push({
+                  ...session,
+                  completedDate: completedDate,
+                });
+              }
+            }
+          }
+        }
+
+        // 8. Sort by completed_date (most recent first) and limit to 3
+        moduleCompletedSessions.sort((a, b) => {
+          const dateA = new Date(a.completedDate).getTime();
+          const dateB = new Date(b.completedDate).getTime();
+          return dateB - dateA;
+        });
+        
+        setFetchedCompletedSessions(moduleCompletedSessions.slice(0, 3));
+      } catch (error) {
+        console.error('Error fetching completed sessions:', error);
+        setFetchedCompletedSessions([]);
+      }
+    };
+
+    fetchCompletedSessions();
+  }, [userId, selectedModuleId]);
+
   const recommendedSession = todaySessions.find(s => s.isRecommended) || todaySessions[0];
   
   // Check if recommended session is completed
@@ -402,27 +523,11 @@ export const TodayScreen: React.FC = () => {
     return mockSessions.filter(session => goals.includes(session.goal));
   }, [selectedModule]);
 
-  // Get actual completed sessions for this module from user progress
+  // Use fetched completed sessions from database (already limited to 3 most recent)
   const completedPreviewSessions = useMemo(() => {
-    const moduleCompletedSessions = userProgress.sessionDeltas
-      .filter(delta => delta.moduleId === selectedModuleId)
-      .map(delta => {
-        const session = mockSessions.find(s => s.id === delta.sessionId);
-        return session ? { ...session, completedDate: delta.date } : null;
-      })
-      .filter((session): session is NonNullable<typeof session> => session !== null)
-      .slice(0, 3);
-    
-    return moduleCompletedSessions;
-  }, [userProgress.sessionDeltas, selectedModuleId]);
+    return fetchedCompletedSessions;
+  }, [fetchedCompletedSessions]);
 
-  const upcomingPreviewSessions = useMemo(() => {
-    const todayIds = todaySessions.map(session => session.id);
-    return moduleSessionsForRoadmap
-      .filter(session => !todayIds.includes(session.id))
-      .slice(0, 2);
-  }, [moduleSessionsForRoadmap, todaySessions]);
-  
   // Check if today's meditation is completed
   const isTodayCompleted = useMemo(() => {
     return todaySessions.some(session => {
@@ -965,7 +1070,7 @@ export const TodayScreen: React.FC = () => {
                     }
                     
                     return (
-                      <View key={session.id} style={styles.progressPreviewItem}>
+                      <View key={`${session.id}-${session.completedDate}`} style={styles.progressPreviewItem}>
                         <View style={styles.progressPreviewItemIcon}>
                           <Text style={styles.progressPreviewItemIconText}>✓</Text>
                         </View>
@@ -998,39 +1103,16 @@ export const TodayScreen: React.FC = () => {
 
                 <View style={styles.progressPreviewColumn}>
                   <Text style={styles.progressPreviewSectionLabel}>Coming Up</Text>
-                  {!isTodayCompleted ? (
-                    <View style={styles.progressPreviewLockedState}>
-                      <View style={[styles.progressPreviewItemIcon, styles.progressPreviewItemIconLocked]}>
-                        <Text style={styles.progressPreviewLockIconText}>🔒</Text>
-                      </View>
-                      <View style={styles.progressPreviewItemBody}>
-                        <Text style={styles.progressPreviewLockedText}>
-                          Finish today's meditation to preview tomorrow
-                        </Text>
-                      </View>
+                  <View style={styles.progressPreviewLockedState}>
+                    <View style={[styles.progressPreviewItemIcon, styles.progressPreviewItemIconLocked]}>
+                      <Text style={styles.progressPreviewLockIconText}>🔒</Text>
                     </View>
-                  ) : (
-                    <>
-                      {upcomingPreviewSessions.map(session => (
-                        <View key={session.id} style={styles.progressPreviewItem}>
-                          <View style={[styles.progressPreviewItemIcon, styles.progressPreviewItemIconUpcoming]}>
-                            <Text style={[styles.progressPreviewItemIconText, styles.progressPreviewItemIconUpcomingText]}>▶</Text>
-                          </View>
-                          <View style={styles.progressPreviewItemBody}>
-                            <Text style={styles.progressPreviewItemTitle} numberOfLines={1}>
-                              {session.title}
-                            </Text>
-                            <Text style={styles.progressPreviewItemMeta}>
-                              {session.durationMin} min • {session.modality}
-                            </Text>
-                          </View>
-                        </View>
-                      ))}
-                      {upcomingPreviewSessions.length === 0 && (
-                        <Text style={styles.progressPreviewLockedText}>Explore the roadmap for more</Text>
-                      )}
-                    </>
-                  )}
+                    <View style={styles.progressPreviewItemBody}>
+                      <Text style={styles.progressPreviewLockedText}>
+                        Feature coming soon
+                      </Text>
+                    </View>
+                  </View>
                 </View>
               </View>
 

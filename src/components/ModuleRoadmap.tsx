@@ -664,9 +664,11 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
                   </>
                 )}
               </View>
-              <Text style={styles.recommendedCopy}>
-                Recommended for you today
-              </Text>
+              <View style={[styles.recommendedBadge, { backgroundColor: module.color }]}>
+                <Text style={styles.recommendedBadgeText}>
+                  Recommended for you today
+                </Text>
+              </View>
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -1335,12 +1337,20 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: 'bold',
   },
-  recommendedCopy: {
-    marginTop: 0,
-    fontSize: 12,
+  recommendedBadge: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  recommendedBadgeText: {
+    fontSize: 11,
     fontWeight: '600',
-    color: '#1D1D1F',
+    color: '#FFFFFF',
     fontFamily: 'System',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   tomorrowCard: {
     backgroundColor: '#FFFFFF',

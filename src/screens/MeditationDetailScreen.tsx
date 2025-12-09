@@ -364,13 +364,35 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const getModalityIcon = (modality: string) => {
     const icons: { [key: string]: string } = {
       sound: '🔊',
-      movement: '🧘‍♀️',
+      movement: '🏃',
       mantra: '🕉️',
-      visualization: '🌅',
+      visualization: '👁️',
       somatic: '🤲',
-      mindfulness: '🧠',
+      mindfulness: '🌸',
+      breathing: '💨',
     };
-    return icons[modality] || '🧘';
+    return icons[modality.toLowerCase()] || '🎯';
+  };
+
+  const getModalityColor = (modality: string) => {
+    switch (modality.toLowerCase()) {
+      case 'movement':
+        return '#ff9500'; // Orange
+      case 'somatic':
+        return '#34c759'; // Green  
+      case 'breathing':
+        return '#007aff'; // Blue
+      case 'visualization':
+        return '#af52de'; // Purple
+      case 'mindfulness':
+        return '#ff2d92'; // Pink
+      case 'sound':
+        return '#007aff'; // Blue
+      case 'mantra':
+        return '#af52de'; // Purple
+      default:
+        return '#8e8e93'; // Gray
+    }
   };
 
   const getGoalColor = (goal: string) => {
@@ -423,8 +445,10 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
                 <Text style={styles.tagText}>{module.title}</Text>
               </View>
             ))}
-            <View style={styles.tag}>
-              <Text style={styles.tagText}>{session.modality}</Text>
+            <View style={[styles.tag, { backgroundColor: getModalityColor(session.modality) }]}>
+              <Text style={styles.tagText}>
+                {getModalityIcon(session.modality)} {session.modality}
+              </Text>
             </View>
             <View style={styles.tag}>
               <Text style={styles.tagText}>{session.durationMin} min</Text>

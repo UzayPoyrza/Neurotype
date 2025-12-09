@@ -151,44 +151,53 @@ export const TodayScreen: React.FC = () => {
             return;
           }
           
+          // Set loading state when module changes
+          setIsLoadingRecommendations(true);
           recommendationCheckInProgressRef.current[selectedModuleId] = true;
           
           // Check if recommendations exist first, don't force regenerate
           ensureDailyRecommendations(userId, selectedModuleId, false).then(result => {
-            recommendationCheckInProgressRef.current[selectedModuleId] = false;
             if (result.success) {
               // Refetch recommendations (whether they were just generated or already existed)
               const refetchRecommendations = async () => {
-                const recommendations = await getDailyRecommendations(userId, selectedModuleId);
-                const sessionPromises = recommendations.map(async (rec) => {
-                  const session = await getSessionById(rec.session_id);
-                  if (session) {
-                    return {
-                      ...session,
-                      isRecommended: rec.is_recommended,
-                      adaptiveReason: rec.is_recommended ? 'Recommended for you' : 'Alternative option',
-                    };
+                try {
+                  const recommendations = await getDailyRecommendations(userId, selectedModuleId);
+                  const sessionPromises = recommendations.map(async (rec) => {
+                    const session = await getSessionById(rec.session_id);
+                    if (session) {
+                      return {
+                        ...session,
+                        isRecommended: rec.is_recommended,
+                        adaptiveReason: rec.is_recommended ? 'Recommended for you' : 'Alternative option',
+                      };
+                    }
+                    return null;
+                  });
+                  const sessions = (await Promise.all(sessionPromises)).filter(
+                    (s): s is Session => s !== null
+                  );
+                  
+                  // Check which recommended sessions are completed today (from cache)
+                  // Note: We don't re-mark sessions here - syncTodayCompletedSessionsFromDatabase already
+                  // populated the cache on app open. We just check the cache to show checkmarks.
+                  const today = new Date().toISOString().split('T')[0];
+                  console.log('✅ [TodayScreen] Checking completed sessions from cache after module change:', today);
+                  
+                  for (const session of sessions) {
+                    const completed = isSessionCompletedToday(selectedModuleId, session.id, today);
+                    if (completed) {
+                      console.log('✅ [TodayScreen] Session completed today (from cache):', session.id, session.title);
+                    }
                   }
-                  return null;
-                });
-                const sessions = (await Promise.all(sessionPromises)).filter(
-                  (s): s is Session => s !== null
-                );
-                
-                // Check which recommended sessions are completed today (from cache)
-                // Note: We don't re-mark sessions here - syncTodayCompletedSessionsFromDatabase already
-                // populated the cache on app open. We just check the cache to show checkmarks.
-                const today = new Date().toISOString().split('T')[0];
-                console.log('✅ [TodayScreen] Checking completed sessions from cache after module change:', today);
-                
-                for (const session of sessions) {
-                  const completed = isSessionCompletedToday(selectedModuleId, session.id, today);
-                  if (completed) {
-                    console.log('✅ [TodayScreen] Session completed today (from cache):', session.id, session.title);
-                  }
+                  
+                  setTodaySessions(sessions);
+                } catch (error) {
+                  console.error('❌ [TodayScreen] Error refetching recommendations:', error);
+                  setTodaySessions([]);
+                } finally {
+                  setIsLoadingRecommendations(false);
+                  recommendationCheckInProgressRef.current[selectedModuleId] = false;
                 }
-                
-                setTodaySessions(sessions);
               };
               
               if (result.generated) {
@@ -200,10 +209,12 @@ export const TodayScreen: React.FC = () => {
               refetchRecommendations();
             } else {
               console.error('❌ [TodayScreen] Failed to ensure recommendations:', result.error);
+              setIsLoadingRecommendations(false);
               recommendationCheckInProgressRef.current[selectedModuleId] = false;
             }
           }).catch((error) => {
             console.error('❌ [TodayScreen] Error in ensureDailyRecommendations:', error);
+            setIsLoadingRecommendations(false);
             recommendationCheckInProgressRef.current[selectedModuleId] = false;
           });
         }
@@ -304,9 +315,9 @@ export const TodayScreen: React.FC = () => {
       setIsLoadingRecommendations(true);
       
       // Prevent duplicate checks if one is already in progress
+      // Don't clear loading state here - let the module change handler manage it
       if (recommendationCheckInProgressRef.current[selectedModuleId]) {
         console.log('⏳ [TodayScreen] Recommendation check already in progress, skipping...');
-        setIsLoadingRecommendations(false);
         return;
       }
       

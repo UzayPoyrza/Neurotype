@@ -116,32 +116,7 @@ export const ExploreScreen: React.FC = () => {
   }, []);
 
   // Define filter categories for top nav pill filters
-  const filterCategories: FilterCategory[] = [
-    {
-      id: 'modality',
-      label: 'Modality',
-      multiSelect: false,
-      options: [
-        { id: 'all', label: 'All Modalities' },
-        { id: 'sound', label: 'Sound', badge: 12 },
-        { id: 'movement', label: 'Movement', badge: 8 },
-        { id: 'mindfulness', label: 'Mindfulness', badge: 15 },
-        { id: 'visualization', label: 'Visualization', badge: 9 },
-      ],
-    },
-    {
-      id: 'goal',
-      label: 'Goal',
-      multiSelect: true,
-      options: [
-        { id: 'all', label: 'All Goals' },
-        { id: 'anxiety', label: 'Anxiety Relief', badge: 18 },
-        { id: 'focus', label: 'Focus & Clarity', badge: 14 },
-        { id: 'sleep', label: 'Better Sleep', badge: 11 },
-        { id: 'stress', label: 'Stress Reduction', badge: 16 },
-      ],
-    },
-  ];
+  const filterCategories: FilterCategory[] = [];
 
   // Get liked sessions from database
   const likedSessions = allSessions.filter(session => likedSessionIds.includes(session.id));

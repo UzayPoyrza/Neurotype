@@ -51,8 +51,8 @@ export const ExploreScreenNav = forwardRef<ExploreScreenNavRef, ExploreScreenNav
   const isAnimating = useRef(false);
   const lastScrollY = useRef(0);
   const scrollDirection = useRef<'up' | 'down' | null>(null);
-  const revealBarHeight = 120; // Increased height to accommodate filter bar
-  const slideRange = 120; // Full height of RevealBar - slide it completely behind TopShell
+  const revealBarHeight = 80; // Height for search bar
+  const slideRange = 80; // Full height of RevealBar - slide it completely behind TopShell
   
   // Animated value for the top shell border
   const topShellBorderOpacity = useRef(new Animated.Value(0)).current;
@@ -223,14 +223,16 @@ export const ExploreScreenNav = forwardRef<ExploreScreenNavRef, ExploreScreenNav
             <View style={styles.searchWrapper}>
               {searchComponent}
             </View>
-            <View style={styles.filterWrapper}>
-              <SpotifyFilterBar
-                categories={filterCategories}
-                onSelectionChange={onFilterSelectionChange}
-                initialSelection={filterSelection}
-                style={styles.filterBar}
-              />
-            </View>
+            {filterCategories.length > 0 && (
+              <View style={styles.filterWrapper}>
+                <SpotifyFilterBar
+                  categories={filterCategories}
+                  onSelectionChange={onFilterSelectionChange}
+                  initialSelection={filterSelection}
+                  style={styles.filterBar}
+                />
+              </View>
+            )}
           </Animated.View>
         ) : (
           <Animated.View 
@@ -321,7 +323,7 @@ const styles = StyleSheet.create({
   },
   revealBar: {
     // backgroundColor set dynamically via globalBackgroundColor
-    height: 120, // Increased height to accommodate filter bar
+    height: 80, // Height for search bar
     position: 'absolute',
     top: 60, // Start below TopShell
     left: 0,
@@ -335,7 +337,7 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     flex: 1,
-    paddingVertical: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
     justifyContent: 'flex-start',
     alignItems: 'center',
   },

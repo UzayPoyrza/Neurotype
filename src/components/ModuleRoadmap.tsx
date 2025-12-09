@@ -550,7 +550,9 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
           <Text style={styles.sectionTitle}>Recent Sessions</Text>
           <Text style={styles.sectionSubtitle}>
             {completedSessions.length > 0 
-              ? `${completedSessions.length} completed ${completedSessions.length === 1 ? 'session' : 'sessions'}`
+              ? completedSessions.length > 6
+                ? `Showing 6 most recent of ${completedSessions.length} sessions`
+                : `${completedSessions.length} completed ${completedSessions.length === 1 ? 'session' : 'sessions'}`
               : 'Your completed meditations will appear here'}
           </Text>
         </View>

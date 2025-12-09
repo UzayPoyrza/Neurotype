@@ -677,7 +677,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
                     <Text style={styles.todayCompletedCheckmark}>✓</Text>
                   </View>
                 ) : (
-                  <Text style={styles.todayCardCTA}>Begin session</Text>
+                  <Text style={styles.todayCardCTA}>Tap to begin session</Text>
                 )}
               </View>
             </TouchableOpacity>
@@ -1329,9 +1329,9 @@ const styles = StyleSheet.create({
   },
   todayCardCTA: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '400',
+    fontStyle: 'italic',
     color: '#1D1D1F',
-    fontFamily: 'System',
     letterSpacing: -0.2,
   },
   todayPlayButton: {

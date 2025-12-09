@@ -11,6 +11,7 @@ import { theme } from '../styles/theme';
 import { useUserId } from '../hooks/useUserId';
 import { getUserCompletedSessions, isSessionCompleted } from '../services/progressService';
 import { getSessionById } from '../services/sessionService';
+import { supabase } from '../services/supabase';
 
 type TodayStackParamList = {
   TodayMain: undefined;
@@ -231,34 +232,93 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
 
       setIsLoadingSessions(true);
       try {
-        // Fetch all completed sessions (we'll filter by module later)
-        const completedSessionsData = await getUserCompletedSessions(userId, 50); // Get up to 50 most recent
+        // 1. Fetch ALL completed sessions (don't filter by context_module yet)
+        const completedSessionsData = await getUserCompletedSessions(userId, 50);
         
-        // Filter by current module
-        const moduleCompletedSessions = completedSessionsData.filter(
-          cs => cs.context_module === module.id
+        if (completedSessionsData.length === 0) {
+          setFetchedCompletedSessions([]);
+          return;
+        }
+
+        // 2. Get unique session IDs from all completed sessions
+        const uniqueSessionIds = Array.from(
+          new Set(completedSessionsData.map(cs => cs.session_id))
         );
 
-        // Fetch session details for each completed session
-        const sessionPromises = moduleCompletedSessions.map(async (cs) => {
-          const session = await getSessionById(cs.session_id);
-          if (!session) return null;
-          
-          return {
-            id: cs.id || `${module.id}-completed-${cs.session_id}-${cs.completed_date}`,
-            session: session,
-            completedDate: new Date(cs.completed_date || cs.created_at || Date.now()),
-          } as CompletedMeditation;
+        // 3. Batch fetch session_modalities for all unique sessions (1 query)
+        const { data: modalitiesData, error: modalitiesError } = await supabase
+          .from('session_modalities')
+          .select('session_id, modality')
+          .in('session_id', uniqueSessionIds);
+
+        if (modalitiesError) {
+          console.error('Error fetching session modalities:', modalitiesError);
+          setFetchedCompletedSessions([]);
+          return;
+        }
+
+        // 4. Create a map: session_id -> array of modules it belongs to
+        const sessionModulesMap = new Map<string, string[]>();
+        (modalitiesData || []).forEach(item => {
+          if (!sessionModulesMap.has(item.session_id)) {
+            sessionModulesMap.set(item.session_id, []);
+          }
+          sessionModulesMap.get(item.session_id)!.push(item.modality);
         });
 
-        const results = await Promise.all(sessionPromises);
-        const validSessions = results.filter((item): item is CompletedMeditation => item !== null);
+        // 5. Batch fetch session details for all unique sessions (1 query)
+        const { data: sessionsData, error: sessionsError } = await supabase
+          .from('sessions')
+          .select('id, title, duration_min, technique, description, why_it_works, audio_url, thumbnail_url, is_active')
+          .in('id', uniqueSessionIds)
+          .eq('is_active', true);
+
+        if (sessionsError) {
+          console.error('Error fetching sessions:', sessionsError);
+          setFetchedCompletedSessions([]);
+          return;
+        }
+
+        // 6. Create a map: session_id -> session details
+        const sessionsMap = new Map<string, any>();
+        (sessionsData || []).forEach(session => {
+          sessionsMap.set(session.id, {
+            id: session.id,
+            title: session.title,
+            durationMin: session.duration_min,
+            modality: session.technique,
+            goal: 'anxiety' as any,
+            description: session.description || undefined,
+            whyItWorks: session.why_it_works || undefined,
+            isRecommended: false,
+            isTutorial: false,
+          });
+        });
+
+        // 7. Filter: Include sessions that belong to current module (based on session_modalities)
+        // Use completed_date from completed_sessions for dates
+        const moduleCompletedSessions: CompletedMeditation[] = [];
         
-        // Sort by completed date (most recent first) - most recent on the left
-        validSessions.sort((a, b) => b.completedDate.getTime() - a.completedDate.getTime());
+        for (const cs of completedSessionsData) {
+          const sessionModules = sessionModulesMap.get(cs.session_id) || [];
+          
+          // Count this session if it belongs to the current module
+          if (sessionModules.includes(module.id)) {
+            const session = sessionsMap.get(cs.session_id);
+            if (session) {
+              moduleCompletedSessions.push({
+                id: cs.id || `${module.id}-completed-${cs.session_id}-${cs.completed_date}`,
+                session: session,
+                completedDate: new Date(cs.completed_date || cs.created_at || Date.now()),
+              });
+            }
+          }
+        }
+
+        // 8. Sort by completed_date (most recent first)
+        moduleCompletedSessions.sort((a, b) => b.completedDate.getTime() - a.completedDate.getTime());
         
-        // Store all sessions for counting (Completed and Today)
-        setFetchedCompletedSessions(validSessions);
+        setFetchedCompletedSessions(moduleCompletedSessions);
       } catch (error) {
         console.error('Error fetching completed sessions:', error);
         setFetchedCompletedSessions([]);

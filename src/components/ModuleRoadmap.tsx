@@ -1165,7 +1165,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#000000',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
@@ -1177,7 +1177,7 @@ const styles = StyleSheet.create({
   },
   scrollArrowText: {
     fontSize: 40,
-    color: '#000000',
+    color: '#FFFFFF',
     fontWeight: '300',
     textAlign: 'center',
     lineHeight: 40,

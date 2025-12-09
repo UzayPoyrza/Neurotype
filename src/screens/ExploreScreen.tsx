@@ -416,7 +416,9 @@ export const ExploreScreen: React.FC = () => {
                           </Text>
                           <Text style={[
                             styles.moduleDescription,
-                            styles.pinnedModuleDescription
+                            ('isLikedMeditations' in module && module.isLikedMeditations) 
+                              ? styles.likedMeditationsDescription 
+                              : styles.pinnedModuleDescription
                           ]} numberOfLines={2}>
                             {module.description}
                           </Text>
@@ -454,7 +456,12 @@ export const ExploreScreen: React.FC = () => {
                           <Text style={styles.moduleTitle} numberOfLines={1} ellipsizeMode="tail">
                             {module.title}
                           </Text>
-                          <Text style={styles.moduleDescription} numberOfLines={2}>
+                          <Text style={[
+                            styles.moduleDescription,
+                            ('isLikedMeditations' in module && module.isLikedMeditations) 
+                              ? styles.likedMeditationsDescription 
+                              : null
+                          ]} numberOfLines={2}>
                             {module.description}
                           </Text>
                           
@@ -666,6 +673,12 @@ const styles = StyleSheet.create({
     color: '#333333',
     fontWeight: '500',
     lineHeight: 17,
+  },
+  likedMeditationsDescription: {
+    fontSize: 12,
+    color: '#8e8e93',
+    fontWeight: '400',
+    lineHeight: 16,
   },
   pinBadge: {
     backgroundColor: '#ffffff',

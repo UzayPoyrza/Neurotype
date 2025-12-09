@@ -884,7 +884,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
       {
         id: 'week1',
         title: 'Reduced amygdala activity',
-        timeRange: '0–1 Week',
+        timeRange: '5-7 daily sessions',
         sessionsRequired: 7,
         description: 'Lower acute stress reactivity. Heart rate decreases, parasympathetic activation increases. Improved attention for short periods.',
         whatYouFeel: 'Slight calm after sessions, more aware of anxious thoughts, some restlessness (very normal at start)',
@@ -892,7 +892,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
       {
         id: 'weeks2-4',
         title: 'Increased prefrontal cortex regulation',
-        timeRange: '2–4 Weeks',
+        timeRange: '3-4 weeks of daily sessions',
         sessionsRequired: 28,
         description: 'Better impulse control & emotional regulation. Reduced cortisol baseline levels. Thicker hippocampal gray matter begins.',
         whatYouFeel: 'Anxiety decreases slightly but consistently, better sleep onset, you notice reactions before they happen, mood is more stable',
@@ -900,7 +900,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
       {
         id: 'weeks6-8',
         title: 'Amygdala density reduction',
-        timeRange: '6–8 Weeks',
+        timeRange: '6–8 Weeks of daily sessions',
         sessionsRequired: 56,
         description: 'Amygdala shrinks in density. Hippocampus increases (memory + learning). Default Mode Network activity decreases → Less rumination.',
         whatYouFeel: 'Noticeably lower anxiety baseline, stress hits you less intensely, emotional resilience increases, mind wandering drops',
@@ -908,7 +908,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
       {
         id: '3months',
         title: 'Stronger frontal-limbic connectivity',
-        timeRange: '3 Months',
+        timeRange: '3 Months of daily sessions',
         sessionsRequired: 90,
         description: 'You regulate emotions automatically. Significant improvements in working memory. Lower blood pressure in many adults.',
         whatYouFeel: 'Anxiety triggers don\'t hit as hard, you handle conflict more smoothly, you recover from stress much faster',
@@ -916,7 +916,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
       {
         id: '6months',
         title: 'Permanent structural changes',
-        timeRange: '6 Months',
+        timeRange: '6 Months of daily sessions',
         sessionsRequired: 180,
         description: 'Permanent structural changes in prefrontal cortex, anterior cingulate cortex, and insula. DMN quieting becomes your default.',
         whatYouFeel: 'Overall anxiety level drops 30–40% on average, you begin feeling "centered" most days, your mind feels clearer',
@@ -924,7 +924,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
       {
         id: '1year',
         title: 'Deep neural transformation',
-        timeRange: '1 Year',
+        timeRange: '1 Year of daily sessions',
         sessionsRequired: 365,
         description: 'Gamma-wave activity increases. Massive increases in cortical thickness. Stronger white-matter pathways for emotional regulation.',
         whatYouFeel: 'Deep, stable calm under most conditions, fast recovery from stress, very strong "observer mind" — thoughts don\'t control you anymore',

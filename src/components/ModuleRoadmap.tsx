@@ -709,7 +709,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
                 <Text style={styles.tomorrowIconText}>🔒</Text>
               </View>
               <View style={styles.tomorrowLockedContent}>
-                <Text style={styles.tomorrowLockedTitle}>Locked</Text>
+                <Text style={styles.tomorrowLockedTitle}>Feature coming soon</Text>
                 <Text style={styles.tomorrowLockedDescription}>
                   Complete today's sessions to see what's coming next
                 </Text>
@@ -746,24 +746,18 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
           <Text style={styles.sectionTitle}>Tomorrow</Text>
           <Text style={styles.sectionSubtitle}>Preview of what's coming next</Text>
         </View>
-        <View style={styles.tomorrowCard}>
+        <View style={[styles.tomorrowCard, styles.tomorrowCardLocked]}>
           <View style={styles.tomorrowHeader}>
-            <View style={[styles.tomorrowIcon, { backgroundColor: module.color }]}>
-              <Text style={styles.tomorrowIconText}>➡︎</Text>
+            <View style={[styles.tomorrowIcon, styles.tomorrowIconLocked, { backgroundColor: '#D1D1D6' }]}>
+              <Text style={styles.tomorrowIconText}>🔒</Text>
             </View>
-            <View>
-              <Text style={styles.tomorrowLabel}>Up next</Text>
-              <Text style={styles.tomorrowTitle} numberOfLines={1}>
-                {tomorrowSession.title}
+            <View style={styles.tomorrowLockedContent}>
+              <Text style={styles.tomorrowLockedTitle}>Feature coming soon</Text>
+              <Text style={styles.tomorrowLockedDescription}>
+                Complete today's sessions to see what's coming next
               </Text>
             </View>
           </View>
-          <Text style={styles.tomorrowMeta}>
-            {tomorrowSession.durationMin} min • {tomorrowSession.modality}
-          </Text>
-          <Text style={styles.tomorrowDescription}>
-            Keep momentum going tomorrow to stay aligned with your {module.title} path.
-          </Text>
         </View>
       </Animated.View>
     );

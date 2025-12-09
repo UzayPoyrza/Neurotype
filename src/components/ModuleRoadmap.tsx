@@ -662,8 +662,12 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
                   </Text>
                 </View>
                 
-                {/* Play button positioned center-right */}
-                {!isCompleted && (
+                {/* Play button or checkmark positioned center-right */}
+                {isCompleted ? (
+                  <View style={styles.todayCompletedButton}>
+                    <Text style={styles.todayCompletedCheckmark}>✓</Text>
+                  </View>
+                ) : (
                   <View style={[styles.todayPlayButton, { backgroundColor: module.color }]}>
                     <Text style={styles.todayPlayIcon}>▶</Text>
                   </View>
@@ -673,12 +677,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
               {/* Footer with CTA */}
               <View style={[styles.todayCardFooter, isCompleted && styles.todayCardFooterCompleted]}>
                 {isCompleted ? (
-                  <>
-                    <Text style={styles.todayCardCompletedText}>You already completed this session today.</Text>
-                    <View style={styles.todayCompletedButton}>
-                      <Text style={styles.todayCompletedCheckmark}>✓</Text>
-                    </View>
-                  </>
+                  <Text style={styles.todayCardCompletedText}>You already completed this session today.</Text>
                 ) : (
                   <Text style={styles.todayCardCTA}>Tap to begin session</Text>
                 )}
@@ -1326,7 +1325,7 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   todayCardFooterCompleted: {
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     borderTopWidth: 0,
     paddingTop: 0,
   },
@@ -1365,20 +1364,21 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
   todayCompletedButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: '#34c759',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+    alignSelf: 'center',
   },
   todayCompletedCheckmark: {
-    fontSize: 18,
+    fontSize: 24,
     color: '#ffffff',
     fontWeight: 'bold',
   },

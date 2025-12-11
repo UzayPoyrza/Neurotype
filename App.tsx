@@ -25,6 +25,7 @@ import { getAllSessions, getSessionsByModality, getSessionById } from './src/ser
 import { ensureTestUser, verifyTestUserConnection } from './src/services/testUserService';
 import { getUserPreferences } from './src/services/userService';
 import { ensureDailyRecommendations } from './src/services/recommendationService';
+import { calculateUserStreak } from './src/services/progressService';
 
 const Tab = createBottomTabNavigator();
 const TodayStack = createStackNavigator();
@@ -270,6 +271,22 @@ export default function App() {
         // Sync today's completed sessions from database (clear cache and reload)
         console.log('🔄 [App] Syncing today\'s completed sessions from database...');
         await useStore.getState().syncTodayCompletedSessionsFromDatabase(userId);
+        
+        // Clear sessions and calendar caches on app open
+        console.log('🧹 [App] Clearing sessions and calendar caches on app open...');
+        useStore.getState().clearSessionsCache();
+        useStore.getState().clearCalendarCache();
+        
+        // Calculate and update streak from completed sessions
+        console.log('🔥 [App] Calculating streak from completed sessions...');
+        const streak = await calculateUserStreak(userId);
+        useStore.setState((state) => ({
+          userProgress: {
+            ...state.userProgress,
+            streak: streak,
+          },
+        }));
+        console.log(`✅ [App] Streak calculated and updated: ${streak} days`);
         
         // Ensure daily recommendations exist for today (default module: anxiety)
         console.log('🎯 [App] Checking daily recommendations...');

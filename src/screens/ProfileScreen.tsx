@@ -17,6 +17,7 @@ import { getSessionById } from '../services/sessionService';
 import { useUserId } from '../hooks/useUserId';
 import { getUserEmotionalFeedback, removeEmotionalFeedback as removeEmotionalFeedbackDB } from '../services/feedbackService';
 import type { CompletedSessionCacheEntry } from '../store/useStore';
+import { ShimmerActivityHistory, ShimmerEmotionalFeedbackHistory } from '../components/ShimmerSkeleton';
 
 const MAX_VISIBLE_ACTIVITY_ITEMS = 4;
 const APPROX_ACTIVITY_ROW_HEIGHT = 84;
@@ -234,15 +235,98 @@ export const ProfileScreen: React.FC = () => {
   }, []); // Only run on mount
 
   // Update UI immediately when cache changes (e.g., when meditation completes)
-  // Merges new cache entries with existing completedSessions instead of replacing
+  // Merges new cache entries with existing completedSessions and removes overwritten entries
   React.useEffect(() => {
     const updateFromCache = async () => {
       if (completedSessionsCache.length === 0) return;
       
+      // Create a map of cache entries by sessionId + moduleId + date for overwrite detection
+      // Key: "sessionId-moduleId-date", Value: createdAt
+      const cacheBySessionModuleDate = new Map<string, string>();
+      completedSessionsCache.forEach(entry => {
+        const cleanSessionId = entry.sessionId.replace('-today', '');
+        const key = `${cleanSessionId}-${entry.moduleId || 'null'}-${entry.date}`;
+        // Keep the most recent createdAt for this session+module+date combo
+        const existing = cacheBySessionModuleDate.get(key);
+        if (!existing || entry.createdAt > existing) {
+          cacheBySessionModuleDate.set(key, entry.createdAt);
+        }
+      });
+      
+      // Create a set of current cache keys for cleanup (using cleaned sessionId)
+      const currentCacheKeys = new Set(
+        completedSessionsCache.map(entry => {
+          const cleanSessionId = entry.sessionId.replace('-today', '');
+          return `${cleanSessionId}-${entry.createdAt}`;
+        })
+      );
+      
+      // Clean up processedCacheKeysRef - remove keys that are no longer in cache
+      // This includes overwritten entries (old createdAt keys)
+      const keysToRemove: string[] = [];
+      processedCacheKeysRef.current.forEach(key => {
+        if (!currentCacheKeys.has(key)) {
+          keysToRemove.push(key);
+        }
+      });
+      keysToRemove.forEach(key => processedCacheKeysRef.current.delete(key));
+      
+      if (keysToRemove.length > 0) {
+        console.log(`🧹 [ProfileScreen] Cleaned up ${keysToRemove.length} old processed cache keys`);
+      }
+      
+      // Remove entries from UI state that were overwritten
+      // An entry is overwritten if there's a cache entry with same sessionId + moduleId + date but different createdAt
+      setCompletedSessions(prev => {
+        const filtered = prev.filter(entry => {
+          const cleanSessionId = entry.sessionId.replace('-today', '');
+          const key = `${cleanSessionId}-${entry.moduleId || 'null'}-${entry.date}`;
+          const cacheCreatedAt = cacheBySessionModuleDate.get(key);
+          
+          // Keep entry if:
+          // 1. There's no cache entry for this session+module+date (it's from database, not cache)
+          // 2. OR the createdAt matches (it's the current version, not overwritten)
+          if (!cacheCreatedAt) {
+            return true; // Keep database entries that aren't in cache
+          }
+          
+          // If there's a cache entry, only keep if createdAt matches (not overwritten)
+          const shouldKeep = entry.createdAt === cacheCreatedAt;
+          if (!shouldKeep) {
+            console.log(`🧹 [ProfileScreen] Removing overwritten entry:`, {
+              sessionId: entry.sessionId,
+              moduleId: entry.moduleId,
+              date: entry.date,
+              oldCreatedAt: entry.createdAt,
+              newCreatedAt: cacheCreatedAt,
+            });
+          }
+          return shouldKeep;
+        });
+        
+        if (filtered.length !== prev.length) {
+          console.log(`🧹 [ProfileScreen] Removed ${prev.length - filtered.length} overwritten entries from UI`);
+        }
+        
+        return filtered;
+      });
+      
       // Find new cache entries that haven't been processed yet
+      // Use cleaned sessionId for consistency
       const newCacheEntries = completedSessionsCache.filter(entry => {
-        const key = `${entry.sessionId}-${entry.createdAt}`;
-        return !processedCacheKeysRef.current.has(key);
+        const cleanSessionId = entry.sessionId.replace('-today', '');
+        const key = `${cleanSessionId}-${entry.createdAt}`;
+        const isNew = !processedCacheKeysRef.current.has(key);
+        if (isNew) {
+          console.log('📊 [ProfileScreen] Found new cache entry:', {
+            sessionId: entry.sessionId,
+            cleanSessionId,
+            createdAt: entry.createdAt,
+            moduleId: entry.moduleId,
+            date: entry.date,
+          });
+        }
+        return isNew;
       });
       
       if (newCacheEntries.length === 0) {
@@ -252,9 +336,10 @@ export const ProfileScreen: React.FC = () => {
       
       console.log('📊 [ProfileScreen] Cache updated, adding', newCacheEntries.length, 'new entries');
       
-      // Mark these entries as processed
+      // Mark these entries as processed (using cleaned sessionId)
       newCacheEntries.forEach(entry => {
-        const key = `${entry.sessionId}-${entry.createdAt}`;
+        const cleanSessionId = entry.sessionId.replace('-today', '');
+        const key = `${cleanSessionId}-${entry.createdAt}`;
         processedCacheKeysRef.current.add(key);
       });
       
@@ -299,10 +384,15 @@ export const ProfileScreen: React.FC = () => {
       
       // Merge with existing sessions, deduplicate, and sort
       setCompletedSessions(prev => {
+        // Use cleaned sessionId for deduplication
         const merged = [...newActivity, ...prev]
           .filter((entry, index, self) => {
-            const key = `${entry.sessionId}-${entry.createdAt}`;
-            return index === self.findIndex(e => `${e.sessionId}-${e.createdAt}` === key);
+            const cleanId = entry.sessionId.replace('-today', '');
+            const key = `${cleanId}-${entry.createdAt}`;
+            return index === self.findIndex(e => {
+              const eCleanId = e.sessionId.replace('-today', '');
+              return `${eCleanId}-${e.createdAt}` === key;
+            });
           })
           .sort((a, b) => {
             const aTime = new Date(a.createdAt).getTime();
@@ -311,7 +401,10 @@ export const ProfileScreen: React.FC = () => {
           })
           .slice(0, 20); // Keep top 20
         
-        console.log('📊 [ProfileScreen] Merged to', merged.length, 'total sessions');
+        console.log('📊 [ProfileScreen] Merged to', merged.length, 'total sessions', {
+          newEntries: newActivity.length,
+          prevEntries: prev.length,
+        });
         return merged;
       });
       
@@ -858,9 +951,8 @@ export const ProfileScreen: React.FC = () => {
           
           <View style={styles.activityContent}>
             {isLoadingActivity ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyStateEmoji}>⏳</Text>
-                <Text style={styles.emptyStateTitle}>Loading activity...</Text>
+              <View style={styles.activityList}>
+                <ShimmerActivityHistory />
               </View>
             ) : recentActivity.length === 0 ? (
               <View style={styles.emptyState}>
@@ -910,7 +1002,7 @@ export const ProfileScreen: React.FC = () => {
                       const completionLabel = formattedDate ? `Completed ${formattedDate}` : 'Completion date unavailable';
 
                       return (
-                        <View key={activityItem.id || `${activityItem.sessionId}-${activityItem.date}-${index}`} style={styles.activityItem}>
+                        <View key={`${activityItem.id || activityItem.sessionId}-${activityItem.createdAt || activityItem.date}-${index}`} style={styles.activityItem}>
                           <View
                             style={[
                               styles.activityIcon,
@@ -1009,9 +1101,8 @@ export const ProfileScreen: React.FC = () => {
 
           <View style={styles.activityContent}>
             {isLoadingFeedback ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyStateEmoji}>⏳</Text>
-                <Text style={styles.emptyStateTitle}>Loading feedback...</Text>
+              <View style={styles.activityList}>
+                <ShimmerEmotionalFeedbackHistory />
               </View>
             ) : sortedFeedbackHistory.length === 0 ? (
               <View style={styles.emptyState}>
@@ -1039,18 +1130,18 @@ export const ProfileScreen: React.FC = () => {
                     onScroll={handleFeedbackScroll}
                     scrollEventThrottle={16}
                   >
-                    {sortedFeedbackHistory.map(entry => {
+                    {sortedFeedbackHistory.map((entry, index) => {
                       const sessionData = sessionsById[entry.sessionId];
                       const sessionTitle = sessionData?.title || 'Meditation Session';
                       const truncatedTitle = truncateText(sessionTitle, 28);
-                      const feedbackLabel = entry.label;
-                      const feedbackColor = feedbackColorMap[feedbackLabel];
+                      const feedbackLabel = entry.label as EmotionalFeedbackLabel;
+                      const feedbackColor = feedbackColorMap[feedbackLabel] || theme.colors.primary;
                       const feedbackBackground = feedbackColor;
                       const formattedDate = formatSessionDate(entry.date) || 'Date unavailable';
                       const formattedTimestamp = formatTimestamp(entry.timestampSeconds);
 
                       return (
-                        <View key={entry.id} style={styles.activityItem}>
+                        <View key={`${entry.id}-${entry.timestampSeconds}-${index}`} style={styles.activityItem}>
                           <View
                             style={[
                               styles.activityIcon,

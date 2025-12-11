@@ -147,6 +147,28 @@ export async function getSessionsByModality(modality: string): Promise<Session[]
 }
 
 /**
+ * Get all modules (modalities) that a session belongs to
+ */
+export async function getSessionModules(sessionId: string): Promise<string[]> {
+  try {
+    const { data, error } = await supabase
+      .from('session_modalities')
+      .select('modality')
+      .eq('session_id', sessionId);
+
+    if (error) {
+      console.error('Error fetching session modules:', error);
+      return [];
+    }
+
+    return (data || []).map(item => item.modality);
+  } catch (error) {
+    console.error('Error in getSessionModules:', error);
+    return [];
+  }
+}
+
+/**
  * Get sessions by technique
  */
 export async function getSessionsByTechnique(technique: string): Promise<Session[]> {

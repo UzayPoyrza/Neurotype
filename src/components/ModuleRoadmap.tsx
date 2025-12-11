@@ -11,6 +11,8 @@ import { theme } from '../styles/theme';
 import { useUserId } from '../hooks/useUserId';
 import { getUserCompletedSessions, isSessionCompleted } from '../services/progressService';
 import { getSessionById } from '../services/sessionService';
+import { supabase } from '../services/supabase';
+import { ShimmerNeuroadaptationCard } from './ShimmerSkeleton';
 
 type TodayStackParamList = {
   TodayMain: undefined;
@@ -213,51 +215,120 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   const completedScrollRef = useRef<ScrollView>(null);
   const [showScrollArrow, setShowScrollArrow] = useState(true);
   const scrollArrowOpacity = useRef(new Animated.Value(1)).current;
+  const scrollArrowScale = useRef(new Animated.Value(0)).current;
   const scrollViewWidth = useRef(0);
 
   const userProgress = useStore(state => state.userProgress);
   const userId = useUserId();
   const [fetchedCompletedSessions, setFetchedCompletedSessions] = useState<CompletedMeditation[]>([]);
-  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(true); // Start with loading true
   
   // Fetch actual completed sessions from database
   useEffect(() => {
     const fetchCompletedSessions = async () => {
       if (!userId) {
         setFetchedCompletedSessions([]);
+        setIsLoadingSessions(false);
         return;
       }
 
       setIsLoadingSessions(true);
       try {
-        // Fetch all completed sessions (we'll filter by module later)
-        const completedSessionsData = await getUserCompletedSessions(userId, 50); // Get up to 50 most recent
+        // 1. Fetch ALL completed sessions (don't filter by context_module yet)
+        const completedSessionsData = await getUserCompletedSessions(userId, 50);
         
-        // Filter by current module
-        const moduleCompletedSessions = completedSessionsData.filter(
-          cs => cs.context_module === module.id
+        if (completedSessionsData.length === 0) {
+          setFetchedCompletedSessions([]);
+          return;
+        }
+
+        // 2. Get unique session IDs from all completed sessions
+        const uniqueSessionIds = Array.from(
+          new Set(completedSessionsData.map(cs => cs.session_id))
         );
 
-        // Fetch session details for each completed session
-        const sessionPromises = moduleCompletedSessions.map(async (cs) => {
-          const session = await getSessionById(cs.session_id);
-          if (!session) return null;
-          
-          return {
-            id: cs.id || `${module.id}-completed-${cs.session_id}-${cs.completed_date}`,
-            session: session,
-            completedDate: new Date(cs.completed_date || cs.created_at || Date.now()),
-          } as CompletedMeditation;
+        // 3. Batch fetch session_modalities for all unique sessions (1 query)
+        const { data: modalitiesData, error: modalitiesError } = await supabase
+          .from('session_modalities')
+          .select('session_id, modality')
+          .in('session_id', uniqueSessionIds);
+
+        if (modalitiesError) {
+          console.error('Error fetching session modalities:', modalitiesError);
+          setFetchedCompletedSessions([]);
+          return;
+        }
+
+        // 4. Create a map: session_id -> array of modules it belongs to
+        const sessionModulesMap = new Map<string, string[]>();
+        (modalitiesData || []).forEach(item => {
+          if (!sessionModulesMap.has(item.session_id)) {
+            sessionModulesMap.set(item.session_id, []);
+          }
+          sessionModulesMap.get(item.session_id)!.push(item.modality);
         });
 
-        const results = await Promise.all(sessionPromises);
-        const validSessions = results.filter((item): item is CompletedMeditation => item !== null);
+        // 5. Batch fetch session details for all unique sessions (1 query)
+        const { data: sessionsData, error: sessionsError } = await supabase
+          .from('sessions')
+          .select('id, title, duration_min, technique, description, why_it_works, audio_url, thumbnail_url, is_active')
+          .in('id', uniqueSessionIds)
+          .eq('is_active', true);
+
+        if (sessionsError) {
+          console.error('Error fetching sessions:', sessionsError);
+          setFetchedCompletedSessions([]);
+          return;
+        }
+
+        // 6. Create a map: session_id -> session details
+        const sessionsMap = new Map<string, any>();
+        (sessionsData || []).forEach(session => {
+          sessionsMap.set(session.id, {
+            id: session.id,
+            title: session.title,
+            durationMin: session.duration_min,
+            modality: session.technique,
+            goal: 'anxiety' as any,
+            description: session.description || undefined,
+            whyItWorks: session.why_it_works || undefined,
+            isRecommended: false,
+            isTutorial: false,
+          });
+        });
+
+        // 7. Filter: Include sessions that belong to current module (based on session_modalities)
+        // Use completed_date from completed_sessions for dates
+        const moduleCompletedSessions: CompletedMeditation[] = [];
+        const seenKeys = new Set<string>(); // Track seen keys to prevent duplicates
         
-        // Sort by completed date (most recent first) - most recent on the left
-        validSessions.sort((a, b) => b.completedDate.getTime() - a.completedDate.getTime());
+        for (const cs of completedSessionsData) {
+          const sessionModules = sessionModulesMap.get(cs.session_id) || [];
+          
+          // Count this session if it belongs to the current module
+          if (sessionModules.includes(module.id)) {
+            const session = sessionsMap.get(cs.session_id);
+            if (session) {
+              // Create a unique key - use cs.id if available, otherwise combine session_id, completed_date, and created_at for uniqueness
+              const uniqueKey = cs.id || `${module.id}-completed-${cs.session_id}-${cs.completed_date}-${cs.created_at || Date.now()}`;
+              
+              // Skip if we've already added this exact completion
+              if (!seenKeys.has(uniqueKey)) {
+                seenKeys.add(uniqueKey);
+                moduleCompletedSessions.push({
+                  id: uniqueKey,
+                  session: session,
+                  completedDate: new Date(cs.completed_date || cs.created_at || Date.now()),
+                });
+              }
+            }
+          }
+        }
+
+        // 8. Sort by completed_date (most recent first)
+        moduleCompletedSessions.sort((a, b) => b.completedDate.getTime() - a.completedDate.getTime());
         
-        // Limit to 6 most recent
-        setFetchedCompletedSessions(validSessions.slice(0, 6));
+        setFetchedCompletedSessions(moduleCompletedSessions);
       } catch (error) {
         console.error('Error fetching completed sessions:', error);
         setFetchedCompletedSessions([]);
@@ -285,9 +356,11 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
       'self-compassion': ['sleep', 'focus'],
     };
 
-    // Use fetched completed sessions from database (already sorted with most recent first)
-    // Most recent will appear on the left (first in array)
+    // Use all fetched completed sessions from database for counting (already sorted with most recent first)
     const completedSessions = fetchedCompletedSessions;
+    
+    // Limit to 6 most recent for display purposes only
+    const displaySessions = fetchedCompletedSessions.slice(0, 6);
 
     // For tomorrow session, we can keep using a placeholder from mock data for now
     const goals = relevantGoals[module.id as keyof typeof relevantGoals] || ['focus'];
@@ -303,13 +376,35 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
 
     return {
       completedSessions,
+      displaySessions,
       tomorrowSession,
     };
   }, [module, fetchedCompletedSessions]);
 
-  const { completedSessions, tomorrowSession } = roadmapData;
+  const { completedSessions, displaySessions, tomorrowSession } = roadmapData;
   // Use the recommended session passed as prop (from TodayScreen)
   const todayRecommendedSessionId = recommendedSession?.id;
+  
+  // Calculate number of sessions completed today
+  const todayCount = useMemo(() => {
+    const today = new Date();
+    return completedSessions.filter(item => {
+      return item.completedDate.toDateString() === today.toDateString();
+    }).length;
+  }, [completedSessions]);
+  
+  // Filter to only count one session per day for neuroadaptation
+  // We only need the count, so we just track unique dates
+  const uniqueDailySessionsCount = useMemo(() => {
+    const seenDates = new Set<string>();
+    
+    for (const session of completedSessions) {
+      const dateKey = session.completedDate.toDateString();
+      seenDates.add(dateKey);
+    }
+    
+    return seenDates.size;
+  }, [completedSessions]);
   
   const titleText = `${module.title} Journey`;
   // Use smaller font for longer titles
@@ -423,6 +518,29 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
     glow();
   }, [glowAnim]);
 
+  useEffect(() => {
+    // Pulse animation for scroll arrow (scale)
+    const pulseArrow = () => {
+      Animated.sequence([
+        Animated.timing(scrollArrowScale, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scrollArrowScale, {
+          toValue: 0,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ]).start(() => pulseArrow());
+    };
+    
+    pulseArrow();
+    return () => {
+      scrollArrowScale.stopAnimation();
+    };
+  }, [scrollArrowScale]);
+
   const completedSectionY = useRef(0);
   const todaySectionY = useRef(0);
   const tomorrowSectionY = useRef(0);
@@ -455,7 +573,9 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
           <Text style={styles.sectionTitle}>Recent Sessions</Text>
           <Text style={styles.sectionSubtitle}>
             {completedSessions.length > 0 
-              ? `${completedSessions.length} completed ${completedSessions.length === 1 ? 'session' : 'sessions'}`
+              ? completedSessions.length > 6
+                ? `Showing 6 most recent of ${completedSessions.length} sessions`
+                : `${completedSessions.length} completed ${completedSessions.length === 1 ? 'session' : 'sessions'}`
               : 'Your completed meditations will appear here'}
           </Text>
         </View>
@@ -530,7 +650,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
               }}
               scrollEventThrottle={16}
             >
-              {completedSessions.map(item => (
+              {displaySessions.map(item => (
                 <TouchableOpacity
                   key={item.id}
                   style={styles.completedCard}
@@ -556,6 +676,14 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
                   styles.scrollArrow,
                   {
                     opacity: scrollArrowOpacity,
+                    transform: [
+                      {
+                        scale: scrollArrowScale.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [1, 1.1],
+                        }),
+                      },
+                    ],
                   },
                 ]}
                 pointerEvents="none"
@@ -623,39 +751,54 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
               style={[
                 styles.todayCard,
                 { 
-                  borderColor: module.color, 
-                  backgroundColor: isCompleted ? completionBackgroundColor : '#F7F9FF' 
+                  borderWidth: 0,
+                  backgroundColor: '#FFFFFF'
                 },
               ]}
             >
+              {/* Header with badge */}
               <View style={styles.todayCardHeader}>
-                <Text style={styles.todayCardDuration}>
-                  {recommendedSession.durationMin} min • {recommendedSession.modality}
-                </Text>
+                <View style={[styles.recommendedBadge, { backgroundColor: module.color }]}>
+                  <Text style={styles.recommendedBadgeText}>
+                    Recommended for you today
+                  </Text>
+                </View>
               </View>
-              <Text
-                style={[styles.todayCardTitle, { color: module.color }]}
-                numberOfLines={2}
-              >
-                {recommendedSession.title}
-              </Text>
-              <View style={[styles.todayCardFooter, isCompleted && styles.todayCardFooterCompleted]}>
+              
+              {/* Content area with text and play button */}
+              <View style={styles.todayCardContentWrapper}>
+                <View style={styles.todayCardTextSection}>
+                  <Text
+                    style={[styles.todayCardTitle, { color: module.color }]}
+                    numberOfLines={2}
+                  >
+                    {recommendedSession.title}
+                  </Text>
+                  <Text style={styles.todayCardDuration}>
+                    {recommendedSession.durationMin} min • {recommendedSession.modality}
+                  </Text>
+                </View>
+                
+                {/* Play button or checkmark positioned center-right */}
                 {isCompleted ? (
                   <View style={styles.todayCompletedButton}>
                     <Text style={styles.todayCompletedCheckmark}>✓</Text>
                   </View>
                 ) : (
-                  <>
-                    <Text style={styles.todayCardCTA}>Begin session</Text>
-                    <View style={[styles.todayPlayButton, { backgroundColor: module.color }]}>
-                      <Text style={styles.todayPlayIcon}>▶</Text>
-                    </View>
-                  </>
+                  <View style={[styles.todayPlayButton, { backgroundColor: module.color }]}>
+                    <Text style={styles.todayPlayIcon}>▶</Text>
+                  </View>
                 )}
               </View>
-              <Text style={styles.recommendedCopy}>
-                Recommended for you today
-              </Text>
+              
+              {/* Footer with CTA */}
+              <View style={[styles.todayCardFooter, isCompleted && styles.todayCardFooterCompleted]}>
+                {isCompleted ? (
+                  <Text style={styles.todayCardCompletedText}>You already completed this session today.</Text>
+                ) : (
+                  <Text style={styles.todayCardCTA}>Tap to begin session</Text>
+                )}
+              </View>
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -683,7 +826,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
                 <Text style={styles.tomorrowIconText}>🔒</Text>
               </View>
               <View style={styles.tomorrowLockedContent}>
-                <Text style={styles.tomorrowLockedTitle}>Locked</Text>
+                <Text style={styles.tomorrowLockedTitle}>Feature coming soon</Text>
                 <Text style={styles.tomorrowLockedDescription}>
                   Complete today's sessions to see what's coming next
                 </Text>
@@ -720,24 +863,18 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
           <Text style={styles.sectionTitle}>Tomorrow</Text>
           <Text style={styles.sectionSubtitle}>Preview of what's coming next</Text>
         </View>
-        <View style={styles.tomorrowCard}>
+        <View style={[styles.tomorrowCard, styles.tomorrowCardLocked]}>
           <View style={styles.tomorrowHeader}>
-            <View style={[styles.tomorrowIcon, { backgroundColor: module.color }]}>
-              <Text style={styles.tomorrowIconText}>➡︎</Text>
+            <View style={[styles.tomorrowIcon, styles.tomorrowIconLocked, { backgroundColor: '#D1D1D6' }]}>
+              <Text style={styles.tomorrowIconText}>🔒</Text>
             </View>
-            <View>
-              <Text style={styles.tomorrowLabel}>Up next</Text>
-              <Text style={styles.tomorrowTitle} numberOfLines={1}>
-                {tomorrowSession.title}
+            <View style={styles.tomorrowLockedContent}>
+              <Text style={styles.tomorrowLockedTitle}>Feature coming soon</Text>
+              <Text style={styles.tomorrowLockedDescription}>
+                Complete today's sessions to see what's coming next
               </Text>
             </View>
           </View>
-          <Text style={styles.tomorrowMeta}>
-            {tomorrowSession.durationMin} min • {tomorrowSession.modality}
-          </Text>
-          <Text style={styles.tomorrowDescription}>
-            Keep momentum going tomorrow to stay aligned with your {module.title} path.
-          </Text>
         </View>
       </Animated.View>
     );
@@ -755,54 +892,63 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   }, []);
 
   const renderTimelinePage = () => {
-    const totalSessions = userProgress.sessionDeltas.length;
+    // Use filtered count (one per day) for neuroadaptation progress
+    const totalSessions = uniqueDailySessionsCount;
+    
+    // Calculate average sessions required based on time ranges
+    // 5-7 daily sessions: (5+7)/2 = 6
+    // 3-4 weeks of daily sessions: (3*7 + 4*7)/2 = (21+28)/2 = 24.5, rounded to 25
+    // 6-8 Weeks of daily sessions: (6*7 + 8*7)/2 = (42+56)/2 = 49
+    // 3 Months of daily sessions: 3 * 30.44 = 91.32, rounded to 91
+    // 6 Months of daily sessions: 6 * 30.44 = 182.64, rounded to 183
+    // 1 Year of daily sessions: 365
     
     // Calculate progress for each milestone based on sessions completed
     const milestones = [
       {
         id: 'week1',
         title: 'Reduced amygdala activity',
-        timeRange: '0–1 Week',
-        sessionsRequired: 7,
+        timeRange: '5-7 daily sessions',
+        sessionsRequired: Math.round((5 + 7) / 2), // 6
         description: 'Lower acute stress reactivity. Heart rate decreases, parasympathetic activation increases. Improved attention for short periods.',
         whatYouFeel: 'Slight calm after sessions, more aware of anxious thoughts, some restlessness (very normal at start)',
       },
       {
         id: 'weeks2-4',
         title: 'Increased prefrontal cortex regulation',
-        timeRange: '2–4 Weeks',
-        sessionsRequired: 28,
+        timeRange: '3-4 weeks of daily sessions',
+        sessionsRequired: Math.round((3 * 7 + 4 * 7) / 2), // 25
         description: 'Better impulse control & emotional regulation. Reduced cortisol baseline levels. Thicker hippocampal gray matter begins.',
         whatYouFeel: 'Anxiety decreases slightly but consistently, better sleep onset, you notice reactions before they happen, mood is more stable',
       },
       {
         id: 'weeks6-8',
         title: 'Amygdala density reduction',
-        timeRange: '6–8 Weeks',
-        sessionsRequired: 56,
+        timeRange: '6–8 Weeks of daily sessions',
+        sessionsRequired: Math.round((6 * 7 + 8 * 7) / 2), // 49
         description: 'Amygdala shrinks in density. Hippocampus increases (memory + learning). Default Mode Network activity decreases → Less rumination.',
         whatYouFeel: 'Noticeably lower anxiety baseline, stress hits you less intensely, emotional resilience increases, mind wandering drops',
       },
       {
         id: '3months',
         title: 'Stronger frontal-limbic connectivity',
-        timeRange: '3 Months',
-        sessionsRequired: 90,
+        timeRange: '3 Months of daily sessions',
+        sessionsRequired: Math.round(3 * 30.44), // 91
         description: 'You regulate emotions automatically. Significant improvements in working memory. Lower blood pressure in many adults.',
         whatYouFeel: 'Anxiety triggers don\'t hit as hard, you handle conflict more smoothly, you recover from stress much faster',
       },
       {
         id: '6months',
         title: 'Permanent structural changes',
-        timeRange: '6 Months',
-        sessionsRequired: 180,
+        timeRange: '6 Months of daily sessions',
+        sessionsRequired: Math.round(6 * 30.44), // 183
         description: 'Permanent structural changes in prefrontal cortex, anterior cingulate cortex, and insula. DMN quieting becomes your default.',
         whatYouFeel: 'Overall anxiety level drops 30–40% on average, you begin feeling "centered" most days, your mind feels clearer',
       },
       {
         id: '1year',
         title: 'Deep neural transformation',
-        timeRange: '1 Year',
+        timeRange: '1 Year of daily sessions',
         sessionsRequired: 365,
         description: 'Gamma-wave activity increases. Massive increases in cortical thickness. Stronger white-matter pathways for emotional regulation.',
         whatYouFeel: 'Deep, stable calm under most conditions, fast recovery from stress, very strong "observer mind" — thoughts don\'t control you anymore',
@@ -816,24 +962,36 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.timelineContainer}>
-          {milestones.map((milestone, index) => {
-            const progress = Math.min(100, (totalSessions / milestone.sessionsRequired) * 100);
-            const isUnlocked = totalSessions >= milestone.sessionsRequired;
-            const isPartiallyComplete = totalSessions > 0 && totalSessions < milestone.sessionsRequired;
-            
-            return (
-              <NeuroadaptationCard
-                key={milestone.id}
-                milestone={milestone}
-                progress={progress}
-                isUnlocked={isUnlocked}
-                isPartiallyComplete={isPartiallyComplete}
-                totalSessions={totalSessions}
-                index={index}
-                accentColor={module.color}
-              />
-            );
-          })}
+          {isLoadingSessions ? (
+            // Show shimmer loading for all 6 milestones
+            <>
+              <ShimmerNeuroadaptationCard />
+              <ShimmerNeuroadaptationCard />
+              <ShimmerNeuroadaptationCard />
+              <ShimmerNeuroadaptationCard />
+              <ShimmerNeuroadaptationCard />
+              <ShimmerNeuroadaptationCard />
+            </>
+          ) : (
+            milestones.map((milestone, index) => {
+              const progress = Math.min(100, (totalSessions / milestone.sessionsRequired) * 100);
+              const isUnlocked = totalSessions >= milestone.sessionsRequired;
+              const isPartiallyComplete = totalSessions > 0 && totalSessions < milestone.sessionsRequired;
+              
+              return (
+                <NeuroadaptationCard
+                  key={milestone.id}
+                  milestone={milestone}
+                  progress={progress}
+                  isUnlocked={isUnlocked}
+                  isPartiallyComplete={isPartiallyComplete}
+                  totalSessions={totalSessions}
+                  index={index}
+                  accentColor={module.color}
+                />
+              );
+            })
+          )}
         </View>
       </ScrollView>
     );
@@ -852,17 +1010,26 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
       }}
     >
       <View style={styles.contentWrapper} onLayout={handleContentLayout}>
-        <View style={[styles.summaryCard, { borderColor: module.color }]}>
-          <Text style={styles.summaryTitle}>{module.title} Progress</Text>
-          <View style={styles.summaryStatsRow}>
-            <View style={styles.summaryStat}>
-              <Text style={styles.summaryStatValue}>{completedSessions.length}</Text>
-              <Text style={styles.summaryStatLabel}>Completed</Text>
-            </View>
-            <View style={styles.summaryDivider} />
-            <View style={styles.summaryStat}>
-              <Text style={styles.summaryStatValue}>{recommendedSession ? 1 : 0}</Text>
-              <Text style={styles.summaryStatLabel}>Today</Text>
+        <View
+          style={[styles.section, styles.sectionFirst]}
+        >
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{module.title} Progress</Text>
+            <Text style={styles.sectionSubtitle}>
+              Track your journey and milestones
+            </Text>
+          </View>
+          <View style={[styles.summaryCard, { borderColor: module.color }]}>
+            <View style={styles.summaryStatsRow}>
+              <View style={styles.summaryStat}>
+                <Text style={styles.summaryStatValue}>{completedSessions.length}</Text>
+                <Text style={styles.summaryStatLabel}>Completed</Text>
+              </View>
+              <View style={styles.summaryDivider} />
+              <View style={styles.summaryStat}>
+                <Text style={styles.summaryStatValue}>{todayCount}</Text>
+                <Text style={styles.summaryStatLabel}>Today</Text>
+              </View>
             </View>
           </View>
         </View>
@@ -1064,7 +1231,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 14,
-    borderWidth: 2,
+    borderWidth: 1,
   },
   summaryTitle: {
     fontSize: 16,
@@ -1130,20 +1297,29 @@ const styles = StyleSheet.create({
   },
   scrollArrow: {
     position: 'absolute',
-    right: -2,
+    right: -22,
     top: '50%',
-    marginTop: -20,
-    width: 40,
-    height: 40,
+    marginTop: -16,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'center',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     zIndex: 10,
-    paddingRight: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   scrollArrowText: {
-    fontSize: 40,
-    color: '#000000',
+    fontSize: 32,
+    color: '#FFFFFF',
     fontWeight: '300',
+    textAlign: 'center',
+    lineHeight: 32,
+    marginLeft: 2,
   },
   completedCard: {
     backgroundColor: '#FFFFFF',
@@ -1209,12 +1385,14 @@ const styles = StyleSheet.create({
   },
   todayCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 14,
-    paddingBottom: 12,
-    borderWidth: 2,
-    borderColor: '#F2F2F7',
+    borderRadius: 20,
+    padding: 18,
     position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
   },
   todayCardCheckmark: {
     position: 'absolute',
@@ -1240,91 +1418,119 @@ const styles = StyleSheet.create({
   },
   todayCardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  todayCardContentWrapper: {
+    flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
+    position: 'relative',
   },
-  todayCardBadge: {
-    borderRadius: 10,
+  todayCardTextSection: {
+    flex: 1,
+    marginRight: 10,
+  },
+  todayCardTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1D1D1F',
+    fontFamily: 'System',
+    marginBottom: 6,
+    lineHeight: 26,
+    letterSpacing: -0.4,
+  },
+  todayCardDuration: {
+    fontSize: 14,
+    color: '#8E8E93',
+    fontFamily: 'System',
+    marginTop: 0,
+    lineHeight: 20,
+    letterSpacing: 0.1,
+  },
+  recommendedBadge: {
+    borderRadius: 12,
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  todayCardBadgeText: {
-    fontSize: 12,
+  recommendedBadgeText: {
+    fontSize: 9,
     fontWeight: '700',
     color: '#FFFFFF',
     fontFamily: 'System',
-  },
-  todayCardDuration: {
-    fontSize: 13,
-    color: '#8E8E93',
-    fontFamily: 'System',
-  },
-  todayCardTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#1D1D1F',
-    fontFamily: 'System',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
   todayCardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 12,
-    marginBottom: 0,
+    justifyContent: 'flex-start',
+    marginTop: 0,
+    paddingTop: 0,
   },
   todayCardFooterCompleted: {
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
+    borderTopWidth: 0,
+    paddingTop: 0,
+  },
+  todayCardCompletedText: {
+    fontSize: 14,
+    fontWeight: '400',
+    fontStyle: 'italic',
+    color: '#8E8E93',
+    letterSpacing: -0.2,
   },
   todayCardCTA: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '400',
+    fontStyle: 'italic',
     color: '#1D1D1F',
-    fontFamily: 'System',
+    letterSpacing: -0.2,
   },
   todayPlayButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+    alignSelf: 'center',
   },
   todayPlayIcon: {
-    fontSize: 15,
+    fontSize: 18,
     color: '#FFFFFF',
     fontWeight: '700',
     fontFamily: 'System',
-    marginLeft: 1,
+    marginLeft: 2,
   },
   todayCompletedButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: '#34c759',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+    alignSelf: 'center',
   },
   todayCompletedCheckmark: {
-    fontSize: 18,
+    fontSize: 22,
     color: '#ffffff',
     fontWeight: 'bold',
-  },
-  recommendedCopy: {
-    marginTop: 0,
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#1D1D1F',
-    fontFamily: 'System',
   },
   tomorrowCard: {
     backgroundColor: '#FFFFFF',

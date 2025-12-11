@@ -10,20 +10,21 @@ import {
   Easing,
 } from 'react-native';
 import { theme } from '../styles/theme';
-import { useStore } from '../store/useStore';
-import { mentalHealthModules } from '../data/modules';
+import { mentalHealthModules, getCategoryColor, categoryColors } from '../data/modules';
+import { CompletedSession } from '../services/progressService';
 
 const { width } = Dimensions.get('window');
 
 interface InteractiveCalendarProps {
+  completedSessions?: CompletedSession[];
   onDateSelect?: (date: Date) => void;
 }
 
 export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
+  completedSessions = [],
   onDateSelect,
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const userProgress = useStore(state => state.userProgress);
   
   // Animation refs
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -32,16 +33,33 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
   const leftButtonScale = useRef(new Animated.Value(1)).current;
   const rightButtonScale = useRef(new Animated.Value(1)).current;
 
-  // Helper function to get module color by ID
-  const getModuleColor = (moduleId: string): string => {
+  // Helper function to get category from moduleId
+  const getCategoryFromModuleId = (moduleId: string | undefined): 'disorder' | 'wellness' | 'skill' | 'other' => {
+    if (!moduleId) return 'other';
     const module = mentalHealthModules.find(m => m.id === moduleId);
-    return module?.color || theme.colors.primary;
+    return module?.category || 'other';
   };
 
-  // Get completed meditation for a specific date
-  const getCompletedMeditation = (date: Date) => {
+  // Helper function to get category color
+  const getCategoryColorForCalendar = (category: 'disorder' | 'wellness' | 'skill' | 'other'): string => {
+    if (category === 'other') return theme.colors.primary;
+    return getCategoryColor(category);
+  };
+
+  // Get all unique categories for completed meditations on a specific date
+  const getCompletedCategoriesForDate = (date: Date): Array<'disorder' | 'wellness' | 'skill' | 'other'> => {
     const dateStr = date.toISOString().split('T')[0];
-    return userProgress.sessionDeltas.find(session => session.date === dateStr);
+    // Get all entries for this date
+    const entriesForDate = completedSessions.filter(entry => entry.completed_date === dateStr);
+    
+    // Extract unique categories
+    const uniqueCategories = Array.from(
+      new Set(
+        entriesForDate.map(entry => getCategoryFromModuleId(entry.context_module))
+      )
+    ) as Array<'disorder' | 'wellness' | 'skill' | 'other'>;
+    
+    return uniqueCategories;
   };
 
   // Check if there are any meditations in the current month
@@ -49,16 +67,21 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     
-    return userProgress.sessionDeltas.some(session => {
-      const sessionDate = new Date(session.date);
+    return completedSessions.some(entry => {
+      const sessionDate = new Date(entry.completed_date);
       return sessionDate.getFullYear() === year && sessionDate.getMonth() === month;
     });
   };
 
-  // Get module name by ID
-  const getModuleName = (moduleId: string): string => {
-    const module = mentalHealthModules.find(m => m.id === moduleId);
-    return module?.title || moduleId;
+  // Get category display name
+  const getCategoryDisplayName = (category: 'disorder' | 'wellness' | 'skill' | 'other'): string => {
+    const categoryNames = {
+      disorder: 'Disorder',
+      wellness: 'Wellness',
+      skill: 'Skill',
+      other: 'Other',
+    };
+    return categoryNames[category];
   };
 
   // Get all dates for current month
@@ -186,7 +209,7 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
               return <View key={`empty-${index}`} style={styles.emptyCell} />;
             }
             
-            const completedMeditation = getCompletedMeditation(date);
+            const completedCategories = getCompletedCategoriesForDate(date);
             const isTodayDate = isToday(date);
             
             return (
@@ -206,13 +229,21 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
                   {date.getDate()}
                 </Text>
                 
-                {completedMeditation && completedMeditation.moduleId && (
-                  <View 
-                    style={[
-                      styles.meditationDot,
-                      { backgroundColor: getModuleColor(completedMeditation.moduleId) }
-                    ]}
-                  />
+                {completedCategories.length > 0 && (
+                  <View style={styles.dotsContainer}>
+                    {completedCategories.map((category, dotIndex) => (
+                      <View
+                        key={`${category}-${dotIndex}`}
+                        style={[
+                          styles.meditationDot,
+                          dotIndex > 0 && styles.meditationDotSpacing,
+                          { 
+                            backgroundColor: getCategoryColorForCalendar(category),
+                          }
+                        ]}
+                      />
+                    ))}
+                  </View>
                 )}
               </TouchableOpacity>
             );
@@ -237,20 +268,19 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
   };
 
   const renderMeditationLegend = () => {
-    // Get unique modules from completed meditations in the CURRENT MONTH only
+    // Get unique categories from completed meditations in the CURRENT MONTH only
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     
-    const completedModules = userProgress.sessionDeltas
-      .filter(session => {
-        if (!session.moduleId) return false;
-        const sessionDate = new Date(session.date);
+    const completedCategories = completedSessions
+      .filter(entry => {
+        const sessionDate = new Date(entry.completed_date);
         return sessionDate.getFullYear() === year && sessionDate.getMonth() === month;
       })
-      .map(session => session.moduleId!)
-      .filter((value, index, self) => self.indexOf(value) === index);
+      .map(entry => getCategoryFromModuleId(entry.context_module))
+      .filter((value, index, self) => self.indexOf(value) === index) as Array<'disorder' | 'wellness' | 'skill' | 'other'>;
     
-    if (completedModules.length === 0) {
+    if (completedCategories.length === 0) {
       return null;
     }
     
@@ -258,15 +288,17 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
       <View style={styles.legendContainer}>
         <Text style={styles.legendTitle}>Meditations Completed:</Text>
         <View style={styles.legendItems}>
-          {completedModules.map((moduleId) => (
-            <View key={moduleId} style={styles.legendItem}>
+          {completedCategories.map((category) => (
+            <View key={category} style={styles.legendItem}>
               <View 
                 style={[
                   styles.legendDot,
-                  { backgroundColor: getModuleColor(moduleId) }
+                  { backgroundColor: getCategoryColorForCalendar(category) }
                 ]}
               />
-              <Text style={styles.legendText}>{getModuleName(moduleId)}</Text>
+              <Text style={styles.legendText}>
+                {getCategoryDisplayName(category)}
+              </Text>
             </View>
           ))}
         </View>
@@ -344,6 +376,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    minHeight: 450, // Constant size to match shimmer skeleton
   },
   header: {
     flexDirection: 'row',
@@ -430,9 +463,16 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
     fontWeight: '600',
   },
-  meditationDot: {
+  dotsContainer: {
     position: 'absolute',
     bottom: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    maxWidth: '100%',
+  },
+  meditationDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
@@ -441,6 +481,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 1,
     elevation: 1,
+  },
+  meditationDotSpacing: {
+    marginLeft: 4, // Spacing between multiple dots
   },
   legendContainer: {
     marginBottom: 16,

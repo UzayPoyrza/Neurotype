@@ -116,32 +116,7 @@ export const ExploreScreen: React.FC = () => {
   }, []);
 
   // Define filter categories for top nav pill filters
-  const filterCategories: FilterCategory[] = [
-    {
-      id: 'modality',
-      label: 'Modality',
-      multiSelect: false,
-      options: [
-        { id: 'all', label: 'All Modalities' },
-        { id: 'sound', label: 'Sound', badge: 12 },
-        { id: 'movement', label: 'Movement', badge: 8 },
-        { id: 'mindfulness', label: 'Mindfulness', badge: 15 },
-        { id: 'visualization', label: 'Visualization', badge: 9 },
-      ],
-    },
-    {
-      id: 'goal',
-      label: 'Goal',
-      multiSelect: true,
-      options: [
-        { id: 'all', label: 'All Goals' },
-        { id: 'anxiety', label: 'Anxiety Relief', badge: 18 },
-        { id: 'focus', label: 'Focus & Clarity', badge: 14 },
-        { id: 'sleep', label: 'Better Sleep', badge: 11 },
-        { id: 'stress', label: 'Stress Reduction', badge: 16 },
-      ],
-    },
-  ];
+  const filterCategories: FilterCategory[] = [];
 
   // Get liked sessions from database
   const likedSessions = allSessions.filter(session => likedSessionIds.includes(session.id));
@@ -416,7 +391,9 @@ export const ExploreScreen: React.FC = () => {
                           </Text>
                           <Text style={[
                             styles.moduleDescription,
-                            styles.pinnedModuleDescription
+                            ('isLikedMeditations' in module && module.isLikedMeditations) 
+                              ? styles.likedMeditationsDescription 
+                              : styles.pinnedModuleDescription
                           ]} numberOfLines={2}>
                             {module.description}
                           </Text>
@@ -454,7 +431,12 @@ export const ExploreScreen: React.FC = () => {
                           <Text style={styles.moduleTitle} numberOfLines={1} ellipsizeMode="tail">
                             {module.title}
                           </Text>
-                          <Text style={styles.moduleDescription} numberOfLines={2}>
+                          <Text style={[
+                            styles.moduleDescription,
+                            ('isLikedMeditations' in module && module.isLikedMeditations) 
+                              ? styles.likedMeditationsDescription 
+                              : null
+                          ]} numberOfLines={2}>
                             {module.description}
                           </Text>
                           
@@ -666,6 +648,12 @@ const styles = StyleSheet.create({
     color: '#333333',
     fontWeight: '500',
     lineHeight: 17,
+  },
+  likedMeditationsDescription: {
+    fontSize: 12,
+    color: '#8e8e93',
+    fontWeight: '400',
+    lineHeight: 16,
   },
   pinBadge: {
     backgroundColor: '#ffffff',

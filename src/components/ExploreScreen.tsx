@@ -43,7 +43,7 @@ export const ExploreScreen: React.FC<ExploreScreenProps> = ({
   const scrollViewRef = useRef<ScrollView>(null);
   const [scrollViewHeight, setScrollViewHeight] = useState(0);
   const [contentHeight, setContentHeight] = useState(0);
-  const headerHeight = 180; // TopShell (60) + RevealBar (120)
+  const headerHeight = 140; // TopShell (60) + RevealBar (80)
   
   const { scrollY, handleScroll, handleTouchStart, handleTouchEnd } = useInstagramScrollDetection({
     onScrollEnd: (direction) => {
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    paddingTop: 180, // Account for TopShell (60) + RevealBar (120)
+    paddingTop: 140, // Account for TopShell (60) + RevealBar (80)
   },
   contentContainer: {
     flexGrow: 1,

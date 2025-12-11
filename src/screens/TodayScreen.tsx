@@ -16,10 +16,12 @@ import { InfoBox } from '../components/InfoBox';
 import { MeditationDetailModal } from '../components/MeditationDetailModal';
 import { MergedCard } from '../components/MergedCard';
 import { LineGraphIcon } from '../components/icons/LineGraphIcon';
+import { ShimmerSessionCard, ShimmerAlternativeSessionCard, ShimmerProgressPathCard } from '../components/ShimmerSkeleton';
 import { ensureDailyRecommendations, getDailyRecommendations } from '../services/recommendationService';
 import { useUserId } from '../hooks/useUserId';
 import { getSessionById } from '../services/sessionService';
-import { getCompletedSessionsByDateRange, isSessionCompleted } from '../services/progressService';
+import { getCompletedSessionsByDateRange, isSessionCompleted, getUserCompletedSessions } from '../services/progressService';
+import { supabase } from '../services/supabase';
 
 type SessionState = 'not_started' | 'in_progress' | 'completed' | 'rating';
 
@@ -66,6 +68,12 @@ export const TodayScreen: React.FC = () => {
   // Daily recommendations state
   const [todaySessions, setTodaySessions] = useState<Session[]>([]);
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(true);
+  
+  // Completed sessions for preview
+  const [fetchedCompletedSessions, setFetchedCompletedSessions] = useState<Array<Session & { completedDate: string }>>([]);
+  // All completed sessions for neuroadaptation counting (not limited to 3)
+  const [allCompletedSessionsForCounting, setAllCompletedSessionsForCounting] = useState<Array<Session & { completedDate: string }>>([]);
+  const [isLoadingCompletedSessions, setIsLoadingCompletedSessions] = useState(true);
   
   // Animation refs - simplified to avoid native driver conflicts
   const heroCardScale = useRef(new Animated.Value(1)).current;
@@ -143,43 +151,53 @@ export const TodayScreen: React.FC = () => {
             return;
           }
           
+          // Set loading state when module changes
+          setIsLoadingRecommendations(true);
           recommendationCheckInProgressRef.current[selectedModuleId] = true;
           
           // Check if recommendations exist first, don't force regenerate
           ensureDailyRecommendations(userId, selectedModuleId, false).then(result => {
-            recommendationCheckInProgressRef.current[selectedModuleId] = false;
             if (result.success) {
               // Refetch recommendations (whether they were just generated or already existed)
               const refetchRecommendations = async () => {
-                const recommendations = await getDailyRecommendations(userId, selectedModuleId);
-                const sessionPromises = recommendations.map(async (rec) => {
-                  const session = await getSessionById(rec.session_id);
-                  if (session) {
-                    return {
-                      ...session,
-                      isRecommended: rec.is_recommended,
-                      adaptiveReason: rec.is_recommended ? 'Recommended for you' : 'Alternative option',
-                    };
+                try {
+                  const recommendations = await getDailyRecommendations(userId, selectedModuleId);
+                  const sessionPromises = recommendations.map(async (rec) => {
+                    const session = await getSessionById(rec.session_id);
+                    if (session) {
+                      return {
+                        ...session,
+                        isRecommended: rec.is_recommended,
+                        adaptiveReason: rec.is_recommended ? 'Recommended for you' : 'Alternative option',
+                      };
+                    }
+                    return null;
+                  });
+                  const sessions = (await Promise.all(sessionPromises)).filter(
+                    (s): s is Session => s !== null
+                  );
+                  
+                  // Check which recommended sessions are completed today (from cache)
+                  // Note: We don't re-mark sessions here - syncTodayCompletedSessionsFromDatabase already
+                  // populated the cache on app open. We just check the cache to show checkmarks.
+                  const today = new Date().toISOString().split('T')[0];
+                  console.log('✅ [TodayScreen] Checking completed sessions from cache after module change:', today);
+                  
+                  for (const session of sessions) {
+                    const completed = isSessionCompletedToday(selectedModuleId, session.id, today);
+                    if (completed) {
+                      console.log('✅ [TodayScreen] Session completed today (from cache):', session.id, session.title);
+                    }
                   }
-                  return null;
-                });
-                const sessions = (await Promise.all(sessionPromises)).filter(
-                  (s): s is Session => s !== null
-                );
-                
-                // Check which recommended sessions are completed today
-                const today = new Date().toISOString().split('T')[0];
-                console.log('✅ [TodayScreen] Checking completed sessions for today after module change:', today);
-                
-                for (const session of sessions) {
-                  const completed = await isSessionCompleted(userId, session.id, today);
-                  if (completed) {
-                    console.log('✅ [TodayScreen] Session completed today:', session.id, session.title);
-                    await markSessionCompletedToday(selectedModuleId, session.id, today);
-                  }
+                  
+                  setTodaySessions(sessions);
+                } catch (error) {
+                  console.error('❌ [TodayScreen] Error refetching recommendations:', error);
+                  setTodaySessions([]);
+                } finally {
+                  setIsLoadingRecommendations(false);
+                  recommendationCheckInProgressRef.current[selectedModuleId] = false;
                 }
-                
-                setTodaySessions(sessions);
               };
               
               if (result.generated) {
@@ -191,10 +209,12 @@ export const TodayScreen: React.FC = () => {
               refetchRecommendations();
             } else {
               console.error('❌ [TodayScreen] Failed to ensure recommendations:', result.error);
+              setIsLoadingRecommendations(false);
               recommendationCheckInProgressRef.current[selectedModuleId] = false;
             }
           }).catch((error) => {
             console.error('❌ [TodayScreen] Error in ensureDailyRecommendations:', error);
+            setIsLoadingRecommendations(false);
             recommendationCheckInProgressRef.current[selectedModuleId] = false;
           });
         }
@@ -295,9 +315,9 @@ export const TodayScreen: React.FC = () => {
       setIsLoadingRecommendations(true);
       
       // Prevent duplicate checks if one is already in progress
+      // Don't clear loading state here - let the module change handler manage it
       if (recommendationCheckInProgressRef.current[selectedModuleId]) {
         console.log('⏳ [TodayScreen] Recommendation check already in progress, skipping...');
-        setIsLoadingRecommendations(false);
         return;
       }
       
@@ -344,17 +364,17 @@ export const TodayScreen: React.FC = () => {
         
         // Only check completed sessions if recommendations were not regenerated (already existed)
         // This means the recommendations are stable and we should check completion status
+        // Note: We don't re-mark sessions here - syncTodayCompletedSessionsFromDatabase already
+        // populated the cache on app open. We just check the cache to show checkmarks.
         if (!recResult.generated) {
           const today = new Date().toISOString().split('T')[0];
-          console.log('✅ [TodayScreen] Recommendations already exist, checking completed sessions for today:', today);
+          console.log('✅ [TodayScreen] Recommendations already exist, checking completion status from cache');
           
-          // Check each recommended session if it's completed today
+          // Check each recommended session if it's completed today (from cache)
           for (const session of sessions) {
-            const completed = await isSessionCompleted(userId, session.id, today);
+            const completed = isSessionCompletedToday(selectedModuleId, session.id, today);
             if (completed) {
-              console.log('✅ [TodayScreen] Session completed today:', session.id, session.title);
-              // Mark as completed in store so UI shows checkmark
-              await markSessionCompletedToday(selectedModuleId, session.id, today);
+              console.log('✅ [TodayScreen] Session completed today (from cache):', session.id, session.title);
             }
           }
         } else {
@@ -372,6 +392,135 @@ export const TodayScreen: React.FC = () => {
     };
 
     fetchRecommendations();
+  }, [userId, selectedModuleId]);
+
+  // Fetch completed sessions for preview (up to 3 most recent)
+  useEffect(() => {
+    const fetchCompletedSessions = async () => {
+      if (!userId) {
+        setFetchedCompletedSessions([]);
+        setAllCompletedSessionsForCounting([]);
+        setIsLoadingCompletedSessions(false);
+        return;
+      }
+
+      setIsLoadingCompletedSessions(true);
+      try {
+        // 1. Fetch ALL completed sessions (don't filter by context_module yet)
+        const completedSessionsData = await getUserCompletedSessions(userId, 50);
+        
+        if (completedSessionsData.length === 0) {
+          setFetchedCompletedSessions([]);
+          setAllCompletedSessionsForCounting([]);
+          return;
+        }
+
+        // 2. Get unique session IDs from all completed sessions
+        const uniqueSessionIds = Array.from(
+          new Set(completedSessionsData.map(cs => cs.session_id))
+        );
+
+        // 3. Batch fetch session_modalities for all unique sessions (1 query)
+        const { data: modalitiesData, error: modalitiesError } = await supabase
+          .from('session_modalities')
+          .select('session_id, modality')
+          .in('session_id', uniqueSessionIds);
+
+        if (modalitiesError) {
+          console.error('Error fetching session modalities:', modalitiesError);
+          setFetchedCompletedSessions([]);
+          setAllCompletedSessionsForCounting([]);
+          return;
+        }
+
+        // 4. Create a map: session_id -> array of modules it belongs to
+        const sessionModulesMap = new Map<string, string[]>();
+        (modalitiesData || []).forEach(item => {
+          if (!sessionModulesMap.has(item.session_id)) {
+            sessionModulesMap.set(item.session_id, []);
+          }
+          sessionModulesMap.get(item.session_id)!.push(item.modality);
+        });
+
+        // 5. Batch fetch session details for all unique sessions (1 query)
+        const { data: sessionsData, error: sessionsError } = await supabase
+          .from('sessions')
+          .select('id, title, duration_min, technique, description, why_it_works, audio_url, thumbnail_url, is_active')
+          .in('id', uniqueSessionIds)
+          .eq('is_active', true);
+
+        if (sessionsError) {
+          console.error('Error fetching sessions:', sessionsError);
+          setFetchedCompletedSessions([]);
+          setAllCompletedSessionsForCounting([]);
+          return;
+        }
+
+        // 6. Create a map: session_id -> session details
+        const sessionsMap = new Map<string, any>();
+        (sessionsData || []).forEach(session => {
+          sessionsMap.set(session.id, {
+            id: session.id,
+            title: session.title,
+            durationMin: session.duration_min,
+            modality: session.technique,
+            goal: 'anxiety' as any,
+            description: session.description || undefined,
+            whyItWorks: session.why_it_works || undefined,
+            isRecommended: false,
+            isTutorial: false,
+          });
+        });
+
+        // 7. Filter: Include sessions that belong to current module (based on session_modalities)
+        // Use completed_date from completed_sessions for dates
+        const moduleCompletedSessions: Array<Session & { completedDate: string }> = [];
+        const seenKeys = new Set<string>(); // Track seen keys to prevent duplicates
+        
+        for (const cs of completedSessionsData) {
+          const sessionModules = sessionModulesMap.get(cs.session_id) || [];
+          
+          // Count this session if it belongs to the current module
+          if (sessionModules.includes(selectedModuleId)) {
+            const session = sessionsMap.get(cs.session_id);
+            if (session) {
+              // Create a unique key combining session_id and completed_date
+              const completedDate = cs.completed_date || cs.created_at || new Date().toISOString().split('T')[0];
+              const uniqueKey = `${cs.session_id}-${completedDate}`;
+              
+              // Skip if we've already added this exact completion
+              if (!seenKeys.has(uniqueKey)) {
+                seenKeys.add(uniqueKey);
+                moduleCompletedSessions.push({
+                  ...session,
+                  completedDate: completedDate,
+                });
+              }
+            }
+          }
+        }
+
+        // 8. Sort by completed_date (most recent first)
+        moduleCompletedSessions.sort((a, b) => {
+          const dateA = new Date(a.completedDate).getTime();
+          const dateB = new Date(b.completedDate).getTime();
+          return dateB - dateA;
+        });
+        
+        // Store all sessions for neuroadaptation counting
+        setAllCompletedSessionsForCounting(moduleCompletedSessions);
+        // Limit to 3 for display only
+        setFetchedCompletedSessions(moduleCompletedSessions.slice(0, 3));
+      } catch (error) {
+        console.error('Error fetching completed sessions:', error);
+        setFetchedCompletedSessions([]);
+        setAllCompletedSessionsForCounting([]);
+      } finally {
+        setIsLoadingCompletedSessions(false);
+      }
+    };
+
+    fetchCompletedSessions();
   }, [userId, selectedModuleId]);
 
   const recommendedSession = todaySessions.find(s => s.isRecommended) || todaySessions[0];
@@ -401,27 +550,11 @@ export const TodayScreen: React.FC = () => {
     return mockSessions.filter(session => goals.includes(session.goal));
   }, [selectedModule]);
 
-  // Get actual completed sessions for this module from user progress
+  // Use fetched completed sessions from database (already limited to 3 most recent)
   const completedPreviewSessions = useMemo(() => {
-    const moduleCompletedSessions = userProgress.sessionDeltas
-      .filter(delta => delta.moduleId === selectedModuleId)
-      .map(delta => {
-        const session = mockSessions.find(s => s.id === delta.sessionId);
-        return session ? { ...session, completedDate: delta.date } : null;
-      })
-      .filter((session): session is NonNullable<typeof session> => session !== null)
-      .slice(0, 3);
-    
-    return moduleCompletedSessions;
-  }, [userProgress.sessionDeltas, selectedModuleId]);
+    return fetchedCompletedSessions;
+  }, [fetchedCompletedSessions]);
 
-  const upcomingPreviewSessions = useMemo(() => {
-    const todayIds = todaySessions.map(session => session.id);
-    return moduleSessionsForRoadmap
-      .filter(session => !todayIds.includes(session.id))
-      .slice(0, 2);
-  }, [moduleSessionsForRoadmap, todaySessions]);
-  
   // Check if today's meditation is completed
   const isTodayCompleted = useMemo(() => {
     return todaySessions.some(session => {
@@ -430,49 +563,73 @@ export const TodayScreen: React.FC = () => {
     });
   }, [todaySessions, selectedModuleId, isSessionCompletedToday]);
 
-  // Calculate timeline progress for preview
-  const timelineProgress = useMemo(() => {
-    const totalSessions = userProgress.sessionDeltas.length;
+  // Filter to only count one session per day for neuroadaptation
+  const uniqueDailySessionsCount = useMemo(() => {
+    const seenDates = new Set<string>();
     
-    const milestones = [
-      { sessionsRequired: 7, timeRange: '0–1 Week' },
-      { sessionsRequired: 28, timeRange: '2–4 Weeks' },
-      { sessionsRequired: 56, timeRange: '6–8 Weeks' },
-      { sessionsRequired: 90, timeRange: '3 Months' },
-      { sessionsRequired: 180, timeRange: '6 Months' },
-      { sessionsRequired: 365, timeRange: '1 Year' },
-    ];
-    
-    // Find current milestone - the one the user is working towards
-    let nextMilestone = milestones[0];
-    let isCompleted = false;
-    
-    for (let i = 0; i < milestones.length; i++) {
-      if (totalSessions < milestones[i].sessionsRequired) {
-        nextMilestone = milestones[i];
-        break;
-      }
-      // If we've completed all milestones, use the last one
-      if (i === milestones.length - 1 && totalSessions >= milestones[i].sessionsRequired) {
-        nextMilestone = milestones[i];
-        isCompleted = true;
-      }
+    for (const session of allCompletedSessionsForCounting) {
+      const dateKey = new Date(session.completedDate).toDateString();
+      seenDates.add(dateKey);
     }
     
-    const progress = isCompleted 
-      ? 100 
-      : Math.min(100, (totalSessions / nextMilestone.sessionsRequired) * 100);
-    const sessionsRemaining = isCompleted 
+    return seenDates.size;
+  }, [allCompletedSessionsForCounting]);
+
+  // Calculate timeline progress for preview
+  const timelineProgress = useMemo(() => {
+    const totalSessions = uniqueDailySessionsCount;
+    
+    // Calculate average sessions required based on time ranges (matching ModuleRoadmap)
+    const milestones = [
+      { title: 'Reduced amygdala activity', sessionsRequired: Math.round((5 + 7) / 2), timeRange: '5-7 daily sessions' }, // 6
+      { title: 'Increased prefrontal cortex regulation', sessionsRequired: Math.round((3 * 7 + 4 * 7) / 2), timeRange: '3-4 weeks of daily sessions' }, // 25
+      { title: 'Amygdala density reduction', sessionsRequired: Math.round((6 * 7 + 8 * 7) / 2), timeRange: '6–8 Weeks of daily sessions' }, // 49
+      { title: 'Stronger frontal-limbic connectivity', sessionsRequired: Math.round(3 * 30.44), timeRange: '3 Months of daily sessions' }, // 91
+      { title: 'Permanent structural changes', sessionsRequired: Math.round(6 * 30.44), timeRange: '6 Months of daily sessions' }, // 183
+      { title: 'Deep neural transformation', sessionsRequired: 365, timeRange: '1 Year of daily sessions' },
+    ];
+    
+    // Calculate progress for each milestone and find the highest progress one that isn't completed
+    const milestoneProgresses = milestones.map(milestone => {
+      const progress = Math.min(100, (totalSessions / milestone.sessionsRequired) * 100);
+      const isCompleted = totalSessions >= milestone.sessionsRequired;
+      return {
+        milestone,
+        progress,
+        isCompleted,
+      };
+    });
+    
+    // Find the highest progress milestone that isn't completed
+    const incompleteMilestones = milestoneProgresses.filter(m => !m.isCompleted);
+    
+    let highestProgressMilestone;
+    let highestProgress;
+    
+    if (incompleteMilestones.length > 0) {
+      // Find the one with highest progress
+      const highest = incompleteMilestones.reduce((prev, current) => 
+        current.progress > prev.progress ? current : prev
+      );
+      highestProgressMilestone = highest.milestone;
+      highestProgress = highest.progress;
+    } else {
+      // All milestones completed, use the last one
+      highestProgressMilestone = milestones[milestones.length - 1];
+      highestProgress = 100;
+    }
+    
+    const sessionsRemaining = highestProgress >= 100
       ? 0 
-      : Math.max(0, nextMilestone.sessionsRequired - totalSessions);
+      : Math.max(0, highestProgressMilestone.sessionsRequired - totalSessions);
     
     return {
       totalSessions,
-      nextMilestone,
-      progress,
+      nextMilestone: highestProgressMilestone,
+      progress: highestProgress,
       sessionsRemaining,
     };
-  }, [userProgress]);
+  }, [uniqueDailySessionsCount]);
 
   const formatCompletedLabel = useCallback((index: number) => {
     if (index === 0) return 'Yesterday';
@@ -789,9 +946,7 @@ export const TodayScreen: React.FC = () => {
             {/* Recommended Session */}
             {isLoadingRecommendations ? (
               <View style={styles.recommendedSessionContainer}>
-                <View style={[styles.recommendedSession, { backgroundColor: '#f2f2f7' }]}>
-                  <Text style={styles.sessionTitle}>Loading recommendations...</Text>
-                </View>
+                <ShimmerSessionCard />
               </View>
             ) : recommendedSession ? (
               <Animated.View
@@ -856,9 +1011,11 @@ export const TodayScreen: React.FC = () => {
             
             <View style={styles.alternativeSessionsList}>
               {isLoadingRecommendations ? (
-                <View style={styles.alternativeSession}>
-                  <Text style={styles.alternativeSessionTitle}>Loading...</Text>
-                </View>
+                <>
+                  <ShimmerAlternativeSessionCard />
+                  <ShimmerAlternativeSessionCard />
+                  <ShimmerAlternativeSessionCard />
+                </>
               ) : todaySessions.filter(s => !s.isRecommended).length > 0 ? (
                 todaySessions.filter(s => !s.isRecommended).map((session) => {
                 const isCompleted = isSessionCompletedToday(selectedModuleId, session.id);
@@ -916,21 +1073,26 @@ export const TodayScreen: React.FC = () => {
             </View>
           </View>
 
-          <Animated.View
-            style={[
-              styles.progressPreviewContainer,
-              {
-                transform: [{ scale: roadmapCardScale }],
-              }
-            ]}
-          >
-            <TouchableOpacity
-              style={styles.progressPreviewCard}
-              onPress={handleRoadmapCardPress}
-              onPressIn={handleRoadmapCardPressIn}
-              onPressOut={handleRoadmapCardPressOut}
-              activeOpacity={1}
+          {isLoadingCompletedSessions ? (
+            <View style={styles.progressPreviewContainer}>
+              <ShimmerProgressPathCard />
+            </View>
+          ) : (
+            <Animated.View
+              style={[
+                styles.progressPreviewContainer,
+                {
+                  transform: [{ scale: roadmapCardScale }],
+                }
+              ]}
             >
+              <TouchableOpacity
+                style={styles.progressPreviewCard}
+                onPress={handleRoadmapCardPress}
+                onPressIn={handleRoadmapCardPressIn}
+                onPressOut={handleRoadmapCardPressOut}
+                activeOpacity={1}
+              >
               <View style={styles.progressPreviewHeader}>
                 <View style={[styles.progressPreviewBadge, { backgroundColor: selectedModule.color }]}>
                   <LineGraphIcon size={24} color="#FFFFFF" accentColor="#FFFFFF" />
@@ -964,7 +1126,7 @@ export const TodayScreen: React.FC = () => {
                     }
                     
                     return (
-                      <View key={session.id} style={styles.progressPreviewItem}>
+                      <View key={`${session.id}-${session.completedDate}`} style={styles.progressPreviewItem}>
                         <View style={styles.progressPreviewItemIcon}>
                           <Text style={styles.progressPreviewItemIconText}>✓</Text>
                         </View>
@@ -997,46 +1159,23 @@ export const TodayScreen: React.FC = () => {
 
                 <View style={styles.progressPreviewColumn}>
                   <Text style={styles.progressPreviewSectionLabel}>Coming Up</Text>
-                  {!isTodayCompleted ? (
-                    <View style={styles.progressPreviewLockedState}>
-                      <View style={[styles.progressPreviewItemIcon, styles.progressPreviewItemIconLocked]}>
-                        <Text style={styles.progressPreviewLockIconText}>🔒</Text>
-                      </View>
-                      <View style={styles.progressPreviewItemBody}>
-                        <Text style={styles.progressPreviewLockedText}>
-                          Finish today's meditation to preview tomorrow
-                        </Text>
-                      </View>
+                  <View style={styles.progressPreviewLockedState}>
+                    <View style={[styles.progressPreviewItemIcon, styles.progressPreviewItemIconLocked]}>
+                      <Text style={styles.progressPreviewLockIconText}>🔒</Text>
                     </View>
-                  ) : (
-                    <>
-                      {upcomingPreviewSessions.map(session => (
-                        <View key={session.id} style={styles.progressPreviewItem}>
-                          <View style={[styles.progressPreviewItemIcon, styles.progressPreviewItemIconUpcoming]}>
-                            <Text style={[styles.progressPreviewItemIconText, styles.progressPreviewItemIconUpcomingText]}>▶</Text>
-                          </View>
-                          <View style={styles.progressPreviewItemBody}>
-                            <Text style={styles.progressPreviewItemTitle} numberOfLines={1}>
-                              {session.title}
-                            </Text>
-                            <Text style={styles.progressPreviewItemMeta}>
-                              {session.durationMin} min • {session.modality}
-                            </Text>
-                          </View>
-                        </View>
-                      ))}
-                      {upcomingPreviewSessions.length === 0 && (
-                        <Text style={styles.progressPreviewLockedText}>Explore the roadmap for more</Text>
-                      )}
-                    </>
-                  )}
+                    <View style={styles.progressPreviewItemBody}>
+                      <Text style={styles.progressPreviewLockedText}>
+                        Feature coming soon
+                      </Text>
+                    </View>
+                  </View>
                 </View>
               </View>
 
               {/* Timeline Progress Preview */}
               <View style={styles.progressPreviewTimelineSection}>
                 <View style={styles.progressPreviewTimelineHeader}>
-                  <Text style={styles.progressPreviewTimelineLabel}>Neuroadaptation</Text>
+                  <Text style={styles.progressPreviewTimelineLabel}>{timelineProgress.nextMilestone.title}</Text>
                   <Text style={[styles.progressPreviewTimelineProgress, { color: selectedModule.color }]}>
                     {Math.round(timelineProgress.progress)}%
                   </Text>
@@ -1056,8 +1195,8 @@ export const TodayScreen: React.FC = () => {
                 </View>
                 <Text style={styles.progressPreviewTimelineText}>
                   {timelineProgress.sessionsRemaining > 0 
-                    ? `${timelineProgress.sessionsRemaining} more sessions to ${timelineProgress.nextMilestone.timeRange}`
-                    : `Completed ${timelineProgress.nextMilestone.timeRange} milestone`}
+                    ? `${timelineProgress.sessionsRemaining} more sessions to see full benefits`
+                    : `Completed ${timelineProgress.nextMilestone.title}`}
                 </Text>
               </View>
 
@@ -1069,6 +1208,7 @@ export const TodayScreen: React.FC = () => {
               </View>
             </TouchableOpacity>
           </Animated.View>
+          )}
         </View>
 
         {/* Bottom spacing */}
@@ -1243,6 +1383,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
     position: 'relative',
+    minHeight: 88, // Standardized height
   },
   sessionContent: {
     flex: 1,
@@ -1307,6 +1448,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: '#e0e0e0',
+    minHeight: 64, // Standardized height to match recommendedSession proportions
   },
   alternativeSessionCompleted: {
     borderColor: 'transparent',

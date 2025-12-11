@@ -3,7 +3,15 @@ import { UserProgress, FilterState, SessionDelta, Session, EmotionalFeedbackEntr
 import { initialUserProgress } from '../data/mockData';
 import { mentalHealthModules } from '../data/modules';
 import { toggleLikedSession as toggleLikedSessionDB } from '../services/likedService';
-import { getCompletedSessionsByDateRange, markSessionCompleted, isSessionCompleted } from '../services/progressService';
+import { getCompletedSessionsByDateRange, markSessionCompleted, isSessionCompleted, CompletedSession, calculateUserStreak } from '../services/progressService';
+import { getSessionModules } from '../services/sessionService';
+
+// Helper function to get category from moduleId
+const getCategoryFromModuleId = (moduleId: string | undefined): 'disorder' | 'wellness' | 'skill' | 'other' => {
+  if (!moduleId) return 'other';
+  const module = mentalHealthModules.find(m => m.id === moduleId);
+  return module?.category || 'other';
+};
 
 // Helper function to create subtle background colors from module colors
 export const createSubtleBackground = (moduleColor: string): string => {
@@ -233,6 +241,14 @@ const buildInitialStoreData = () => {
     sessionCache: {} as Record<string, Session>,
     userId: null as string | null,
     completedSessionsCache: [] as CompletedSessionCacheEntry[],
+    // Sessions cache for ProgressScreen
+    sessionsCache: {
+      total: 0,
+      thisWeek: 0,
+      thisMonth: 0,
+    },
+    // Calendar cache for ProgressScreen
+    calendarCache: [] as CompletedSession[],
   };
 };
 
@@ -259,6 +275,8 @@ interface AppState {
   sessionCache: Record<string, Session>;
   userId: string | null;
   completedSessionsCache: CompletedSessionCacheEntry[];
+  sessionsCache: { total: number; thisWeek: number; thisMonth: number };
+  calendarCache: CompletedSession[];
   setUserId: (userId: string | null) => void;
   addSessionDelta: (delta: SessionDelta) => void;
   setFilters: (filters: FilterState) => void;
@@ -278,15 +296,20 @@ interface AppState {
   setIsTransitioning: (isTransitioning: boolean) => void;
   addEmotionalFeedbackEntry: (entry: EmotionalFeedbackEntry) => void;
   removeEmotionalFeedbackEntry: (entryId: string) => void;
-  markSessionCompletedToday: (moduleId: string, sessionId: string, date?: string, minutesCompleted?: number) => Promise<void>;
+  markSessionCompletedToday: (moduleId: string, sessionId: string, date?: string, minutesCompleted?: number) => Promise<{ wasUpdate: boolean }>;
   isSessionCompletedToday: (moduleId: string, sessionId: string, date?: string) => boolean;
   syncTodayCompletedSessionsFromDatabase: (userId: string) => Promise<void>;
   cleanupOldCompletedSessions: () => void;
   cacheSessions: (sessions: Session[]) => void;
   getCachedSession: (sessionId: string) => Session | null;
   addCompletedSessionToCache: (entry: CompletedSessionCacheEntry) => void;
-  removeCompletedSessionFromCache: (sessionId: string, createdAt: string) => void;
   removeDuplicateCacheEntries: (dbEntries: Array<{ session_id: string; created_at: string }>) => void;
+  incrementSessionsCache: () => void;
+  addToCalendarCache: (entry: CompletedSession) => void;
+  clearSessionsCache: () => void;
+  clearCalendarCache: () => void;
+  setSessionsCache: (sessions: { total: number; thisWeek: number; thisMonth: number }) => void;
+  setCalendarCache: (sessions: CompletedSession[]) => void;
   resetAppData: () => void;
   logout: () => void;
 }
@@ -452,17 +475,29 @@ export const useStore = create<AppState>((set, get) => ({
       console.log('📊 [Store] Found', completedSessions.length, 'completed sessions for today in database');
       
       // Group by module and populate cache
+      // For each completed session, add it to ALL modules it belongs to (so checkmarks show across modules)
       const cache: Record<string, string[]> = {};
-      completedSessions.forEach((session) => {
-        const moduleId = session.context_module || 'anxiety'; // Default to anxiety if no module
-        const key = `${moduleId}-${today}`;
-        if (!cache[key]) {
-          cache[key] = [];
-        }
-        if (!cache[key].includes(session.session_id)) {
-          cache[key].push(session.session_id);
-        }
-      });
+      
+      for (const session of completedSessions) {
+        // Get all modules this session belongs to
+        const sessionModules = await getSessionModules(session.session_id);
+        
+        // If no modules found, use the context_module from the completion record
+        const modulesToAdd = sessionModules.length > 0 
+          ? sessionModules 
+          : [session.context_module || 'anxiety'];
+        
+        // Add session to cache for each module it belongs to
+        modulesToAdd.forEach((moduleId) => {
+          const key = `${moduleId}-${today}`;
+          if (!cache[key]) {
+            cache[key] = [];
+          }
+          if (!cache[key].includes(session.session_id)) {
+            cache[key].push(session.session_id);
+          }
+        });
+      }
       
       console.log('✅ [Store] Populated cache with', Object.keys(cache).length, 'module entries');
       set({ completedTodaySessions: cache });
@@ -473,35 +508,87 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
-  markSessionCompletedToday: async (moduleId: string, sessionId: string, date?: string, minutesCompleted: number = 0) => {
+  markSessionCompletedToday: async (moduleId: string, sessionId: string, date?: string, minutesCompleted: number = 0): Promise<{ wasUpdate: boolean }> => {
     const today = date || new Date().toISOString().split('T')[0];
-    const key = `${moduleId}-${today}`;
     const state = get();
     const userId = state.userId;
+    const sessionIdClean = sessionId.replace('-today', '');
     
-    // Immediately add to cache (optimistic update)
-    set((state) => {
-      const completed = state.completedTodaySessions[key] || [];
-      if (!completed.includes(sessionId)) {
-        return {
-          completedTodaySessions: {
-            ...state.completedTodaySessions,
-            [key]: [...completed, sessionId]
-          }
-        };
+    // Get all modules this session belongs to, so we can add it to all relevant module caches
+    let sessionModules: string[] = [];
+    try {
+      sessionModules = await getSessionModules(sessionIdClean);
+      // If no modules found, use the current module
+      if (sessionModules.length === 0) {
+        sessionModules = [moduleId];
       }
-      return state;
+    } catch (error) {
+      console.error('❌ [Store] Error fetching session modules, using current module only:', error);
+      sessionModules = [moduleId];
+    }
+    
+    // Immediately add to cache for ALL modules this session belongs to (optimistic update)
+    // This allows checkmark to show in all relevant modules immediately
+    set((state) => {
+      const updatedCache = { ...state.completedTodaySessions };
+      let hasChanges = false;
+      
+      sessionModules.forEach((modId) => {
+        const moduleKey = `${modId}-${today}`;
+        const completed = updatedCache[moduleKey] || [];
+        if (!completed.includes(sessionIdClean) && !completed.includes(sessionId)) {
+          updatedCache[moduleKey] = [...completed, sessionIdClean];
+          hasChanges = true;
+        }
+      });
+      
+      return hasChanges ? { completedTodaySessions: updatedCache } : state;
     });
     
-    // Save to database in background
+    // Always save to database - markSessionCompleted handles update/create logic:
+    // - Same session + same context_module + same day: UPDATE existing entry
+    // - Different day OR different context_module: CREATE new entry
+    let wasUpdate = false;
     if (userId) {
       try {
-        const result = await markSessionCompleted(userId, sessionId, minutesCompleted, moduleId, today);
+        const result = await markSessionCompleted(userId, sessionIdClean, minutesCompleted, moduleId, today);
         if (!result.success) {
           console.error('❌ [Store] Failed to save completion to database:', result.error);
           // Optionally remove from cache on error, but for now keep it for better UX
         } else {
-          console.log('✅ [Store] Session completion saved to database');
+          wasUpdate = result.wasUpdate || false;
+          console.log('✅ [Store] Session completion saved/updated to database', { wasUpdate });
+          
+          // Increment sessions cache (only if it's a new entry, not an update)
+          if (!wasUpdate) {
+            get().incrementSessionsCache();
+            
+            // Recalculate streak after new session completion
+            calculateUserStreak(userId).then((newStreak) => {
+              set((state) => ({
+                userProgress: {
+                  ...state.userProgress,
+                  streak: newStreak,
+                },
+              }));
+              console.log(`🔥 [Store] Streak updated after session completion: ${newStreak} days`);
+            }).catch((error) => {
+              console.error('❌ [Store] Error updating streak:', error);
+            });
+          }
+          
+          // Add to calendar cache (only if category not already present for that day)
+          // Create a CompletedSession entry for calendar cache
+          const calendarEntry: CompletedSession = {
+            id: result.updatedEntryId || `temp-${Date.now()}`,
+            user_id: userId,
+            session_id: sessionIdClean,
+            context_module: moduleId || null,
+            completed_date: today,
+            minutes_completed: minutesCompleted,
+            created_at: new Date().toISOString(),
+          };
+          get().addToCalendarCache(calendarEntry);
         }
       } catch (error) {
         console.error('❌ [Store] Error saving completion to database:', error);
@@ -509,15 +596,34 @@ export const useStore = create<AppState>((set, get) => ({
     } else {
       console.warn('⚠️ [Store] No userId, cannot save to database');
     }
+    
+    return { wasUpdate };
   },
 
   isSessionCompletedToday: (moduleId: string, sessionId: string, date?: string): boolean => {
     const today = date || new Date().toISOString().split('T')[0];
-    const key = `${moduleId}-${today}`;
     const state = get();
-    const completed = state.completedTodaySessions[key] || [];
-    // Check both with and without -today suffix
-    return completed.includes(sessionId) || completed.includes(sessionId.replace('-today', ''));
+    
+    // Check ALL module keys for today (session might be completed in a different module)
+    // This allows checkmarks to show across all modules that include the session
+    const sessionIdClean = sessionId.replace('-today', '');
+    const allModuleKeys = Object.keys(state.completedTodaySessions);
+    
+    for (const key of allModuleKeys) {
+      // Check if this key is for today
+      const parts = key.split('-');
+      if (parts.length >= 4) {
+        const sessionDate = `${parts[parts.length - 3]}-${parts[parts.length - 2]}-${parts[parts.length - 1]}`;
+        if (sessionDate === today) {
+          const completed = state.completedTodaySessions[key] || [];
+          if (completed.includes(sessionId) || completed.includes(sessionIdClean)) {
+            return true;
+          }
+        }
+      }
+    }
+    
+    return false;
   },
 
   cacheSessions: (sessions: Session[]) =>
@@ -535,23 +641,63 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   addCompletedSessionToCache: (entry: CompletedSessionCacheEntry) =>
-    set((state) => ({
-      completedSessionsCache: [entry, ...state.completedSessionsCache]
-        .filter((e, index, self) => 
-          index === self.findIndex(item => 
-            item.sessionId === e.sessionId && 
-            item.createdAt === e.createdAt
-          )
-        )
-        .slice(0, 50) // Keep last 50 entries
-    })),
-
-  removeCompletedSessionFromCache: (sessionId: string, createdAt: string) =>
-    set((state) => ({
-      completedSessionsCache: state.completedSessionsCache.filter(
-        entry => !(entry.sessionId === sessionId && entry.createdAt === createdAt)
-      )
-    })),
+    set((state) => {
+      // Get the category of the new entry
+      const newEntryCategory = getCategoryFromModuleId(entry.moduleId);
+      
+      // Check if this category already exists for this date
+      const categoryExistsForDate = state.completedSessionsCache.some(existingEntry => {
+        if (existingEntry.date !== entry.date) return false;
+        const existingCategory = getCategoryFromModuleId(existingEntry.moduleId);
+        return existingCategory === newEntryCategory;
+      });
+      
+      // If category already exists for this date, do nothing (don't add)
+      if (categoryExistsForDate) {
+        console.log(`⚠️ [Store] Category ${newEntryCategory} already exists for date ${entry.date}, skipping add`);
+        return state; // Return unchanged state - don't modify cache at all
+      }
+      
+      // Category doesn't exist for this date, so add the entry
+      // Clean sessionId (remove -today suffix if present) for comparison
+      const cleanSessionId = entry.sessionId.replace('-today', '');
+      
+      // Check if entry with same sessionId + moduleId + date exists (for updates)
+      const isSameCompletion = (existingEntry: CompletedSessionCacheEntry): boolean => {
+        const existingCleanId = existingEntry.sessionId.replace('-today', '');
+        const sameSession = existingCleanId === cleanSessionId;
+        const sameDate = existingEntry.date === entry.date;
+        // Handle moduleId: both undefined, both null, or both same string value
+        const sameModule = (
+          (existingEntry.moduleId === undefined && entry.moduleId === undefined) ||
+          (existingEntry.moduleId === null && entry.moduleId === null) ||
+          (existingEntry.moduleId === entry.moduleId && existingEntry.moduleId !== undefined && existingEntry.moduleId !== null)
+        );
+        
+        // Match on sessionId + moduleId + date (NOT createdAt, since DB updates change createdAt)
+        return sameSession && sameDate && sameModule;
+      };
+      
+      // Remove entries that match sessionId + moduleId + date (to replace with updated entry)
+      // Keep all other entries (different sessions, dates, or modules)
+      const filteredCache = state.completedSessionsCache.filter(
+        existingEntry => !isSameCompletion(existingEntry)
+      );
+      
+      // Add new entry at the beginning, keep all existing entries
+      const newCache = [entry, ...filteredCache].slice(0, 50);
+      
+      const removedCount = state.completedSessionsCache.length - filteredCache.length;
+      if (removedCount > 0) {
+        console.log(`🔄 [Store] Replaced ${removedCount} entry(ies) for ${entry.date} (same session+module+date, updated createdAt)`);
+      } else {
+        console.log(`➕ [Store] Added new entry to cache for category ${newEntryCategory} on ${entry.date}`);
+      }
+      
+      console.log(`✅ [Store] Cache now has ${newCache.length} entries (was ${state.completedSessionsCache.length})`);
+      
+      return { completedSessionsCache: newCache };
+    }),
 
   removeDuplicateCacheEntries: (dbEntries: Array<{ session_id: string; created_at: string }>) =>
     set((state) => {
@@ -569,6 +715,126 @@ export const useStore = create<AppState>((set, get) => ({
       console.log(`🧹 [Store] Removed ${state.completedSessionsCache.length - filteredCache.length} duplicate cache entries`);
       
       return { completedSessionsCache: filteredCache };
+    }),
+
+  incrementSessionsCache: () =>
+    set((state) => {
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+      
+      // Calculate this week (last 7 days)
+      const weekAgo = new Date(today);
+      weekAgo.setDate(today.getDate() - 7);
+      const weekAgoStr = weekAgo.toISOString().split('T')[0];
+      
+      // Calculate this month
+      const currentYear = today.getFullYear();
+      const currentMonth = today.getMonth();
+      
+      // Increment total
+      const newTotal = state.sessionsCache.total + 1;
+      
+      // Check if today is within this week
+      const isThisWeek = todayStr >= weekAgoStr;
+      const newThisWeek = isThisWeek ? state.sessionsCache.thisWeek + 1 : state.sessionsCache.thisWeek;
+      
+      // Check if today is within this month
+      const isThisMonth = today.getFullYear() === currentYear && today.getMonth() === currentMonth;
+      const newThisMonth = isThisMonth ? state.sessionsCache.thisMonth + 1 : state.sessionsCache.thisMonth;
+      
+      console.log(`📊 [Store] Incremented sessions cache: total=${newTotal}, thisWeek=${newThisWeek}, thisMonth=${newThisMonth}`);
+      
+      return {
+        sessionsCache: {
+          total: newTotal,
+          thisWeek: newThisWeek,
+          thisMonth: newThisMonth,
+        },
+      };
+    }),
+
+  addToCalendarCache: (entry: CompletedSession) =>
+    set((state) => {
+      // Get the category of the new entry
+      const newEntryCategory = getCategoryFromModuleId(entry.context_module || undefined);
+      
+      // Check if this category already exists for this date
+      const categoryExistsForDate = state.calendarCache.some(existingEntry => {
+        if (existingEntry.completed_date !== entry.completed_date) return false;
+        const existingCategory = getCategoryFromModuleId(existingEntry.context_module || undefined);
+        return existingCategory === newEntryCategory;
+      });
+      
+      // If category already exists for this date, do nothing (don't add)
+      if (categoryExistsForDate) {
+        console.log(`⚠️ [Store] Category ${newEntryCategory} already exists in calendar cache for date ${entry.completed_date}, skipping add`);
+        return state; // Return unchanged state - don't modify cache at all
+      }
+      
+      // Category doesn't exist for this date, so add the entry
+      // Check if entry with same session_id + context_module + completed_date exists (for updates)
+      const isSameCompletion = (existingEntry: CompletedSession): boolean => {
+        const sameSession = existingEntry.session_id === entry.session_id;
+        const sameDate = existingEntry.completed_date === entry.completed_date;
+        // Handle context_module: both undefined, both null, or both same string value
+        const sameModule = (
+          (existingEntry.context_module === undefined && entry.context_module === undefined) ||
+          (existingEntry.context_module === null && entry.context_module === null) ||
+          (existingEntry.context_module === entry.context_module && existingEntry.context_module !== undefined && existingEntry.context_module !== null)
+        );
+        
+        // Match on session_id + context_module + completed_date
+        return sameSession && sameDate && sameModule;
+      };
+      
+      // Remove entries that match session_id + context_module + completed_date (to replace with updated entry)
+      const filteredCache = state.calendarCache.filter(
+        existingEntry => !isSameCompletion(existingEntry)
+      );
+      
+      // Add new entry at the beginning, keep all existing entries
+      const newCache = [entry, ...filteredCache];
+      
+      const removedCount = state.calendarCache.length - filteredCache.length;
+      if (removedCount > 0) {
+        console.log(`🔄 [Store] Replaced ${removedCount} entry(ies) in calendar cache for ${entry.completed_date} (same session+module+date)`);
+      } else {
+        console.log(`➕ [Store] Added new entry to calendar cache for category ${newEntryCategory} on ${entry.completed_date}`);
+      }
+      
+      console.log(`✅ [Store] Calendar cache now has ${newCache.length} entries (was ${state.calendarCache.length})`);
+      
+      return { calendarCache: newCache };
+    }),
+
+  clearSessionsCache: () =>
+    set(() => {
+      console.log('🧹 [Store] Clearing sessions cache');
+      return {
+        sessionsCache: {
+          total: 0,
+          thisWeek: 0,
+          thisMonth: 0,
+        },
+      };
+    }),
+
+  clearCalendarCache: () =>
+    set(() => {
+      console.log('🧹 [Store] Clearing calendar cache');
+      return { calendarCache: [] };
+    }),
+
+  setSessionsCache: (sessions: { total: number; thisWeek: number; thisMonth: number }) =>
+    set(() => {
+      console.log(`📊 [Store] Setting sessions cache: total=${sessions.total}, thisWeek=${sessions.thisWeek}, thisMonth=${sessions.thisMonth}`);
+      return { sessionsCache: sessions };
+    }),
+
+  setCalendarCache: (sessions: CompletedSession[]) =>
+    set(() => {
+      console.log(`📅 [Store] Setting calendar cache with ${sessions.length} entries`);
+      return { calendarCache: sessions };
     }),
 
   resetAppData: () => {

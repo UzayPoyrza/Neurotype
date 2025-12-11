@@ -1351,7 +1351,7 @@ export const HowToUsePage: React.FC<{
         onLayout={handleScrollViewLayout}
         scrollEventThrottle={16}
       >
-      <View style={styles.pageBackground}>
+      <View style={styles.howToUsePageBackground}>
         <Animated.View
           style={[
             styles.titleContainer,
@@ -2787,6 +2787,13 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingTop: 60,
     paddingBottom: 50,
+    paddingHorizontal: 20,
+    backgroundColor: theme.health.container.backgroundColor,
+  },
+  howToUsePageBackground: {
+    flex: 1,
+    width: '100%',
+    paddingBottom: 120,
     paddingHorizontal: 20,
     backgroundColor: theme.health.container.backgroundColor,
   },

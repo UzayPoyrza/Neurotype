@@ -171,6 +171,7 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isVisible, onClose
           />
           <HowToUsePage 
             isActive={currentPage === 1}
+            isModal={true}
             onScrollStateChange={(hasScrolled) => {
               if (currentPage === 1) {
                 setHasScrolledOnHowToUse(hasScrolled);

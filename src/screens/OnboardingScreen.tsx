@@ -1141,7 +1141,8 @@ const StickerBadge: React.FC<{
 export const HowToUsePage: React.FC<{ 
   isActive: boolean;
   onScrollStateChange?: (hasScrolled: boolean) => void;
-}> = ({ isActive, onScrollStateChange }) => {
+  isModal?: boolean;
+}> = ({ isActive, onScrollStateChange, isModal = false }) => {
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleTranslateY = useRef(new Animated.Value(20)).current;
   const demoOpacity = useRef(new Animated.Value(0)).current;
@@ -1351,7 +1352,7 @@ export const HowToUsePage: React.FC<{
         onLayout={handleScrollViewLayout}
         scrollEventThrottle={16}
       >
-      <View style={styles.howToUsePageBackground}>
+      <View style={isModal ? styles.howToUsePageBackgroundModal : styles.howToUsePageBackground}>
         <Animated.View
           style={[
             styles.titleContainer,
@@ -2790,9 +2791,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     backgroundColor: theme.health.container.backgroundColor,
   },
+  // Onboarding version - content near dynamic island, button in flow
   howToUsePageBackground: {
     flex: 1,
     width: '100%',
+    paddingTop: 60,
+    paddingBottom: 50,
+    paddingHorizontal: 20,
+    backgroundColor: theme.health.container.backgroundColor,
+  },
+  // Modal version - has header, button absolutely positioned
+  howToUsePageBackgroundModal: {
+    flex: 1,
+    width: '100%',
+    paddingTop: 0,
     paddingBottom: 120,
     paddingHorizontal: 20,
     backgroundColor: theme.health.container.backgroundColor,

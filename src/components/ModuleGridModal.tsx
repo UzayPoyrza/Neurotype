@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   View, 
   Text, 
@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { MentalHealthModule } from '../data/modules';
 import { theme } from '../styles/theme';
+import { useStore } from '../store/useStore';
 
 interface ModuleGridModalProps {
   modules: MentalHealthModule[];
@@ -18,6 +19,8 @@ interface ModuleGridModalProps {
   onModuleSelect: (moduleId: string) => void;
   onClose: () => void;
 }
+
+type SortOption = 'alphabetical' | 'category' | 'recent';
 
 export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
   modules,
@@ -29,8 +32,12 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
   const { width } = Dimensions.get('window');
   const cardWidth = (width - 48) / 2; // 2 columns with tighter padding
   const [pressedCard, setPressedCard] = useState<string | null>(null);
+  const [selectedSort, setSelectedSort] = useState<SortOption>('recent');
+  const recentModuleIds = useStore(state => state.recentModuleIds);
+  const addRecentModule = useStore(state => state.addRecentModule);
 
   const handleModuleSelect = (moduleId: string) => {
+    addRecentModule(moduleId);
     onModuleSelect(moduleId);
     onClose();
   };
@@ -69,6 +76,45 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
     return `rgba(0, 0, 0, ${opacity})`;
   };
 
+  // Sort modules based on selected sort option
+  const sortedModules = useMemo(() => {
+    const modulesCopy = [...modules];
+    
+    switch (selectedSort) {
+      case 'alphabetical':
+        modulesCopy.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      case 'category':
+        modulesCopy.sort((a, b) => {
+          if (a.category !== b.category) {
+            return a.category.localeCompare(b.category);
+          }
+          return a.title.localeCompare(b.title);
+        });
+        break;
+      case 'recent':
+        modulesCopy.sort((a, b) => {
+          const aRecentIndex = recentModuleIds.indexOf(a.id);
+          const bRecentIndex = recentModuleIds.indexOf(b.id);
+          
+          if (aRecentIndex !== -1 && bRecentIndex !== -1) {
+            // Both are recent, sort by recent order
+            return aRecentIndex - bRecentIndex;
+          } else if (aRecentIndex !== -1) {
+            // Only a is recent
+            return -1;
+          } else if (bRecentIndex !== -1) {
+            // Only b is recent
+            return 1;
+          }
+          return a.title.localeCompare(b.title);
+        });
+        break;
+    }
+    
+    return modulesCopy;
+  }, [modules, selectedSort, recentModuleIds]);
+
   return (
     <Modal
       visible={isVisible}
@@ -90,13 +136,64 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
           </TouchableOpacity>
         </View>
 
+        {/* Sort Options */}
+        <View style={styles.sortContainer}>
+          <TouchableOpacity
+            style={[
+              styles.sortButton,
+              selectedSort === 'recent' && styles.sortButtonActive
+            ]}
+            onPress={() => setSelectedSort('recent')}
+            activeOpacity={0.7}
+          >
+            <Text style={[
+              styles.sortButtonText,
+              selectedSort === 'recent' && styles.sortButtonTextActive
+            ]}>
+              Recent
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[
+              styles.sortButton,
+              selectedSort === 'alphabetical' && styles.sortButtonActive
+            ]}
+            onPress={() => setSelectedSort('alphabetical')}
+            activeOpacity={0.7}
+          >
+            <Text style={[
+              styles.sortButtonText,
+              selectedSort === 'alphabetical' && styles.sortButtonTextActive
+            ]}>
+              A-Z
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[
+              styles.sortButton,
+              selectedSort === 'category' && styles.sortButtonActive
+            ]}
+            onPress={() => setSelectedSort('category')}
+            activeOpacity={0.7}
+          >
+            <Text style={[
+              styles.sortButtonText,
+              selectedSort === 'category' && styles.sortButtonTextActive
+            ]}>
+              Category
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Module Grid */}
         <ScrollView 
           style={styles.scrollView}
           contentContainerStyle={styles.gridContainer}
           showsVerticalScrollIndicator={false}
         >
-          {modules.map((module) => {
+          {sortedModules.map((module) => {
             const isSelected = module.id === selectedModuleId;
             
             return (
@@ -224,6 +321,33 @@ const styles = StyleSheet.create({
     marginBottom: 0,
     fontWeight: '400',
     lineHeight: 20,
+  },
+  sortContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    gap: 8,
+  },
+  sortButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#f2f2f7',
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  sortButtonActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  sortButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#8e8e93',
+  },
+  sortButtonTextActive: {
+    color: '#ffffff',
+    fontWeight: '600',
   },
   scrollView: {
     flex: 1,

@@ -173,7 +173,7 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
           <View style={styles.headerContent}>
             <Text style={styles.headerTitle}>Choose Your Journey</Text>
             <Text style={styles.subtitle}>
-              Select a mental health focus area for your personalized roadmap
+              Select a mental health focus area to get started
             </Text>
           </View>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -332,8 +332,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'flex-start',
     paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
+    paddingTop: 40,
+    paddingBottom: 12,
     borderBottomWidth: 0,
     borderBottomColor: 'transparent',
     position: 'relative',
@@ -343,17 +343,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: 'bold',
     color: '#000000',
-    marginBottom: 6,
+    marginBottom: 4,
     letterSpacing: -0.5,
     textAlign: 'center',
   },
   closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#e5e5ea',
     justifyContent: 'center',
     alignItems: 'center',
@@ -361,10 +361,10 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
     position: 'absolute',
     right: 20,
-    top: 60,
+    top: 40,
   },
   closeText: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#000000',
     fontWeight: '600',
   },
@@ -375,11 +375,12 @@ const styles = StyleSheet.create({
     marginTop: 0,
     marginBottom: 0,
     fontWeight: '400',
-    lineHeight: 20,
+    lineHeight: 19,
   },
   sortSection: {
     paddingHorizontal: 20,
-    paddingBottom: 12,
+    paddingBottom: 8,
+    paddingTop: 4,
   },
   sortContainer: {
     flexDirection: 'row',

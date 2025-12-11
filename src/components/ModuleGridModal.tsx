@@ -329,17 +329,18 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'flex-start',
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
     borderBottomWidth: 0,
     borderBottomColor: 'transparent',
+    position: 'relative',
   },
   headerContent: {
     flex: 1,
-    marginRight: 16,
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 28,
@@ -347,6 +348,7 @@ const styles = StyleSheet.create({
     color: '#000000',
     marginBottom: 6,
     letterSpacing: -0.5,
+    textAlign: 'center',
   },
   closeButton: {
     width: 36,
@@ -357,6 +359,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 0,
     borderColor: 'transparent',
+    position: 'absolute',
+    right: 20,
+    top: 60,
   },
   closeText: {
     fontSize: 18,
@@ -366,7 +371,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 15,
     color: '#8e8e93',
-    textAlign: 'left',
+    textAlign: 'center',
     marginTop: 0,
     marginBottom: 0,
     fontWeight: '400',

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   View, 
   Text, 
@@ -6,7 +6,7 @@ import {
   TouchableOpacity, 
   Modal, 
   ScrollView,
-  Dimensions 
+  Dimensions
 } from 'react-native';
 import { MentalHealthModule } from '../data/modules';
 import { theme } from '../styles/theme';
@@ -28,6 +28,7 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
 }) => {
   const { width } = Dimensions.get('window');
   const cardWidth = (width - 48) / 2; // 2 columns with tighter padding
+  const [pressedCard, setPressedCard] = useState<string | null>(null);
 
   const handleModuleSelect = (moduleId: string) => {
     onModuleSelect(moduleId);
@@ -50,6 +51,22 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
       case 'skill': return '#9B59B6'; // Purple for skills
       default: return '#8e8e93'; // Gray fallback
     }
+  };
+
+  const getCategoryLabel = (category: string) => {
+    return category.charAt(0).toUpperCase() + category.slice(1);
+  };
+
+  // Convert hex color to rgba with opacity
+  const hexToRgba = (hex: string, opacity: number) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (result) {
+      const r = parseInt(result[1], 16);
+      const g = parseInt(result[2], 16);
+      const b = parseInt(result[3], 16);
+      return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+    }
+    return `rgba(0, 0, 0, ${opacity})`;
   };
 
   return (
@@ -88,43 +105,63 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
                 style={[
                   styles.moduleCard,
                   { width: cardWidth },
-                  isSelected && styles.selectedCard
+                  isSelected && styles.selectedCard,
+                  pressedCard === module.id && styles.pressedCard
                 ]}
                 onPress={() => handleModuleSelect(module.id)}
-                activeOpacity={0.8}
+                onPressIn={() => setPressedCard(module.id)}
+                onPressOut={() => setPressedCard(null)}
+                activeOpacity={1}
               >
-                {/* Module Color Indicator */}
-                <View style={[styles.colorIndicator, { backgroundColor: module.color }]}>
+                {/* Gradient Background Overlay */}
+                <View style={[styles.gradientOverlay, { backgroundColor: hexToRgba(module.color, 0.08) }]} />
+                
+                {/* Module Icon */}
+                <View style={[styles.iconContainer, { backgroundColor: module.color }]}>
                   <Text style={styles.categoryIcon}>
                     {getCategoryIcon(module.category)}
                   </Text>
                 </View>
 
-                {/* Selected Badge */}
+                {/* Selected Indicator */}
                 {isSelected && (
-                  <View style={[styles.selectedBadge, { backgroundColor: '#007AFF' }]}>
-                    <Text style={styles.selectedBadgeText}>✓</Text>
+                  <View style={styles.selectedIndicator}>
+                    <View style={[styles.selectedDot, { backgroundColor: module.color }]} />
                   </View>
                 )}
 
                 {/* Module Info */}
                 <View style={styles.moduleContent}>
-                  <Text style={[styles.moduleTitle, isSelected && styles.selectedTitle]} numberOfLines={2} ellipsizeMode="tail">
+                  <Text 
+                    style={[
+                      styles.moduleTitle, 
+                      isSelected && styles.selectedTitle
+                    ]} 
+                    numberOfLines={2} 
+                    ellipsizeMode="tail"
+                  >
                     {module.title}
                   </Text>
                   
-                  <Text style={styles.moduleDescription} numberOfLines={2} ellipsizeMode="tail">
+                  <Text 
+                    style={styles.moduleDescription} 
+                    numberOfLines={3} 
+                    ellipsizeMode="tail"
+                  >
                     {module.description}
                   </Text>
-                  
-                  <View style={styles.moduleFooter}>
-                    <Text style={styles.sessionCount}>
-                      {module.meditationCount} sessions
-                    </Text>
-                    
-                    <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(module.category) }]}>
-                      <Text style={styles.categoryText}>
-                        {module.category}
+
+                  {/* Category Badge */}
+                  <View style={styles.categoryContainer}>
+                    <View style={[
+                      styles.categoryBadge, 
+                      { backgroundColor: hexToRgba(getCategoryColor(module.category), 0.12) }
+                    ]}>
+                      <Text style={[
+                        styles.categoryText,
+                        { color: getCategoryColor(module.category) }
+                      ]}>
+                        {getCategoryLabel(module.category)}
                       </Text>
                     </View>
                   </View>
@@ -149,7 +186,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     paddingHorizontal: 20,
     paddingTop: 60,
-    paddingBottom: 16,
+    paddingBottom: 20,
     borderBottomWidth: 0,
     borderBottomColor: 'transparent',
   },
@@ -161,7 +198,8 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     color: '#000000',
-    marginBottom: 4,
+    marginBottom: 6,
+    letterSpacing: -0.5,
   },
   closeButton: {
     width: 36,
@@ -172,11 +210,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 0,
     borderColor: 'transparent',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
   },
   closeText: {
     fontSize: 18,
@@ -205,114 +238,118 @@ const styles = StyleSheet.create({
   },
   moduleCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 16,
-    borderWidth: 0,
-    borderColor: 'transparent',
-    marginBottom: 12,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#f2f2f7',
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
     elevation: 2,
     overflow: 'hidden',
     position: 'relative',
-    height: 180,
-    justifyContent: 'space-between',
+    height: 200,
+    justifyContent: 'flex-start',
   },
   selectedCard: {
     borderWidth: 2,
     borderColor: '#007AFF',
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
-    transform: [{ scale: 1.02 }],
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 4,
   },
-  colorIndicator: {
-    height: 60,
+  pressedCard: {
+    transform: [{ scale: 0.98 }],
+    opacity: 0.9,
+  },
+  gradientOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 80,
+  },
+  iconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
-    position: 'relative',
+    marginTop: 20,
+    marginBottom: 16,
+    alignSelf: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
   categoryIcon: {
     fontSize: 28,
-    textShadowColor: 'rgba(0,0,0,0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
-  selectedBadge: {
+  selectedIndicator: {
     position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    top: 12,
+    right: 12,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
-    borderColor: '#ffffff',
-    zIndex: 2,
-    shadowColor: '#007AFF',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
-    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
-  selectedBadgeText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#ffffff',
+  selectedDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
   },
   moduleContent: {
-    padding: 12,
-    paddingTop: 0,
+    paddingHorizontal: 16,
+    paddingBottom: 20,
     flex: 1,
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
   },
   moduleTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
     color: '#000000',
-    marginBottom: 6,
+    marginBottom: 8,
     textAlign: 'center',
-    lineHeight: 18,
-    height: 36,
+    lineHeight: 22,
+    letterSpacing: -0.2,
   },
   selectedTitle: {
     color: '#007AFF',
   },
   moduleDescription: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#8e8e93',
     textAlign: 'center',
-    lineHeight: 16,
-    marginBottom: 8,
+    lineHeight: 18,
     fontWeight: '400',
-    height: 32,
+    paddingHorizontal: 4,
+    marginBottom: 8,
   },
-  moduleFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  categoryContainer: {
     alignItems: 'center',
-  },
-  sessionCount: {
-    fontSize: 12,
-    color: '#8e8e93',
-    fontWeight: '500',
+    marginTop: 'auto',
+    marginBottom: -2,
   },
   categoryBadge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 10,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
+    borderRadius: 12,
+    alignSelf: 'center',
   },
   categoryText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
-    textTransform: 'capitalize',
-    color: '#ffffff',
+    letterSpacing: 0.3,
   },
 });

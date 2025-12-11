@@ -182,54 +182,57 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
         </View>
 
         {/* Sort Options */}
-        <View style={styles.sortContainer}>
-          <TouchableOpacity
-            style={[
-              styles.sortButton,
-              selectedSort === 'recent' && styles.sortButtonActive
-            ]}
-            onPress={() => handleSortChange('recent')}
-            activeOpacity={0.7}
-          >
-            <Text style={[
-              styles.sortButtonText,
-              selectedSort === 'recent' && styles.sortButtonTextActive
-            ]}>
-              Recent
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[
-              styles.sortButton,
-              selectedSort === 'alphabetical' && styles.sortButtonActive
-            ]}
-            onPress={() => handleSortChange('alphabetical')}
-            activeOpacity={0.7}
-          >
-            <Text style={[
-              styles.sortButtonText,
-              selectedSort === 'alphabetical' && styles.sortButtonTextActive
-            ]}>
-              A-Z
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[
-              styles.sortButton,
-              selectedSort === 'category' && styles.sortButtonActive
-            ]}
-            onPress={() => handleSortChange('category')}
-            activeOpacity={0.7}
-          >
-            <Text style={[
-              styles.sortButtonText,
-              selectedSort === 'category' && styles.sortButtonTextActive
-            ]}>
-              Category
-            </Text>
-          </TouchableOpacity>
+        <View style={styles.sortSection}>
+          <View style={styles.sortContainer}>
+            <Text style={styles.sortIcon}>⇅</Text>
+            <TouchableOpacity
+              style={[
+                styles.sortButton,
+                selectedSort === 'recent' && styles.sortButtonActive
+              ]}
+              onPress={() => handleSortChange('recent')}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.sortButtonText,
+                selectedSort === 'recent' && styles.sortButtonTextActive
+              ]}>
+                Recent
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.sortButton,
+                selectedSort === 'alphabetical' && styles.sortButtonActive
+              ]}
+              onPress={() => handleSortChange('alphabetical')}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.sortButtonText,
+                selectedSort === 'alphabetical' && styles.sortButtonTextActive
+              ]}>
+                A-Z
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.sortButton,
+                selectedSort === 'category' && styles.sortButtonActive
+              ]}
+              onPress={() => handleSortChange('category')}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.sortButtonText,
+                selectedSort === 'category' && styles.sortButtonTextActive
+              ]}>
+                Category
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Module Grid */}
@@ -369,13 +372,21 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     lineHeight: 20,
   },
-  sortContainer: {
-    flexDirection: 'row',
+  sortSection: {
     paddingHorizontal: 20,
     paddingBottom: 12,
+  },
+  sortContainer: {
+    flexDirection: 'row',
     gap: 8,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  sortIcon: {
+    fontSize: 16,
+    color: '#000000',
+    fontWeight: '600',
+    marginRight: 4,
   },
   sortButton: {
     paddingHorizontal: 16,

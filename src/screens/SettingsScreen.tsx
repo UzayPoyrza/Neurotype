@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Switch, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
 import { updateUserPreferences } from '../services/userService';
 import { useUserId } from '../hooks/useUserId';
+import { HowToUseModal } from '../components/HowToUseModal';
 
 export const SettingsScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -21,6 +22,7 @@ export const SettingsScreen: React.FC = () => {
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
   const [backButtonWidth, setBackButtonWidth] = React.useState(0);
+  const [showHowToUseModal, setShowHowToUseModal] = useState(false);
   const handleResetAccount = React.useCallback(() => {
     Alert.alert(
       'Reset Account',
@@ -161,6 +163,18 @@ export const SettingsScreen: React.FC = () => {
           </View>
         </View>
 
+        {/* Information */}
+        <View style={styles.settingSection}>
+          <Text style={styles.sectionTitle}>Information</Text>
+          
+          <TouchableOpacity 
+            style={styles.howToUseButton}
+            onPress={() => setShowHowToUseModal(true)}
+          >
+            <Text style={styles.howToUseButtonText}>How to Use the App</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Danger Zone */}
         <View style={styles.settingSection}>
           <Text style={styles.sectionTitle}>Clear Data</Text>
@@ -213,6 +227,12 @@ export const SettingsScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* How to Use Modal */}
+      <HowToUseModal
+        isVisible={showHowToUseModal}
+        onClose={() => setShowHowToUseModal(false)}
+      />
     </View>
   );
 };
@@ -455,5 +475,23 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     color: '#ff3b30',
+  },
+  howToUseButton: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    marginHorizontal: 12,
+    marginTop: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+    alignItems: 'center',
+  },
+  howToUseButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#007AFF',
   },
 });

@@ -8,6 +8,12 @@ import {
   ScrollView,
   Dimensions
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
 import { MentalHealthModule } from '../data/modules';
 import { theme } from '../styles/theme';
 import { useStore } from '../store/useStore';
@@ -33,8 +39,13 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
   const cardWidth = (width - 48) / 2; // 2 columns with tighter padding
   const [pressedCard, setPressedCard] = useState<string | null>(null);
   const [selectedSort, setSelectedSort] = useState<SortOption>('recent');
+  const [isShuffling, setIsShuffling] = useState(false);
   const recentModuleIds = useStore(state => state.recentModuleIds);
   const addRecentModule = useStore(state => state.addRecentModule);
+  
+  // Animation values for shuffle effect
+  const moduleOpacity = useSharedValue(1);
+  const moduleScale = useSharedValue(1);
 
   const handleModuleSelect = (moduleId: string) => {
     addRecentModule(moduleId);
@@ -76,6 +87,30 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
     return `rgba(0, 0, 0, ${opacity})`;
   };
 
+  // Shuffle animation for modules
+  const triggerShuffleAnimation = () => {
+    setIsShuffling(true);
+    
+    // Fall down animation
+    moduleOpacity.value = withTiming(0, { duration: 200 });
+    moduleScale.value = withTiming(0.8, { duration: 200 });
+    
+    // After falling, shuffle back up
+    setTimeout(() => {
+      moduleOpacity.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.back(1.2)) });
+      moduleScale.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.back(1.2)) });
+      setIsShuffling(false);
+    }, 250);
+  };
+
+  // Animated style for module grid
+  const moduleGridAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: moduleOpacity.value,
+      transform: [{ scale: moduleScale.value }],
+    };
+  });
+
   // Sort modules based on selected sort option
   const sortedModules = useMemo(() => {
     const modulesCopy = [...modules];
@@ -115,6 +150,16 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
     return modulesCopy;
   }, [modules, selectedSort, recentModuleIds]);
 
+  // Handle sort change with animation
+  const handleSortChange = (sortOption: SortOption) => {
+    if (selectedSort !== sortOption) {
+      triggerShuffleAnimation();
+      setTimeout(() => {
+        setSelectedSort(sortOption);
+      }, 250);
+    }
+  };
+
   return (
     <Modal
       visible={isVisible}
@@ -143,7 +188,7 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
               styles.sortButton,
               selectedSort === 'recent' && styles.sortButtonActive
             ]}
-            onPress={() => setSelectedSort('recent')}
+            onPress={() => handleSortChange('recent')}
             activeOpacity={0.7}
           >
             <Text style={[
@@ -159,7 +204,7 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
               styles.sortButton,
               selectedSort === 'alphabetical' && styles.sortButtonActive
             ]}
-            onPress={() => setSelectedSort('alphabetical')}
+            onPress={() => handleSortChange('alphabetical')}
             activeOpacity={0.7}
           >
             <Text style={[
@@ -175,7 +220,7 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
               styles.sortButton,
               selectedSort === 'category' && styles.sortButtonActive
             ]}
-            onPress={() => setSelectedSort('category')}
+            onPress={() => handleSortChange('category')}
             activeOpacity={0.7}
           >
             <Text style={[
@@ -188,12 +233,13 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
         </View>
 
         {/* Module Grid */}
-        <ScrollView 
-          style={styles.scrollView}
-          contentContainerStyle={styles.gridContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          {sortedModules.map((module) => {
+        <Animated.View style={[styles.scrollViewContainer, moduleGridAnimatedStyle]}>
+          <ScrollView 
+            style={styles.scrollView}
+            contentContainerStyle={styles.gridContainer}
+            showsVerticalScrollIndicator={false}
+          >
+            {sortedModules.map((module) => {
             const isSelected = module.id === selectedModuleId;
             
             return (
@@ -266,7 +312,8 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
               </TouchableOpacity>
             );
           })}
-        </ScrollView>
+          </ScrollView>
+        </Animated.View>
       </View>
     </Modal>
   );
@@ -350,6 +397,9 @@ const styles = StyleSheet.create({
   sortButtonTextActive: {
     color: '#ffffff',
     fontWeight: '600',
+  },
+  scrollViewContainer: {
+    flex: 1,
   },
   scrollView: {
     flex: 1,

@@ -437,7 +437,7 @@ const ConfettiParticle: React.FC<{
 };
 
 // Congratulations Overlay Component
-const CongratulationsOverlay: React.FC<{
+export const CongratulationsOverlay: React.FC<{
   visible: boolean;
   moduleTitle: string;
   moduleColor: string;
@@ -627,7 +627,7 @@ const CongratulationsOverlay: React.FC<{
 };
 
 // Change Button Demo Page
-const ChangeButtonDemoPage: React.FC<{ 
+export const ChangeButtonDemoPage: React.FC<{ 
   selectedModule: string | null;
   isActive: boolean;
   onModuleChange?: (moduleId: string) => void;
@@ -1138,7 +1138,7 @@ const StickerBadge: React.FC<{
 };
 
 // How to Use App Page
-const HowToUsePage: React.FC<{ 
+export const HowToUsePage: React.FC<{ 
   isActive: boolean;
   onScrollStateChange?: (hasScrolled: boolean) => void;
 }> = ({ isActive, onScrollStateChange }) => {

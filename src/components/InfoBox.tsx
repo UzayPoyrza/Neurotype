@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableWithoutFeedback, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableWithoutFeedback, Animated, TouchableOpacity } from 'react-native';
 
 interface InfoBoxProps {
   isVisible: boolean;
@@ -11,6 +11,7 @@ interface InfoBoxProps {
     left?: number;
     right?: number;
   };
+  onHowToUsePress?: () => void;
 }
 
 export const InfoBox: React.FC<InfoBoxProps> = ({
@@ -18,7 +19,8 @@ export const InfoBox: React.FC<InfoBoxProps> = ({
   onClose,
   title,
   content,
-  position = {}
+  position = {},
+  onHowToUsePress
 }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -52,7 +54,19 @@ export const InfoBox: React.FC<InfoBoxProps> = ({
             ]}
           >
             <Text style={styles.infoTitle}>{title}</Text>
-            <Text style={styles.infoContent}>{content}</Text>
+            <Text style={[styles.infoContent, onHowToUsePress && styles.infoContentWithButton]}>{content}</Text>
+            {onHowToUsePress && (
+              <TouchableOpacity 
+                style={styles.howToUseButton}
+                onPress={() => {
+                  onClose();
+                  onHowToUsePress();
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.howToUseButtonText}>How to use the app</Text>
+              </TouchableOpacity>
+            )}
           </Animated.View>
         </TouchableWithoutFeedback>
       </View>
@@ -91,5 +105,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#ffffff',
     lineHeight: 20,
+  },
+  infoContentWithButton: {
+    marginBottom: 12,
+  },
+  howToUseButton: {
+    marginTop: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  howToUseButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000000',
   },
 });

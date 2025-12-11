@@ -384,8 +384,8 @@ const styles = StyleSheet.create({
   },
   sortIcon: {
     fontSize: 16,
-    color: '#000000',
-    fontWeight: '600',
+    color: '#8e8e93',
+    fontWeight: '500',
     marginRight: 4,
   },
   sortButton: {
@@ -402,8 +402,8 @@ const styles = StyleSheet.create({
   },
   sortButtonText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#8e8e93',
+    fontWeight: '600',
+    color: '#000000',
   },
   sortButtonTextActive: {
     color: '#ffffff',

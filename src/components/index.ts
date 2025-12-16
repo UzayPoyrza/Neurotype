@@ -29,6 +29,7 @@ export { MeditationDetailModal } from './MeditationDetailModal';
 export { InteractiveCalendar } from './InteractiveCalendar';
 export { TechniqueEffectivenessChart } from './TechniqueEffectivenessChart';
 export { InfoBox } from './InfoBox';
+export { HowToUseModal } from './HowToUseModal';
 
 // Icons
 export * from './icons'; 

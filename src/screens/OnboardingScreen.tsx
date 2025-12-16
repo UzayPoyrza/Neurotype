@@ -437,7 +437,7 @@ const ConfettiParticle: React.FC<{
 };
 
 // Congratulations Overlay Component
-const CongratulationsOverlay: React.FC<{
+export const CongratulationsOverlay: React.FC<{
   visible: boolean;
   moduleTitle: string;
   moduleColor: string;
@@ -627,7 +627,7 @@ const CongratulationsOverlay: React.FC<{
 };
 
 // Change Button Demo Page
-const ChangeButtonDemoPage: React.FC<{ 
+export const ChangeButtonDemoPage: React.FC<{ 
   selectedModule: string | null;
   isActive: boolean;
   onModuleChange?: (moduleId: string) => void;
@@ -1138,10 +1138,11 @@ const StickerBadge: React.FC<{
 };
 
 // How to Use App Page
-const HowToUsePage: React.FC<{ 
+export const HowToUsePage: React.FC<{ 
   isActive: boolean;
   onScrollStateChange?: (hasScrolled: boolean) => void;
-}> = ({ isActive, onScrollStateChange }) => {
+  isModal?: boolean;
+}> = ({ isActive, onScrollStateChange, isModal = false }) => {
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleTranslateY = useRef(new Animated.Value(20)).current;
   const demoOpacity = useRef(new Animated.Value(0)).current;
@@ -1351,7 +1352,7 @@ const HowToUsePage: React.FC<{
         onLayout={handleScrollViewLayout}
         scrollEventThrottle={16}
       >
-      <View style={styles.pageBackground}>
+      <View style={isModal ? styles.howToUsePageBackgroundModal : styles.howToUsePageBackground}>
         <Animated.View
           style={[
             styles.titleContainer,
@@ -2787,6 +2788,24 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingTop: 60,
     paddingBottom: 50,
+    paddingHorizontal: 20,
+    backgroundColor: theme.health.container.backgroundColor,
+  },
+  // Onboarding version - content near dynamic island, button in flow
+  howToUsePageBackground: {
+    flex: 1,
+    width: '100%',
+    paddingTop: 60,
+    paddingBottom: 50,
+    paddingHorizontal: 20,
+    backgroundColor: theme.health.container.backgroundColor,
+  },
+  // Modal version - has header, button absolutely positioned
+  howToUsePageBackgroundModal: {
+    flex: 1,
+    width: '100%',
+    paddingTop: 0,
+    paddingBottom: 120,
     paddingHorizontal: 20,
     backgroundColor: theme.health.container.backgroundColor,
   },

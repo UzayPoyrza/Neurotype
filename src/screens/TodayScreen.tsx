@@ -13,6 +13,7 @@ import { SessionBottomSheet } from '../components/SessionBottomSheet';
 import { SessionProgressView } from '../components/SessionProgressView';
 import { SessionRating } from '../components/SessionRating';
 import { InfoBox } from '../components/InfoBox';
+import { HowToUseModal } from '../components/HowToUseModal';
 import { MeditationDetailModal } from '../components/MeditationDetailModal';
 import { MergedCard } from '../components/MergedCard';
 import { LineGraphIcon } from '../components/icons/LineGraphIcon';
@@ -60,6 +61,7 @@ export const TodayScreen: React.FC = () => {
   const [hasReachedBottom, setHasReachedBottom] = useState(false);
   const [showInfoBox, setShowInfoBox] = useState(false);
   const [infoButtonActive, setInfoButtonActive] = useState(false);
+  const [showHowToUseModal, setShowHowToUseModal] = useState(false);
   const [showModuleToast, setShowModuleToast] = useState(false);
   const [toastModuleName, setToastModuleName] = useState('');
   const prevModuleIdRef = useRef<string | null>(null);
@@ -1275,6 +1277,13 @@ export const TodayScreen: React.FC = () => {
         title="About Today"
         content="Our Today page uses evidence-based approaches to mental wellness. Each session is designed using proven techniques from cognitive behavioral therapy, mindfulness research, and neuroscience. Personalized recommendations adapt to your progress and preferences, helping you build sustainable mental health habits."
         position={{ top: 105, right: 20 }}
+        onHowToUsePress={() => setShowHowToUseModal(true)}
+      />
+
+      {/* How to Use Modal */}
+      <HowToUseModal
+        isVisible={showHowToUseModal}
+        onClose={() => setShowHowToUseModal(false)}
       />
 
       {/* Module Switch Toast */}

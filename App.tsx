@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
 import { Easing } from 'react-native-reanimated';
-import { Modal, StatusBar } from 'react-native';
+import { Modal, StatusBar, Linking } from 'react-native';
 import { TodayIcon, ProgressIcon, ExploreIcon, ProfileIcon } from './src/components/icons';
 import { AnimatedTabBar } from './src/components/AnimatedTabBar';
 
@@ -23,7 +23,7 @@ import { useStore } from './src/store/useStore';
 import { supabase } from './src/services/supabase';
 import { getAllSessions, getSessionsByModality, getSessionById } from './src/services/sessionService';
 import { ensureTestUser, verifyTestUserConnection } from './src/services/testUserService';
-import { getUserPreferences } from './src/services/userService';
+import { getUserPreferences, createUserProfile } from './src/services/userService';
 import { ensureDailyRecommendations } from './src/services/recommendationService';
 import { calculateUserStreak } from './src/services/progressService';
 
@@ -387,6 +387,40 @@ export default function App() {
     }, 1000);
 
     return () => clearTimeout(timer);
+  }, []);
+
+  // Auth state listener - handles Google OAuth redirect and Apple sign-in
+  useEffect(() => {
+    // Check initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        useStore.setState({ 
+          userId: session.user.id, 
+          isLoggedIn: true 
+        });
+      }
+    });
+
+    // Listen for auth state changes (handles Google OAuth redirect)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          const userId = session.user.id;
+          useStore.setState({ userId, isLoggedIn: true });
+          
+          // Create profile if needed
+          await createUserProfile(
+            userId,
+            session.user.email || '',
+            session.user.user_metadata?.full_name || session.user.user_metadata?.name
+          );
+        } else if (event === 'SIGNED_OUT') {
+          useStore.setState({ userId: null, isLoggedIn: false });
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleSplashFinish = () => {

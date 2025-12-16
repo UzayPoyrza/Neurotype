@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, Image, Animated, StatusBar, TouchableOpacity, ScrollView, Dimensions, TextInput, KeyboardAvoidingView, Platform, Easing } from 'react-native';
+import { View, Text, StyleSheet, Image, Animated, StatusBar, TouchableOpacity, ScrollView, Dimensions, TextInput, KeyboardAvoidingView, Platform, Easing, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as WebBrowser from 'expo-web-browser';
 import Svg, { Path } from 'react-native-svg';
@@ -10,6 +10,7 @@ import { useStore } from '../store/useStore';
 import { AnimatedFloatingButton } from '../components/AnimatedFloatingButton';
 import { ModuleGridModal } from '../components/ModuleGridModal';
 import { Slider0to10 } from '../components/Slider0to10';
+import { signInWithGoogle, signInWithApple } from '../services/authService';
 
 interface OnboardingScreenProps {
   onFinish: () => void;
@@ -1694,54 +1695,45 @@ const LoginPage: React.FC<{
 
   const handleGoogleSignIn = async () => {
     try {
-      // Open OAuth URL in browser
-      // TODO: Replace with your actual Google OAuth URL
-      // For demo: using a test URL that will open in browser
-      const authUrl = 'https://accounts.google.com/signin/v2/identifier?flowName=GlifWebSignIn&flowEntry=ServiceLogin';
-      
-      const result = await WebBrowser.openAuthSessionAsync(
-        authUrl,
-        'neurotype://auth/callback'
-      );
-
-      // For testing: Navigate to premium page regardless of how browser closes
-      // (success, dismiss, cancel, etc.)
-      // In production, you'd check result.type === 'success' and verify the auth code
-      onNavigateToPremium();
-    } catch (error) {
+      const result = await signInWithGoogle();
+      if (result.success) {
+        // Auth state listener in App.tsx will handle setting userId
+        // Just proceed to premium page
+        onNavigateToPremium();
+      } else {
+        if (result.error && result.error !== 'Sign in cancelled') {
+          Alert.alert('Sign In Failed', result.error || 'Failed to sign in with Google');
+        }
+      }
+    } catch (error: any) {
       console.error('Google sign in error:', error);
-      // Navigate to premium even on error for demo purposes
-      onNavigateToPremium();
+      Alert.alert('Error', error.message || 'An error occurred');
     }
   };
 
   const handleAppleSignIn = async () => {
     try {
-      // Open OAuth URL in browser
-      // TODO: Replace with your actual Apple OAuth URL
-      // For demo: using a test URL that will open in browser
-      const authUrl = 'https://appleid.apple.com/sign-in';
+      if (Platform.OS !== 'ios') {
+        Alert.alert('Not Available', 'Apple Sign In is only available on iOS');
+        return;
+      }
       
-      const result = await WebBrowser.openAuthSessionAsync(
-        authUrl,
-        'neurotype://auth/callback'
-      );
-
-      // For testing: Navigate to premium page regardless of how browser closes
-      // (success, dismiss, cancel, etc.)
-      // In production, you'd check result.type === 'success' and verify the auth code
-      onNavigateToPremium();
-    } catch (error) {
+      const result = await signInWithApple();
+      if (result.success && result.userId) {
+        // Auth state listener in App.tsx will handle setting userId
+        // Just proceed to premium page
+        onNavigateToPremium();
+      } else {
+        if (result.error && result.error !== 'Sign in cancelled') {
+          Alert.alert('Sign In Failed', result.error || 'Failed to sign in with Apple');
+        }
+      }
+    } catch (error: any) {
       console.error('Apple sign in error:', error);
-      // Navigate to premium even on error for demo purposes
-      onNavigateToPremium();
+      if (error.code !== 'ERR_REQUEST_CANCELED') {
+        Alert.alert('Error', error.message || 'An error occurred');
+      }
     }
-  };
-
-  const handleSignIn = () => {
-    // TODO: Navigate to sign in screen or show sign in modal
-    // For now, just proceed
-    onLogin();
   };
 
   return (
@@ -1811,21 +1803,23 @@ const LoginPage: React.FC<{
               </View>
             </TouchableOpacity>
 
-            {/* Apple Sign In Button */}
-            <TouchableOpacity 
-              style={[styles.socialButton, styles.appleButton]}
-              onPress={handleAppleSignIn}
-              activeOpacity={0.7}
-            >
-              <View style={styles.socialButtonContent}>
-                <View style={styles.appleIconContainer}>
-                  <Svg width={20} height={20} viewBox="0 0 24 24" fill="#ffffff">
-                    <Path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C1.79 15.25 4.23 7.59 9.2 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
-                  </Svg>
+            {/* Apple Sign In Button - iOS only */}
+            {Platform.OS === 'ios' && (
+              <TouchableOpacity 
+                style={[styles.socialButton, styles.appleButton]}
+                onPress={handleAppleSignIn}
+                activeOpacity={0.7}
+              >
+                <View style={styles.socialButtonContent}>
+                  <View style={styles.appleIconContainer}>
+                    <Svg width={20} height={20} viewBox="0 0 24 24" fill="#ffffff">
+                      <Path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C1.79 15.25 4.23 7.59 9.2 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+                    </Svg>
+                  </View>
+                  <Text style={[styles.socialButtonText, styles.appleButtonText]}>Continue with Apple</Text>
                 </View>
-                <Text style={[styles.socialButtonText, styles.appleButtonText]}>Continue with Apple</Text>
-              </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
+            )}
 
           </Animated.View>
         </View>

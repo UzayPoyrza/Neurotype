@@ -11,6 +11,7 @@ import { AnimatedFloatingButton } from '../components/AnimatedFloatingButton';
 import { ModuleGridModal } from '../components/ModuleGridModal';
 import { Slider0to10 } from '../components/Slider0to10';
 import { signInWithGoogle, signInWithApple } from '../services/authService';
+import { supabase } from '../services/supabase';
 
 interface OnboardingScreenProps {
   onFinish: () => void;
@@ -1695,18 +1696,39 @@ const LoginPage: React.FC<{
 
   const handleGoogleSignIn = async () => {
     try {
+      console.log('🔵 Starting Google sign in...');
       const result = await signInWithGoogle();
+      
       if (result.success) {
-        // Auth state listener in App.tsx will handle setting userId
-        // Just proceed to premium page
-        onNavigateToPremium();
+        console.log('🔵 Google OAuth flow initiated, waiting for authentication...');
+        // OAuth flow has started - browser will open
+        // Wait for auth state change to complete authentication
+        // Don't navigate immediately - let the auth state listener handle it
+        // But we can set up a listener here to navigate when auth completes
+        
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, session) => {
+            console.log('🔵 Auth state changed:', event, session?.user?.id);
+            if (event === 'SIGNED_IN' && session?.user) {
+              console.log('✅ Google sign in successful!');
+              subscription.unsubscribe();
+              onNavigateToPremium();
+            }
+          }
+        );
+        
+        // Timeout after 60 seconds if auth doesn't complete
+        setTimeout(() => {
+          subscription.unsubscribe();
+        }, 60000);
       } else {
+        console.error('❌ Google sign in failed:', result.error);
         if (result.error && result.error !== 'Sign in cancelled') {
           Alert.alert('Sign In Failed', result.error || 'Failed to sign in with Google');
         }
       }
     } catch (error: any) {
-      console.error('Google sign in error:', error);
+      console.error('❌ Google sign in error:', error);
       Alert.alert('Error', error.message || 'An error occurred');
     }
   };

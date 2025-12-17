@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "scheme": "neurotype",
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -16,7 +16,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.anonymous.Neurotype",
-      "usesAppleSignIn": true
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -30,7 +33,14 @@
     },
     "plugins": [
       "expo-font",
-      "expo-apple-authentication"
-    ]
+      "expo-apple-authentication",
+      "expo-dev-client"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "7768bd99-be76-4497-8e4f-db24e1a6169f"
+      }
+    },
+    "owner": "launchspace"
   }
 }

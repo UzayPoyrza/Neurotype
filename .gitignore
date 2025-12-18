@@ -38,3 +38,6 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+# EAS build config (contains sensitive credentials)
+eas.json

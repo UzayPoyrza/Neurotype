@@ -5,17 +5,30 @@
       "distribution": "internal",
       "ios": {
         "simulator": false
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://uwevibncyrfudcfhcuux.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_snQod8WRui2eASS3ke4-eg_Mo5mXmU-"
       }
     },
     "preview": {
       "distribution": "internal",
       "ios": {
         "simulator": false
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://uwevibncyrfudcfhcuux.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_snQod8WRui2eASS3ke4-eg_Mo5mXmU-"
       }
     },
     "production": {
+      "distribution": "store",
       "ios": {
         "simulator": false
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://uwevibncyrfudcfhcuux.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_snQod8WRui2eASS3ke4-eg_Mo5mXmU-"
       }
     }
   }

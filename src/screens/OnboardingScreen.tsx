@@ -80,7 +80,6 @@ const WelcomePage: React.FC = () => {
   const iconScale = useRef(new Animated.Value(0.8)).current;
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleTranslateY = useRef(new Animated.Value(20)).current;
-  const disclaimerOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -113,13 +112,6 @@ const WelcomePage: React.FC = () => {
         useNativeDriver: true,
       }),
     ]).start();
-
-    Animated.timing(disclaimerOpacity, {
-      toValue: 1,
-      duration: 600,
-      delay: 1800,
-      useNativeDriver: true,
-    }).start();
   }, []);
 
   return (
@@ -175,12 +167,6 @@ const WelcomePage: React.FC = () => {
             delay={1300}
           />
         </View>
-
-        <Animated.View style={[styles.disclaimerContainer, { opacity: disclaimerOpacity }]}>
-          <Text style={styles.disclaimerTextLight}>
-            Your meditation data and progress are used to improve your personalized experience.
-          </Text>
-        </Animated.View>
       </View>
     </View>
   );
@@ -2945,18 +2931,7 @@ const styles = StyleSheet.create({
     color: '#8e8e93',
     lineHeight: 20,
   },
-  disclaimerContainer: {
-    alignItems: 'center',
-    marginBottom: 24,
-    paddingHorizontal: 0,
-  },
   disclaimerText: {
-    fontSize: 13,
-    color: '#8e8e93',
-    lineHeight: 18,
-    textAlign: 'center',
-  },
-  disclaimerTextLight: {
     fontSize: 13,
     color: '#8e8e93',
     lineHeight: 18,

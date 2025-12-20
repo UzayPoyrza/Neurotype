@@ -291,7 +291,7 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
                   
                   <Text 
                     style={styles.moduleDescription} 
-                    numberOfLines={3} 
+                    numberOfLines={2} 
                     ellipsizeMode="tail"
                   >
                     {module.description}

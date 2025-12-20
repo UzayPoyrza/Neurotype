@@ -11,6 +11,7 @@ import { AnimatedFloatingButton } from '../components/AnimatedFloatingButton';
 import { ModuleGridModal } from '../components/ModuleGridModal';
 import { Slider0to10 } from '../components/Slider0to10';
 import { signInWithGoogle, signInWithApple } from '../services/authService';
+import { showErrorAlert, ERROR_TITLES } from '../utils/errorHandler';
 import { supabase } from '../services/supabase';
 
 interface OnboardingScreenProps {
@@ -1692,37 +1693,105 @@ const LoginPage: React.FC<{
         // Don't navigate immediately - let the auth state listener handle it
         // But we can set up a listener here to navigate when auth completes
         
+        let authCompleted = false;
+        let authErrorOccurred = false;
+        
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event, session) => {
-            console.log('🔵 Auth state changed:', event, session?.user?.id);
-            if (event === 'SIGNED_IN' && session?.user) {
-              console.log('✅ Google sign in successful!');
+            try {
+              console.log('🔵 Auth state changed:', event, session?.user?.id);
+              
+              // Handle errors from auth state change
+              if (event === 'SIGNED_OUT' && !authCompleted) {
+                // User was signed out unexpectedly during auth flow
+                console.error('❌ User was signed out during authentication');
+                authErrorOccurred = true;
+                authCompleted = true; // Prevent timeout
+                subscription.unsubscribe();
+                showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, 'Authentication was interrupted. Please try again.');
+                return;
+              }
+              
+              // Handle token refresh errors
+              if (event === 'TOKEN_REFRESHED' && !session) {
+                console.error('❌ Token refresh failed - no session');
+                authErrorOccurred = true;
+                authCompleted = true;
+                subscription.unsubscribe();
+                showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, 'Session expired. Please sign in again.');
+                return;
+              }
+              
+              if (event === 'SIGNED_IN' && session?.user) {
+                console.log('✅ Google sign in successful!');
+                authCompleted = true;
+                subscription.unsubscribe();
+                onNavigateToPremium();
+              } else if (event === 'SIGNED_IN' && !session?.user) {
+                // Signed in event but no user - this is an error
+                console.error('❌ SIGNED_IN event but no user in session');
+                authErrorOccurred = true;
+                authCompleted = true;
+                subscription.unsubscribe();
+                showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, 'Authentication completed but user data is missing. Please try again.');
+              }
+            } catch (error: any) {
+              console.error('❌ Error in auth state change handler:', error);
+              authErrorOccurred = true;
+              authCompleted = true; // Prevent timeout from also showing error
               subscription.unsubscribe();
-              onNavigateToPremium();
+              showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, error);
             }
           }
         );
         
+        // Also listen for any errors that might occur during the OAuth processing
+        // Check session after a short delay to see if auth completed
+        setTimeout(async () => {
+          if (!authCompleted && !authErrorOccurred) {
+            try {
+              const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+              if (sessionError) {
+                console.error('❌ Error checking session:', sessionError);
+                authErrorOccurred = true;
+                authCompleted = true;
+                subscription.unsubscribe();
+                showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, sessionError.message || 'Failed to verify authentication');
+              }
+            } catch (error: any) {
+              console.error('❌ Error checking session:', error);
+              authErrorOccurred = true;
+              authCompleted = true;
+              subscription.unsubscribe();
+              showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, error);
+            }
+          }
+        }, 5000); // Check after 5 seconds
+        
         // Timeout after 60 seconds if auth doesn't complete
         setTimeout(() => {
           subscription.unsubscribe();
+          if (!authCompleted) {
+            console.error('❌ Google sign in timed out');
+            showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, 'Sign in timed out. Please try again.');
+          }
         }, 60000);
       } else {
         console.error('❌ Google sign in failed:', result.error);
-        if (result.error && result.error !== 'Sign in cancelled') {
-          Alert.alert('Sign In Failed', result.error || 'Failed to sign in with Google');
-        }
+        // Show error for all failures
+        const errorMessage = result.error || 'Failed to sign in with Google';
+        showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, errorMessage);
       }
     } catch (error: any) {
       console.error('❌ Google sign in error:', error);
-      Alert.alert('Error', error.message || 'An error occurred');
+      showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, error);
     }
   };
 
   const handleAppleSignIn = async () => {
     try {
       if (Platform.OS !== 'ios') {
-        Alert.alert('Not Available', 'Apple Sign In is only available on iOS');
+        showErrorAlert(ERROR_TITLES.NOT_AVAILABLE, 'Apple Sign In is only available on iOS');
         return;
       }
       
@@ -1732,17 +1801,50 @@ const LoginPage: React.FC<{
         // Just proceed to premium page
         onNavigateToPremium();
       } else {
-        if (result.error && result.error !== 'Sign in cancelled') {
-          Alert.alert('Sign In Failed', result.error || 'Failed to sign in with Apple');
-        }
+        // Show error for all failures
+        const errorMessage = result.error || 'Failed to sign in with Apple';
+        showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, errorMessage);
       }
     } catch (error: any) {
       console.error('Apple sign in error:', error);
-      if (error.code !== 'ERR_REQUEST_CANCELED') {
-        Alert.alert('Error', error.message || 'An error occurred');
-      }
+      showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, error);
     }
   };
+
+  // Calculate responsive font size for "That's everything" text
+  // Find the maximum font size that fits without getting cut off
+  const calculateResponsiveFontSize = () => {
+    const baseFontSize = 46;
+    const referenceWidth = 375; // iPhone standard width
+    const minFontSize = 28; // Minimum readable size
+    const maxFontSize = 46; // Maximum size (current)
+    
+    // Account for horizontal padding: 20px on each side + 8px paddingLeft = 48px total
+    const availableWidth = SCREEN_WIDTH - 38;
+    
+    // Estimate text width: "That's everything." is ~18 characters
+    // Approximate character width ratio: fontSize * 0.50 (balanced ratio for bold text)
+    // Calculate maximum font size that fits: availableWidth >= fontSize * charWidthRatio * textLength
+    const textLength = 18; // "That's everything."
+    const charWidthRatio = 0.48; // Balanced ratio for bold text, slightly larger
+    
+    // Calculate maximum font size that fits exactly (this is the maximum that will fit)
+    const maxFittingSize = availableWidth / (charWidthRatio * textLength);
+    
+    // Also scale based on width ratio for consistency on larger screens
+    const widthRatio = availableWidth / referenceWidth;
+    const ratioBasedSize = baseFontSize * widthRatio;
+    
+    // Use the smaller of the two to ensure it fits, prioritizing maxFittingSize for accuracy
+    const calculatedSize = Math.min(maxFittingSize, ratioBasedSize);
+    
+    // Clamp between min and max, but allow it to be as large as possible
+    return Math.max(minFontSize, Math.min(maxFontSize, calculatedSize));
+  };
+
+  const responsiveFontSize = calculateResponsiveFontSize();
+  // Calculate proportional lineHeight (base lineHeight is 56 for fontSize 46, ratio ~1.22)
+  const responsiveLineHeight = responsiveFontSize * 1.22;
 
   return (
     <View style={styles.loginPage}>
@@ -1757,7 +1859,7 @@ const LoginPage: React.FC<{
             },
           ]}
         >
-          <Text style={styles.loginBackgroundTextLarge} numberOfLines={1}>That's everything.</Text>
+          <Text style={[styles.loginBackgroundTextLarge, { fontSize: responsiveFontSize, lineHeight: responsiveLineHeight }]} numberOfLines={1}>That's everything.</Text>
           <Text style={styles.loginBackgroundTextSmall}>
             {typingText}
             {showCursor && (

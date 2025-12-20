@@ -6,6 +6,7 @@ import { theme } from '../styles/theme';
 import { updateUserPreferences } from '../services/userService';
 import { useUserId } from '../hooks/useUserId';
 import { HowToUseModal } from '../components/HowToUseModal';
+import { showErrorAlert, ERROR_TITLES } from '../utils/errorHandler';
 
 export const SettingsScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -75,6 +76,8 @@ export const SettingsScreen: React.FC = () => {
         if (currentValue !== value) {
           toggleReminder(); // Toggle back
         }
+        // Show error alert to user
+        showErrorAlert(ERROR_TITLES.DATABASE_ERROR, result.error || 'Failed to save reminder preference');
       }
     } else {
       console.warn('⚠️ [SettingsScreen] No user ID, cannot save to database');

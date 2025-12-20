@@ -404,18 +404,44 @@ export default function App() {
     // Listen for auth state changes (handles Google OAuth redirect)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
-          const userId = session.user.id;
-          useStore.setState({ userId, isLoggedIn: true });
-          
-          // Create profile if needed
-          await createUserProfile(
-            userId,
-            session.user.email || '',
-            session.user.user_metadata?.full_name || session.user.user_metadata?.name
-          );
-        } else if (event === 'SIGNED_OUT') {
-          useStore.setState({ userId: null, isLoggedIn: false });
+        try {
+          if (event === 'SIGNED_IN' && session?.user) {
+            const userId = session.user.id;
+            useStore.setState({ userId, isLoggedIn: true });
+            
+            // Create profile if needed
+            try {
+              const result = await createUserProfile(
+                userId,
+                session.user.email || '',
+                session.user.user_metadata?.full_name || session.user.user_metadata?.name
+              );
+              
+              if (!result.success && result.error) {
+                console.error('Failed to create user profile:', result.error);
+                // Don't show alert here as it might interrupt the user flow
+                // Profile creation failure is non-critical
+              }
+            } catch (error) {
+              console.error('Error creating user profile:', error);
+              // Profile creation failure is non-critical, don't interrupt user
+            }
+          } else if (event === 'SIGNED_OUT') {
+            useStore.setState({ userId: null, isLoggedIn: false });
+          } else if (event === 'TOKEN_REFRESHED') {
+            // Token refreshed successfully
+            if (!session) {
+              console.error('Token refresh failed - no session');
+            }
+          } else if (event === 'USER_UPDATED') {
+            // User updated successfully
+          } else if (event === 'SIGNED_IN' && !session?.user) {
+            // Signed in event but no user - this is an error
+            console.error('SIGNED_IN event but no user in session');
+          }
+        } catch (error) {
+          console.error('Error in auth state change handler:', error);
+          // Don't show alert here as it's a global handler - let individual screens handle their own errors
         }
       }
     );

@@ -8,6 +8,7 @@ import { mentalHealthModules } from '../data/modules';
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
 import { getAllSessions, getSessionsByModality } from '../services/sessionService';
+import { showErrorAlert, ERROR_TITLES } from '../utils/errorHandler';
 
 type ExploreStackParamList = {
   ExploreMain: undefined;
@@ -209,7 +210,9 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
         console.log('[ModuleDetailScreen] ✅ Sessions cached successfully');
       } catch (err) {
         console.error('[ModuleDetailScreen] ❌ Error fetching sessions:', err);
-        setError('Failed to load sessions. Please try again.');
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load sessions';
+        setError(errorMessage);
+        showErrorAlert(ERROR_TITLES.NETWORK_ERROR, err);
       } finally {
         setIsLoading(false);
         console.log('[ModuleDetailScreen] ✨ Finished loading sessions');

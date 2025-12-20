@@ -8,7 +8,6 @@ import {
   Dimensions,
   StatusBar,
   SafeAreaView,
-  Vibration,
   ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -391,11 +390,6 @@ export const TutorialPlayerScreen: React.FC = () => {
     }
   };
 
-  // Helper function to trigger haptic feedback
-  const triggerHapticFeedback = () => {
-    Vibration.vibrate(10); // Short vibration for touch feedback
-  };
-
   // Enhanced gesture handler using newer Gesture API
   const panGesture = Gesture.Pan()
     .onStart(() => {
@@ -405,7 +399,6 @@ export const TutorialPlayerScreen: React.FC = () => {
         damping: 15,
         stiffness: 200,
       });
-      runOnJS(triggerHapticFeedback)();
     })
     .onUpdate((event) => {
       // Calculate new position: start position + finger movement

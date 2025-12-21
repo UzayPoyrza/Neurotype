@@ -804,6 +804,8 @@ export const useStore = create<AppState>((set, get) => ({
   logout: () => {
     set({ 
       isLoggedIn: false,
+      userId: null,
+      hasCompletedOnboarding: false,
       emotionalFeedbackHistory: [] as EmotionalFeedbackEntry[],
     });
   },

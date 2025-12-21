@@ -130,13 +130,68 @@ export async function signInWithGoogle(): Promise<{
       return { success: false, error: 'Sign in dismissed' };
     }
 
-    // If success, the auth state listener will handle the rest
-    // The URL contains the auth code/token that Supabase will process
+    // If success, process the redirect URL and create user profile
     if (result.type === 'success' && result.url) {
       console.log('🔵 OAuth redirect received, processing...');
-      // The redirect URL contains the auth code - Supabase will process it
-      // The auth state listener will pick up the session change
-      return { success: true };
+      
+      // Extract URL parameters from the redirect URL
+      const url = new URL(result.url);
+      const code = url.searchParams.get('code');
+      const error = url.searchParams.get('error');
+      const errorDescription = url.searchParams.get('error_description');
+      
+      if (error) {
+        console.error('❌ OAuth error in redirect:', error, errorDescription);
+        return { success: false, error: errorDescription || error };
+      }
+      
+      if (!code) {
+        console.error('❌ No code in redirect URL');
+        return { success: false, error: 'No authorization code received' };
+      }
+      
+      // Wait for Supabase to process the redirect and create the session
+      // Poll for session with timeout (Supabase should process the deep link automatically)
+      let session = null;
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      while (!session && attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('❌ Error getting session:', sessionError);
+          return { success: false, error: sessionError.message || 'Failed to create session' };
+        }
+        
+        if (currentSession?.user) {
+          session = currentSession;
+          break;
+        }
+        
+        attempts++;
+      }
+      
+      if (!session?.user) {
+        console.error('❌ Failed to get session after OAuth redirect');
+        return { success: false, error: 'Session not created after OAuth redirect' };
+      }
+      
+      console.log('✅ Google sign in successful! User ID:', session.user.id);
+      
+      // Create or update user profile (similar to Apple sign-in)
+      const email = session.user.email || '';
+      const firstName = session.user.user_metadata?.full_name?.split(' ')[0] || 
+                        session.user.user_metadata?.name?.split(' ')[0] || 
+                        undefined;
+      
+      await createUserProfile(session.user.id, email, firstName);
+      
+      return {
+        success: true,
+        userId: session.user.id,
+      };
     }
 
     return { success: false, error: 'Unexpected browser result' };

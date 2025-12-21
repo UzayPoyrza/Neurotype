@@ -232,85 +232,6 @@ export default function App() {
   const activeSession = useStore(state => state.activeSession);
   const hasCompletedOnboarding = useStore(state => state.hasCompletedOnboarding);
 
-  // Initialize test user and load preferences
-  useEffect(() => {
-    const initTestUser = async () => {
-      try {
-        const userId = await ensureTestUser();
-        useStore.setState({ userId });
-        console.log('👤 Test user connected to app:', userId);
-        console.log('✅ You are now logged in as user:', userId);
-        
-        // Verify user ID is in store
-        const storeUserId = useStore.getState().userId;
-        if (storeUserId === userId) {
-          console.log('✅ User ID stored in app state:', userId);
-        }
-        
-        // Load user preferences from database
-        console.log('📱 [App] Loading user preferences...');
-        const preferences = await getUserPreferences(userId);
-        
-        if (preferences) {
-          console.log('📱 [App] Loaded preferences:', preferences);
-          // Update store with preferences from database
-          const currentReminderEnabled = useStore.getState().reminderEnabled;
-          if (preferences.reminder_enabled !== currentReminderEnabled) {
-            // Only update if different to avoid unnecessary state changes
-            if (preferences.reminder_enabled && !currentReminderEnabled) {
-              useStore.getState().toggleReminder(); // Toggle from false to true
-            } else if (!preferences.reminder_enabled && currentReminderEnabled) {
-              useStore.getState().toggleReminder(); // Toggle from true to false
-            }
-            console.log('📱 [App] Updated reminder preference to:', preferences.reminder_enabled);
-          }
-        } else {
-          console.log('📱 [App] No preferences found, using defaults');
-        }
-        
-        // Sync today's completed sessions from database (clear cache and reload)
-        console.log('🔄 [App] Syncing today\'s completed sessions from database...');
-        await useStore.getState().syncTodayCompletedSessionsFromDatabase(userId);
-        
-        // Clear sessions and calendar caches on app open
-        console.log('🧹 [App] Clearing sessions and calendar caches on app open...');
-        useStore.getState().clearSessionsCache();
-        useStore.getState().clearCalendarCache();
-        
-        // Calculate and update streak from completed sessions
-        console.log('🔥 [App] Calculating streak from completed sessions...');
-        const streak = await calculateUserStreak(userId);
-        useStore.setState((state) => ({
-          userProgress: {
-            ...state.userProgress,
-            streak: streak,
-          },
-        }));
-        console.log(`✅ [App] Streak calculated and updated: ${streak} days`);
-        
-        // Ensure daily recommendations exist for today (default module: anxiety)
-        console.log('🎯 [App] Checking daily recommendations...');
-        const defaultModuleId = 'anxiety'; // Default module
-        const recResult = await ensureDailyRecommendations(userId, defaultModuleId);
-        
-        if (recResult.success) {
-          if (recResult.generated) {
-            console.log('✅ [App] Generated new daily recommendations');
-          } else {
-            console.log('✅ [App] Daily recommendations already exist for today');
-          }
-        } else {
-          console.error('❌ [App] Failed to ensure daily recommendations:', recResult.error);
-        }
-      } catch (error) {
-        console.error('❌ Failed to initialize test user:', error);
-        // Set test user ID anyway as fallback
-        useStore.setState({ userId: '00000000-0000-0000-0000-000000000001' });
-      }
-    };
-    
-    initTestUser();
-  }, []);
 
   // Test Supabase connection and session migration
   useEffect(() => {
@@ -391,12 +312,13 @@ export default function App() {
 
   // Auth state listener - handles Google OAuth redirect and Apple sign-in
   useEffect(() => {
-    // Check initial session
+    // Check initial session - if user is already logged in, skip onboarding
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         useStore.setState({ 
           userId: session.user.id, 
-          isLoggedIn: true 
+          isLoggedIn: true,
+          hasCompletedOnboarding: true // User is already logged in, so they've completed onboarding
         });
       }
     });
@@ -407,7 +329,11 @@ export default function App() {
         try {
           if (event === 'SIGNED_IN' && session?.user) {
             const userId = session.user.id;
-            useStore.setState({ userId, isLoggedIn: true });
+            useStore.setState({ 
+              userId, 
+              isLoggedIn: true,
+              hasCompletedOnboarding: true // User signed in, so they've completed onboarding
+            });
             
             // Create profile if needed
             try {
@@ -427,7 +353,11 @@ export default function App() {
               // Profile creation failure is non-critical, don't interrupt user
             }
           } else if (event === 'SIGNED_OUT') {
-            useStore.setState({ userId: null, isLoggedIn: false });
+            useStore.setState({ 
+              userId: null, 
+              isLoggedIn: false,
+              hasCompletedOnboarding: false // Reset onboarding on logout
+            });
           } else if (event === 'TOKEN_REFRESHED') {
             // Token refreshed successfully
             if (!session) {
@@ -453,11 +383,85 @@ export default function App() {
     setShowSplash(false);
   };
 
-  const handleOnboardingFinish = () => {
+  const handleOnboardingFinish = (skipped?: boolean) => {
     useStore.setState({ 
       hasCompletedOnboarding: true,
       isLoggedIn: true 
     });
+    
+    // Only initialize test user if skip was pressed
+    if (skipped) {
+      const initTestUser = async () => {
+        try {
+          const userId = await ensureTestUser();
+          useStore.setState({ userId });
+          console.log('👤 Test user connected to app:', userId);
+          console.log('✅ You are now logged in as user:', userId);
+          
+          // Load user preferences from database
+          console.log('📱 [App] Loading user preferences...');
+          const preferences = await getUserPreferences(userId);
+          
+          if (preferences) {
+            console.log('📱 [App] Loaded preferences:', preferences);
+            // Update store with preferences from database
+            const currentReminderEnabled = useStore.getState().reminderEnabled;
+            if (preferences.reminder_enabled !== currentReminderEnabled) {
+              // Only update if different to avoid unnecessary state changes
+              if (preferences.reminder_enabled && !currentReminderEnabled) {
+                useStore.getState().toggleReminder(); // Toggle from false to true
+              } else if (!preferences.reminder_enabled && currentReminderEnabled) {
+                useStore.getState().toggleReminder(); // Toggle from true to false
+              }
+              console.log('📱 [App] Updated reminder preference to:', preferences.reminder_enabled);
+            }
+          } else {
+            console.log('📱 [App] No preferences found, using defaults');
+          }
+          
+          // Sync today's completed sessions from database (clear cache and reload)
+          console.log('🔄 [App] Syncing today\'s completed sessions from database...');
+          await useStore.getState().syncTodayCompletedSessionsFromDatabase(userId);
+          
+          // Clear sessions and calendar caches on app open
+          console.log('🧹 [App] Clearing sessions and calendar caches on app open...');
+          useStore.getState().clearSessionsCache();
+          useStore.getState().clearCalendarCache();
+          
+          // Calculate and update streak from completed sessions
+          console.log('🔥 [App] Calculating streak from completed sessions...');
+          const streak = await calculateUserStreak(userId);
+          useStore.setState((state) => ({
+            userProgress: {
+              ...state.userProgress,
+              streak: streak,
+            },
+          }));
+          console.log(`✅ [App] Streak calculated and updated: ${streak} days`);
+          
+          // Ensure daily recommendations exist for today (default module: anxiety)
+          console.log('🎯 [App] Checking daily recommendations...');
+          const defaultModuleId = 'anxiety'; // Default module
+          const recResult = await ensureDailyRecommendations(userId, defaultModuleId);
+          
+          if (recResult.success) {
+            if (recResult.generated) {
+              console.log('✅ [App] Generated new daily recommendations');
+            } else {
+              console.log('✅ [App] Daily recommendations already exist for today');
+            }
+          } else {
+            console.error('❌ [App] Failed to ensure daily recommendations:', recResult.error);
+          }
+        } catch (error) {
+          console.error('❌ Failed to initialize test user:', error);
+          // Set test user ID anyway as fallback
+          useStore.setState({ userId: '00000000-0000-0000-0000-000000000001' });
+        }
+      };
+      
+      initTestUser();
+    }
   };
 
   if (showSplash) {

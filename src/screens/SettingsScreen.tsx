@@ -7,6 +7,7 @@ import { updateUserPreferences } from '../services/userService';
 import { useUserId } from '../hooks/useUserId';
 import { HowToUseModal } from '../components/HowToUseModal';
 import { showErrorAlert, ERROR_TITLES } from '../utils/errorHandler';
+import { signOut } from '../services/authService';
 
 export const SettingsScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -217,8 +218,26 @@ export const SettingsScreen: React.FC = () => {
                   {
                     text: 'Logout',
                     style: 'destructive',
-                    onPress: () => {
-                      useStore.getState().logout();
+                    onPress: async () => {
+                      try {
+                        // Sign out from Supabase
+                        const result = await signOut();
+                        if (result.success) {
+                          // Clear local state - the SIGNED_OUT event will also handle this,
+                          // but we do it here to ensure immediate UI update
+                          useStore.setState({
+                            userId: null,
+                            isLoggedIn: false,
+                            hasCompletedOnboarding: false,
+                            emotionalFeedbackHistory: [],
+                          });
+                        } else {
+                          showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, result.error || 'Failed to logout');
+                        }
+                      } catch (error: any) {
+                        console.error('Logout error:', error);
+                        showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, error.message || 'Failed to logout');
+                      }
                     },
                   },
                 ],

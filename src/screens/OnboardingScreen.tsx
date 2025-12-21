@@ -15,7 +15,7 @@ import { showErrorAlert, ERROR_TITLES } from '../utils/errorHandler';
 import { supabase } from '../services/supabase';
 
 interface OnboardingScreenProps {
-  onFinish: () => void;
+  onFinish: (skipped?: boolean) => void;
 }
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -2614,7 +2614,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
     }
   };
 
-  const handleFinish = () => {
+  const handleFinish = (skipped: boolean = false) => {
     // Start smooth exit animation - immediately show overlay to hide content
     finishOverlayOpacity.setValue(1); // Set to fully opaque immediately to hide premium page
     setShowFinishAnimation(true);
@@ -2662,7 +2662,8 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
               isLoggedIn: true 
             });
             // Keep overlay visible and transition directly to app
-            onFinish();
+            // Pass skipped flag to onFinish callback
+            onFinish(skipped);
           });
         }, 800); // Show content for 800ms before fading out
       });
@@ -2670,7 +2671,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   };
 
   const handleSkip = () => {
-    handleFinish();
+    handleFinish(true); // Pass true to indicate skip was pressed
   };
 
   const handleSelectModule = (moduleId: string) => {

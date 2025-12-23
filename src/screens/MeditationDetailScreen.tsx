@@ -59,6 +59,8 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const [activeTab, setActiveTab] = useState<TabType>('summary');
   const [historySortOrder, setHistorySortOrder] = useState<'latest' | 'earliest'>('latest');
   const [showSortOptions, setShowSortOptions] = useState(false);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [isBenefitsExpanded, setIsBenefitsExpanded] = useState(false);
   const userId = useUserId();
   const scrollX = useRef(new Animated.Value(0)).current;
   const horizontalScrollRef = useRef<ScrollView>(null);
@@ -550,13 +552,29 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
       return null;
     }
     
+    const MAX_LENGTH = 150;
+    const isLong = session.description.length > MAX_LENGTH;
+    const displayText = isLong && !isDescriptionExpanded 
+      ? session.description.substring(0, MAX_LENGTH) + '...'
+      : session.description;
+    
     return (
       <View style={styles.descriptionSection}>
         <Text style={styles.descriptionTitle}>Description</Text>
         <View style={styles.descriptionCard}>
           <Text style={styles.descriptionText}>
-            {session.description}
+            {displayText}
           </Text>
+          {isLong && (
+            <TouchableOpacity 
+              onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+              style={styles.readMoreButton}
+            >
+              <Text style={styles.readMoreText}>
+                {isDescriptionExpanded ? 'Read less' : 'Read more'}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     );
@@ -606,16 +624,30 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
       return null;
     }
     
+    const MAX_ITEMS = 2;
+    const displayItems = isBenefitsExpanded ? benefitItems : benefitItems.slice(0, MAX_ITEMS);
+    const hasMore = benefitItems.length > MAX_ITEMS;
+    
     return (
       <View style={styles.benefitsSection} testID="benefits-section">
         <Text style={styles.whyThisMeditationTitle}>Why This Meditation?</Text>
         <View style={styles.benefitList}>
-          {benefitItems.map((item, index) => (
+          {displayItems.map((item, index) => (
             <View key={index} style={styles.benefitCard}>
               <View style={styles.benefitBullet} />
               <Text style={styles.benefitText}>{item}</Text>
             </View>
           ))}
+          {hasMore && (
+            <TouchableOpacity 
+              onPress={() => setIsBenefitsExpanded(!isBenefitsExpanded)}
+              style={styles.readMoreButton}
+            >
+              <Text style={styles.readMoreText}>
+                {isBenefitsExpanded ? 'Show less' : `Show ${benefitItems.length - MAX_ITEMS} more`}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     );
@@ -1312,6 +1344,17 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     letterSpacing: -0.41,
     fontWeight: '400',
+  },
+  readMoreButton: {
+    marginTop: 4,
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  readMoreText: {
+    fontSize: 17,
+    color: '#007AFF',
+    fontWeight: '400',
+    letterSpacing: -0.41,
   },
   tabsContainer: {
     flexDirection: 'row',

@@ -1335,6 +1335,7 @@ const styles = StyleSheet.create({
   },
   subscriptionContainer: {
     marginBottom: 8,
+    alignSelf: 'flex-start', // Shrink-wrap to content width
   },
   upgradeButton: {
     backgroundColor: '#007AFF',

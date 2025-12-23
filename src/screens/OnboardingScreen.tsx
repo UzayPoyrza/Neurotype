@@ -2072,7 +2072,8 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   const handleFinish = (skipped: boolean = false) => {
     // Set subscription type based on whether a plan was selected
     const setSubscriptionType = useStore.getState().setSubscriptionType;
-    if (selectedPlan) {
+    // If skipped is true, treat as free plan regardless of selectedPlan
+    if (selectedPlan && !skipped) {
       // User selected a plan and completed payment
       setSubscriptionType('premium');
     } else {
@@ -2250,7 +2251,11 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
             isActive={currentPage === 5}
             selectedPlan={selectedPlan}
             onSelectPlan={setSelectedPlan}
-            onClose={handleFinish}
+            onClose={() => {
+              // Clear selected plan and finish with basic subscription
+              setSelectedPlan(null);
+              handleFinish(true); // Pass true to indicate skip
+            }}
             isOnboarding={true}
           />
           <PaymentPage

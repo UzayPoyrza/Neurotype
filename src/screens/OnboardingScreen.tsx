@@ -2290,7 +2290,7 @@ const PremiumFeaturesPage: React.FC<{
           style={styles.closeButton}
           activeOpacity={0.7}
         >
-          <Text style={styles.closeButtonText}>×</Text>
+          <Text style={styles.closeButtonText}>✕</Text>
         </TouchableOpacity>
       </Animated.View>
 
@@ -3448,8 +3448,8 @@ const styles = StyleSheet.create({
   scrollProgressContainer: {
     position: 'absolute',
     right: 8,
-    top: 0,
-    bottom: 0,
+    top: 120,
+    bottom: 50,
     width: 4,
     justifyContent: 'center',
     alignItems: 'center',
@@ -3457,11 +3457,11 @@ const styles = StyleSheet.create({
   },
   scrollProgressTrack: {
     width: 4,
-    height: '80%',
+    height: '100%',
     backgroundColor: 'rgba(0, 0, 0, 0.1)',
     borderRadius: 2,
     overflow: 'hidden',
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
   },
   scrollProgressBar: {
     width: '100%',
@@ -3476,21 +3476,19 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: 'rgba(0, 0, 0, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
   },
   closeButtonText: {
-    fontSize: 28,
-    fontWeight: '300',
-    color: '#000000',
-    lineHeight: 28,
-    marginTop: -2,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+    textAlign: 'center',
+    lineHeight: 18,
   },
   premiumPricingContainer: {
     paddingHorizontal: 0,

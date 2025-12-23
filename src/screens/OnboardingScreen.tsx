@@ -2667,7 +2667,7 @@ const PaymentPage: React.FC<{
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.pageBackground}>
+        <View style={styles.paymentPageBackground}>
           {/* Back Button */}
           <TouchableOpacity
             style={styles.backButton}
@@ -4596,10 +4596,17 @@ const styles = StyleSheet.create({
   paymentScrollContent: {
     paddingBottom: 40,
   },
+  paymentPageBackground: {
+    flex: 1,
+    width: '100%',
+    paddingTop: Platform.OS === 'ios' ? 50 : 20,
+    paddingBottom: 50,
+    paddingHorizontal: 20,
+  },
   backButton: {
     paddingVertical: 12,
-    paddingHorizontal: 20,
-    marginTop: 50,
+    paddingHorizontal: 0,
+    marginTop: 0,
     marginBottom: 20,
     alignSelf: 'flex-start',
   },

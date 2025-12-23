@@ -552,7 +552,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
       return null;
     }
     
-    const MAX_LENGTH = 150;
+    const MAX_LENGTH = 75;
     const isLong = session.description.length > MAX_LENGTH;
     const displayText = isLong && !isDescriptionExpanded 
       ? session.description.substring(0, MAX_LENGTH) + '...'

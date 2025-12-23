@@ -498,38 +498,46 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
 
   const renderMeditationInfo = (showTags = true) => {
     // Get unique module objects from module IDs (remove duplicates)
-    // Also filter out the goal if it matches a module ID to avoid duplicates
+    // Also filter out the goal if it matches a module ID to avoid duplicate tags
     const uniqueModuleIds = Array.from(new Set(sessionModules));
     const moduleObjects: MentalHealthModule[] = uniqueModuleIds
       .map(moduleId => mentalHealthModules.find(m => m.id === moduleId))
       .filter((module): module is MentalHealthModule => module !== undefined)
-      // Filter out module if its ID matches the goal to avoid duplicate tags
       .filter(module => module.id !== session.goal);
+
+    const goalColor = getGoalColor(session.goal);
+    const modalityColor = getModalityColor(session.modality);
+
+    // Helper to get border color for colored tags (slightly darker than background)
+    const getTagBorderColor = (color: string) => {
+      return color + 'CC'; // Add opacity to make border subtle
+    };
 
     return (
       <View style={styles.meditationInfo}>
-        <Text style={styles.meditationTitle}>{session.title}</Text>
-        
         {showTags && (
           <View style={styles.tagsContainer}>
-            <View style={[styles.tag, { backgroundColor: getGoalColor(session.goal) }]}>
-              <Text style={styles.tagText}>{session.goal}</Text>
+            <View style={[styles.tag, { backgroundColor: goalColor, borderColor: getTagBorderColor(goalColor) }]}>
+              <Text style={styles.tagTextWhite}>{session.goal}</Text>
             </View>
-            {moduleObjects.map((module) => (
-              <View 
-                key={module.id} 
-                style={[styles.tag, { backgroundColor: getCategoryColor(module.category) }]}
-              >
-                <Text style={styles.tagText}>{module.title}</Text>
-              </View>
-            ))}
-            <View style={[styles.tag, { backgroundColor: getModalityColor(session.modality) }]}>
-              <Text style={styles.tagText}>
+            {moduleObjects.map((module) => {
+              const categoryColor = getCategoryColor(module.category);
+              return (
+                <View 
+                  key={module.id} 
+                  style={[styles.tag, { backgroundColor: categoryColor, borderColor: getTagBorderColor(categoryColor) }]}
+                >
+                  <Text style={styles.tagTextWhite}>{module.title}</Text>
+                </View>
+              );
+            })}
+            <View style={[styles.tag, { backgroundColor: modalityColor, borderColor: getTagBorderColor(modalityColor) }]}>
+              <Text style={styles.tagTextWhite}>
                 {getModalityIcon(session.modality)} {session.modality}
               </Text>
             </View>
-            <View style={styles.tag}>
-              <Text style={styles.tagText}>{session.durationMin} min</Text>
+            <View style={[styles.tag, styles.tagNeutral]}>
+              <Text style={styles.tagTextNeutral}>{session.durationMin} min</Text>
             </View>
           </View>
         )}
@@ -544,7 +552,6 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
     
     return (
       <View style={styles.descriptionSection}>
-        <Text style={styles.descriptionTitle}>Description</Text>
         <Text style={styles.descriptionText}>
           {session.description}
         </Text>
@@ -554,42 +561,58 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
 
   const renderBenefitsExplanation = () => {
     if (!session) {
-      console.log('[MeditationDetailScreen] ⚠️ renderBenefitsExplanation called but session is null!');
       return null;
     }
     
-    console.log('[MeditationDetailScreen] 🎨 Rendering benefits explanation:', {
-      hasWhyItWorks: !!session.whyItWorks,
-      hasDescription: !!session.description,
-      whyItWorks: session.whyItWorks,
-      description: session.description,
-    });
+    // Parse whyItWorks into bullet points
+    let benefitItems: string[] = [];
+    if (session.whyItWorks) {
+      // Check if content already has bullet points
+      if (session.whyItWorks.includes('\n-') || session.whyItWorks.includes('\n•') || session.whyItWorks.includes('\n *')) {
+        benefitItems = session.whyItWorks
+          .split(/\n/)
+          .map(line => line.trim())
+          .filter(line => line.length > 0)
+          .map(line => line.replace(/^[-•*]\s*/, '').trim())
+          .filter(line => line.length > 0);
+      } else {
+        // Split paragraph into sentences
+        const sentences = session.whyItWorks
+          .split(/[.!?]+\s+/)
+          .map(s => s.trim())
+          .filter(s => s.length > 10);
+        
+        if (sentences.length > 0) {
+          benefitItems = sentences;
+        } else {
+          // Fallback: split by commas for longer content
+          if (session.whyItWorks.length > 100) {
+            const parts = session.whyItWorks
+              .split(/,\s+/)
+              .map(p => p.trim())
+              .filter(p => p.length > 15);
+            benefitItems = parts.length > 1 ? parts : [session.whyItWorks];
+          } else {
+            benefitItems = [session.whyItWorks];
+          }
+        }
+      }
+    }
+    
+    if (benefitItems.length === 0) {
+      return null;
+    }
     
     return (
       <View style={styles.benefitsSection} testID="benefits-section">
-        {session.whyItWorks && (
-          <>
-            <Text style={styles.benefitsTitle}>Why This Meditation?</Text>
-            <Text style={styles.benefitsDescription}>
-              {session.whyItWorks}
-            </Text>
-          </>
-        )}
-      
-        <View style={styles.uniqueBenefits}>
-          <Text style={styles.uniqueBenefitsTitle}>Unique Benefits</Text>
-          <View style={styles.benefitItem}>
-            <Text style={styles.benefitIcon}>🧠</Text>
-            <Text style={styles.benefitText}>Enhanced {session.goal === 'anxiety' ? 'calm and relaxation' : session.goal === 'focus' ? 'concentration and clarity' : 'sleep quality'}</Text>
-          </View>
-          <View style={styles.benefitItem}>
-            <Text style={styles.benefitIcon}>⚡</Text>
-            <Text style={styles.benefitText}>Optimized for {session.modality} practice</Text>
-          </View>
-          <View style={styles.benefitItem}>
-            <Text style={styles.benefitIcon}>🎯</Text>
-            <Text style={styles.benefitText}>Scientifically proven techniques</Text>
-          </View>
+        <Text style={styles.whyThisMeditationTitle}>Why This Meditation?</Text>
+        <View style={styles.benefitList}>
+          {benefitItems.map((item, index) => (
+            <View key={index} style={styles.benefitCard}>
+              <View style={styles.benefitBullet} />
+              <Text style={styles.benefitText}>{item}</Text>
+            </View>
+          ))}
         </View>
       </View>
     );
@@ -1171,101 +1194,102 @@ const styles = StyleSheet.create({
   },
   meditationInfo: {
     paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingTop: 20,
+    paddingBottom: 24,
     backgroundColor: 'transparent',
-  },
-  meditationTitle: {
-    fontSize: 21,
-    fontWeight: '700',
-    color: theme.colors.text.primary,
-    marginBottom: 12,
-    textAlign: 'left',
   },
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+    alignItems: 'center',
   },
   tag: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    backgroundColor: '#E5E5EA',
+    paddingHorizontal: 13,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 0.5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 2.5,
+    elevation: 2,
   },
-  tagText: {
+  tagNeutral: {
+    backgroundColor: '#F2F2F7',
+    borderColor: 'rgba(0, 0, 0, 0.08)',
+  },
+  tagTextWhite: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#1C1C1E',
+    fontWeight: '600',
     textTransform: 'capitalize',
+    letterSpacing: -0.08,
+    color: '#FFFFFF',
+  },
+  tagTextNeutral: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1C1C1E',
+    letterSpacing: -0.08,
   },
   descriptionSection: {
-    paddingHorizontal: 20,
-    paddingTop: 0,
-    paddingBottom: 20,
-    backgroundColor: 'transparent',
-  },
-  descriptionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: theme.colors.text.primary,
-    marginBottom: 8,
-  },
-  descriptionText: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: theme.colors.text.primary,
-    fontWeight: '400',
-  },
-  benefitsSection: {
     paddingHorizontal: 20,
     paddingTop: 0,
     paddingBottom: 24,
     backgroundColor: 'transparent',
   },
-  benefitsTitle: {
+  descriptionText: {
+    fontSize: 17,
+    lineHeight: 25,
+    color: '#1C1C1E',
+    fontWeight: '400',
+    letterSpacing: -0.41,
+  },
+  benefitsSection: {
+    paddingHorizontal: 20,
+    paddingTop: 0,
+    paddingBottom: 32,
+    backgroundColor: 'transparent',
+  },
+  whyThisMeditationTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: theme.colors.text.primary,
-    marginBottom: 8,
+    color: '#000000',
+    marginBottom: 14,
+    letterSpacing: -0.3,
   },
-  benefitsDescription: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: theme.colors.text.secondary,
-    marginBottom: 20,
-    opacity: 1, // Ensure text is visible
+  benefitList: {
+    gap: 10,
   },
-  uniqueBenefits: {
-    gap: 16,
-  },
-  uniqueBenefitsTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: theme.colors.text.primary,
-    marginBottom: 12,
-  },
-  benefitItem: {
+  benefitCard: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 8,
+    alignItems: 'flex-start',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 18,
+    borderWidth: 0.5,
+    borderColor: '#E5E5EA',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 0.5 },
+    shadowOpacity: 0.03,
     shadowRadius: 2,
-    elevation: 1,
+    elevation: 0.5,
   },
-  benefitIcon: {
-    fontSize: 18,
-    marginRight: 10,
+  benefitBullet: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#007AFF',
+    marginRight: 14,
+    marginTop: 6,
   },
   benefitText: {
-    fontSize: 15,
-    color: theme.colors.text.primary,
+    fontSize: 17,
+    color: '#1C1C1E',
     flex: 1,
-    lineHeight: 20,
+    lineHeight: 24,
+    letterSpacing: -0.41,
+    fontWeight: '400',
   },
   tabsContainer: {
     flexDirection: 'row',

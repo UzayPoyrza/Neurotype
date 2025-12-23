@@ -2553,8 +2553,55 @@ const PaymentPage: React.FC<{
   const [cvv, setCvv] = useState('');
   const [cardholderName, setCardholderName] = useState('');
   const [email, setEmail] = useState('');
+  
+  const [errors, setErrors] = useState<{
+    cardNumber: boolean;
+    expiryDate: boolean;
+    cvv: boolean;
+    cardholderName: boolean;
+    email: boolean;
+  }>({
+    cardNumber: false,
+    expiryDate: false,
+    cvv: false,
+    cardholderName: false,
+    email: false,
+  });
 
   const selectedPlanData = pricingPlans.find(p => p.id === selectedPlan);
+  
+  // Validate all fields
+  const validateField = (field: string, value: string) => {
+    switch (field) {
+      case 'cardNumber':
+        const cleanedCard = value.replace(/\s/g, '');
+        return cleanedCard.length >= 16 && cleanedCard.length <= 19;
+      case 'expiryDate':
+        if (value.length < 5) return false;
+        const [month, year] = value.split('/');
+        const monthNum = parseInt(month, 10);
+        const yearNum = parseInt(year, 10);
+        return monthNum >= 1 && monthNum <= 12 && yearNum >= 0 && yearNum <= 99;
+      case 'cvv':
+        return value.length === 3;
+      case 'cardholderName':
+        return value.trim().length >= 2;
+      case 'email':
+        return value.trim().includes('@') && value.trim().includes('.') && value.trim().length > 5;
+      default:
+        return false;
+    }
+  };
+  
+  const isFormValid = () => {
+    return (
+      validateField('cardNumber', cardNumber) &&
+      validateField('expiryDate', expiryDate) &&
+      validateField('cvv', cvv) &&
+      validateField('cardholderName', cardholderName) &&
+      validateField('email', email)
+    );
+  };
 
   useEffect(() => {
     if (isActive && !hasAnimated.current) {
@@ -2606,38 +2653,40 @@ const PaymentPage: React.FC<{
   };
 
   const handleCardNumberChange = (text: string) => {
-    setCardNumber(formatCardNumber(text));
+    const formatted = formatCardNumber(text);
+    setCardNumber(formatted);
+    const isValid = validateField('cardNumber', formatted);
+    setErrors(prev => ({ ...prev, cardNumber: formatted.length > 0 && !isValid }));
   };
 
   const handleExpiryChange = (text: string) => {
-    setExpiryDate(formatExpiryDate(text));
+    const formatted = formatExpiryDate(text);
+    setExpiryDate(formatted);
+    const isValid = validateField('expiryDate', formatted);
+    setErrors(prev => ({ ...prev, expiryDate: formatted.length > 0 && !isValid }));
   };
 
   const handleCvvChange = (text: string) => {
-    const cleaned = text.replace(/\D/g, '');
-    setCvv(cleaned.substring(0, 3));
+    const cleaned = text.replace(/\D/g, '').substring(0, 3);
+    setCvv(cleaned);
+    const isValid = validateField('cvv', cleaned);
+    setErrors(prev => ({ ...prev, cvv: cleaned.length > 0 && !isValid }));
+  };
+  
+  const handleCardholderNameChange = (text: string) => {
+    setCardholderName(text);
+    const isValid = validateField('cardholderName', text);
+    setErrors(prev => ({ ...prev, cardholderName: text.length > 0 && !isValid }));
+  };
+  
+  const handleEmailChange = (text: string) => {
+    setEmail(text);
+    const isValid = validateField('email', text);
+    setErrors(prev => ({ ...prev, email: text.length > 0 && !isValid }));
   };
 
   const handlePayment = () => {
-    // Validate form
-    if (!cardNumber || cardNumber.replace(/\s/g, '').length < 16) {
-      Alert.alert('Invalid Card', 'Please enter a valid card number');
-      return;
-    }
-    if (!expiryDate || expiryDate.length < 5) {
-      Alert.alert('Invalid Expiry', 'Please enter a valid expiry date (MM/YY)');
-      return;
-    }
-    if (!cvv || cvv.length < 3) {
-      Alert.alert('Invalid CVV', 'Please enter a valid CVV');
-      return;
-    }
-    if (!cardholderName.trim()) {
-      Alert.alert('Invalid Name', 'Please enter the cardholder name');
-      return;
-    }
-    if (!email.trim() || !email.includes('@')) {
-      Alert.alert('Invalid Email', 'Please enter a valid email address');
+    if (!isFormValid()) {
       return;
     }
 
@@ -2742,7 +2791,10 @@ const PaymentPage: React.FC<{
             <View style={styles.paymentInputContainer}>
               <Text style={styles.paymentInputLabel}>Card Number</Text>
               <TextInput
-                style={styles.paymentInput}
+                style={[
+                  styles.paymentInput,
+                  errors.cardNumber && styles.paymentInputError
+                ]}
                 placeholder="1234 5678 9012 3456"
                 value={cardNumber}
                 onChangeText={handleCardNumberChange}
@@ -2757,7 +2809,10 @@ const PaymentPage: React.FC<{
               <View style={[styles.paymentInputContainer, { flex: 1, marginRight: 10 }]}>
                 <Text style={styles.paymentInputLabel}>Expiry Date</Text>
                 <TextInput
-                  style={styles.paymentInput}
+                  style={[
+                    styles.paymentInput,
+                    errors.expiryDate && styles.paymentInputError
+                  ]}
                   placeholder="MM/YY"
                   value={expiryDate}
                   onChangeText={handleExpiryChange}
@@ -2769,7 +2824,10 @@ const PaymentPage: React.FC<{
               <View style={[styles.paymentInputContainer, { flex: 1, marginLeft: 10 }]}>
                 <Text style={styles.paymentInputLabel}>CVV</Text>
                 <TextInput
-                  style={styles.paymentInput}
+                  style={[
+                    styles.paymentInput,
+                    errors.cvv && styles.paymentInputError
+                  ]}
                   placeholder="123"
                   value={cvv}
                   onChangeText={handleCvvChange}
@@ -2785,10 +2843,13 @@ const PaymentPage: React.FC<{
             <View style={styles.paymentInputContainer}>
               <Text style={styles.paymentInputLabel}>Cardholder Name</Text>
               <TextInput
-                style={styles.paymentInput}
+                style={[
+                  styles.paymentInput,
+                  errors.cardholderName && styles.paymentInputError
+                ]}
                 placeholder="John Doe"
                 value={cardholderName}
-                onChangeText={setCardholderName}
+                onChangeText={handleCardholderNameChange}
                 placeholderTextColor="rgba(0, 0, 0, 0.3)"
               />
             </View>
@@ -2797,10 +2858,13 @@ const PaymentPage: React.FC<{
             <View style={styles.paymentInputContainer}>
               <Text style={styles.paymentInputLabel}>Email</Text>
               <TextInput
-                style={styles.paymentInput}
+                style={[
+                  styles.paymentInput,
+                  errors.email && styles.paymentInputError
+                ]}
                 placeholder="your.email@example.com"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={handleEmailChange}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 placeholderTextColor="rgba(0, 0, 0, 0.3)"
@@ -2817,11 +2881,20 @@ const PaymentPage: React.FC<{
 
             {/* Complete Purchase Button */}
             <TouchableOpacity
-              style={styles.completePurchaseButton}
+              style={[
+                styles.completePurchaseButton,
+                !isFormValid() && styles.completePurchaseButtonDisabled
+              ]}
               onPress={handlePayment}
               activeOpacity={0.7}
+              disabled={!isFormValid()}
             >
-              <Text style={styles.completePurchaseButtonText}>Complete Purchase</Text>
+              <Text style={[
+                styles.completePurchaseButtonText,
+                !isFormValid() && styles.completePurchaseButtonTextDisabled
+              ]}>
+                Complete Purchase
+              </Text>
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -4710,6 +4783,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(0, 0, 0, 0.1)',
   },
+  paymentInputError: {
+    borderColor: '#FF3B30',
+    borderWidth: 2,
+  },
   securityNotice: {
     flexDirection: 'row',
     backgroundColor: '#f2f2f7',
@@ -4743,9 +4820,17 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
+  completePurchaseButtonDisabled: {
+    backgroundColor: '#C7C7CC',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
   completePurchaseButtonText: {
     fontSize: 17,
     fontWeight: '600',
     color: '#ffffff',
+  },
+  completePurchaseButtonTextDisabled: {
+    color: '#8E8E93',
   },
 });

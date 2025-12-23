@@ -2577,10 +2577,13 @@ const PaymentPage: React.FC<{
         const cleanedCard = value.replace(/\s/g, '');
         return cleanedCard.length >= 16 && cleanedCard.length <= 19;
       case 'expiryDate':
-        if (value.length < 5) return false;
-        const [month, year] = value.split('/');
+        if (value.length !== 5) return false;
+        const parts = value.split('/');
+        if (parts.length !== 2) return false;
+        const [month, year] = parts;
         const monthNum = parseInt(month, 10);
         const yearNum = parseInt(year, 10);
+        if (isNaN(monthNum) || isNaN(yearNum)) return false;
         return monthNum >= 1 && monthNum <= 12 && yearNum >= 0 && yearNum <= 99;
       case 'cvv':
         return value.length === 3;
@@ -2645,11 +2648,18 @@ const PaymentPage: React.FC<{
   };
 
   const formatExpiryDate = (text: string) => {
+    // Remove all non-digits
     const cleaned = text.replace(/\D/g, '');
-    if (cleaned.length >= 2) {
-      return cleaned.substring(0, 2) + '/' + cleaned.substring(2, 4);
+    
+    // Limit to 4 digits
+    const digits = cleaned.substring(0, 4);
+    
+    // Add slash after 2 digits
+    if (digits.length >= 2) {
+      return digits.substring(0, 2) + '/' + digits.substring(2, 4);
     }
-    return cleaned;
+    
+    return digits;
   };
 
   const handleCardNumberChange = (text: string) => {

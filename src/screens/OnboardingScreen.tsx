@@ -2037,7 +2037,42 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
     if (currentPage !== 3) {
       setHasScrolledOnHowToUse(false);
     }
-  }, [currentPage]);
+    
+    // Auto-skip premium and payment pages if user already has premium
+    if (currentPage === 5 && subscriptionType === 'premium') {
+      console.log('✅ [Onboarding] User has premium, auto-skipping premium page');
+      // Small delay to allow page to render, then finish
+      const skipTimer = setTimeout(() => {
+        finishOverlayOpacity.setValue(1);
+        setShowFinishAnimation(true);
+        setTimeout(() => {
+          Animated.parallel([
+            Animated.timing(finishContentOpacity, {
+              toValue: 1,
+              duration: 400,
+              easing: Easing.out(Easing.ease),
+              useNativeDriver: true,
+            }),
+            Animated.spring(finishContentScale, {
+              toValue: 1,
+              tension: 40,
+              friction: 7,
+              useNativeDriver: true,
+            }),
+          ]).start(() => {
+            setTimeout(() => {
+              // User already has premium, so set it and finish
+              const setSubscriptionType = useStore.getState().setSubscriptionType;
+              setSubscriptionType('premium');
+              onFinish();
+            }, 2000);
+          });
+        }, 100);
+      }, 100);
+      
+      return () => clearTimeout(skipTimer);
+    }
+  }, [currentPage, subscriptionType, finishOverlayOpacity, finishContentOpacity, finishContentScale, onFinish]);
 
   const handleScroll = (event: any) => {
     const offsetX = event.nativeEvent.contentOffset.x;
@@ -2243,8 +2278,14 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
             isActive={currentPage === 4}
             onLogin={handleLogin}
             onNavigateToPremium={() => {
-              // Navigate to premium features page (page 5)
-              scrollViewRef.current?.scrollTo({ x: SCREEN_WIDTH * 5, animated: true });
+              // Check if user already has premium subscription
+              if (subscriptionType === 'premium') {
+                console.log('✅ [Onboarding] User has premium, skipping premium and payment pages');
+                handleFinish();
+              } else {
+                // Navigate to premium features page (page 5)
+                scrollViewRef.current?.scrollTo({ x: SCREEN_WIDTH * 5, animated: true });
+              }
             }}
           />
           <PremiumFeaturesPage 

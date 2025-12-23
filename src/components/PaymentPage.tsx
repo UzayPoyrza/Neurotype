@@ -357,6 +357,7 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
           <Animated.View
             style={[
               styles.titleContainer,
+              isOnboarding ? styles.titleContainerOnboarding : styles.titleContainerStandalone,
               {
                 opacity: titleOpacity,
                 transform: [{ translateY: titleTranslateY }],
@@ -609,7 +610,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 40,
     paddingHorizontal: 20,
-    marginTop: -8, // Move up to align with back button
+  },
+  titleContainerOnboarding: {
+    marginTop: -8, // Move up to align with back button in onboarding
+  },
+  titleContainerStandalone: {
+    marginTop: 0, // Normal spacing for standalone
   },
   titleLight: {
     fontSize: 32,
@@ -638,7 +644,7 @@ const styles = StyleSheet.create({
     paddingTop: 50, // Reduced for better alignment
   },
   paymentPageBackgroundStandalone: {
-    paddingTop: Platform.OS === 'ios' ? 20 : 10,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40, // More space for standalone (from Profile/Settings)
   },
   backButton: {
     paddingVertical: 12,

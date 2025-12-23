@@ -2535,6 +2535,301 @@ const PremiumFeaturesPage: React.FC<{
   );
 };
 
+// Payment Page Component
+const PaymentPage: React.FC<{
+  isActive: boolean;
+  selectedPlan: string | null;
+  onBack: () => void;
+  onComplete: () => void;
+}> = ({ isActive, selectedPlan, onBack, onComplete }) => {
+  const titleOpacity = useRef(new Animated.Value(0)).current;
+  const titleTranslateY = useRef(new Animated.Value(20)).current;
+  const formOpacity = useRef(new Animated.Value(0)).current;
+  const formTranslateY = useRef(new Animated.Value(30)).current;
+  const hasAnimated = useRef(false);
+  
+  const [cardNumber, setCardNumber] = useState('');
+  const [expiryDate, setExpiryDate] = useState('');
+  const [cvv, setCvv] = useState('');
+  const [cardholderName, setCardholderName] = useState('');
+  const [email, setEmail] = useState('');
+
+  const selectedPlanData = pricingPlans.find(p => p.id === selectedPlan);
+
+  useEffect(() => {
+    if (isActive && !hasAnimated.current) {
+      hasAnimated.current = true;
+      Animated.parallel([
+        Animated.timing(titleOpacity, {
+          toValue: 1,
+          duration: 600,
+          delay: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(titleTranslateY, {
+          toValue: 0,
+          duration: 600,
+          delay: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(formOpacity, {
+          toValue: 1,
+          duration: 600,
+          delay: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(formTranslateY, {
+          toValue: 0,
+          duration: 600,
+          delay: 400,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else if (!isActive) {
+      hasAnimated.current = false;
+    }
+  }, [isActive]);
+
+  const formatCardNumber = (text: string) => {
+    const cleaned = text.replace(/\s/g, '');
+    const formatted = cleaned.match(/.{1,4}/g)?.join(' ') || cleaned;
+    return formatted.substring(0, 19); // Max 16 digits + 3 spaces
+  };
+
+  const formatExpiryDate = (text: string) => {
+    const cleaned = text.replace(/\D/g, '');
+    if (cleaned.length >= 2) {
+      return cleaned.substring(0, 2) + '/' + cleaned.substring(2, 4);
+    }
+    return cleaned;
+  };
+
+  const handleCardNumberChange = (text: string) => {
+    setCardNumber(formatCardNumber(text));
+  };
+
+  const handleExpiryChange = (text: string) => {
+    setExpiryDate(formatExpiryDate(text));
+  };
+
+  const handleCvvChange = (text: string) => {
+    const cleaned = text.replace(/\D/g, '');
+    setCvv(cleaned.substring(0, 3));
+  };
+
+  const handlePayment = () => {
+    // Validate form
+    if (!cardNumber || cardNumber.replace(/\s/g, '').length < 16) {
+      Alert.alert('Invalid Card', 'Please enter a valid card number');
+      return;
+    }
+    if (!expiryDate || expiryDate.length < 5) {
+      Alert.alert('Invalid Expiry', 'Please enter a valid expiry date (MM/YY)');
+      return;
+    }
+    if (!cvv || cvv.length < 3) {
+      Alert.alert('Invalid CVV', 'Please enter a valid CVV');
+      return;
+    }
+    if (!cardholderName.trim()) {
+      Alert.alert('Invalid Name', 'Please enter the cardholder name');
+      return;
+    }
+    if (!email.trim() || !email.includes('@')) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address');
+      return;
+    }
+
+    // Here you would integrate with a payment processor like Stripe
+    // For now, we'll just complete the onboarding
+    Alert.alert(
+      'Payment Processing',
+      'Your payment is being processed. This is a demo - no actual charge will be made.',
+      [
+        {
+          text: 'OK',
+          onPress: onComplete,
+        },
+      ]
+    );
+  };
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.page}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    >
+      <ScrollView
+        style={styles.page}
+        contentContainerStyle={styles.paymentScrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.pageBackground}>
+          {/* Back Button */}
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={onBack}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.backButtonText}>← Back</Text>
+          </TouchableOpacity>
+
+          <Animated.View
+            style={[
+              styles.titleContainer,
+              {
+                opacity: titleOpacity,
+                transform: [{ translateY: titleTranslateY }],
+              },
+            ]}
+          >
+            <Text style={styles.titleLight}>Complete Your Purchase</Text>
+            <Text style={styles.subtitleLight}>
+              {selectedPlanData ? `You're subscribing to ${selectedPlanData.name} Plan` : 'Select a plan to continue'}
+            </Text>
+          </Animated.View>
+
+          {/* Plan Summary */}
+          {selectedPlanData && (
+            <Animated.View
+              style={[
+                styles.planSummary,
+                {
+                  opacity: formOpacity,
+                  transform: [{ translateY: formTranslateY }],
+                },
+              ]}
+            >
+              <View style={styles.planSummaryHeader}>
+                <Text style={styles.planSummaryTitle}>{selectedPlanData.name} Plan</Text>
+                {selectedPlanData.savings && (
+                  <View style={styles.paymentSavingsBadge}>
+                    <Text style={styles.paymentSavingsBadgeText}>{selectedPlanData.savings}</Text>
+                  </View>
+                )}
+              </View>
+              <View style={styles.planSummaryPrice}>
+                <Text style={styles.planPrice}>${selectedPlanData.price.toFixed(2)}</Text>
+                <Text style={styles.planPeriod}>
+                  {selectedPlanData.period === 'month' ? '/month' : selectedPlanData.period === 'year' ? '/year' : ' one-time'}
+                </Text>
+              </View>
+              {selectedPlanData.originalPrice && (
+                <Text style={styles.originalPrice}>
+                  ${selectedPlanData.originalPrice.toFixed(2)} before discount
+                </Text>
+              )}
+              <Text style={styles.freeTrialText}>7-day free trial • Cancel anytime</Text>
+            </Animated.View>
+          )}
+
+          {/* Payment Form */}
+          <Animated.View
+            style={[
+              styles.paymentForm,
+              {
+                opacity: formOpacity,
+                transform: [{ translateY: formTranslateY }],
+              },
+            ]}
+          >
+            <Text style={styles.formSectionTitle}>Payment Information</Text>
+
+            {/* Card Number */}
+            <View style={styles.paymentInputContainer}>
+              <Text style={styles.paymentInputLabel}>Card Number</Text>
+              <TextInput
+                style={styles.paymentInput}
+                placeholder="1234 5678 9012 3456"
+                value={cardNumber}
+                onChangeText={handleCardNumberChange}
+                keyboardType="numeric"
+                maxLength={19}
+                placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              />
+            </View>
+
+            {/* Expiry and CVV Row */}
+            <View style={styles.paymentInputRow}>
+              <View style={[styles.paymentInputContainer, { flex: 1, marginRight: 10 }]}>
+                <Text style={styles.paymentInputLabel}>Expiry Date</Text>
+                <TextInput
+                  style={styles.paymentInput}
+                  placeholder="MM/YY"
+                  value={expiryDate}
+                  onChangeText={handleExpiryChange}
+                  keyboardType="numeric"
+                  maxLength={5}
+                  placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                />
+              </View>
+              <View style={[styles.paymentInputContainer, { flex: 1, marginLeft: 10 }]}>
+                <Text style={styles.paymentInputLabel}>CVV</Text>
+                <TextInput
+                  style={styles.paymentInput}
+                  placeholder="123"
+                  value={cvv}
+                  onChangeText={handleCvvChange}
+                  keyboardType="numeric"
+                  maxLength={3}
+                  secureTextEntry
+                  placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                />
+              </View>
+            </View>
+
+            {/* Cardholder Name */}
+            <View style={styles.paymentInputContainer}>
+              <Text style={styles.paymentInputLabel}>Cardholder Name</Text>
+              <TextInput
+                style={styles.paymentInput}
+                placeholder="John Doe"
+                value={cardholderName}
+                onChangeText={setCardholderName}
+                placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              />
+            </View>
+
+            {/* Email */}
+            <View style={styles.paymentInputContainer}>
+              <Text style={styles.paymentInputLabel}>Email</Text>
+              <TextInput
+                style={styles.paymentInput}
+                placeholder="your.email@example.com"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              />
+            </View>
+
+            {/* Security Notice */}
+            <View style={styles.securityNotice}>
+              <Text style={styles.securityIcon}>🔒</Text>
+              <Text style={styles.securityText}>
+                Your payment information is encrypted and secure. We never store your full card details.
+              </Text>
+            </View>
+
+            {/* Complete Purchase Button */}
+            <TouchableOpacity
+              style={styles.completePurchaseButton}
+              onPress={handlePayment}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.completePurchaseButtonText}>Complete Purchase</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+};
+
 export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) => {
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
@@ -2557,7 +2852,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   const finishContentOpacity = useRef(new Animated.Value(0)).current;
   const finishContentScale = useRef(new Animated.Value(0.8)).current;
 
-  const TOTAL_PAGES = 6;
+  const TOTAL_PAGES = 7;
 
   useEffect(() => {
     if (currentPage === 0) {
@@ -2609,7 +2904,10 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   };
 
   const handleNext = () => {
-    if (currentPage < TOTAL_PAGES - 1) {
+    // If on premium page (page 5) and plan is selected, go to payment page
+    if (currentPage === 5 && selectedPlan) {
+      scrollViewRef.current?.scrollTo({ x: SCREEN_WIDTH * 6, animated: true });
+    } else if (currentPage < TOTAL_PAGES - 1) {
       scrollViewRef.current?.scrollTo({ x: SCREEN_WIDTH * (currentPage + 1), animated: true });
     } else {
       handleFinish();
@@ -2701,9 +2999,10 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
     if (currentPage === 1) return selectedModule ? 'Continue' : 'Select a module';
     if (currentPage === 2) return hasClickedChangeButton ? 'Continue' : 'Click the change button';
     if (currentPage === 3) return hasScrolledOnHowToUse ? 'Continue' : 'Scroll down';
-    if (currentPage === TOTAL_PAGES - 1) {
+    if (currentPage === 5) {
       return selectedPlan ? 'Continue to payment' : "No thanks! I'll continue with Free Plan.";
     }
+    if (currentPage === 6) return 'Complete Purchase';
     return 'Continue';
   };
 
@@ -2788,10 +3087,18 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
             onSelectPlan={setSelectedPlan}
             onClose={handleFinish}
           />
+          <PaymentPage
+            isActive={currentPage === 6}
+            selectedPlan={selectedPlan}
+            onBack={() => {
+              scrollViewRef.current?.scrollTo({ x: SCREEN_WIDTH * 5, animated: true });
+            }}
+            onComplete={handleFinish}
+          />
           </ScrollView>
         )}
 
-        {!showFinishAnimation && currentPage !== 4 && (
+        {!showFinishAnimation && currentPage !== 4 && currentPage !== 6 && (
           <Animated.View
             style={[
               styles.buttonContainer,
@@ -4282,5 +4589,153 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: '#8e8e93',
     textAlign: 'center',
+  },
+  paymentScrollContent: {
+    paddingBottom: 40,
+  },
+  backButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginTop: 50,
+    marginBottom: 20,
+    alignSelf: 'flex-start',
+  },
+  backButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#007AFF',
+  },
+  planSummary: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    marginHorizontal: 20,
+    marginBottom: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  planSummaryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  planSummaryTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000000',
+  },
+  paymentSavingsBadge: {
+    backgroundColor: '#34C759',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  paymentSavingsBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  planSummaryPrice: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 8,
+  },
+  planPrice: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#000000',
+    marginRight: 8,
+  },
+  planPeriod: {
+    fontSize: 18,
+    fontWeight: '400',
+    color: '#8e8e93',
+  },
+  originalPrice: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#8e8e93',
+    textDecorationLine: 'line-through',
+    marginBottom: 8,
+  },
+  freeTrialText: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#8e8e93',
+    marginTop: 8,
+  },
+  paymentForm: {
+    paddingHorizontal: 20,
+  },
+  formSectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000000',
+    marginBottom: 20,
+  },
+  paymentInputContainer: {
+    marginBottom: 20,
+  },
+  paymentInputRow: {
+    flexDirection: 'row',
+    marginBottom: 20,
+  },
+  paymentInputLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 8,
+  },
+  paymentInput: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 17,
+    color: '#000000',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  securityNotice: {
+    flexDirection: 'row',
+    backgroundColor: '#f2f2f7',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 20,
+    alignItems: 'flex-start',
+  },
+  securityIcon: {
+    fontSize: 20,
+    marginRight: 12,
+  },
+  securityText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#8e8e93',
+    lineHeight: 20,
+  },
+  completePurchaseButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+    marginTop: 30,
+    marginBottom: 20,
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  completePurchaseButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#ffffff',
   },
 });

@@ -23,7 +23,7 @@ import { useStore } from './src/store/useStore';
 import { supabase } from './src/services/supabase';
 import { getAllSessions, getSessionsByModality, getSessionById } from './src/services/sessionService';
 import { ensureTestUser, verifyTestUserConnection } from './src/services/testUserService';
-import { getUserPreferences, createUserProfile } from './src/services/userService';
+import { getUserPreferences, createUserProfile, getUserProfile } from './src/services/userService';
 import { ensureDailyRecommendations } from './src/services/recommendationService';
 import { calculateUserStreak } from './src/services/progressService';
 
@@ -355,6 +355,32 @@ export default function App() {
         throw new Error(`Connection error: ${sessionError.message}`);
       }
       console.log('✅ [App] Supabase connection verified, session exists:', !!session);
+      
+      // Load user profile and subscription type from database
+      console.log('📱 [App] Loading user profile...');
+      try {
+        const userProfile = await getUserProfile(userId);
+        
+        if (userProfile) {
+          console.log('✅ [App] Loaded user profile:', userProfile);
+          // Update store with subscription type from database
+          const currentSubscriptionType = useStore.getState().subscriptionType;
+          if (userProfile.subscription_type !== currentSubscriptionType) {
+            useStore.getState().setSubscriptionType(userProfile.subscription_type);
+            console.log('📱 [App] Updated subscription type to:', userProfile.subscription_type);
+          }
+        } else {
+          console.log('⚠️ [App] No user profile found, using defaults');
+        }
+      } catch (profileError: any) {
+        console.error('❌ [App] Error loading user profile:', profileError);
+        console.error('❌ [App] Profile error details:', {
+          message: profileError.message,
+          code: profileError.code,
+          stack: profileError.stack,
+        });
+        // Continue with defaults - profile loading failure is not critical
+      }
       
       // Load user preferences from database
       console.log('📱 [App] Loading user preferences...');

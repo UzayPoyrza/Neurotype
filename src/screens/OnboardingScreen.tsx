@@ -13,6 +13,7 @@ import { Slider0to10 } from '../components/Slider0to10';
 import { signInWithGoogle, signInWithApple } from '../services/authService';
 import { showErrorAlert, ERROR_TITLES } from '../utils/errorHandler';
 import { supabase } from '../services/supabase';
+import { getUserProfile } from '../services/userService';
 
 interface OnboardingScreenProps {
   onFinish: (skipped?: boolean) => void;
@@ -3096,6 +3097,9 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   const buttonOpacity = useRef(new Animated.Value(0)).current;
   const buttonScale = useRef(new Animated.Value(0.95)).current;
   const setTodayModuleId = useStore(state => state.setTodayModuleId);
+  const userId = useStore(state => state.userId);
+  const subscriptionType = useStore(state => state.subscriptionType);
+  const setSubscriptionType = useStore(state => state.setSubscriptionType);
   const [showModuleModal, setShowModuleModal] = useState(false);
   const [demoModuleId, setDemoModuleId] = useState<string | null>(null);
   const previousDemoModuleId = useRef<string | null>(null);
@@ -3109,8 +3113,34 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   const finishOverlayScale = useRef(new Animated.Value(1)).current;
   const finishContentOpacity = useRef(new Animated.Value(0)).current;
   const finishContentScale = useRef(new Animated.Value(0.8)).current;
+  const hasCheckedSubscription = useRef(false);
 
   const TOTAL_PAGES = 7;
+
+  // Check subscription type when user signs in
+  useEffect(() => {
+    const checkSubscriptionType = async () => {
+      if (userId && !hasCheckedSubscription.current) {
+        hasCheckedSubscription.current = true;
+        try {
+          const userProfile = await getUserProfile(userId);
+          if (userProfile && userProfile.subscription_type) {
+            setSubscriptionType(userProfile.subscription_type);
+            console.log('✅ [Onboarding] Loaded subscription type:', userProfile.subscription_type);
+            
+            // If user has premium, skip payment page
+            if (userProfile.subscription_type === 'premium') {
+              console.log('✅ [Onboarding] User has premium, will skip payment page');
+            }
+          }
+        } catch (error) {
+          console.error('❌ [Onboarding] Error checking subscription type:', error);
+        }
+      }
+    };
+    
+    checkSubscriptionType();
+  }, [userId, setSubscriptionType]);
 
   useEffect(() => {
     if (currentPage === 0) {
@@ -3162,12 +3192,22 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   };
 
   const handleNext = () => {
-    // If on premium page (page 5) and plan is selected, go to payment page
-    if (currentPage === 5 && selectedPlan) {
-      scrollViewRef.current?.scrollTo({ x: SCREEN_WIDTH * 6, animated: true });
-    } else if (currentPage === 5 && !selectedPlan) {
-      // If on premium page with no plan selected, skip to finish
-      handleFinish();
+    // If on premium page (page 5)
+    if (currentPage === 5) {
+      // If user already has premium subscription, skip payment page and finish
+      if (subscriptionType === 'premium') {
+        console.log('✅ [Onboarding] User has premium, skipping payment page');
+        handleFinish();
+        return;
+      }
+      
+      // If plan is selected, go to payment page
+      if (selectedPlan) {
+        scrollViewRef.current?.scrollTo({ x: SCREEN_WIDTH * 6, animated: true });
+      } else {
+        // If on premium page with no plan selected, skip to finish
+        handleFinish();
+      }
     } else if (currentPage < TOTAL_PAGES - 1) {
       scrollViewRef.current?.scrollTo({ x: SCREEN_WIDTH * (currentPage + 1), animated: true });
     } else {

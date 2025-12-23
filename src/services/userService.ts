@@ -114,16 +114,26 @@ export async function createUserProfile(
   firstName?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    // Check if user already exists
+    const existingProfile = await getUserProfile(userId);
+    
+    if (existingProfile) {
+      // User already exists, return success
+      return { success: true };
+    }
+
+    // Create new user with basic subscription
     const { error } = await supabase
       .from('users')
       .insert({
         id: userId,
         email,
         first_name: firstName || null,
+        subscription_type: 'basic', // New users start with basic subscription
       });
 
     if (error) {
-      // If user already exists, that's okay
+      // If user already exists (race condition), that's okay
       if (error.code === '23505') {
         return { success: true };
       }

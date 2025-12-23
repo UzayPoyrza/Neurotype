@@ -2567,6 +2567,35 @@ const PaymentPage: React.FC<{
     cardholderName: false,
     email: false,
   });
+  
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const processingOpacity = useRef(new Animated.Value(0)).current;
+  const successOpacity = useRef(new Animated.Value(0)).current;
+  const successScale = useRef(new Animated.Value(0.8)).current;
+  const spinnerRotation = useRef(new Animated.Value(0)).current;
+  
+  // Spinner rotation animation
+  useEffect(() => {
+    if (isProcessing) {
+      const rotateAnimation = Animated.loop(
+        Animated.timing(spinnerRotation, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        })
+      );
+      rotateAnimation.start();
+      return () => rotateAnimation.stop();
+    } else {
+      spinnerRotation.setValue(0);
+    }
+  }, [isProcessing]);
+  
+  const spinnerInterpolate = spinnerRotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
 
   const selectedPlanData = pricingPlans.find(p => p.id === selectedPlan);
   
@@ -2695,23 +2724,93 @@ const PaymentPage: React.FC<{
     setErrors(prev => ({ ...prev, email: text.length > 0 && !isValid }));
   };
 
-  const handlePayment = () => {
+  const handlePayment = async () => {
     if (!isFormValid()) {
       return;
     }
 
-    // Here you would integrate with a payment processor like Stripe
-    // For now, we'll just complete the onboarding
-    Alert.alert(
-      'Payment Processing',
-      'Your payment is being processed. This is a demo - no actual charge will be made.',
-      [
-        {
-          text: 'OK',
-          onPress: onComplete,
-        },
-      ]
-    );
+    setIsProcessing(true);
+    setIsSuccess(false);
+    
+    // Show processing animation
+    Animated.timing(processingOpacity, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+
+    try {
+      // Simulate payment processing (replace with actual payment API call)
+      await new Promise((resolve, reject) => {
+        setTimeout(() => {
+          // Simulate 80% success rate for demo
+          const isSuccessful = Math.random() > 0.2;
+          
+          if (isSuccessful) {
+            resolve(true);
+          } else {
+            // Simulate different error scenarios
+            const errorTypes = [
+              { reason: 'Insufficient funds', message: 'Your card has insufficient funds. Please use a different payment method.' },
+              { reason: 'Card declined', message: 'Your card was declined. Please check your card details or try a different card.' },
+              { reason: 'Expired card', message: 'Your card has expired. Please use a different payment method.' },
+              { reason: 'Invalid card', message: 'The card number you entered is invalid. Please check and try again.' },
+              { reason: 'Network error', message: 'Unable to process payment due to a network error. Please check your connection and try again.' },
+            ];
+            const randomError = errorTypes[Math.floor(Math.random() * errorTypes.length)];
+            reject(randomError);
+          }
+        }, 2000); // Simulate 2 second processing time
+      });
+
+      // Payment successful
+      setIsProcessing(false);
+      Animated.timing(processingOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => {
+        setIsSuccess(true);
+        Animated.parallel([
+          Animated.timing(successOpacity, {
+            toValue: 1,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+          Animated.spring(successScale, {
+            toValue: 1,
+            tension: 50,
+            friction: 7,
+            useNativeDriver: true,
+          }),
+        ]).start();
+
+        // Complete onboarding after showing success animation
+        setTimeout(() => {
+          onComplete();
+        }, 1500);
+      });
+
+    } catch (error: any) {
+      // Payment failed
+      setIsProcessing(false);
+      Animated.timing(processingOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => {
+        Alert.alert(
+          'Payment Failed',
+          error.message || 'Unable to process your payment. Please try again.',
+          [
+            {
+              text: 'OK',
+              style: 'default',
+            },
+          ]
+        );
+      });
+    }
   };
 
   return (
@@ -2893,22 +2992,87 @@ const PaymentPage: React.FC<{
             <TouchableOpacity
               style={[
                 styles.completePurchaseButton,
-                !isFormValid() && styles.completePurchaseButtonDisabled
+                (!isFormValid() || isProcessing) && styles.completePurchaseButtonDisabled
               ]}
               onPress={handlePayment}
               activeOpacity={0.7}
-              disabled={!isFormValid()}
+              disabled={!isFormValid() || isProcessing}
             >
-              <Text style={[
-                styles.completePurchaseButtonText,
-                !isFormValid() && styles.completePurchaseButtonTextDisabled
-              ]}>
-                Complete Purchase
-              </Text>
+              {isProcessing ? (
+                <View style={styles.processingContainer}>
+                  <Animated.View 
+                    style={[
+                      styles.spinner, 
+                      { 
+                        transform: [{ rotate: spinnerInterpolate }],
+                        opacity: processingOpacity 
+                      }
+                    ]} 
+                  />
+                  <Text style={styles.completePurchaseButtonText}>Processing...</Text>
+                </View>
+              ) : (
+                <Text style={[
+                  styles.completePurchaseButtonText,
+                  !isFormValid() && styles.completePurchaseButtonTextDisabled
+                ]}>
+                  Complete Purchase
+                </Text>
+              )}
             </TouchableOpacity>
           </Animated.View>
         </View>
       </ScrollView>
+
+      {/* Processing Overlay */}
+      {isProcessing && (
+        <Animated.View
+          style={[
+            styles.processingOverlay,
+            { opacity: processingOpacity }
+          ]}
+        >
+          <View style={styles.processingContent}>
+            <View style={styles.processingSpinnerContainer}>
+              <Animated.View 
+                style={[
+                  styles.processingSpinner,
+                  { transform: [{ rotate: spinnerInterpolate }] }
+                ]}
+              />
+            </View>
+            <Text style={styles.processingText}>Processing your payment...</Text>
+            <Text style={styles.processingSubtext}>Please wait</Text>
+          </View>
+        </Animated.View>
+      )}
+
+      {/* Success Overlay */}
+      {isSuccess && (
+        <Animated.View
+          style={[
+            styles.successOverlay,
+            {
+              opacity: successOpacity,
+            }
+          ]}
+        >
+          <Animated.View
+            style={[
+              styles.successContent,
+              {
+                transform: [{ scale: successScale }],
+              }
+            ]}
+          >
+            <View style={styles.successIconContainer}>
+              <Text style={styles.successIcon}>✓</Text>
+            </View>
+            <Text style={styles.successTitle}>Payment Successful!</Text>
+            <Text style={styles.successSubtext}>Your subscription is now active</Text>
+          </Animated.View>
+        </Animated.View>
+      )}
     </KeyboardAvoidingView>
   );
 };
@@ -4842,5 +5006,112 @@ const styles = StyleSheet.create({
   },
   completePurchaseButtonTextDisabled: {
     color: '#8E8E93',
+  },
+  processingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  spinner: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#ffffff',
+    borderTopColor: 'transparent',
+    marginRight: 8,
+  },
+  processingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  processingContent: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 280,
+  },
+  processingSpinnerContainer: {
+    width: 60,
+    height: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  processingSpinner: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 4,
+    borderColor: '#007AFF',
+    borderTopColor: 'transparent',
+  },
+  processingText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  processingSubtext: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#8E8E93',
+    textAlign: 'center',
+  },
+  successOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  successContent: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 280,
+  },
+  successIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#34C759',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  successIcon: {
+    fontSize: 50,
+    color: '#ffffff',
+    fontWeight: '700',
+  },
+  successTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#000000',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  successSubtext: {
+    fontSize: 16,
+    fontWeight: '400',
+    color: '#8E8E93',
+    textAlign: 'center',
   },
 });

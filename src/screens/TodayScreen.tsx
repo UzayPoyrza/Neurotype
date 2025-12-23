@@ -1077,7 +1077,7 @@ export const TodayScreen: React.FC = () => {
               >
                 <TouchableOpacity
                   style={[styles.recommendedSession, { 
-                    backgroundColor: (todayCompleted || isRecommendedCompleted) ? '#f2f2f7' : '#ffffff'
+                    backgroundColor: (todayCompleted || isRecommendedCompleted) ? 'rgba(0, 0, 0, 0.02)' : '#ffffff'
                   }]}
                   onPress={() => handleSessionSelect(recommendedSession)}
                   onPressIn={handleHeroCardPressIn}

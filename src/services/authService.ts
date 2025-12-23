@@ -133,28 +133,90 @@ export async function signInWithGoogle(): Promise<{
     // If success, process the redirect URL and create user profile
     if (result.type === 'success' && result.url) {
       console.log('🔵 OAuth redirect received, processing...');
+      console.log('🔵 Full redirect URL:', result.url);
       
-      // Extract URL parameters from the redirect URL
-      const url = new URL(result.url);
-      const code = url.searchParams.get('code');
-      const error = url.searchParams.get('error');
-      const errorDescription = url.searchParams.get('error_description');
+      // Parse the redirect URL - check both query params and hash fragments
+      let code: string | null = null;
+      let error: string | null = null;
+      let errorDescription: string | null = null;
+      
+      try {
+        const url = new URL(result.url);
+        
+        // Check query parameters first
+        code = url.searchParams.get('code');
+        error = url.searchParams.get('error');
+        errorDescription = url.searchParams.get('error_description');
+        
+        // If no code in query params, check hash fragment
+        if (!code && url.hash) {
+          const hashParams = new URLSearchParams(url.hash.substring(1)); // Remove the #
+          code = hashParams.get('code');
+          error = hashParams.get('error') || error;
+          errorDescription = hashParams.get('error_description') || errorDescription;
+        }
+        
+        // Also check if the code is directly in the path or as a fragment parameter
+        if (!code) {
+          // Try parsing the entire URL as a Supabase redirect
+          // Supabase redirects might have format: neurotype://auth/callback#access_token=...&code=...
+          const match = result.url.match(/[#&]code=([^&]+)/);
+          if (match) {
+            code = decodeURIComponent(match[1]);
+          }
+        }
+      } catch (urlError) {
+        console.error('❌ Error parsing redirect URL:', urlError);
+        // Try to extract code using regex as fallback
+        const match = result.url.match(/[#&?]code=([^&]+)/);
+        if (match) {
+          code = decodeURIComponent(match[1]);
+        }
+      }
       
       if (error) {
         console.error('❌ OAuth error in redirect:', error, errorDescription);
         return { success: false, error: errorDescription || error };
       }
       
+      // Don't fail if code is missing - Supabase might process the redirect via deep link
+      // The deep link handler in App.tsx will process it and trigger auth state change
       if (!code) {
-        console.error('❌ No code in redirect URL');
-        return { success: false, error: 'No authorization code received' };
+        console.log('ℹ️ No authorization code in redirect URL, but Supabase may process it via deep link');
+        console.log('ℹ️ Redirect URL was:', result.url);
+        // Continue to polling - Supabase should handle the redirect automatically
+      } else {
+        console.log('✅ Authorization code extracted from redirect URL');
+      }
+      
+      // Try to get session immediately
+      try {
+        const { data: { session: urlSession }, error: urlError } = await supabase.auth.getSession();
+        
+        if (urlSession?.user) {
+          console.log('✅ Session found immediately after redirect');
+          const email = urlSession.user.email || '';
+          const firstName = urlSession.user.user_metadata?.full_name?.split(' ')[0] || 
+                            urlSession.user.user_metadata?.name?.split(' ')[0] || 
+                            undefined;
+          
+          await createUserProfile(urlSession.user.id, email, firstName);
+          
+          return {
+            success: true,
+            userId: urlSession.user.id,
+          };
+        }
+      } catch (sessionError) {
+        console.log('ℹ️ Session not immediately available, will poll...');
       }
       
       // Wait for Supabase to process the redirect and create the session
-      // Poll for session with timeout (Supabase should process the deep link automatically)
+      // The deep link handler in App.tsx should trigger auth state change
+      // Poll for session with timeout
       let session = null;
       let attempts = 0;
-      const maxAttempts = 10;
+      const maxAttempts = 20; // Increased attempts to give more time
       
       while (!session && attempts < maxAttempts) {
         await new Promise(resolve => setTimeout(resolve, 500));

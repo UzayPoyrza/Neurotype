@@ -598,10 +598,16 @@ export default function App() {
         try {
           if (event === 'SIGNED_IN' && session?.user) {
             const userId = session.user.id;
+            const currentHasCompletedOnboarding = useStore.getState().hasCompletedOnboarding;
+            
+            // Only set hasCompletedOnboarding if user is not currently in onboarding
+            // If they're in onboarding, let them complete it first
             useStore.setState({ 
               userId, 
               isLoggedIn: true,
-              hasCompletedOnboarding: true // User signed in, so they've completed onboarding
+              // Don't set hasCompletedOnboarding here - let onboarding screen handle it
+              // Only set it if user already completed onboarding (session restore case)
+              hasCompletedOnboarding: currentHasCompletedOnboarding
             });
             
             // Create profile if needed
@@ -622,8 +628,11 @@ export default function App() {
               // Profile creation failure is non-critical, don't interrupt user
             }
             
-            // Load user data after sign in
-            await loadUserData(userId);
+            // Only load user data if onboarding is already completed
+            // Otherwise, wait for onboarding to finish
+            if (currentHasCompletedOnboarding) {
+              await loadUserData(userId);
+            }
           } else if (event === 'SIGNED_OUT') {
             console.log('✅ [App] User signed out event received');
             useStore.setState({ 
@@ -662,18 +671,28 @@ export default function App() {
       isLoggedIn: true 
     });
     
+    const userId = useStore.getState().userId;
+    
+    // If user signed in (has userId), load their data
+    if (userId && !skipped) {
+      console.log('📱 [App] User finished onboarding after sign-in, loading user data...');
+      loadUserData(userId).catch((error) => {
+        console.error('❌ [App] Failed to load user data after onboarding:', error);
+      });
+    }
+    
     // Only initialize test user if skip was pressed
     if (skipped) {
       const initTestUser = async () => {
         try {
-          const userId = await ensureTestUser();
-          useStore.setState({ userId });
-          console.log('👤 Test user connected to app:', userId);
-          console.log('✅ You are now logged in as user:', userId);
+          const testUserId = await ensureTestUser();
+          useStore.setState({ userId: testUserId });
+          console.log('👤 Test user connected to app:', testUserId);
+          console.log('✅ You are now logged in as user:', testUserId);
           
           // Load user preferences from database
           console.log('📱 [App] Loading user preferences...');
-          const preferences = await getUserPreferences(userId);
+          const preferences = await getUserPreferences(testUserId);
           
           if (preferences) {
             console.log('📱 [App] Loaded preferences:', preferences);
@@ -694,7 +713,7 @@ export default function App() {
           
           // Sync today's completed sessions from database (clear cache and reload)
           console.log('🔄 [App] Syncing today\'s completed sessions from database...');
-          await useStore.getState().syncTodayCompletedSessionsFromDatabase(userId);
+          await useStore.getState().syncTodayCompletedSessionsFromDatabase(testUserId);
           
           // Clear sessions and calendar caches on app open
           console.log('🧹 [App] Clearing sessions and calendar caches on app open...');
@@ -703,7 +722,7 @@ export default function App() {
           
           // Calculate and update streak from completed sessions
           console.log('🔥 [App] Calculating streak from completed sessions...');
-          const streak = await calculateUserStreak(userId);
+          const streak = await calculateUserStreak(testUserId);
           useStore.setState((state) => ({
             userProgress: {
               ...state.userProgress,
@@ -715,7 +734,7 @@ export default function App() {
           // Ensure daily recommendations exist for today (default module: anxiety)
           console.log('🎯 [App] Checking daily recommendations...');
           const defaultModuleId = 'anxiety'; // Default module
-          const recResult = await ensureDailyRecommendations(userId, defaultModuleId);
+          const recResult = await ensureDailyRecommendations(testUserId, defaultModuleId);
           
           if (recResult.success) {
             if (recResult.generated) {

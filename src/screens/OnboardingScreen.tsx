@@ -1798,8 +1798,10 @@ const LoginPage: React.FC<{
       const result = await signInWithApple();
       if (result.success && result.userId) {
         // Auth state listener in App.tsx will handle setting userId
-        // Just proceed to premium page
-        onNavigateToPremium();
+        // Add a small delay to ensure smooth navigation and animation
+        setTimeout(() => {
+          onNavigateToPremium();
+        }, 300);
       } else {
         // Show error for all failures
         const errorMessage = result.error || 'Failed to sign in with Apple';

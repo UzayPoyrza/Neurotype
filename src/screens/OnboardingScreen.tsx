@@ -2763,7 +2763,10 @@ const PaymentPage: React.FC<{
         }, 2000); // Simulate 2 second processing time
       });
 
-      // Payment successful
+      // Payment successful - set subscription to premium
+      const setSubscriptionType = useStore.getState().setSubscriptionType;
+      setSubscriptionType('premium');
+      
       setIsProcessing(false);
       Animated.timing(processingOpacity, {
         toValue: 0,
@@ -3173,6 +3176,16 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   };
 
   const handleFinish = (skipped: boolean = false) => {
+    // Set subscription type based on whether a plan was selected
+    const setSubscriptionType = useStore.getState().setSubscriptionType;
+    if (selectedPlan) {
+      // User selected a plan and completed payment
+      setSubscriptionType('premium');
+    } else {
+      // User skipped payment or selected free plan
+      setSubscriptionType('basic');
+    }
+    
     // Start smooth exit animation - immediately show overlay to hide content
     finishOverlayOpacity.setValue(1); // Set to fully opaque immediately to hide premium page
     setShowFinishAnimation(true);

@@ -136,7 +136,7 @@ export const SettingsScreen: React.FC = () => {
                 {subscriptionType === 'premium' ? '💎 Premium Plan' : '📱 Basic Plan'}
               </Text>
               <Text style={styles.subscriptionStatus}>
-                {subscriptionType === 'premium' ? 'Active' : 'Free'}
+                {subscriptionType === 'premium' ? 'Premium' : 'Basic'}
               </Text>
             </View>
             

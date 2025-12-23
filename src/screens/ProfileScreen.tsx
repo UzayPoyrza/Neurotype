@@ -870,7 +870,7 @@ export const ProfileScreen: React.FC = () => {
                 <Text style={styles.cardTitle}>🎁 Share & Earn</Text>
               </View>
               <Text style={styles.shareSubtitle}>
-                Give your friends 30 days of premium meditation
+                Give your friends 30 days of premium
               </Text>
             </View>
             

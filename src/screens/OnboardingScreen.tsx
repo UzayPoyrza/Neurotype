@@ -2907,6 +2907,9 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
     // If on premium page (page 5) and plan is selected, go to payment page
     if (currentPage === 5 && selectedPlan) {
       scrollViewRef.current?.scrollTo({ x: SCREEN_WIDTH * 6, animated: true });
+    } else if (currentPage === 5 && !selectedPlan) {
+      // If on premium page with no plan selected, skip to finish
+      handleFinish();
     } else if (currentPage < TOTAL_PAGES - 1) {
       scrollViewRef.current?.scrollTo({ x: SCREEN_WIDTH * (currentPage + 1), animated: true });
     } else {

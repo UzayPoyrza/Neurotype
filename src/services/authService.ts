@@ -1,7 +1,7 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
-import { Platform } from 'react-native';
+import { Platform, Alert } from 'react-native';
 import { supabase } from './supabase';
 import { createUserProfile } from './userService';
 
@@ -33,7 +33,7 @@ export async function signInWithApple(): Promise<{
     const { data, error } = await supabase.auth.signInWithIdToken({
       provider: 'apple',
       token: credential.identityToken,
-      nonce: credential.nonce,
+      // Note: nonce is optional and may not be available in all credential types
     });
 
     if (error || !data.user) {
@@ -206,13 +206,88 @@ export async function signInWithGoogle(): Promise<{
  */
 export async function signOut(): Promise<{ success: boolean; error?: string }> {
   try {
+    console.log('🔄 [signOut] Starting logout process...');
+    
+    // Check if Supabase is configured
+    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+    const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('❌ [signOut] Supabase credentials missing!');
+      console.error('❌ [signOut] EXPO_PUBLIC_SUPABASE_URL:', supabaseUrl ? '✅ Set' : '❌ Missing');
+      console.error('❌ [signOut] EXPO_PUBLIC_SUPABASE_ANON_KEY:', supabaseAnonKey ? '✅ Set' : '❌ Missing');
+      const errorMsg = 'Supabase is not configured.\n\nURL: ' + (supabaseUrl ? 'Set' : 'Missing') + '\nKey: ' + (supabaseAnonKey ? 'Set' : 'Missing') + '\n\nPlease check your environment variables.';
+      return { 
+        success: false, 
+        error: errorMsg
+      };
+    }
+    
+    console.log('✅ [signOut] Supabase credentials found, attempting sign out...');
+    
+    // Check current session before signing out
+    const { data: { session: currentSession }, error: sessionCheckError } = await supabase.auth.getSession();
+    if (sessionCheckError) {
+      console.error('❌ [signOut] Error checking current session:', sessionCheckError);
+      console.error('❌ [signOut] Session check error code:', sessionCheckError.code);
+      console.error('❌ [signOut] Session check error message:', sessionCheckError.message);
+    } else {
+      console.log('✅ [signOut] Current session exists:', !!currentSession);
+    }
+    
+    // Attempt to sign out
     const { error } = await supabase.auth.signOut();
+    
     if (error) {
+      console.error('❌ [signOut] Supabase signOut error:', error);
+      console.error('❌ [signOut] Error code:', error.code);
+      console.error('❌ [signOut] Error message:', error.message);
+      console.error('❌ [signOut] Error status:', error.status);
+      
+      // Check if it's a network error
+      if (error.message?.includes('Network') || error.message?.includes('fetch') || error.code === 'NETWORK_ERROR') {
+        console.error('❌ [signOut] Network error detected - check internet connection');
+        return { 
+          success: false, 
+          error: `Network error: ${error.message}. Please check your internet connection.` 
+        };
+      }
+      
       return { success: false, error: error.message };
     }
+    
+    // Verify sign out was successful
+    const { data: { session: verifySession }, error: verifyError } = await supabase.auth.getSession();
+    if (verifyError) {
+      console.error('❌ [signOut] Error verifying sign out:', verifyError);
+    } else if (verifySession) {
+      console.warn('⚠️ [signOut] Session still exists after sign out - may need to clear manually');
+    } else {
+      console.log('✅ [signOut] Session cleared successfully');
+    }
+    
+    console.log('✅ [signOut] Logout successful');
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    console.error('❌ [signOut] Exception during logout:', error);
+    console.error('❌ [signOut] Exception type:', typeof error);
+    console.error('❌ [signOut] Exception message:', error?.message);
+    console.error('❌ [signOut] Exception code:', error?.code);
+    console.error('❌ [signOut] Exception stack:', error?.stack);
+    
+    // Check if it's a network error
+    if (error?.message?.includes('Network') || error?.message?.includes('fetch') || error?.code === 'NETWORK_ERROR') {
+      console.error('❌ [signOut] Network error detected in exception - check internet connection');
+      return { 
+        success: false, 
+        error: `Network error: ${error.message}. Please check your internet connection.` 
+      };
+    }
+    
+    return { 
+      success: false, 
+      error: error?.message || 'An unexpected error occurred during logout' 
+    };
   }
 }
 

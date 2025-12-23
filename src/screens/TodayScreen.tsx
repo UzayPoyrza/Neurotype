@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, Animated, Dimensions, TouchableOpacity, FlatList, AccessibilityInfo, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Animated, Dimensions, TouchableOpacity, FlatList, AccessibilityInfo, TouchableWithoutFeedback, Alert } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Session } from '../types';
@@ -176,7 +176,7 @@ export const TodayScreen: React.FC = () => {
                     return null;
                   });
                   const sessions = (await Promise.all(sessionPromises)).filter(
-                    (s): s is Session => s !== null
+                    (s): s is Session & { isRecommended: boolean; adaptiveReason: string } => s !== null
                   );
                   
                   // Check which recommended sessions are completed today (from cache)
@@ -317,17 +317,59 @@ export const TodayScreen: React.FC = () => {
       setIsLoadingRecommendations(true);
       
       // Prevent duplicate checks if one is already in progress
-      // Don't clear loading state here - let the module change handler manage it
       if (recommendationCheckInProgressRef.current[selectedModuleId]) {
         console.log('⏳ [TodayScreen] Recommendation check already in progress, skipping...');
+        setIsLoadingRecommendations(false);
         return;
       }
       
       recommendationCheckInProgressRef.current[selectedModuleId] = true;
       
+      // Add timeout to prevent infinite loading
+      const timeoutId = setTimeout(() => {
+        console.error('❌ [TodayScreen] Recommendations fetch timed out after 15 seconds');
+        Alert.alert(
+          'Timeout Error',
+          'Loading recommendations is taking too long.\n\nPlease check your internet connection and try again.',
+          [
+            { text: 'Retry', onPress: () => {
+              recommendationCheckInProgressRef.current[selectedModuleId] = false;
+              fetchRecommendations();
+            }},
+            { text: 'OK', style: 'cancel', onPress: () => {
+              setIsLoadingRecommendations(false);
+              recommendationCheckInProgressRef.current[selectedModuleId] = false;
+            }}
+          ]
+        );
+        setIsLoadingRecommendations(false);
+        recommendationCheckInProgressRef.current[selectedModuleId] = false;
+        setTodaySessions([]);
+      }, 15000); // 15 second timeout
+      
       try {
         // Ensure recommendations exist for the current module
         const recResult = await ensureDailyRecommendations(userId, selectedModuleId, false);
+        
+        // ADD: Check if ensureDailyRecommendations failed
+        if (!recResult.success) {
+          console.error('❌ [TodayScreen] Failed to ensure recommendations:', recResult.error);
+          Alert.alert(
+            'Loading Error',
+            `Failed to load recommendations.\n\nError: ${recResult.error || 'Unknown error'}\n\nPlease check your internet connection and try again.`,
+            [
+              { text: 'Retry', onPress: () => {
+                recommendationCheckInProgressRef.current[selectedModuleId] = false;
+                fetchRecommendations();
+              }},
+              { text: 'OK', style: 'cancel' }
+            ]
+          );
+          setTodaySessions([]);
+          setIsLoadingRecommendations(false);
+          recommendationCheckInProgressRef.current[selectedModuleId] = false;
+          return;
+        }
         
         // Fetch recommendations for today and current module
         const recommendations = await getDailyRecommendations(userId, selectedModuleId);
@@ -340,6 +382,12 @@ export const TodayScreen: React.FC = () => {
         
         if (recommendations.length === 0) {
           console.warn('⚠️ [TodayScreen] No recommendations found');
+          // ADD: Show alert if no recommendations (might indicate an error)
+          Alert.alert(
+            'No Recommendations',
+            'No recommendations found for today.\n\nThis might be a temporary issue. Please try again later.',
+            [{ text: 'OK' }]
+          );
           setTodaySessions([]);
           setIsLoadingRecommendations(false);
           return;
@@ -359,10 +407,20 @@ export const TodayScreen: React.FC = () => {
         });
         
         const sessions = (await Promise.all(sessionPromises)).filter(
-          (s): s is Session => s !== null
+          (s): s is Session & { isRecommended: boolean; adaptiveReason: string } => s !== null
         );
         
         console.log('📋 [TodayScreen] Loaded', sessions.length, 'sessions from recommendations');
+        
+        // ADD: Check if we got fewer sessions than recommendations (some failed to load)
+        if (sessions.length < recommendations.length) {
+          console.warn(`⚠️ [TodayScreen] Only loaded ${sessions.length} of ${recommendations.length} recommended sessions`);
+          Alert.alert(
+            'Partial Load',
+            `Only ${sessions.length} of ${recommendations.length} sessions loaded successfully.\n\nSome sessions may be unavailable.`,
+            [{ text: 'OK' }]
+          );
+        }
         
         // Only check completed sessions if recommendations were not regenerated (already existed)
         // This means the recommendations are stable and we should check completion status
@@ -384,10 +442,29 @@ export const TodayScreen: React.FC = () => {
         }
         
         setTodaySessions(sessions);
-      } catch (error) {
+        clearTimeout(timeoutId); // Clear timeout on success
+      } catch (error: any) {
         console.error('❌ [TodayScreen] Error fetching recommendations:', error);
+        clearTimeout(timeoutId); // Clear timeout on error
+        // Show detailed error alert
+        Alert.alert(
+          'Loading Error',
+          `Failed to load recommendations.\n\nError: ${error?.message || 'Unknown error'}\nCode: ${error?.code || 'N/A'}\n\nPlease check your internet connection and try again.`,
+          [
+            { text: 'Retry', onPress: () => {
+              recommendationCheckInProgressRef.current[selectedModuleId] = false;
+              fetchRecommendations();
+            }},
+            { text: 'OK', style: 'cancel', onPress: () => {
+              setIsLoadingRecommendations(false);
+              recommendationCheckInProgressRef.current[selectedModuleId] = false;
+            }}
+          ]
+        );
         setTodaySessions([]);
       } finally {
+        // ALWAYS clear loading state and timeout, even if something goes wrong
+        clearTimeout(timeoutId);
         setIsLoadingRecommendations(false);
         recommendationCheckInProgressRef.current[selectedModuleId] = false;
       }
@@ -407,6 +484,22 @@ export const TodayScreen: React.FC = () => {
       }
 
       setIsLoadingCompletedSessions(true);
+      
+      // Add timeout to prevent infinite loading
+      const timeoutId = setTimeout(() => {
+        console.error('❌ [TodayScreen] Completed sessions fetch timed out after 15 seconds');
+        Alert.alert(
+          'Timeout Error',
+          'Loading completed sessions is taking too long.\n\nPlease check your internet connection.',
+          [{ text: 'OK', onPress: () => {
+            setIsLoadingCompletedSessions(false);
+          }}]
+        );
+        setFetchedCompletedSessions([]);
+        setAllCompletedSessionsForCounting([]);
+        setIsLoadingCompletedSessions(false);
+      }, 15000); // 15 second timeout
+      
       try {
         // 1. Fetch ALL completed sessions (don't filter by context_module yet)
         const completedSessionsData = await getUserCompletedSessions(userId, 50);
@@ -430,8 +523,15 @@ export const TodayScreen: React.FC = () => {
 
         if (modalitiesError) {
           console.error('Error fetching session modalities:', modalitiesError);
+          clearTimeout(timeoutId);
+          Alert.alert(
+            'Loading Error',
+            `Failed to load completed sessions.\n\nError: ${modalitiesError.message || 'Unknown error'}\nCode: ${modalitiesError.code || 'N/A'}`,
+            [{ text: 'OK' }]
+          );
           setFetchedCompletedSessions([]);
           setAllCompletedSessionsForCounting([]);
+          setIsLoadingCompletedSessions(false);
           return;
         }
 
@@ -453,8 +553,15 @@ export const TodayScreen: React.FC = () => {
 
         if (sessionsError) {
           console.error('Error fetching sessions:', sessionsError);
+          clearTimeout(timeoutId);
+          Alert.alert(
+            'Loading Error',
+            `Failed to load session details.\n\nError: ${sessionsError.message || 'Unknown error'}\nCode: ${sessionsError.code || 'N/A'}`,
+            [{ text: 'OK' }]
+          );
           setFetchedCompletedSessions([]);
           setAllCompletedSessionsForCounting([]);
+          setIsLoadingCompletedSessions(false);
           return;
         }
 
@@ -513,11 +620,20 @@ export const TodayScreen: React.FC = () => {
         setAllCompletedSessionsForCounting(moduleCompletedSessions);
         // Limit to 3 for display only
         setFetchedCompletedSessions(moduleCompletedSessions.slice(0, 3));
-      } catch (error) {
-        console.error('Error fetching completed sessions:', error);
+        clearTimeout(timeoutId); // Clear timeout on success
+      } catch (error: any) {
+        console.error('❌ [TodayScreen] Error fetching completed sessions:', error);
+        clearTimeout(timeoutId); // Clear timeout on error
+        Alert.alert(
+          'Loading Error',
+          `Failed to load completed sessions.\n\nError: ${error?.message || 'Unknown error'}\nCode: ${error?.code || 'N/A'}\n\nPlease check your internet connection.`,
+          [{ text: 'OK' }]
+        );
         setFetchedCompletedSessions([]);
         setAllCompletedSessionsForCounting([]);
       } finally {
+        // ALWAYS clear loading state and timeout, even if something goes wrong
+        clearTimeout(timeoutId);
         setIsLoadingCompletedSessions(false);
       }
     };

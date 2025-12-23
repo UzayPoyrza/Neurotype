@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
 import { Easing } from 'react-native-reanimated';
-import { Modal, StatusBar, Linking } from 'react-native';
+import { Modal, StatusBar, Linking, Alert } from 'react-native';
 import { TodayIcon, ProgressIcon, ExploreIcon, ProfileIcon } from './src/components/icons';
 import { AnimatedTabBar } from './src/components/AnimatedTabBar';
 
@@ -231,6 +231,7 @@ export default function App() {
   const [showSplash, setShowSplash] = useState(true);
   const activeSession = useStore(state => state.activeSession);
   const hasCompletedOnboarding = useStore(state => state.hasCompletedOnboarding);
+  const [isInitialDataLoaded, setIsInitialDataLoaded] = useState(false);
 
 
   // Test Supabase connection and session migration
@@ -310,17 +311,285 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Function to load user data when session is restored or user signs in
+  const loadUserData = async (userId: string) => {
+    // Add timeout wrapper to prevent infinite loading
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('Loading user data timed out after 30 seconds. Please check your internet connection.'));
+      }, 30000); // 30 second timeout
+    });
+    
+    const loadDataPromise = (async () => {
+      try {
+        console.log('📱 [App] Loading user data for userId:', userId);
+      
+      // Validate Supabase connection first
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+      const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+      
+      if (!supabaseUrl || !supabaseAnonKey) {
+        console.error('❌ [App] Supabase credentials missing!');
+        console.error('❌ [App] EXPO_PUBLIC_SUPABASE_URL:', supabaseUrl ? '✅ Set' : '❌ Missing');
+        console.error('❌ [App] EXPO_PUBLIC_SUPABASE_ANON_KEY:', supabaseAnonKey ? '✅ Set' : '❌ Missing');
+        Alert.alert(
+          'Configuration Error',
+          'Supabase credentials are not configured.\n\nPlease check your .env file.\n\nURL: ' + (supabaseUrl ? 'Set' : 'Missing') + '\nKey: ' + (supabaseAnonKey ? 'Set' : 'Missing'),
+          [{ text: 'OK' }]
+        );
+        throw new Error('Supabase credentials not configured');
+      }
+      
+      // Test connection by getting session
+      console.log('🔌 [App] Testing Supabase connection...');
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        console.error('❌ [App] Failed to get session:', sessionError);
+        console.error('❌ [App] Session error code:', sessionError.code);
+        console.error('❌ [App] Session error message:', sessionError.message);
+        Alert.alert(
+          'Connection Error',
+          `Failed to connect to Supabase.\n\nError: ${sessionError.message}\nCode: ${sessionError.code || 'N/A'}\n\nPlease check your internet connection and try again.`,
+          [{ text: 'OK' }]
+        );
+        throw new Error(`Connection error: ${sessionError.message}`);
+      }
+      console.log('✅ [App] Supabase connection verified, session exists:', !!session);
+      
+      // Load user preferences from database
+      console.log('📱 [App] Loading user preferences...');
+      try {
+        const preferences = await getUserPreferences(userId);
+        
+        if (preferences) {
+          console.log('✅ [App] Loaded preferences:', preferences);
+          // Update store with preferences from database
+          const currentReminderEnabled = useStore.getState().reminderEnabled;
+          if (preferences.reminder_enabled !== currentReminderEnabled) {
+            // Only update if different to avoid unnecessary state changes
+            if (preferences.reminder_enabled && !currentReminderEnabled) {
+              useStore.getState().toggleReminder(); // Toggle from false to true
+            } else if (!preferences.reminder_enabled && currentReminderEnabled) {
+              useStore.getState().toggleReminder(); // Toggle from true to false
+            }
+            console.log('📱 [App] Updated reminder preference to:', preferences.reminder_enabled);
+          }
+        } else {
+          console.log('⚠️ [App] No preferences found, using defaults');
+        }
+      } catch (prefError: any) {
+        console.error('❌ [App] Error loading preferences:', prefError);
+        console.error('❌ [App] Preferences error details:', {
+          message: prefError.message,
+          code: prefError.code,
+          stack: prefError.stack,
+        });
+        Alert.alert(
+          'Warning',
+          `Failed to load user preferences.\n\nError: ${prefError.message || 'Unknown error'}\n\nUsing default settings.`,
+          [{ text: 'OK' }]
+        );
+        // Continue with defaults - preferences are not critical
+      }
+      
+      // Sync today's completed sessions from database (clear cache and reload)
+      console.log('🔄 [App] Syncing today\'s completed sessions from database...');
+      try {
+        await useStore.getState().syncTodayCompletedSessionsFromDatabase(userId);
+        console.log('✅ [App] Completed sessions synced');
+      } catch (syncError: any) {
+        console.error('❌ [App] Error syncing completed sessions:', syncError);
+        console.error('❌ [App] Sync error details:', {
+          message: syncError.message,
+          code: syncError.code,
+        });
+        Alert.alert(
+          'Warning',
+          `Failed to sync completed sessions.\n\nError: ${syncError.message || 'Unknown error'}\nCode: ${syncError.code || 'N/A'}`,
+          [{ text: 'OK' }]
+        );
+        // Continue - sync failure is not critical
+      }
+      
+      // Clear sessions and calendar caches on app open
+      console.log('🧹 [App] Clearing sessions and calendar caches on app open...');
+      useStore.getState().clearSessionsCache();
+      useStore.getState().clearCalendarCache();
+      
+      // Calculate and update streak from completed sessions
+      console.log('🔥 [App] Calculating streak from completed sessions...');
+      try {
+        const streak = await calculateUserStreak(userId);
+        useStore.setState((state) => ({
+          userProgress: {
+            ...state.userProgress,
+            streak: streak,
+          },
+        }));
+        console.log(`✅ [App] Streak calculated and updated: ${streak} days`);
+      } catch (streakError: any) {
+        console.error('❌ [App] Error calculating streak:', streakError);
+        console.error('❌ [App] Streak error details:', {
+          message: streakError.message,
+          code: streakError.code,
+        });
+        Alert.alert(
+          'Warning',
+          `Failed to calculate streak.\n\nError: ${streakError.message || 'Unknown error'}\nCode: ${streakError.code || 'N/A'}`,
+          [{ text: 'OK' }]
+        );
+        // Continue - streak calculation failure is not critical
+      }
+      
+      // Ensure daily recommendations exist for today (default module: anxiety)
+      console.log('🎯 [App] Checking daily recommendations...');
+      try {
+        const defaultModuleId = 'anxiety'; // Default module
+        const recResult = await ensureDailyRecommendations(userId, defaultModuleId);
+        
+        if (recResult.success) {
+          if (recResult.generated) {
+            console.log('✅ [App] Generated new daily recommendations');
+          } else {
+            console.log('✅ [App] Daily recommendations already exist for today');
+          }
+        } else {
+          console.error('❌ [App] Failed to ensure daily recommendations:', recResult.error);
+          console.error('❌ [App] Recommendation error details:', recResult.error);
+          Alert.alert(
+            'Warning',
+            `Failed to ensure recommendations.\n\nError: ${recResult.error || 'Unknown error'}\n\nRecommendations may not be available.`,
+            [{ text: 'OK' }]
+          );
+        }
+      } catch (recError: any) {
+        console.error('❌ [App] Error ensuring recommendations:', recError);
+        console.error('❌ [App] Recommendation error details:', {
+          message: recError.message,
+          code: recError.code,
+        });
+        Alert.alert(
+          'Warning',
+          `Failed to load recommendations.\n\nError: ${recError.message || 'Unknown error'}\nCode: ${recError.code || 'N/A'}\n\nRecommendations will be generated when available.`,
+          [{ text: 'OK' }]
+        );
+        // Continue - recommendations can be generated later
+      }
+      
+      console.log('✅ [App] User data loaded successfully');
+      } catch (loadError: any) {
+        console.error('❌ [App] Failed to load user data:', loadError);
+        console.error('❌ [App] Error type:', typeof loadError);
+        console.error('❌ [App] Error message:', loadError?.message);
+        console.error('❌ [App] Error code:', loadError?.code);
+        console.error('❌ [App] Error stack:', loadError?.stack);
+        
+        // Check if it's a network error
+        if (loadError?.message?.includes('Network') || loadError?.message?.includes('fetch') || loadError?.code === 'NETWORK_ERROR') {
+          console.error('❌ [App] Network error detected - check internet connection');
+          Alert.alert(
+            'Network Error',
+            'Unable to connect to the server.\n\nPlease check your internet connection and try again.\n\nError: ' + (loadError?.message || 'Unknown network error'),
+            [{ text: 'OK' }]
+          );
+        } else if (loadError?.message?.includes('Supabase') || loadError?.message?.includes('credentials')) {
+          // Check if it's a Supabase configuration error
+          console.error('❌ [App] Supabase configuration error - check environment variables');
+          Alert.alert(
+            'Configuration Error',
+            'Supabase is not properly configured.\n\nPlease check your environment variables.\n\nError: ' + (loadError?.message || 'Unknown configuration error'),
+            [{ text: 'OK' }]
+          );
+        } else {
+          // Generic error
+          Alert.alert(
+            'Error Loading Data',
+            `Failed to load user data.\n\nError: ${loadError?.message || 'Unknown error'}\nCode: ${loadError?.code || 'N/A'}\n\nPlease try again or contact support if the issue persists.`,
+            [{ text: 'OK' }]
+          );
+        }
+        throw loadError; // Re-throw to be caught by timeout wrapper
+      }
+    })();
+    
+    // Race between timeout and actual loading
+    try {
+      await Promise.race([loadDataPromise, timeoutPromise]);
+    } catch (error: any) {
+      // This catches both timeout and load errors
+      if (error?.message?.includes('timed out')) {
+        console.error('❌ [App] User data loading timed out after 30 seconds');
+        // Don't show alert - let TodayScreen handle its own timeout alerts with retry
+        // Just log the error and continue
+      }
+      // Other errors were already handled and shown in loadDataPromise
+    }
+  };
+
   // Auth state listener - handles Google OAuth redirect and Apple sign-in
   useEffect(() => {
-    // Check initial session - if user is already logged in, skip onboarding
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Validate Supabase connection first
+    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+    const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('❌ [App] Supabase credentials missing - cannot restore session');
+      Alert.alert(
+        'Configuration Error',
+        'Supabase credentials are not configured.\n\nURL: ' + (supabaseUrl ? 'Set' : 'Missing') + '\nKey: ' + (supabaseAnonKey ? 'Set' : 'Missing') + '\n\nPlease check your .env file.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    
+    // Check initial session - if user is already logged in, skip onboarding and load data
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+      if (error) {
+        console.error('❌ [App] Error getting initial session:', error);
+        console.error('❌ [App] Session error code:', error.code);
+        console.error('❌ [App] Session error message:', error.message);
+        Alert.alert(
+          'Session Error',
+          `Failed to check for existing session.\n\nError: ${error.message}\nCode: ${error.code || 'N/A'}\n\nPlease check your internet connection.`,
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+      
       if (session?.user) {
+        const userId = session.user.id;
+        console.log('✅ [App] Found existing session for user:', userId);
+        
+        // IMPORTANT: Set userId FIRST so logout can work even if data loading fails
         useStore.setState({ 
-          userId: session.user.id, 
+          userId, 
           isLoggedIn: true,
           hasCompletedOnboarding: true // User is already logged in, so they've completed onboarding
         });
+        
+        // Load user data when session is restored (don't await - let it run in background)
+        // But catch errors so they don't break the app
+        loadUserData(userId).catch((loadError) => {
+          console.error('❌ [App] Failed to load user data after session restore:', loadError);
+          // Error is already shown in loadUserData, but ensure userId is still set
+          // so logout can work
+          if (!useStore.getState().userId) {
+            useStore.setState({ userId });
+          }
+        });
+      } else {
+        console.log('ℹ️ [App] No existing session found');
       }
+    }).catch((error) => {
+      console.error('❌ [App] Exception getting initial session:', error);
+      console.error('❌ [App] Exception type:', typeof error);
+      console.error('❌ [App] Exception message:', error?.message);
+      console.error('❌ [App] Exception stack:', error?.stack);
+      Alert.alert(
+        'Session Error',
+        `Failed to check for existing session.\n\nError: ${error?.message || 'Unknown error'}\n\nPlease try restarting the app.`,
+        [{ text: 'OK' }]
+      );
     });
 
     // Listen for auth state changes (handles Google OAuth redirect)
@@ -352,7 +621,11 @@ export default function App() {
               console.error('Error creating user profile:', error);
               // Profile creation failure is non-critical, don't interrupt user
             }
+            
+            // Load user data after sign in
+            await loadUserData(userId);
           } else if (event === 'SIGNED_OUT') {
+            console.log('✅ [App] User signed out event received');
             useStore.setState({ 
               userId: null, 
               isLoggedIn: false,

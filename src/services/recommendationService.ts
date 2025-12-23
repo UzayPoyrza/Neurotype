@@ -38,8 +38,9 @@ export async function getDailyRecommendations(
       .limit(4); // Limit to exactly 4 recommendations
 
     if (error) {
-      console.error('Error fetching daily recommendations:', error);
-      return [];
+      console.error('❌ [Recommendations] Error fetching daily recommendations:', error);
+      // ADD: Throw error instead of returning empty array
+      throw new Error(`Failed to fetch recommendations: ${error.message} (Code: ${error.code || 'N/A'})`);
     }
 
     const recommendations = (data || []).map(rec => ({
@@ -59,9 +60,10 @@ export async function getDailyRecommendations(
     }
 
     return recommendations;
-  } catch (error) {
-    console.error('Error in getDailyRecommendations:', error);
-    return [];
+  } catch (error: any) {
+    console.error('❌ [Recommendations] Error in getDailyRecommendations:', error);
+    // ADD: Re-throw instead of returning empty array
+    throw error;
   }
 }
 

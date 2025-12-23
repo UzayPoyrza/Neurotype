@@ -218,27 +218,76 @@ export const SettingsScreen: React.FC = () => {
                   {
                     text: 'Logout',
                     style: 'destructive',
-                    onPress: async () => {
-                      try {
-                        // Sign out from Supabase
-                        const result = await signOut();
-                        if (result.success) {
-                          // Clear local state - the SIGNED_OUT event will also handle this,
-                          // but we do it here to ensure immediate UI update
+                      onPress: async () => {
+                        try {
+                          console.log('🔄 [Settings] Starting logout process...');
+                          
+                          // ALWAYS clear local state FIRST, even if Supabase logout fails
+                          // This ensures logout works even with connection issues
                           useStore.setState({
                             userId: null,
                             isLoggedIn: false,
                             hasCompletedOnboarding: false,
                             emotionalFeedbackHistory: [],
                           });
-                        } else {
-                          showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, result.error || 'Failed to logout');
+                          
+                          // Clear all caches
+                          useStore.getState().clearSessionsCache();
+                          useStore.getState().clearCalendarCache();
+                          useStore.setState({ completedTodaySessions: {} });
+                          
+                          console.log('✅ [Settings] Local state cleared');
+                          
+                          // Try to sign out from Supabase (but don't fail if this doesn't work)
+                          try {
+                            const result = await signOut();
+                            if (result.success) {
+                              console.log('✅ [Settings] Supabase logout successful');
+                            } else {
+                              console.warn('⚠️ [Settings] Supabase logout failed, but local state cleared:', result.error);
+                              // Show warning but don't block logout - local state is already cleared
+                              Alert.alert(
+                                'Logout Warning',
+                                `Local data cleared, but failed to sign out from server.\n\nError: ${result.error || 'Unknown error'}\n\nYou may need to sign out again when connection is restored.`,
+                                [{ text: 'OK' }]
+                              );
+                            }
+                          } catch (signOutError: any) {
+                            console.error('❌ [Settings] Exception during Supabase logout:', signOutError);
+                            // Local state is already cleared, so logout is effectively complete
+                            Alert.alert(
+                              'Logout Warning',
+                              `Local data cleared, but failed to sign out from server.\n\nError: ${signOutError?.message || 'Unknown error'}\n\nYou may need to sign out again when connection is restored.`,
+                              [{ text: 'OK' }]
+                            );
+                          }
+                          
+                          console.log('✅ [Settings] Logout process completed');
+                        } catch (error: any) {
+                          console.error('❌ [Settings] Logout exception:', error);
+                          console.error('❌ [Settings] Exception type:', typeof error);
+                          console.error('❌ [Settings] Exception message:', error?.message);
+                          console.error('❌ [Settings] Exception code:', error?.code);
+                          console.error('❌ [Settings] Exception stack:', error?.stack);
+                          
+                          // Even if there's an error, try to clear local state
+                          try {
+                            useStore.setState({
+                              userId: null,
+                              isLoggedIn: false,
+                              hasCompletedOnboarding: false,
+                              emotionalFeedbackHistory: [],
+                            });
+                            useStore.getState().clearSessionsCache();
+                            useStore.getState().clearCalendarCache();
+                            useStore.setState({ completedTodaySessions: {} });
+                            console.log('✅ [Settings] Local state cleared despite error');
+                          } catch (clearError) {
+                            console.error('❌ [Settings] Failed to clear local state:', clearError);
+                            showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, 'Failed to clear local data. Please restart the app.');
+                          }
                         }
-                      } catch (error: any) {
-                        console.error('Logout error:', error);
-                        showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, error.message || 'Failed to logout');
-                      }
-                    },
+                      },
                   },
                 ],
                 { cancelable: true }

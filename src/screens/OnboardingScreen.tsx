@@ -2792,13 +2792,18 @@ const PaymentPage: React.FC<{
       });
 
     } catch (error: any) {
-      // Payment failed
+      // Payment failed - stay on payment page
       setIsProcessing(false);
+      setIsSuccess(false);
       Animated.timing(processingOpacity, {
         toValue: 0,
         duration: 200,
         useNativeDriver: true,
       }).start(() => {
+        // Reset success animation values
+        successOpacity.setValue(0);
+        successScale.setValue(0.8);
+        
         Alert.alert(
           'Payment Failed',
           error.message || 'Unable to process your payment. Please try again.',
@@ -2806,6 +2811,9 @@ const PaymentPage: React.FC<{
             {
               text: 'OK',
               style: 'default',
+              onPress: () => {
+                // User stays on payment page - no navigation
+              },
             },
           ]
         );

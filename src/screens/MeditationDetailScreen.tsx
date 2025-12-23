@@ -552,9 +552,12 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
     
     return (
       <View style={styles.descriptionSection}>
-        <Text style={styles.descriptionText}>
-          {session.description}
-        </Text>
+        <Text style={styles.descriptionTitle}>Description</Text>
+        <View style={styles.descriptionCard}>
+          <Text style={styles.descriptionText}>
+            {session.description}
+          </Text>
+        </View>
       </View>
     );
   };
@@ -1237,6 +1240,25 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     paddingBottom: 24,
     backgroundColor: 'transparent',
+  },
+  descriptionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 14,
+    letterSpacing: -0.3,
+  },
+  descriptionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 18,
+    borderWidth: 0.5,
+    borderColor: '#E5E5EA',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0.5 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 0.5,
   },
   descriptionText: {
     fontSize: 17,

@@ -40,9 +40,13 @@ export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({
         paddingVertical: sizeStyles[size].paddingVertical,
       }
     ]}>
-      {isPremium && (
+      {isPremium ? (
         <Text style={[styles.crown, { fontSize: sizeStyles[size].fontSize * 0.9 }]}>
           💎
+        </Text>
+      ) : (
+        <Text style={[styles.basicIcon, { fontSize: sizeStyles[size].fontSize * 0.9 }]}>
+          📱
         </Text>
       )}
       <Text style={[
@@ -50,7 +54,7 @@ export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({
         isPremium ? styles.premiumText : styles.basicText,
         { fontSize: sizeStyles[size].fontSize }
       ]}>
-        {isPremium ? 'Premium' : 'Basic'}
+        {isPremium ? 'Premium' : 'Basic Member'}
       </Text>
     </View>
   );
@@ -61,16 +65,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: theme.borders.radius.xl,
-    borderWidth: theme.borders.width.normal,
     ...theme.shadows.small,
   },
   basicContainer: {
-    backgroundColor: theme.colors.surface,
-    borderColor: theme.colors.secondary,
+    backgroundColor: '#f8f9fa',
+    borderColor: '#d1d5db',
+    borderWidth: 1.5,
   },
   premiumContainer: {
     backgroundColor: '#1f2937', // Dark elegant background
     borderColor: '#374151',
+    borderWidth: theme.borders.width.normal,
   },
   text: {
     fontWeight: theme.typography.weights.bold,
@@ -78,12 +83,16 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   basicText: {
-    color: theme.colors.secondary,
+    color: '#374151',
+    fontWeight: '600',
   },
   premiumText: {
     color: '#f9fafb', // Light text for dark background
   },
   crown: {
+    marginRight: theme.spacing.xs,
+  },
+  basicIcon: {
     marginRight: theme.spacing.xs,
   },
 });

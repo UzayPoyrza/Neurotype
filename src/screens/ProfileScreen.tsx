@@ -852,12 +852,18 @@ export const ProfileScreen: React.FC = () => {
                   size="medium"
                 />
               </View>
-              <Text style={styles.profileSubtitle}>
-                {subscriptionType === 'premium' 
-                  ? 'Premium member with full access' 
-                  : 'Basic member - upgrade for more features'
-                }
-              </Text>
+              {subscriptionType === 'basic' && (
+                <TouchableOpacity 
+                  style={styles.upgradeButton}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    // TODO: Navigate to upgrade/payment screen
+                    console.log('Upgrade to Premium pressed');
+                  }}
+                >
+                  <Text style={styles.upgradeButtonText}>Upgrade Now</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </View>
@@ -1328,6 +1334,24 @@ const styles = StyleSheet.create({
   },
   subscriptionContainer: {
     marginBottom: 8,
+  },
+  upgradeButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  upgradeButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#ffffff',
   },
   profileSubtitle: {
     fontSize: 15,

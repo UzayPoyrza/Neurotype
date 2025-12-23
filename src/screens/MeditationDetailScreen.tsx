@@ -510,31 +510,32 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
     const goalColor = getGoalColor(session.goal);
     const modalityColor = getModalityColor(session.modality);
 
-    // Helper to get border color for colored tags (slightly darker than background)
-    const getTagBorderColor = (color: string) => {
-      return color + 'CC'; // Add opacity to make border subtle
+    // Helper to lighten border colors
+    const getLightBorderColor = (color: string) => {
+      // Add opacity to make border lighter (80 = ~50% opacity)
+      return color + '80';
     };
 
     return (
       <View style={styles.meditationInfo}>
         {showTags && (
           <View style={styles.tagsContainer}>
-            <View style={[styles.tag, { backgroundColor: goalColor, borderColor: getTagBorderColor(goalColor) }]}>
-              <Text style={styles.tagTextWhite}>{session.goal}</Text>
+            <View style={[styles.tag, styles.tagColored, { borderColor: getLightBorderColor(goalColor) }]}>
+              <Text style={styles.tagTextColored}>{session.goal}</Text>
             </View>
             {moduleObjects.map((module) => {
               const categoryColor = getCategoryColor(module.category);
               return (
                 <View 
                   key={module.id} 
-                  style={[styles.tag, { backgroundColor: categoryColor, borderColor: getTagBorderColor(categoryColor) }]}
+                  style={[styles.tag, styles.tagColored, { borderColor: getLightBorderColor(categoryColor) }]}
                 >
-                  <Text style={styles.tagTextWhite}>{module.title}</Text>
+                  <Text style={styles.tagTextColored}>{module.title}</Text>
                 </View>
               );
             })}
-            <View style={[styles.tag, { backgroundColor: modalityColor, borderColor: getTagBorderColor(modalityColor) }]}>
-              <Text style={styles.tagTextWhite}>
+            <View style={[styles.tag, styles.tagColored, { borderColor: getLightBorderColor(modalityColor) }]}>
+              <Text style={styles.tagTextColored}>
                 {getModalityIcon(session.modality)} {session.modality}
               </Text>
             </View>
@@ -1243,23 +1244,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 13,
     paddingVertical: 7,
     borderRadius: 20,
-    borderWidth: 0.5,
+    borderWidth: 1.5,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.12,
-    shadowRadius: 2.5,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.18,
+    shadowRadius: 5,
+    elevation: 4,
+  },
+  tagColored: {
+    backgroundColor: '#FAFAFA',
   },
   tagNeutral: {
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#FAFAFA',
     borderColor: 'rgba(0, 0, 0, 0.08)',
   },
-  tagTextWhite: {
+  tagTextColored: {
     fontSize: 13,
     fontWeight: '600',
     textTransform: 'capitalize',
     letterSpacing: -0.08,
-    color: '#FFFFFF',
+    color: '#1C1C1E',
   },
   tagTextNeutral: {
     fontSize: 13,
@@ -1287,10 +1291,10 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: '#E5E5EA',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0.5 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
-    elevation: 0.5,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
   },
   descriptionText: {
     fontSize: 17,
@@ -1324,10 +1328,10 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: '#E5E5EA',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0.5 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
-    elevation: 0.5,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
   },
   benefitBullet: {
     width: 6,

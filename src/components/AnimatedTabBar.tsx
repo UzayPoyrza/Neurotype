@@ -14,6 +14,23 @@ export const AnimatedTabBar: React.FC<BottomTabBarProps> = ({
     state.routes.map(() => new Animated.Value(1))
   ).current;
 
+  // Check if we're on Subscription or Payment screen
+  const shouldHideTabBar = React.useMemo(() => {
+    // Find the Profile tab route
+    const profileRoute = state.routes.find(route => route.name === 'Profile');
+    if (profileRoute?.state) {
+      const profileState = profileRoute.state as any;
+      const activeRouteName = profileState.routes[profileState.index]?.name;
+      return activeRouteName === 'Subscription' || activeRouteName === 'Payment';
+    }
+    return false;
+  }, [state]);
+
+  // Hide tab bar if on Subscription or Payment screen
+  if (shouldHideTabBar) {
+    return null;
+  }
+
   const handleTabPress = (route: any, index: number) => {
     console.log('Tab pressed:', route.name, 'index:', index); // Debug log
 

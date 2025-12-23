@@ -79,6 +79,8 @@ const formatTimestamp = (timestampSeconds: number): string => {
 type ProfileStackParamList = {
   ProfileMain: undefined;
   Settings: undefined;
+  Subscription: undefined;
+  Payment: { selectedPlan?: string | null };
 };
 
 type ProfileScreenNavigationProp = StackNavigationProp<ProfileStackParamList, 'ProfileMain'>;
@@ -857,8 +859,7 @@ export const ProfileScreen: React.FC = () => {
                   style={styles.upgradeButton}
                   activeOpacity={0.7}
                   onPress={() => {
-                    // TODO: Navigate to upgrade/payment screen
-                    console.log('Upgrade to Premium pressed');
+                    navigation.navigate('Subscription');
                   }}
                 >
                   <Text style={styles.upgradeButtonText}>Upgrade Now</Text>

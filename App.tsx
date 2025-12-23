@@ -13,6 +13,8 @@ import { ProgressScreen } from './src/screens/ProgressScreen';
 import { ExploreScreen } from './src/screens/ExploreScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
+import { PaymentScreen } from './src/screens/PaymentScreen';
+import { SubscriptionScreen } from './src/screens/SubscriptionScreen';
 import { MeditationPlayerScreen } from './src/screens/MeditationPlayerScreen';
 import { TutorialPlayerScreen } from './src/screens/TutorialPlayerScreen';
 import { ModuleDetailScreen } from './src/screens/ModuleDetailScreen';
@@ -217,6 +219,24 @@ const ProfileStackNavigator = () => {
       <ProfileStack.Screen 
         name="Settings" 
         component={SettingsScreen}
+        options={{
+          gestureEnabled: true,
+          gestureDirection: 'horizontal',
+          cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+        }}
+      />
+      <ProfileStack.Screen 
+        name="Subscription" 
+        component={SubscriptionScreen}
+        options={{
+          gestureEnabled: true,
+          gestureDirection: 'horizontal',
+          cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+        }}
+      />
+      <ProfileStack.Screen 
+        name="Payment" 
+        component={PaymentScreen}
         options={{
           gestureEnabled: true,
           gestureDirection: 'horizontal',

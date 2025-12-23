@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Switch, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
 import { updateUserPreferences } from '../services/userService';
@@ -9,8 +10,17 @@ import { HowToUseModal } from '../components/HowToUseModal';
 import { showErrorAlert, ERROR_TITLES } from '../utils/errorHandler';
 import { signOut } from '../services/authService';
 
+type ProfileStackParamList = {
+  ProfileMain: undefined;
+  Settings: undefined;
+  Subscription: undefined;
+  Payment: { selectedPlan?: string | null };
+};
+
+type SettingsScreenNavigationProp = StackNavigationProp<ProfileStackParamList, 'Settings'>;
+
 export const SettingsScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<SettingsScreenNavigationProp>();
   const userId = useUserId();
   const {
     reminderEnabled,
@@ -148,7 +158,10 @@ export const SettingsScreen: React.FC = () => {
             </Text>
             
             {subscriptionType === 'basic' && (
-              <TouchableOpacity style={styles.upgradeButton}>
+              <TouchableOpacity 
+                style={styles.upgradeButton}
+                onPress={() => navigation.navigate('Subscription')}
+              >
                 <Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
               </TouchableOpacity>
             )}

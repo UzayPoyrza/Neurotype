@@ -518,6 +518,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 60,
+    marginTop: -100, // Move loading icon up to better center it
   },
   loadingText: {
     marginTop: 16,

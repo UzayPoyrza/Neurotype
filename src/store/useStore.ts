@@ -168,7 +168,17 @@ const buildInitialStoreData = () => {
     userProgress: {
       streak: 0,
       sessionDeltas: [],
-      techniqueEffectiveness: [],
+      techniqueEffectiveness: [
+        { techniqueId: 'breathing', techniqueName: 'Breathing Exercises', effectiveness: 85 },
+        { techniqueId: 'body_scan', techniqueName: 'Body Scan', effectiveness: 78 },
+        { techniqueId: 'loving_kindness', techniqueName: 'Loving Kindness', effectiveness: 72 },
+        { techniqueId: 'mindfulness', techniqueName: 'Mindfulness Meditation', effectiveness: 65 },
+        { techniqueId: 'progressive_relaxation', techniqueName: 'Progressive Relaxation', effectiveness: 58 },
+        { techniqueId: 'visualization', techniqueName: 'Guided Visualization', effectiveness: 45 },
+        { techniqueId: 'mantra', techniqueName: 'Mantra Meditation', effectiveness: null },
+        { techniqueId: 'walking', techniqueName: 'Walking Meditation', effectiveness: null },
+        { techniqueId: 'yoga', techniqueName: 'Yoga Nidra', effectiveness: null },
+      ],
     },
     userFirstName: 'Ava',
     filters: {

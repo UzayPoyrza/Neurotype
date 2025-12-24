@@ -349,16 +349,18 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
         {/* Meditation Legend */}
         {renderMeditationLegend()}
         
-        {/* Share Button - only show if there are meditations in current month */}
-        {hasMeditationsInCurrentMonth() && (
-          <TouchableOpacity 
-            style={styles.shareButton}
-            onPress={handleShareProgress}
-          >
-            <Text style={styles.shareIcon}>↗</Text>
-            <Text style={styles.shareText}>Share My Progress</Text>
-          </TouchableOpacity>
-        )}
+        {/* Share Button - reserve space even when hidden */}
+        <View style={styles.shareButtonContainer}>
+          {hasMeditationsInCurrentMonth() && (
+            <TouchableOpacity 
+              style={styles.shareButton}
+              onPress={handleShareProgress}
+            >
+              <Text style={styles.shareIcon}>↗</Text>
+              <Text style={styles.shareText}>Share My Progress</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </Animated.View>
     </View>
   );
@@ -376,7 +378,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
-    minHeight: 450, // Constant size to match shimmer skeleton
+    height: 556, // Fixed height: header (56px) + calendar (300px) + legend (76px) + share button (80px) + padding (32px) + extra space (12px)
   },
   header: {
     flexDirection: 'row',
@@ -412,11 +414,11 @@ const styles = StyleSheet.create({
   contentContainer: {
     overflow: 'hidden',
     width: '100%',
-    flex: 1,
+    height: 456, // Fixed height: calendar (300px) or no meditations (320px) + legend (76px) + share button (80px)
   },
   calendarContainer: {
     marginBottom: 12,
-    height: 280, // Fixed height: day headers (32px) + 6 rows (240px) + margins (8px)
+    height: 300, // Increased height: day headers (32px) + 6 rows (260px) + margins (8px) to fit bottom buttons
   },
   dayHeaders: {
     flexDirection: 'row',
@@ -486,10 +488,11 @@ const styles = StyleSheet.create({
     marginLeft: 4, // Spacing between multiple dots
   },
   legendContainer: {
-    marginBottom: 16,
+    marginBottom: 12, // Reduced margin to give more space for share button
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
+    minHeight: 60, // Fixed minimum height to prevent size changes
   },
   legendTitle: {
     fontSize: 16,
@@ -517,6 +520,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666666',
     textTransform: 'capitalize',
+  },
+  shareButtonContainer: {
+    height: 80, // Increased height to fully accommodate button with padding and shadow
+    justifyContent: 'center',
+    marginTop: -4, // Negative margin to move button up
+    paddingBottom: 8, // Extra padding at bottom to prevent clipping
   },
   shareButton: {
     flexDirection: 'row',
@@ -547,15 +556,18 @@ const styles = StyleSheet.create({
   },
   noMeditationsContainer: {
     marginBottom: 12,
-    height: 280, // Match the full calendar height including day headers
+    height: 360, // Increased height for better vertical centering
+    minHeight: 360, // Ensure consistent height
+    justifyContent: 'flex-start',
+    paddingTop: 40, // Move content lower
   },
   noMeditationsBox: {
     backgroundColor: '#f8f8f8',
     borderRadius: 12,
-    padding: 32,
+    padding: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    height: '100%',
+    flex: 1,
   },
   noMeditationsIcon: {
     fontSize: 32,

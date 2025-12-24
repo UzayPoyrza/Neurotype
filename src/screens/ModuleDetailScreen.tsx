@@ -582,13 +582,15 @@ const styles = StyleSheet.create({
     top: 60,
     left: 0,
     right: 0,
-    paddingHorizontal: 20,
+    paddingHorizontal: 0, // Remove padding to allow wider card
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingVertical: 56,
+    paddingHorizontal: 40,
     backgroundColor: '#ffffff',
     borderRadius: 16,
+    marginHorizontal: 16, // Add side margins for spacing from edges
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -598,14 +600,14 @@ const styles = StyleSheet.create({
   emptyText: {
     color: '#000000',
     textAlign: 'center',
-    fontSize: 19,
+    fontSize: 22,
     fontWeight: '600',
   },
   emptySubtext: {
     color: '#8e8e93',
     textAlign: 'center',
-    marginTop: 12,
-    fontSize: 17,
+    marginTop: 16,
+    fontSize: 18,
     fontWeight: '400',
   },
   errorContainer: {

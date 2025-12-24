@@ -1334,7 +1334,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   subscriptionContainer: {
-    marginBottom: 8,
+    marginBottom: 5,
+    marginLeft: -16, // Move badge slightly to the left
     alignSelf: 'flex-start', // Shrink-wrap to content width
   },
   upgradeButton: {

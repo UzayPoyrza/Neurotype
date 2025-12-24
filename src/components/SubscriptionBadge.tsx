@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Image, StyleSheet, ImageSourcePropType } from 'react-native';
 import { theme } from '../styles/theme';
 
 interface SubscriptionBadgeProps {
@@ -13,86 +13,50 @@ export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({
 }) => {
   const isPremium = subscriptionType === 'premium';
   
+  // Image sources - update these paths if your images have different names
+  const premiumImage: ImageSourcePropType = require('../../assets/badge-premium.png');
+  const basicImage: ImageSourcePropType = require('../../assets/badge-basic.png');
+  
   const sizeStyles = {
     small: {
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.xs,
-      fontSize: theme.typography.sizes.xs,
+      height: 30,
+      width: 150,
     },
     medium: {
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
-      fontSize: theme.typography.sizes.sm,
+      height: 40,
+      width: 200,
     },
     large: {
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.md,
-      fontSize: theme.typography.sizes.md,
+      height: 50,
+      width: 250,
     },
   };
 
   return (
-    <View style={[
-      styles.container,
-      isPremium ? styles.premiumContainer : styles.basicContainer,
-      {
-        paddingHorizontal: sizeStyles[size].paddingHorizontal,
-        paddingVertical: sizeStyles[size].paddingVertical,
-      }
-    ]}>
-      {isPremium ? (
-        <Text style={[styles.crown, { fontSize: sizeStyles[size].fontSize * 0.9 }]}>
-          💎
-        </Text>
-      ) : (
-        <Text style={[styles.basicIcon, { fontSize: sizeStyles[size].fontSize * 0.9 }]}>
-          📱
-        </Text>
-      )}
-      <Text style={[
-        styles.text,
-        isPremium ? styles.premiumText : styles.basicText,
-        { fontSize: sizeStyles[size].fontSize }
-      ]}>
-        {isPremium ? 'Premium' : 'Basic Member'}
-      </Text>
+    <View style={styles.container}>
+      <Image
+        source={isPremium ? premiumImage : basicImage}
+        style={[
+          styles.badgeImage,
+          { 
+            height: sizeStyles[size].height,
+            width: sizeStyles[size].width,
+          }
+        ]}
+        resizeMode="contain"
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: theme.borders.radius.xl,
-    ...theme.shadows.small,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    overflow: 'visible',
   },
-  basicContainer: {
-    backgroundColor: '#f8f9fa',
-    borderColor: '#d1d5db',
-    borderWidth: 1.5,
-  },
-  premiumContainer: {
-    backgroundColor: '#1f2937', // Dark elegant background
-    borderColor: '#374151',
-    borderWidth: theme.borders.width.normal,
-  },
-  text: {
-    fontWeight: theme.typography.weights.bold,
-    fontFamily: theme.typography.fontFamily,
-    letterSpacing: 0.5,
-  },
-  basicText: {
-    color: '#374151',
-    fontWeight: '600',
-  },
-  premiumText: {
-    color: '#f9fafb', // Light text for dark background
-  },
-  crown: {
-    marginRight: theme.spacing.xs,
-  },
-  basicIcon: {
-    marginRight: theme.spacing.xs,
+  badgeImage: {
+    // Width will be determined by image aspect ratio
+    overflow: 'visible',
   },
 });

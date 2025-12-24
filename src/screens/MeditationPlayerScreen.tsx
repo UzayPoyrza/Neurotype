@@ -112,8 +112,8 @@ export const MeditationPlayerScreen: React.FC = () => {
   const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
   const countdownProgressAnim = useRef(new Animated.Value(0)).current;
   const countdownScaleAnim = useRef(new Animated.Value(1)).current;
-  const confirmationMessageAnim = useRef(new Animated.Value(0)).current;
-  const [showConfirmationMessage, setShowConfirmationMessage] = useState(false);
+  const toastAnim = useRef(new Animated.Value(0)).current;
+  const [showFeedbackToast, setShowFeedbackToast] = useState(false);
   const canceledMessageAnim = useRef(new Animated.Value(0)).current;
   const [showCanceledMessage, setShowCanceledMessage] = useState(false);
   const pulseAnimationRef = useRef<Animated.CompositeAnimation | null>(null);
@@ -918,23 +918,26 @@ export const MeditationPlayerScreen: React.FC = () => {
     countdownProgressAnim.setValue(0);
     countdownScaleAnim.setValue(1);
     
-    // Then show confirmation message after a brief delay
+    // Then show toast notification after a brief delay
     setTimeout(() => {
-      setShowConfirmationMessage(true);
+      toastAnim.stopAnimation();
+      toastAnim.setValue(0);
+      setShowFeedbackToast(true);
+      
       Animated.sequence([
-        Animated.timing(confirmationMessageAnim, {
+        Animated.timing(toastAnim, {
           toValue: 1,
           duration: 300,
           useNativeDriver: true,
         }),
         Animated.delay(2000),
-        Animated.timing(confirmationMessageAnim, {
+        Animated.timing(toastAnim, {
           toValue: 0,
           duration: 300,
           useNativeDriver: true,
         }),
       ]).start(() => {
-        setShowConfirmationMessage(false);
+        setShowFeedbackToast(false);
       });
     }, 200); // Small delay to ensure countdown disappears first
   };
@@ -1096,10 +1099,10 @@ export const MeditationPlayerScreen: React.FC = () => {
 
   // Helper function to hide confirmation message
   const hideConfirmationMessage = () => {
-    // Stop any ongoing animation and hide the message
-    confirmationMessageAnim.stopAnimation(() => {
-      confirmationMessageAnim.setValue(0);
-      setShowConfirmationMessage(false);
+    // Stop any ongoing animation and hide the toast
+    toastAnim.stopAnimation(() => {
+      toastAnim.setValue(0);
+      setShowFeedbackToast(false);
     });
     // Also hide canceled message if showing
     canceledMessageAnim.stopAnimation(() => {
@@ -1504,33 +1507,6 @@ export const MeditationPlayerScreen: React.FC = () => {
                 </View>
               )}
               
-              {/* Confirmation Message - Positioned between Bad and Great */}
-              {showConfirmationMessage && (
-                <Animated.View
-                  style={[
-                    styles.confirmationMessageOverlayBetweenLabels,
-                    {
-                      opacity: confirmationMessageAnim,
-                      transform: [
-                        {
-                          scale: confirmationMessageAnim.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [0.9, 1],
-                          }),
-                        },
-                      ],
-                    },
-                  ]}
-                >
-                  <View style={styles.confirmationMessageContainer}>
-                    <Text style={styles.confirmationMessageIcon}>✓</Text>
-                    <Text style={styles.confirmationMessageText}>
-                      Saved! View in Profile
-                    </Text>
-                  </View>
-                </Animated.View>
-              )}
-              
               {/* Canceled Message - Positioned between Bad and Great */}
               {showCanceledMessage && (
                 <Animated.View
@@ -1606,6 +1582,28 @@ export const MeditationPlayerScreen: React.FC = () => {
             <Text style={styles.darkModeMessageIcon}>🌙</Text>
             <Text style={styles.darkModeMessageText}>Dark Mode</Text>
           </View>
+        </Animated.View>
+      )}
+
+      {/* Feedback Saved Toast */}
+      {showFeedbackToast && (
+        <Animated.View
+          style={[
+            styles.toastContainer,
+            {
+              opacity: toastAnim,
+              transform: [{
+                translateY: toastAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [20, 0],
+                }),
+              }],
+            },
+          ]}
+        >
+          <Text style={styles.toastText}>
+            Saved! View in Profile
+          </Text>
         </Animated.View>
       )}
 
@@ -2183,37 +2181,27 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     lineHeight: 18,
   },
-  confirmationMessageOverlayBetweenLabels: {
+  toastContainer: {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 4, // Position slightly below the labels
+    bottom: 30,
+    left: 20,
+    right: 20,
+    backgroundColor: '#000000',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    pointerEvents: 'none',
-    zIndex: 300, // Ensure it's above dark mode overlay
-    elevation: 10, // Android elevation
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 1000,
   },
-  confirmationMessageContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(46, 213, 115, 0.2)',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(46, 213, 115, 0.4)',
-  },
-  confirmationMessageIcon: {
-    fontSize: 14,
-    color: '#2ed573',
-    fontWeight: '700',
-    marginRight: 6,
-  },
-  confirmationMessageText: {
+  toastText: {
     color: '#ffffff',
-    fontSize: 12,
+    fontSize: 15,
     fontWeight: '600',
   },
   canceledMessageContainer: {

@@ -651,23 +651,24 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
               scrollEventThrottle={16}
             >
               {displaySessions.map(item => (
-                <TouchableOpacity
-                  key={item.id}
-                  style={styles.completedCard}
-                  onPress={() => navigation.navigate('MeditationDetail', { sessionId: item.session.id })}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.completedTitle} numberOfLines={2}>
-                    {item.session.title}
-                  </Text>
-                  <Text style={styles.completedMeta}>
-                    {item.session.durationMin} min • {item.session.modality}
-                  </Text>
-                  <Text style={styles.completedDate}>{formatDate(item.completedDate)}</Text>
-                  <View style={[styles.completedBadge, { backgroundColor: module.color }]}>
-                    <Text style={styles.completedBadgeIcon}>✓</Text>
-                  </View>
-                </TouchableOpacity>
+                <View key={item.id} style={styles.completedCardWrapper}>
+                  <TouchableOpacity
+                    style={styles.completedCard}
+                    onPress={() => navigation.navigate('MeditationDetail', { sessionId: item.session.id })}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.completedTitle} numberOfLines={2}>
+                      {item.session.title}
+                    </Text>
+                    <Text style={styles.completedMeta}>
+                      {item.session.durationMin} min • {item.session.modality}
+                    </Text>
+                    <Text style={styles.completedDate}>{formatDate(item.completedDate)}</Text>
+                    <View style={[styles.completedBadge, { backgroundColor: module.color }]}>
+                      <Text style={styles.completedBadgeIcon}>✓</Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
               ))}
             </ScrollView>
             {completedSessions.length > 0 && (
@@ -1232,6 +1233,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
   },
   summaryTitle: {
     fontSize: 16,
@@ -1321,6 +1327,13 @@ const styles = StyleSheet.create({
     lineHeight: 32,
     marginLeft: 2,
   },
+  completedCardWrapper: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 4,
+  },
   completedCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
@@ -1329,11 +1342,6 @@ const styles = StyleSheet.create({
     height: 120,
     borderWidth: 1,
     borderColor: '#E5E5EA',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
     justifyContent: 'space-between',
     position: 'relative',
   },

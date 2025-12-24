@@ -389,6 +389,11 @@ export default function App() {
             useStore.getState().setSubscriptionType(userProfile.subscription_type);
             console.log('📱 [App] Updated subscription type to:', userProfile.subscription_type);
           }
+          // Update store with first name from database
+          if (userProfile.first_name) {
+            useStore.getState().setUserFirstName(userProfile.first_name);
+            console.log('📱 [App] Updated user first name to:', userProfile.first_name);
+          }
         } else {
           console.log('⚠️ [App] No user profile found, using defaults');
         }

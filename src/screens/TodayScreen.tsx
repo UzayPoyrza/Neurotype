@@ -314,14 +314,15 @@ export const TodayScreen: React.FC = () => {
       }
 
       console.log('📋 [TodayScreen] Fetching daily recommendations...');
-      setIsLoadingRecommendations(true);
       
       // Prevent duplicate checks if one is already in progress
       if (recommendationCheckInProgressRef.current[selectedModuleId]) {
         console.log('⏳ [TodayScreen] Recommendation check already in progress, skipping...');
-        setIsLoadingRecommendations(false);
+        // Don't set loading to false - let the existing loading state persist
         return;
       }
+      
+      setIsLoadingRecommendations(true);
       
       recommendationCheckInProgressRef.current[selectedModuleId] = true;
       

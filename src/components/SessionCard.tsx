@@ -127,6 +127,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
     borderLeftWidth: 4,
     borderLeftColor: '#007AFF',
   },

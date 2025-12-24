@@ -17,7 +17,8 @@ export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({
   const premiumImage: ImageSourcePropType = require('../../assets/badge-premium.png');
   const basicImage: ImageSourcePropType = require('../../assets/badge-basic.png');
   
-  const sizeStyles = {
+  // Separate size styles for basic and premium badges
+  const basicSizeStyles = {
     small: {
       height: 30,
       width: 150,
@@ -32,6 +33,23 @@ export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({
     },
   };
 
+  const premiumSizeStyles = {
+    small: {
+      height: 35,
+      width: 175,
+    },
+    medium: {
+      height: 46,
+      width: 230,
+    },
+    large: {
+      height: 58,
+      width: 290,
+    },
+  };
+
+  const currentSizeStyles = isPremium ? premiumSizeStyles : basicSizeStyles;
+
   return (
     <View style={styles.container}>
       <Image
@@ -39,8 +57,8 @@ export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({
         style={[
           styles.badgeImage,
           { 
-            height: sizeStyles[size].height,
-            width: sizeStyles[size].width,
+            height: currentSizeStyles[size].height,
+            width: currentSizeStyles[size].width,
           }
         ]}
         resizeMode="contain"

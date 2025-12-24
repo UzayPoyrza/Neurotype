@@ -848,7 +848,10 @@ export const ProfileScreen: React.FC = () => {
             
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>Your Profile</Text>
-              <View style={styles.subscriptionContainer}>
+              <View style={[
+                styles.subscriptionContainer,
+                subscriptionType === 'premium' && styles.subscriptionContainerPremium
+              ]}>
                 <SubscriptionBadge 
                   subscriptionType={subscriptionType}
                   size="medium"
@@ -1337,6 +1340,11 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     marginLeft: -16, // Move badge slightly to the left
     alignSelf: 'flex-start', // Shrink-wrap to content width
+  },
+  subscriptionContainerPremium: {
+    marginTop: 5, // Push premium badge down without affecting title
+    marginBottom: 5, // Keep original bottom margin
+    marginLeft: -20, // Move premium badge more to the left
   },
   upgradeButton: {
     backgroundColor: '#007AFF',

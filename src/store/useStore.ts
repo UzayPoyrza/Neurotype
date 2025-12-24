@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { UserProgress, FilterState, SessionDelta, Session, EmotionalFeedbackEntry } from '../types';
-import { initialUserProgress } from '../data/mockData';
 import { mentalHealthModules } from '../data/modules';
 import { toggleLikedSession as toggleLikedSessionDB } from '../services/likedService';
 import { getCompletedSessionsByDateRange, markSessionCompleted, isSessionCompleted, CompletedSession, calculateUserStreak } from '../services/progressService';
@@ -167,9 +166,9 @@ export interface CompletedSessionCacheEntry {
 const buildInitialStoreData = () => {
   return {
     userProgress: {
-      ...initialUserProgress,
-      sessionDeltas: initialUserProgress.sessionDeltas.map(delta => ({ ...delta })),
-      techniqueEffectiveness: initialUserProgress.techniqueEffectiveness.map(item => ({ ...item })),
+      streak: 0,
+      sessionDeltas: [],
+      techniqueEffectiveness: [],
     },
     userFirstName: 'Ava',
     filters: {
@@ -538,7 +537,7 @@ export const useStore = create<AppState>((set, get) => ({
             id: result.updatedEntryId || `temp-${Date.now()}`,
             user_id: userId,
             session_id: sessionIdClean,
-            context_module: moduleId || null,
+            context_module: moduleId || undefined,
             completed_date: today,
             minutes_completed: minutesCompleted,
             created_at: new Date().toISOString(),

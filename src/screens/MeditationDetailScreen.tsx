@@ -586,36 +586,43 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
       return null;
     }
     
-    // Parse whyItWorks into bullet points
+    // Parse whyItWorks into numbered points - split more aggressively
     let benefitItems: string[] = [];
     if (session.whyItWorks) {
-      // Check if content already has bullet points
-      if (session.whyItWorks.includes('\n-') || session.whyItWorks.includes('\n•') || session.whyItWorks.includes('\n *')) {
+      // Check if content already has bullet points or numbered lists
+      if (session.whyItWorks.includes('\n-') || session.whyItWorks.includes('\n•') || session.whyItWorks.includes('\n *') || session.whyItWorks.includes('\n1.') || session.whyItWorks.includes('\n2.')) {
         benefitItems = session.whyItWorks
           .split(/\n/)
           .map(line => line.trim())
           .filter(line => line.length > 0)
-          .map(line => line.replace(/^[-•*]\s*/, '').trim())
+          .map(line => line.replace(/^[-•*]\s*/, '').replace(/^\d+\.\s*/, '').trim())
           .filter(line => line.length > 0);
       } else {
-        // Split paragraph into sentences
+        // More aggressive splitting: split by sentences first
         const sentences = session.whyItWorks
           .split(/[.!?]+\s+/)
           .map(s => s.trim())
-          .filter(s => s.length > 10);
+          .filter(s => s.length > 8); // Lower threshold for more points
         
         if (sentences.length > 0) {
           benefitItems = sentences;
         } else {
-          // Fallback: split by commas for longer content
-          if (session.whyItWorks.length > 100) {
-            const parts = session.whyItWorks
-              .split(/,\s+/)
-              .map(p => p.trim())
-              .filter(p => p.length > 15);
-            benefitItems = parts.length > 1 ? parts : [session.whyItWorks];
+          // Split by commas and semicolons for longer content
+          const parts = session.whyItWorks
+            .split(/[,;]\s+/)
+            .map(p => p.trim())
+            .filter(p => p.length > 10); // Lower threshold
+          
+          if (parts.length > 1) {
+            benefitItems = parts;
           } else {
-            benefitItems = [session.whyItWorks];
+            // Last resort: split by "and", "or", "but" connectors
+            const connectorSplit = session.whyItWorks
+              .split(/\s+(and|or|but|also|additionally|furthermore|moreover)\s+/i)
+              .map(p => p.trim())
+              .filter(p => p.length > 10);
+            
+            benefitItems = connectorSplit.length > 1 ? connectorSplit : [session.whyItWorks];
           }
         }
       }
@@ -625,7 +632,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
       return null;
     }
     
-    const MAX_ITEMS = 2;
+    const MAX_ITEMS = 3;
     const displayItems = isBenefitsExpanded ? benefitItems : benefitItems.slice(0, MAX_ITEMS);
     const hasMore = benefitItems.length > MAX_ITEMS;
     
@@ -634,9 +641,11 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         <Text style={styles.whyThisMeditationTitle}>Why This Meditation?</Text>
         <View style={styles.benefitList}>
           {displayItems.map((item, index) => (
-            <View key={index} style={styles.benefitCard}>
-              <View style={styles.benefitBullet} />
-              <Text style={styles.benefitText}>{item}</Text>
+            <View key={index} style={styles.benefitInstructionItem}>
+              <View style={styles.benefitInstructionNumber}>
+                <Text style={styles.benefitInstructionNumberText}>{index + 1}</Text>
+              </View>
+              <Text style={styles.benefitInstructionText}>{item}</Text>
             </View>
           ))}
           {hasMore && (
@@ -1317,7 +1326,35 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
   benefitList: {
-    gap: 10,
+    gap: 4,
+  },
+  benefitInstructionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    padding: 16,
+    borderRadius: 12,
+    ...theme.shadows.small,
+  },
+  benefitInstructionNumber: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#007AFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  benefitInstructionNumberText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  benefitInstructionText: {
+    fontSize: 16,
+    lineHeight: 22,
+    color: theme.colors.text.primary,
+    flex: 1,
   },
   benefitCard: {
     flexDirection: 'row',

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, NativeSyntheticEvent, NativeScrollEvent, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, NativeSyntheticEvent, NativeScrollEvent, Dimensions, Animated } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import Svg, { Path } from 'react-native-svg';
@@ -659,37 +659,6 @@ export const ProfileScreen: React.FC = () => {
     }, [fetchEmotionalFeedback])
   );
 
-  // Handle removing emotional feedback (both from store and database)
-  const handleRemoveEmotionalFeedback = React.useCallback(async (entryId: string) => {
-    if (!userId) {
-      console.warn('⚠️ [ProfileScreen] No user ID, cannot remove feedback');
-      return;
-    }
-
-    // Optimistically remove from UI
-    setEmotionalFeedbackHistory(prev => prev.filter(entry => entry.id !== entryId));
-    
-    // Remove from database
-    console.log('💾 [ProfileScreen] Removing emotional feedback from database:', entryId);
-    const result = await removeEmotionalFeedbackDB(userId, entryId);
-    
-    if (result.success) {
-      console.log('✅ [ProfileScreen] Emotional feedback removed successfully');
-    } else {
-      console.error('❌ [ProfileScreen] Failed to remove emotional feedback:', result.error);
-      // Re-fetch to restore the correct state
-      const feedback = await getUserEmotionalFeedback(userId, 20);
-      const transformedFeedback = feedback.map(fb => ({
-        id: fb.id || `feedback-${fb.feedback_date}-${fb.session_id}`,
-        sessionId: fb.session_id,
-        label: fb.label,
-        timestampSeconds: fb.timestamp_seconds,
-        date: fb.feedback_date,
-      }));
-      setEmotionalFeedbackHistory(transformedFeedback);
-    }
-  }, [userId]);
-
   // Use completed sessions as recent activity (already sorted most recent first)
   const recentActivity = completedSessions;
   // Emotional feedback is already sorted by feedback_date descending from the service
@@ -715,6 +684,60 @@ export const ProfileScreen: React.FC = () => {
     right: 20,
   });
   const feedbackInfoButtonRef = React.useRef<TouchableOpacityRef | null>(null);
+  const [showRemoveFeedbackToast, setShowRemoveFeedbackToast] = React.useState(false);
+  const toastAnim = React.useRef(new Animated.Value(0)).current;
+
+  // Handle removing emotional feedback (both from store and database)
+  const handleRemoveEmotionalFeedback = React.useCallback(async (entryId: string) => {
+    if (!userId) {
+      console.warn('⚠️ [ProfileScreen] No user ID, cannot remove feedback');
+      return;
+    }
+
+    // Optimistically remove from UI
+    setEmotionalFeedbackHistory(prev => prev.filter(entry => entry.id !== entryId));
+    
+    // Remove from database
+    console.log('💾 [ProfileScreen] Removing emotional feedback from database:', entryId);
+    const result = await removeEmotionalFeedbackDB(userId, entryId);
+    
+    if (result.success) {
+      console.log('✅ [ProfileScreen] Emotional feedback removed successfully');
+      
+      // Show toast notification
+      toastAnim.stopAnimation();
+      toastAnim.setValue(0);
+      setShowRemoveFeedbackToast(true);
+      
+      Animated.sequence([
+        Animated.timing(toastAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.delay(2000),
+        Animated.timing(toastAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setShowRemoveFeedbackToast(false);
+      });
+    } else {
+      console.error('❌ [ProfileScreen] Failed to remove emotional feedback:', result.error);
+      // Re-fetch to restore the correct state
+      const feedback = await getUserEmotionalFeedback(userId, 20);
+      const transformedFeedback = feedback.map(fb => ({
+        id: fb.id || `feedback-${fb.feedback_date}-${fb.session_id}`,
+        sessionId: fb.session_id,
+        label: fb.label,
+        timestampSeconds: fb.timestamp_seconds,
+        date: fb.feedback_date,
+      }));
+      setEmotionalFeedbackHistory(transformedFeedback);
+    }
+  }, [userId, toastAnim]);
 
   React.useEffect(() => {
     if (!hasScrollableOverflow) {
@@ -1235,6 +1258,27 @@ export const ProfileScreen: React.FC = () => {
         content="Warning: deleting feedback may change the suggestion algorithm."
         position={feedbackInfoPosition}
       />
+      {/* Remove Feedback Toast */}
+      {showRemoveFeedbackToast && (
+        <Animated.View
+          style={[
+            styles.toastContainer,
+            {
+              opacity: toastAnim,
+              transform: [{
+                translateY: toastAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [20, 0],
+                }),
+              }],
+            },
+          ]}
+        >
+          <Text style={styles.toastText}>
+            Removed emotional feedback
+          </Text>
+        </Animated.View>
+      )}
     </View>
   );
 };
@@ -1704,5 +1748,28 @@ const styles = StyleSheet.create({
   },
   infoButtonTextActive: {
     color: '#ffffff',
+  },
+  toastContainer: {
+    position: 'absolute',
+    bottom: 90,
+    left: 20,
+    right: 20,
+    backgroundColor: '#000000',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 1000,
+  },
+  toastText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '600',
   },
 }); 

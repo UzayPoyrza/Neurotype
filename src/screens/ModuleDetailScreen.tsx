@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Animated, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Animated, ActivityIndicator, Easing } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { SessionCard } from '../components/SessionCard';
@@ -93,6 +93,10 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Animation for sessions list fade-in
+  const listFadeAnim = useRef(new Animated.Value(0)).current;
+  const listTranslateAnim = useRef(new Animated.Value(20)).current;
+  
   // Track sessions that are being removed (for animation)
   const [removingSessionIds, setRemovingSessionIds] = useState<Set<string>>(new Set());
   
@@ -171,6 +175,10 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
       console.log('[ModuleDetailScreen] 🔄 Starting to fetch sessions for module:', moduleId);
       setIsLoading(true);
       setError(null);
+      
+      // Reset animation values for fresh animation
+      listFadeAnim.setValue(0);
+      listTranslateAnim.setValue(20);
       
       try {
         let fetchedSessions: Session[] = [];
@@ -307,6 +315,26 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
     return sessions;
   }, [sessions, moduleId, likedSessionIds, removingSessionIds]);
 
+  // Animate in sessions list when loading completes
+  useEffect(() => {
+    if (!isLoading && !error) {
+      // Trigger animation when loading completes (whether sessions exist or not)
+      Animated.parallel([
+        Animated.timing(listFadeAnim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(listTranslateAnim, {
+          toValue: 0,
+          duration: 400,
+          easing: Easing.out(Easing.cubic), // Smooth ease-out curve
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [isLoading, error]);
+
   const handleSessionStart = (session: Session) => {
     console.log('[ModuleDetailScreen] 👆 User clicked session:', session.id, session.title);
     // Navigate to MeditationDetail screen instead of setting active session
@@ -372,7 +400,13 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
             </View>
           </View>
         ) : (
-          <>
+          <Animated.View
+            style={{
+              flex: 1,
+              opacity: listFadeAnim,
+              transform: [{ translateY: listTranslateAnim }],
+            }}
+          >
             <FlatList
               data={moduleSessions}
               renderItem={({ item }) => {
@@ -408,7 +442,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
                 </View>
               </View>
             )}
-          </>
+          </Animated.View>
         )}
       </View>
       

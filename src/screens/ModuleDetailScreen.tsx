@@ -591,6 +591,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 16,
     marginHorizontal: 16, // Add side margins for spacing from edges
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,

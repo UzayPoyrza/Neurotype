@@ -1395,7 +1395,7 @@ const styles = StyleSheet.create({
   subscriptionContainerPremium: {
     marginTop: 5, // Push premium badge down without affecting title
     marginBottom: 5, // Keep original bottom margin
-    marginLeft: -12, // Adjusted to account for profileInfo padding
+    marginLeft: -25, // Move premium badge more to the left
     marginRight: 0,
   },
   upgradeButton: {

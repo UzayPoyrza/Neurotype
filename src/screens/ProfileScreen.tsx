@@ -1322,7 +1322,7 @@ const styles = StyleSheet.create({
   profileHeaderCard: {
     backgroundColor: '#ffffff',
     borderRadius: 20,
-    marginHorizontal: 20,
+    marginHorizontal: 16, // Reduced from 20 to give more space
     marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -1335,10 +1335,13 @@ const styles = StyleSheet.create({
   profileHeaderContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
+    paddingTop: 20,
+    paddingBottom: 20,
+    paddingLeft: 20,
+    paddingRight: 8, // Minimal right padding to give badge maximum room
   },
   profilePictureWrapper: {
-    marginRight: 20,
+    marginRight: 12, // Reduced from 20 to give more space for badge
   },
   profileInitialContainer: {
     width: 110,
@@ -1358,6 +1361,9 @@ const styles = StyleSheet.create({
   },
   profileInfo: {
     flex: 1,
+    minWidth: 0, // Allow flex item to shrink below content size if needed
+    paddingRight: 0, // No right padding to maximize space for badge
+    paddingLeft: 8, // Move content to the right
   },
   statsSection: {
     backgroundColor: '#ffffff',
@@ -1382,13 +1388,15 @@ const styles = StyleSheet.create({
   },
   subscriptionContainer: {
     marginBottom: 5,
-    marginLeft: -16, // Move badge slightly to the left
+    marginLeft: -16, // Adjusted to account for profileInfo padding
+    marginRight: 0,
     alignSelf: 'flex-start', // Shrink-wrap to content width
   },
   subscriptionContainerPremium: {
     marginTop: 5, // Push premium badge down without affecting title
     marginBottom: 5, // Keep original bottom margin
-    marginLeft: -20, // Move premium badge more to the left
+    marginLeft: -12, // Adjusted to account for profileInfo padding
+    marginRight: 0,
   },
   upgradeButton: {
     backgroundColor: '#007AFF',

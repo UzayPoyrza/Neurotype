@@ -59,6 +59,7 @@ export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({
           { 
             height: currentSizeStyles[size].height,
             width: currentSizeStyles[size].width,
+            maxWidth: '100%', // Allow scaling down if container is smaller
           }
         ]}
         resizeMode="contain"
@@ -71,10 +72,9 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'flex-start',
     justifyContent: 'center',
-    overflow: 'visible',
+    flexShrink: 1, // Allow container to shrink if needed
   },
   badgeImage: {
-    // Width will be determined by image aspect ratio
-    overflow: 'visible',
+    flexShrink: 1, // Allow image to shrink if container is too small
   },
 });

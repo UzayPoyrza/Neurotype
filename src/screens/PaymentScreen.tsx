@@ -17,12 +17,17 @@ export const PaymentScreen: React.FC = () => {
   const route = useRoute<PaymentScreenRouteProp>();
   const selectedPlan = route.params?.selectedPlan || 'yearly';
 
+  const handlePaymentComplete = () => {
+    // Exit payment screens and return to ProfileMain
+    navigation.popToTop();
+  };
+
   return (
     <PaymentPage
       isActive={true}
       selectedPlan={selectedPlan}
       onBack={() => navigation.goBack()}
-      onComplete={() => navigation.goBack()}
+      onComplete={handlePaymentComplete}
     />
   );
 };

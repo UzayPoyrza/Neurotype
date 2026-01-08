@@ -87,6 +87,58 @@ type ProfileScreenNavigationProp = StackNavigationProp<ProfileStackParamList, 'P
 
 type TouchableOpacityRef = React.ComponentRef<typeof TouchableOpacity>;
 
+// Animated wrapper for emotional feedback item to handle removal animation
+const AnimatedFeedbackItem: React.FC<{
+  children: React.ReactNode;
+  isRemoving: boolean;
+  onAnimationComplete: () => void;
+}> = ({ children, isRemoving, onAnimationComplete }) => {
+  const opacity = React.useRef(new Animated.Value(1)).current;
+  const translateX = React.useRef(new Animated.Value(0)).current;
+  const scale = React.useRef(new Animated.Value(1)).current;
+  
+  React.useEffect(() => {
+    if (isRemoving) {
+      // Animate out: fade, slide to the right, and scale down
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateX, {
+          toValue: 300,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scale, {
+          toValue: 0.8,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        onAnimationComplete();
+      });
+    } else {
+      // Reset for new items
+      opacity.setValue(1);
+      translateX.setValue(0);
+      scale.setValue(1);
+    }
+  }, [isRemoving, opacity, translateX, scale, onAnimationComplete]);
+  
+  return (
+    <Animated.View
+      style={{
+        opacity,
+        transform: [{ translateX }, { scale }],
+      }}
+    >
+      {children}
+    </Animated.View>
+  );
+};
+
 export const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const { 
@@ -686,6 +738,7 @@ export const ProfileScreen: React.FC = () => {
   const feedbackInfoButtonRef = React.useRef<TouchableOpacityRef | null>(null);
   const [showRemoveFeedbackToast, setShowRemoveFeedbackToast] = React.useState(false);
   const toastAnim = React.useRef(new Animated.Value(0)).current;
+  const [removingFeedbackIds, setRemovingFeedbackIds] = React.useState<Set<string>>(new Set());
 
   // Handle removing emotional feedback (both from store and database)
   const handleRemoveEmotionalFeedback = React.useCallback(async (entryId: string) => {
@@ -694,8 +747,24 @@ export const ProfileScreen: React.FC = () => {
       return;
     }
 
-    // Optimistically remove from UI
+    // Mark item as removing to trigger animation
+    setRemovingFeedbackIds(prev => new Set(prev).add(entryId));
+  }, [userId]);
+
+  // Handle animation complete callback - remove from state and database
+  const handleRemoveAnimationComplete = React.useCallback(async (entryId: string) => {
+    if (!userId) {
+      console.warn('⚠️ [ProfileScreen] No user ID, cannot remove feedback');
+      return;
+    }
+
+    // Remove from UI state
     setEmotionalFeedbackHistory(prev => prev.filter(entry => entry.id !== entryId));
+    setRemovingFeedbackIds(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(entryId);
+      return newSet;
+    });
     
     // Remove from database
     console.log('💾 [ProfileScreen] Removing emotional feedback from database:', entryId);
@@ -1172,49 +1241,56 @@ export const ProfileScreen: React.FC = () => {
                       const feedbackBackground = feedbackColor;
                       const formattedDate = formatSessionDate(entry.date) || 'Date unavailable';
                       const formattedTimestamp = formatTimestamp(entry.timestampSeconds);
+                      const isRemoving = removingFeedbackIds.has(entry.id);
 
                       return (
-                        <View key={`${entry.id}-${entry.timestampSeconds}-${index}`} style={styles.activityItem}>
-                          <View
-                            style={[
-                              styles.activityIcon,
-                              { backgroundColor: feedbackBackground, borderWidth: 0 }
-                            ]}
-                          />
-                          <View style={styles.activityInfo}>
-                            <View style={styles.activityHeader}>
-                              <Text
-                                style={styles.activityTitle}
-                                numberOfLines={1}
-                                ellipsizeMode="tail"
-                              >
-                                {truncatedTitle}
-                              </Text>
-                              <Text style={styles.activityDate}>{formattedDate}</Text>
+                        <AnimatedFeedbackItem
+                          key={`${entry.id}-${entry.timestampSeconds}-${index}`}
+                          isRemoving={isRemoving}
+                          onAnimationComplete={() => handleRemoveAnimationComplete(entry.id)}
+                        >
+                          <View style={styles.activityItem}>
+                            <View
+                              style={[
+                                styles.activityIcon,
+                                { backgroundColor: feedbackBackground, borderWidth: 0 }
+                              ]}
+                            />
+                            <View style={styles.activityInfo}>
+                              <View style={styles.activityHeader}>
+                                <Text
+                                  style={styles.activityTitle}
+                                  numberOfLines={1}
+                                  ellipsizeMode="tail"
+                                >
+                                  {truncatedTitle}
+                                </Text>
+                                <Text style={styles.activityDate}>{formattedDate}</Text>
+                              </View>
+                              <View style={styles.feedbackDetailsRow}>
+                                <Text
+                                  style={[
+                                    styles.feedbackLabelTag,
+                                    {
+                                      color: '#ffffff',
+                                      backgroundColor: feedbackColor
+                                    }
+                                  ]}
+                                >
+                                  {feedbackLabel}
+                                </Text>
+                                <Text style={styles.activityMeta}>at {formattedTimestamp}</Text>
+                              </View>
                             </View>
-                            <View style={styles.feedbackDetailsRow}>
-                              <Text
-                                style={[
-                                  styles.feedbackLabelTag,
-                                  {
-                                    color: '#ffffff',
-                                    backgroundColor: feedbackColor
-                                  }
-                                ]}
-                              >
-                                {feedbackLabel}
-                              </Text>
-                              <Text style={styles.activityMeta}>at {formattedTimestamp}</Text>
-                            </View>
+                            <TouchableOpacity
+                              style={styles.deleteFeedbackButton}
+                              onPress={() => handleRemoveEmotionalFeedback(entry.id)}
+                              hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+                            >
+                              <Text style={styles.deleteFeedbackButtonText}>×</Text>
+                            </TouchableOpacity>
                           </View>
-                          <TouchableOpacity
-                            style={styles.deleteFeedbackButton}
-                            onPress={() => handleRemoveEmotionalFeedback(entry.id)}
-                            hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
-                          >
-                            <Text style={styles.deleteFeedbackButtonText}>×</Text>
-                          </TouchableOpacity>
-                        </View>
+                        </AnimatedFeedbackItem>
                       );
                     })}
                   </ScrollView>

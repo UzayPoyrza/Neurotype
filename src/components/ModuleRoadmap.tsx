@@ -1020,7 +1020,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
               Track your journey and milestones
             </Text>
           </View>
-          <View style={[styles.summaryCard, { borderColor: module.color }]}>
+          <View style={[styles.summaryCard, { borderColor: module.color, backgroundColor: '#FFFFFF' }]}>
             <View style={styles.summaryStatsRow}>
               <View style={styles.summaryStat}>
                 <Text style={styles.summaryStatValue}>{completedSessions.length}</Text>

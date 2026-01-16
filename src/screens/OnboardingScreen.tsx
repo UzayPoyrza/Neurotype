@@ -1689,28 +1689,54 @@ const LoginPage: React.FC<{
       console.log('🔵 Starting Google sign in...');
       const result = await signInWithGoogle();
       
-      if (result.success) {
+      if (result.success && result.userId) {
+        // Session was created immediately during signInWithGoogle
+        console.log('✅ Google sign in completed immediately, navigating...');
+        onNavigateToPremium();
+      } else if (result.success) {
+        // OAuth flow initiated but session not yet created (browser opened)
         console.log('🔵 Google OAuth flow initiated, waiting for authentication...');
-        // OAuth flow has started - browser will open
-        // Wait for auth state change to complete authentication
-        // Don't navigate immediately - let the auth state listener handle it
-        // But we can set up a listener here to navigate when auth completes
         
         let authCompleted = false;
         let authErrorOccurred = false;
+        let subscription: { unsubscribe: () => void } | null = null;
         
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        // Check session immediately in case it was already set
+        const checkSessionImmediately = async () => {
+          try {
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            if (session?.user && !authCompleted) {
+              console.log('✅ Session found immediately after OAuth, navigating...');
+              authCompleted = true;
+              if (subscription) subscription.unsubscribe();
+              onNavigateToPremium();
+              return true;
+            }
+            return false;
+          } catch (error) {
+            console.error('❌ Error checking session:', error);
+            return false;
+          }
+        };
+        
+        // Check immediately first
+        const foundSession = await checkSessionImmediately();
+        if (foundSession) {
+          return; // Already navigated
+        }
+        
+        // Set up listener for auth state changes
+        const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
           async (event, session) => {
             try {
-              console.log('🔵 Auth state changed:', event, session?.user?.id);
+              console.log('🔵 [Onboarding] Auth state changed:', event, session?.user?.id);
               
               // Handle errors from auth state change
               if (event === 'SIGNED_OUT' && !authCompleted) {
-                // User was signed out unexpectedly during auth flow
                 console.error('❌ User was signed out during authentication');
                 authErrorOccurred = true;
-                authCompleted = true; // Prevent timeout
-                subscription.unsubscribe();
+                authCompleted = true;
+                if (subscription) subscription.unsubscribe();
                 showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, 'Authentication was interrupted. Please try again.');
                 return;
               }
@@ -1720,60 +1746,51 @@ const LoginPage: React.FC<{
                 console.error('❌ Token refresh failed - no session');
                 authErrorOccurred = true;
                 authCompleted = true;
-                subscription.unsubscribe();
+                if (subscription) subscription.unsubscribe();
                 showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, 'Session expired. Please sign in again.');
                 return;
               }
               
               if (event === 'SIGNED_IN' && session?.user) {
-                console.log('✅ Google sign in successful!');
+                console.log('✅ [Onboarding] Google sign in successful! Navigating...');
                 authCompleted = true;
-                subscription.unsubscribe();
+                if (subscription) subscription.unsubscribe();
                 onNavigateToPremium();
               } else if (event === 'SIGNED_IN' && !session?.user) {
-                // Signed in event but no user - this is an error
                 console.error('❌ SIGNED_IN event but no user in session');
                 authErrorOccurred = true;
                 authCompleted = true;
-                subscription.unsubscribe();
+                if (subscription) subscription.unsubscribe();
                 showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, 'Authentication completed but user data is missing. Please try again.');
               }
             } catch (error: any) {
               console.error('❌ Error in auth state change handler:', error);
               authErrorOccurred = true;
-              authCompleted = true; // Prevent timeout from also showing error
-              subscription.unsubscribe();
+              authCompleted = true;
+              if (subscription) subscription.unsubscribe();
               showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, error);
             }
           }
         );
+        subscription = authSubscription;
         
-        // Also listen for any errors that might occur during the OAuth processing
-        // Check session after a short delay to see if auth completed
-        setTimeout(async () => {
-          if (!authCompleted && !authErrorOccurred) {
-            try {
-              const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-              if (sessionError) {
-                console.error('❌ Error checking session:', sessionError);
-                authErrorOccurred = true;
-                authCompleted = true;
-                subscription.unsubscribe();
-                showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, sessionError.message || 'Failed to verify authentication');
-              }
-            } catch (error: any) {
-              console.error('❌ Error checking session:', error);
-              authErrorOccurred = true;
-              authCompleted = true;
-              subscription.unsubscribe();
-              showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, error);
-            }
+        // Poll for session in case auth state change doesn't fire
+        const pollInterval = setInterval(async () => {
+          if (authCompleted || authErrorOccurred) {
+            clearInterval(pollInterval);
+            return;
           }
-        }, 5000); // Check after 5 seconds
+          
+          const found = await checkSessionImmediately();
+          if (found) {
+            clearInterval(pollInterval);
+          }
+        }, 1000); // Check every second
         
         // Timeout after 60 seconds if auth doesn't complete
         setTimeout(() => {
-          subscription.unsubscribe();
+          clearInterval(pollInterval);
+          if (subscription) subscription.unsubscribe();
           if (!authCompleted) {
             console.error('❌ Google sign in timed out');
             showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, 'Sign in timed out. Please try again.');

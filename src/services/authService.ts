@@ -81,6 +81,9 @@ export async function signInWithGoogle(): Promise<{
       options: {
         redirectTo: redirectUri,
         skipBrowserRedirect: true, // We'll handle opening the browser ourselves
+        queryParams: {
+          prompt: 'select_account', // Force Google to show account picker
+        },
       },
     });
 

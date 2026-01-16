@@ -115,12 +115,16 @@ export async function createUserProfile(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Check if user already exists
+    console.log('🔵 [createUserProfile] Checking if user already exists:', userId);
     const existingProfile = await getUserProfile(userId);
     
     if (existingProfile) {
       // User already exists, return success
+      console.log('✅ [createUserProfile] User already exists, skipping creation');
       return { success: true };
     }
+    
+    console.log('🔵 [createUserProfile] User does not exist, creating new profile...');
 
     // Create new user with basic subscription
     const { error } = await supabase

@@ -1719,13 +1719,8 @@ const LoginPage: React.FC<{
           }
         };
         
-        // Check immediately first
-        const foundSession = await checkSessionImmediately();
-        if (foundSession) {
-          return; // Already navigated
-        }
-        
-        // Set up listener for auth state changes
+        // Set up listener for auth state changes FIRST (before checking session)
+        // This ensures we catch the SIGNED_IN event even if it fires immediately
         const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
           async (event, session) => {
             try {
@@ -1774,18 +1769,34 @@ const LoginPage: React.FC<{
         );
         subscription = authSubscription;
         
-        // Poll for session in case auth state change doesn't fire
+        // Check session immediately AFTER setting up listener (in case it was already set)
+        setTimeout(async () => {
+          if (!authCompleted && !authErrorOccurred) {
+            const found = await checkSessionImmediately();
+            if (found) {
+              // Already handled in checkSessionImmediately
+            }
+          }
+        }, 500); // Check after 500ms
+        
+        // Poll for session more aggressively at first, then slow down
+        let pollAttempts = 0;
         const pollInterval = setInterval(async () => {
           if (authCompleted || authErrorOccurred) {
             clearInterval(pollInterval);
             return;
           }
           
+          pollAttempts++;
           const found = await checkSessionImmediately();
           if (found) {
             clearInterval(pollInterval);
+          } else if (pollAttempts > 30) {
+            // Stop polling after 30 seconds
+            clearInterval(pollInterval);
+            console.warn('⚠️ [Onboarding] Stopped polling after 30 seconds, session may not be available');
           }
-        }, 1000); // Check every second
+        }, 500); // Check every 500ms for faster detection
         
         // Timeout after 60 seconds if auth doesn't complete
         setTimeout(() => {

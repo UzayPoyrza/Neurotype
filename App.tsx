@@ -611,23 +611,67 @@ export default function App() {
         const userId = session.user.id;
         console.log('✅ [App] Found existing session for user:', userId);
         
-        // IMPORTANT: Set userId FIRST so logout can work even if data loading fails
-        useStore.setState({ 
-          userId, 
-          isLoggedIn: true,
-          hasCompletedOnboarding: true // User is already logged in, so they've completed onboarding
-        });
-        
-        // Load user data when session is restored (don't await - let it run in background)
-        // But catch errors so they don't break the app
-        loadUserData(userId).catch((loadError) => {
-          console.error('❌ [App] Failed to load user data after session restore:', loadError);
-          // Error is already shown in loadUserData, but ensure userId is still set
-          // so logout can work
-          if (!useStore.getState().userId) {
-            useStore.setState({ userId });
+        // IMPORTANT: Check if user profile exists before assuming onboarding is complete
+        // New users who just signed in may have a session but no profile yet
+        try {
+          const userProfile = await getUserProfile(userId);
+          
+          if (userProfile) {
+            // User profile exists - they've completed onboarding before
+            console.log('✅ [App] User profile exists, user has completed onboarding');
+            useStore.setState({ 
+              userId, 
+              isLoggedIn: true,
+              hasCompletedOnboarding: true
+            });
+            
+            // Load user data when session is restored (don't await - let it run in background)
+            loadUserData(userId).catch((loadError) => {
+              console.error('❌ [App] Failed to load user data after session restore:', loadError);
+              // Error is already shown in loadUserData, but ensure userId is still set
+              if (!useStore.getState().userId) {
+                useStore.setState({ userId });
+              }
+            });
+          } else {
+            // User profile doesn't exist - this is a new user who just signed in
+            // They need to complete onboarding first
+            console.log('⚠️ [App] User profile not found - user needs to complete onboarding');
+            useStore.setState({ 
+              userId, 
+              isLoggedIn: true,
+              hasCompletedOnboarding: false // Don't skip onboarding
+            });
+            
+            // Try to create user profile now (in case it failed during sign-in)
+            try {
+              const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || '';
+              const firstName = fullName?.trim() ? fullName.trim().split(' ')[0] : undefined;
+              
+              const result = await createUserProfile(
+                userId,
+                session.user.email || '',
+                firstName
+              );
+              
+              if (result.success) {
+                console.log('✅ [App] User profile created successfully');
+              } else {
+                console.error('❌ [App] Failed to create user profile:', result.error);
+              }
+            } catch (profileError) {
+              console.error('❌ [App] Error creating user profile:', profileError);
+            }
           }
-        });
+        } catch (profileCheckError) {
+          console.error('❌ [App] Error checking user profile:', profileCheckError);
+          // If we can't check the profile, assume user needs onboarding to be safe
+          useStore.setState({ 
+            userId, 
+            isLoggedIn: true,
+            hasCompletedOnboarding: false
+          });
+        }
       } else {
         console.log('ℹ️ [App] No existing session found');
       }
@@ -663,10 +707,18 @@ export default function App() {
             
             // Create profile if needed
             try {
+              console.log('🔵 [App] Creating user profile in auth state change handler...');
               // Extract first name consistently (split full name to get first name only)
               // Handle cases where Apple Sign-In doesn't provide names (trim to handle whitespace-only strings)
               const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || '';
               const firstName = fullName?.trim() ? fullName.trim().split(' ')[0] : undefined;
+              
+              console.log('🔵 [App] Profile creation params:', {
+                userId,
+                email: session.user.email || '',
+                firstName,
+                fullName,
+              });
               
               const result = await createUserProfile(
                 userId,
@@ -674,13 +726,20 @@ export default function App() {
                 firstName
               );
               
-              if (!result.success && result.error) {
-                console.error('Failed to create user profile:', result.error);
+              if (result.success) {
+                console.log('✅ [App] User profile created successfully in auth state change handler');
+              } else {
+                console.error('❌ [App] Failed to create user profile:', result.error);
                 // Don't show alert here as it might interrupt the user flow
                 // Profile creation failure is non-critical
               }
-            } catch (error) {
-              console.error('Error creating user profile:', error);
+            } catch (error: any) {
+              console.error('❌ [App] Error creating user profile:', error);
+              console.error('❌ [App] Error details:', {
+                message: error?.message,
+                code: error?.code,
+                stack: error?.stack,
+              });
               // Profile creation failure is non-critical, don't interrupt user
             }
             

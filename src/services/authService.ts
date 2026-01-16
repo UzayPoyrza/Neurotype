@@ -135,42 +135,29 @@ export async function signInWithGoogle(): Promise<{
       console.log('🔵 OAuth redirect received, processing...');
       console.log('🔵 Full redirect URL:', result.url);
       
-      // Parse the redirect URL - check both query params and hash fragments
-      let code: string | null = null;
+      // Parse the redirect URL to check for errors and extract tokens
       let error: string | null = null;
       let errorDescription: string | null = null;
       
       try {
         const url = new URL(result.url);
         
-        // Check query parameters first
-        code = url.searchParams.get('code');
+        // Check query parameters for errors
         error = url.searchParams.get('error');
         errorDescription = url.searchParams.get('error_description');
         
-        // If no code in query params, check hash fragment
-        if (!code && url.hash) {
-          const hashParams = new URLSearchParams(url.hash.substring(1)); // Remove the #
-          code = hashParams.get('code');
+        // Also check hash fragment for errors
+        if (url.hash) {
+          const hashParams = new URLSearchParams(url.hash.substring(1));
           error = hashParams.get('error') || error;
           errorDescription = hashParams.get('error_description') || errorDescription;
         }
-        
-        // Also check if the code is directly in the path or as a fragment parameter
-        if (!code) {
-          // Try parsing the entire URL as a Supabase redirect
-          // Supabase redirects might have format: neurotype://auth/callback#access_token=...&code=...
-          const match = result.url.match(/[#&]code=([^&]+)/);
-          if (match) {
-            code = decodeURIComponent(match[1]);
-          }
-        }
       } catch (urlError) {
         console.error('❌ Error parsing redirect URL:', urlError);
-        // Try to extract code using regex as fallback
-        const match = result.url.match(/[#&?]code=([^&]+)/);
-        if (match) {
-          code = decodeURIComponent(match[1]);
+        // Try to extract error using regex as fallback
+        const errorMatch = result.url.match(/[#&?]error=([^&]+)/);
+        if (errorMatch) {
+          error = decodeURIComponent(errorMatch[1]);
         }
       }
       
@@ -179,68 +166,92 @@ export async function signInWithGoogle(): Promise<{
         return { success: false, error: errorDescription || error };
       }
       
-      // Don't fail if code is missing - Supabase might process the redirect via deep link
-      // The deep link handler in App.tsx will process it and trigger auth state change
-      if (!code) {
-        console.log('ℹ️ No authorization code in redirect URL, but Supabase may process it via deep link');
-        console.log('ℹ️ Redirect URL was:', result.url);
-        // Continue to polling - Supabase should handle the redirect automatically
+      // Supabase OAuth redirects contain tokens directly in the hash fragment (not a code)
+      // Extract access_token and refresh_token from hash fragment
+      const hashPart = result.url.split('#')[1];
+      if (hashPart) {
+        const hashParams = new URLSearchParams(hashPart);
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+        
+        if (accessToken && refreshToken) {
+          console.log('✅ Access token and refresh token found in redirect URL');
+          console.log('🔵 Access token length:', accessToken.length);
+          console.log('🔵 Refresh token length:', refreshToken.length);
+          
+          // Manually set the session using the tokens from the redirect URL
+          console.log('🔵 Attempting to set session with tokens...');
+          try {
+            const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+            
+            console.log('🔵 setSession() completed');
+            console.log('🔵 Session error:', sessionError);
+            console.log('🔵 Session data exists:', !!sessionData);
+            console.log('🔵 Session exists:', !!sessionData?.session);
+            console.log('🔵 User exists:', !!sessionData?.session?.user);
+            
+            if (sessionError) {
+              console.error('❌ Error setting session from tokens:', sessionError);
+              console.error('❌ Session error message:', sessionError.message);
+              console.error('❌ Session error details:', JSON.stringify(sessionError, null, 2));
+              return { success: false, error: sessionError.message || 'Failed to create session' };
+            }
+            
+            if (sessionData?.session?.user) {
+              console.log('✅ Session created successfully from tokens! User ID:', sessionData.session.user.id);
+              // Profile creation will be handled by App.tsx auth state change handler
+              return {
+                success: true,
+                userId: sessionData.session.user.id,
+              };
+            } else {
+              console.error('❌ Session data missing after setting session');
+              console.error('❌ sessionData:', sessionData);
+              console.error('❌ sessionData.session:', sessionData?.session);
+              return { success: false, error: 'Session not created from tokens' };
+            }
+          } catch (setSessionError: any) {
+            console.error('❌ Exception in setSession():', setSessionError);
+            console.error('❌ Exception type:', typeof setSessionError);
+            console.error('❌ Exception message:', setSessionError?.message);
+            console.error('❌ Exception stack:', setSessionError?.stack);
+            return { success: false, error: `Failed to create session: ${setSessionError?.message || 'Unknown error'}` };
+          }
+        } else {
+          console.error('❌ Missing access_token or refresh_token in redirect URL');
+          console.error('❌ Hash params found:', hashPart ? 'Yes' : 'No');
+          console.error('❌ Access token found:', !!accessToken);
+          console.error('❌ Refresh token found:', !!refreshToken);
+        }
       } else {
-        console.log('✅ Authorization code extracted from redirect URL');
+        console.error('❌ No hash fragment in redirect URL');
       }
       
-      // Try to get session immediately
+      // Fallback: Try to get session in case it was set by another mechanism
       try {
-        const { data: { session: urlSession }, error: urlError } = await supabase.auth.getSession();
+        const { data: { session: fallbackSession }, error: fallbackError } = await supabase.auth.getSession();
         
-        if (urlSession?.user) {
-          console.log('✅ Session found immediately after redirect');
-          // Profile creation will be handled by App.tsx auth state change handler
+        if (fallbackError) {
+          console.error('❌ Error getting fallback session:', fallbackError);
+          return { success: false, error: fallbackError.message || 'Failed to create session' };
+        }
+        
+        if (fallbackSession?.user) {
+          console.log('✅ Fallback: Session found via getSession()');
           return {
             success: true,
-            userId: urlSession.user.id,
+            userId: fallbackSession.user.id,
           };
         }
-      } catch (sessionError) {
-        console.log('ℹ️ Session not immediately available, will poll...');
+      } catch (fallbackError) {
+        console.error('❌ Exception getting fallback session:', fallbackError);
       }
       
-      // Wait for Supabase to process the redirect and create the session
-      // The deep link handler in App.tsx should trigger auth state change
-      // Poll for session with timeout
-      let session = null;
-      let attempts = 0;
-      const maxAttempts = 20; // Increased attempts to give more time
-      
-      while (!session && attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 500));
-        const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error('❌ Error getting session:', sessionError);
-          return { success: false, error: sessionError.message || 'Failed to create session' };
-        }
-        
-        if (currentSession?.user) {
-          session = currentSession;
-          break;
-        }
-        
-        attempts++;
-      }
-      
-      if (!session?.user) {
-        console.error('❌ Failed to get session after OAuth redirect');
-        return { success: false, error: 'Session not created after OAuth redirect' };
-      }
-      
-      console.log('✅ Google sign in successful! User ID:', session.user.id);
-      
-      // Profile creation will be handled by App.tsx auth state change handler
-      return {
-        success: true,
-        userId: session.user.id,
-      };
+      console.error('❌ Failed to create session from OAuth redirect');
+      return { success: false, error: 'Session not created after OAuth redirect' };
     }
 
     return { success: false, error: 'Unexpected browser result' };

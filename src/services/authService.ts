@@ -195,13 +195,7 @@ export async function signInWithGoogle(): Promise<{
         
         if (urlSession?.user) {
           console.log('✅ Session found immediately after redirect');
-          const email = urlSession.user.email || '';
-          const firstName = urlSession.user.user_metadata?.full_name?.split(' ')[0] || 
-                            urlSession.user.user_metadata?.name?.split(' ')[0] || 
-                            undefined;
-          
-          await createUserProfile(urlSession.user.id, email, firstName);
-          
+          // Profile creation will be handled by App.tsx auth state change handler
           return {
             success: true,
             userId: urlSession.user.id,
@@ -242,14 +236,7 @@ export async function signInWithGoogle(): Promise<{
       
       console.log('✅ Google sign in successful! User ID:', session.user.id);
       
-      // Create or update user profile (similar to Apple sign-in)
-      const email = session.user.email || '';
-      const firstName = session.user.user_metadata?.full_name?.split(' ')[0] || 
-                        session.user.user_metadata?.name?.split(' ')[0] || 
-                        undefined;
-      
-      await createUserProfile(session.user.id, email, firstName);
-      
+      // Profile creation will be handled by App.tsx auth state change handler
       return {
         success: true,
         userId: session.user.id,

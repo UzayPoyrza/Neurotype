@@ -663,10 +663,15 @@ export default function App() {
             
             // Create profile if needed
             try {
+              // Extract first name consistently (split full name to get first name only)
+              // Handle cases where Apple Sign-In doesn't provide names (trim to handle whitespace-only strings)
+              const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || '';
+              const firstName = fullName?.trim() ? fullName.trim().split(' ')[0] : undefined;
+              
               const result = await createUserProfile(
                 userId,
                 session.user.email || '',
-                session.user.user_metadata?.full_name || session.user.user_metadata?.name
+                firstName
               );
               
               if (!result.success && result.error) {

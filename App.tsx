@@ -619,6 +619,13 @@ export default function App() {
           if (userProfile) {
             // User profile exists - they've completed onboarding before
             console.log('✅ [App] User profile exists, user has completed onboarding');
+            
+            // Check premium status from users table after successful login
+            if (userProfile.subscription_type) {
+              useStore.getState().setSubscriptionType(userProfile.subscription_type);
+              console.log('✅ [App] Updated subscription type from database after session restore:', userProfile.subscription_type);
+            }
+            
             useStore.setState({ 
               userId, 
               isLoggedIn: true,
@@ -656,6 +663,17 @@ export default function App() {
               
               if (result.success) {
                 console.log('✅ [App] User profile created successfully');
+                
+                // Check premium status from users table after profile creation
+                try {
+                  const userProfile = await getUserProfile(userId);
+                  if (userProfile?.subscription_type) {
+                    useStore.getState().setSubscriptionType(userProfile.subscription_type);
+                    console.log('✅ [App] Updated subscription type from database:', userProfile.subscription_type);
+                  }
+                } catch (subscriptionError) {
+                  console.error('❌ [App] Error checking subscription type:', subscriptionError);
+                }
               } else {
                 console.error('❌ [App] Failed to create user profile:', result.error);
               }
@@ -706,41 +724,58 @@ export default function App() {
             });
             
             // Create profile if needed
-            try {
-              console.log('🔵 [App] Checking/creating user profile in auth state change handler...');
-              // Extract first name consistently (split full name to get first name only)
-              // Handle cases where Apple Sign-In doesn't provide names (trim to handle whitespace-only strings)
-              const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || '';
-              const firstName = fullName?.trim() ? fullName.trim().split(' ')[0] : undefined;
-              
-              console.log('🔵 [App] Profile creation params:', {
-                userId,
-                email: session.user.email || '',
-                firstName,
-                fullName,
-              });
-              
-              const result = await createUserProfile(
-                userId,
-                session.user.email || '',
-                firstName
-              );
-              
-              if (result.success) {
-                console.log('✅ [App] User profile created successfully in auth state change handler');
-              } else {
-                console.error('❌ [App] Failed to create user profile:', result.error);
-                // Don't show alert here as it might interrupt the user flow
-                // Profile creation failure is non-critical
+            // Skip profile creation if user is in onboarding - OnboardingScreen will handle it
+            const isInOnboarding = !useStore.getState().hasCompletedOnboarding;
+            if (isInOnboarding) {
+              console.log('🔵 [App] User is in onboarding, skipping profile creation (OnboardingScreen will handle it)');
+            } else {
+              try {
+                console.log('🔵 [App] Checking/creating user profile in auth state change handler...');
+                // Extract first name consistently (split full name to get first name only)
+                // Handle cases where Apple Sign-In doesn't provide names (trim to handle whitespace-only strings)
+                const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || '';
+                const firstName = fullName?.trim() ? fullName.trim().split(' ')[0] : undefined;
+                
+                console.log('🔵 [App] Profile creation params:', {
+                  userId,
+                  email: session.user.email || '',
+                  firstName,
+                  fullName,
+                });
+                
+                const result = await createUserProfile(
+                  userId,
+                  session.user.email || '',
+                  firstName
+                );
+                
+                if (result.success) {
+                  console.log('✅ [App] User profile created successfully in auth state change handler');
+                  
+                  // Check premium status from users table after profile creation
+                  try {
+                    const userProfile = await getUserProfile(userId);
+                    if (userProfile?.subscription_type) {
+                      useStore.getState().setSubscriptionType(userProfile.subscription_type);
+                      console.log('✅ [App] Updated subscription type from database after login:', userProfile.subscription_type);
+                    }
+                  } catch (subscriptionError) {
+                    console.error('❌ [App] Error checking subscription type after login:', subscriptionError);
+                  }
+                } else {
+                  console.error('❌ [App] Failed to create user profile:', result.error);
+                  // Don't show alert here as it might interrupt the user flow
+                  // Profile creation failure is non-critical
+                }
+              } catch (error: any) {
+                console.error('❌ [App] Error creating user profile:', error);
+                console.error('❌ [App] Error details:', {
+                  message: error?.message,
+                  code: error?.code,
+                  stack: error?.stack,
+                });
+                // Profile creation failure is non-critical, don't interrupt user
               }
-            } catch (error: any) {
-              console.error('❌ [App] Error creating user profile:', error);
-              console.error('❌ [App] Error details:', {
-                message: error?.message,
-                code: error?.code,
-                stack: error?.stack,
-              });
-              // Profile creation failure is non-critical, don't interrupt user
             }
             
             // Only load user data if onboarding is already completed

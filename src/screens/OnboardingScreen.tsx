@@ -13,7 +13,7 @@ import { Slider0to10 } from '../components/Slider0to10';
 import { signInWithGoogle, signInWithApple } from '../services/authService';
 import { showErrorAlert, ERROR_TITLES } from '../utils/errorHandler';
 import { supabase } from '../services/supabase';
-import { getUserProfile } from '../services/userService';
+import { getUserProfile, createUserProfile } from '../services/userService';
 import { PaymentPage } from '../components/PaymentPage';
 import { PremiumFeaturesPage } from '../components/PremiumFeaturesPage';
 
@@ -1726,9 +1726,84 @@ const LoginPage: React.FC<{
       
       if (result.success && result.userId) {
         // Session was created immediately during signInWithGoogle
-        console.log('✅ Google sign in completed immediately, navigating...');
-        // Loading should already be showing from callback, just navigate after brief delay
-        setTimeout(() => {
+        console.log('✅ Google sign in completed immediately, creating user profile...');
+        
+        // CRITICAL: Wait for user profile creation before navigating
+        try {
+          // Get session to get user email and metadata
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session?.user) {
+            console.error('❌ [Onboarding] No session found after sign in');
+            setIsLoadingGoogleSignIn(false);
+            Animated.timing(loadingOpacity, {
+              toValue: 0,
+              duration: 200,
+              useNativeDriver: true,
+            }).start();
+            showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, 'Session not found after sign in. Please try again.');
+            return;
+          }
+          
+          const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || '';
+          const firstName = fullName?.trim() ? fullName.trim().split(' ')[0] : undefined;
+          
+          console.log('🔵 [Onboarding] Creating user profile immediately with:', {
+            userId: result.userId,
+            email: session.user.email || '',
+            firstName,
+          });
+          
+          // Wait for profile creation to complete (has 15-second timeout)
+          const profileResult = await createUserProfile(
+            result.userId,
+            session.user.email || '',
+            firstName
+          );
+          
+          if (!profileResult.success) {
+            console.error('❌ [Onboarding] Failed to create user profile:', profileResult.error);
+            setIsLoadingGoogleSignIn(false);
+            Animated.timing(loadingOpacity, {
+              toValue: 0,
+              duration: 200,
+              useNativeDriver: true,
+            }).start();
+            showErrorAlert(
+              ERROR_TITLES.AUTHENTICATION_FAILED,
+              `Failed to create user profile: ${profileResult.error || 'Unknown error'}. Please try again.`
+            );
+            return;
+          }
+          
+          console.log('✅ [Onboarding] User profile created successfully, verifying...');
+          
+          // Double-check that user exists in database before navigating
+          const userProfile = await getUserProfile(result.userId);
+          if (!userProfile) {
+            console.error('❌ [Onboarding] User profile not found in database after creation');
+            setIsLoadingGoogleSignIn(false);
+            Animated.timing(loadingOpacity, {
+              toValue: 0,
+              duration: 200,
+              useNativeDriver: true,
+            }).start();
+            showErrorAlert(
+              ERROR_TITLES.AUTHENTICATION_FAILED,
+              'User profile was not created successfully. Please try again.'
+            );
+            return;
+          }
+          
+          console.log('✅ [Onboarding] User profile verified in database');
+          
+          // Check premium status from database after profile creation
+          if (userProfile.subscription_type) {
+            const setSubscriptionType = useStore.getState().setSubscriptionType;
+            setSubscriptionType(userProfile.subscription_type);
+            console.log('✅ [Onboarding] Updated subscription type from database:', userProfile.subscription_type);
+          }
+          
+          // Only navigate after user profile is confirmed to exist
           setIsLoadingGoogleSignIn(false);
           Animated.timing(loadingOpacity, {
             toValue: 0,
@@ -1737,7 +1812,19 @@ const LoginPage: React.FC<{
           }).start(() => {
             onNavigateToPremium();
           });
-        }, 500);
+        } catch (profileError: any) {
+          console.error('❌ [Onboarding] Error creating user profile:', profileError);
+          setIsLoadingGoogleSignIn(false);
+          Animated.timing(loadingOpacity, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
+          showErrorAlert(
+            ERROR_TITLES.AUTHENTICATION_FAILED,
+            `Error creating user profile: ${profileError?.message || 'Unknown error'}. Please try again.`
+          );
+        }
       } else if (result.success) {
         // Browser closed but processing still happening - loading should already be showing
         console.log('🔵 Browser closed, processing tokens...');
@@ -1751,10 +1838,78 @@ const LoginPage: React.FC<{
           try {
             const { data: { session }, error: sessionError } = await supabase.auth.getSession();
             if (session?.user && !authCompleted) {
-              console.log('✅ Session found immediately after OAuth, navigating...');
-              authCompleted = true;
-              // Hide loading and navigate after a brief delay
-              setTimeout(() => {
+              console.log('✅ Session found immediately after OAuth, creating user profile...');
+              const userId = session.user.id;
+              
+              // CRITICAL: Wait for user profile creation before navigating
+              try {
+                const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || '';
+                const firstName = fullName?.trim() ? fullName.trim().split(' ')[0] : undefined;
+                
+                console.log('🔵 [Onboarding] Creating user profile in checkSessionImmediately with:', {
+                  userId,
+                  email: session.user.email || '',
+                  firstName,
+                });
+                
+                // Wait for profile creation to complete (has 15-second timeout)
+                const profileResult = await createUserProfile(
+                  userId,
+                  session.user.email || '',
+                  firstName
+                );
+                
+                if (!profileResult.success) {
+                  console.error('❌ [Onboarding] Failed to create user profile:', profileResult.error);
+                  authErrorOccurred = true;
+                  authCompleted = true;
+                  setIsLoadingGoogleSignIn(false);
+                  Animated.timing(loadingOpacity, {
+                    toValue: 0,
+                    duration: 200,
+                    useNativeDriver: true,
+                  }).start();
+                  if (subscription) subscription.unsubscribe();
+                  showErrorAlert(
+                    ERROR_TITLES.AUTHENTICATION_FAILED,
+                    `Failed to create user profile: ${profileResult.error || 'Unknown error'}. Please try again.`
+                  );
+                  return false;
+                }
+                
+                console.log('✅ [Onboarding] User profile created successfully in checkSessionImmediately, verifying...');
+                
+                // Double-check that user exists in database before navigating
+                const userProfile = await getUserProfile(userId);
+                if (!userProfile) {
+                  console.error('❌ [Onboarding] User profile not found in database after creation');
+                  authErrorOccurred = true;
+                  authCompleted = true;
+                  setIsLoadingGoogleSignIn(false);
+                  Animated.timing(loadingOpacity, {
+                    toValue: 0,
+                    duration: 200,
+                    useNativeDriver: true,
+                  }).start();
+                  if (subscription) subscription.unsubscribe();
+                  showErrorAlert(
+                    ERROR_TITLES.AUTHENTICATION_FAILED,
+                    'User profile was not created successfully. Please try again.'
+                  );
+                  return false;
+                }
+                
+                console.log('✅ [Onboarding] User profile verified in database');
+                
+                // Check premium status from database after profile creation
+                if (userProfile.subscription_type) {
+                  const setSubscriptionType = useStore.getState().setSubscriptionType;
+                  setSubscriptionType(userProfile.subscription_type);
+                  console.log('✅ [Onboarding] Updated subscription type from database:', userProfile.subscription_type);
+                }
+                
+                authCompleted = true;
+                // Only navigate after user profile is confirmed to exist
                 setIsLoadingGoogleSignIn(false);
                 Animated.timing(loadingOpacity, {
                   toValue: 0,
@@ -1764,8 +1919,24 @@ const LoginPage: React.FC<{
                   if (subscription) subscription.unsubscribe();
                   onNavigateToPremium();
                 });
-              }, 500);
-              return true;
+                return true;
+              } catch (profileError: any) {
+                console.error('❌ [Onboarding] Error creating user profile:', profileError);
+                authErrorOccurred = true;
+                authCompleted = true;
+                setIsLoadingGoogleSignIn(false);
+                Animated.timing(loadingOpacity, {
+                  toValue: 0,
+                  duration: 200,
+                  useNativeDriver: true,
+                }).start();
+                if (subscription) subscription.unsubscribe();
+                showErrorAlert(
+                  ERROR_TITLES.AUTHENTICATION_FAILED,
+                  `Error creating user profile: ${profileError?.message || 'Unknown error'}. Please try again.`
+                );
+                return false;
+              }
             }
             return false;
           } catch (error) {
@@ -1814,10 +1985,78 @@ const LoginPage: React.FC<{
               }
               
               if (event === 'SIGNED_IN' && session?.user) {
-                console.log('✅ [Onboarding] Google sign in successful! Navigating...');
-                authCompleted = true;
-                // Keep loading visible briefly, then navigate
-                setTimeout(() => {
+                console.log('✅ [Onboarding] Google sign in successful! Creating user profile...');
+                const userId = session.user.id;
+                
+                // CRITICAL: Wait for user profile creation before navigating
+                try {
+                  const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || '';
+                  const firstName = fullName?.trim() ? fullName.trim().split(' ')[0] : undefined;
+                  
+                  console.log('🔵 [Onboarding] Creating user profile with:', {
+                    userId,
+                    email: session.user.email || '',
+                    firstName,
+                  });
+                  
+                  // Wait for profile creation to complete (has 15-second timeout)
+                  const profileResult = await createUserProfile(
+                    userId,
+                    session.user.email || '',
+                    firstName
+                  );
+                  
+                  if (!profileResult.success) {
+                    console.error('❌ [Onboarding] Failed to create user profile:', profileResult.error);
+                    authErrorOccurred = true;
+                    authCompleted = true;
+                    setIsLoadingGoogleSignIn(false);
+                    Animated.timing(loadingOpacity, {
+                      toValue: 0,
+                      duration: 200,
+                      useNativeDriver: true,
+                    }).start();
+                    if (subscription) subscription.unsubscribe();
+                    showErrorAlert(
+                      ERROR_TITLES.AUTHENTICATION_FAILED,
+                      `Failed to create user profile: ${profileResult.error || 'Unknown error'}. Please try again.`
+                    );
+                    return;
+                  }
+                  
+                  console.log('✅ [Onboarding] User profile created successfully, verifying...');
+                  
+                  // Double-check that user exists in database before navigating
+                  const userProfile = await getUserProfile(userId);
+                  if (!userProfile) {
+                    console.error('❌ [Onboarding] User profile not found in database after creation');
+                    authErrorOccurred = true;
+                    authCompleted = true;
+                    setIsLoadingGoogleSignIn(false);
+                    Animated.timing(loadingOpacity, {
+                      toValue: 0,
+                      duration: 200,
+                      useNativeDriver: true,
+                    }).start();
+                    if (subscription) subscription.unsubscribe();
+                    showErrorAlert(
+                      ERROR_TITLES.AUTHENTICATION_FAILED,
+                      'User profile was not created successfully. Please try again.'
+                    );
+                    return;
+                  }
+                  
+                  console.log('✅ [Onboarding] User profile verified in database');
+                  
+                  // Check premium status from database after profile creation
+                  if (userProfile.subscription_type) {
+                    const setSubscriptionType = useStore.getState().setSubscriptionType;
+                    setSubscriptionType(userProfile.subscription_type);
+                    console.log('✅ [Onboarding] Updated subscription type from database:', userProfile.subscription_type);
+                  }
+                  
+                  authCompleted = true;
+                  // Only navigate after user profile is confirmed to exist
                   setIsLoadingGoogleSignIn(false);
                   Animated.timing(loadingOpacity, {
                     toValue: 0,
@@ -1827,7 +2066,22 @@ const LoginPage: React.FC<{
                     if (subscription) subscription.unsubscribe();
                     onNavigateToPremium();
                   });
-                }, 500);
+                } catch (profileError: any) {
+                  console.error('❌ [Onboarding] Error creating user profile:', profileError);
+                  authErrorOccurred = true;
+                  authCompleted = true;
+                  setIsLoadingGoogleSignIn(false);
+                  Animated.timing(loadingOpacity, {
+                    toValue: 0,
+                    duration: 200,
+                    useNativeDriver: true,
+                  }).start();
+                  if (subscription) subscription.unsubscribe();
+                  showErrorAlert(
+                    ERROR_TITLES.AUTHENTICATION_FAILED,
+                    `Error creating user profile: ${profileError?.message || 'Unknown error'}. Please try again.`
+                  );
+                }
               } else if (event === 'SIGNED_IN' && !session?.user) {
                 console.error('❌ SIGNED_IN event but no user in session');
                 authErrorOccurred = true;
@@ -2201,41 +2455,62 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
       setHasScrolledOnHowToUse(false);
     }
     
-    // Auto-skip premium and payment pages if user already has premium
-    if (currentPage === 5 && subscriptionType === 'premium') {
-      console.log('✅ [Onboarding] User has premium, auto-skipping premium page');
-      // Small delay to allow page to render, then finish
-      const skipTimer = setTimeout(() => {
-        finishOverlayOpacity.setValue(1);
-        setShowFinishAnimation(true);
-        setTimeout(() => {
-          Animated.parallel([
-            Animated.timing(finishContentOpacity, {
-              toValue: 1,
-              duration: 400,
-              easing: Easing.out(Easing.ease),
-              useNativeDriver: true,
-            }),
-            Animated.spring(finishContentScale, {
-              toValue: 1,
-              tension: 40,
-              friction: 7,
-              useNativeDriver: true,
-            }),
-          ]).start(() => {
-            setTimeout(() => {
-              // User already has premium, so set it and finish
-              const setSubscriptionType = useStore.getState().setSubscriptionType;
-              setSubscriptionType('premium');
-              onFinish();
-            }, 2000);
-          });
-        }, 100);
-      }, 100);
+    // Auto-skip premium and payment pages if user already has premium (check from database)
+    if (currentPage === 5 && userId) {
+      let skipTimer: NodeJS.Timeout | null = null;
+      let cancelled = false;
       
-      return () => clearTimeout(skipTimer);
+      // Check premium status directly from database
+      getUserProfile(userId).then((userProfile) => {
+        if (cancelled) return;
+        
+        if (userProfile?.subscription_type === 'premium') {
+          console.log('✅ [Onboarding] User has premium from database, auto-skipping premium page');
+          // Update store with database value
+          setSubscriptionType('premium');
+          // Small delay to allow page to render, then finish
+          skipTimer = setTimeout(() => {
+            if (cancelled) return;
+            finishOverlayOpacity.setValue(1);
+            setShowFinishAnimation(true);
+            setTimeout(() => {
+              Animated.parallel([
+                Animated.timing(finishContentOpacity, {
+                  toValue: 1,
+                  duration: 400,
+                  easing: Easing.out(Easing.ease),
+                  useNativeDriver: true,
+                }),
+                Animated.spring(finishContentScale, {
+                  toValue: 1,
+                  tension: 40,
+                  friction: 7,
+                  useNativeDriver: true,
+                }),
+              ]).start(() => {
+                setTimeout(() => {
+                  if (!cancelled) {
+                    onFinish();
+                  }
+                }, 2000);
+              });
+            }, 100);
+          }, 100);
+        }
+      }).catch((error) => {
+        if (!cancelled) {
+          console.error('❌ [Onboarding] Error checking premium status from database:', error);
+        }
+      });
+      
+      return () => {
+        cancelled = true;
+        if (skipTimer) {
+          clearTimeout(skipTimer);
+        }
+      };
     }
-  }, [currentPage, subscriptionType, finishOverlayOpacity, finishContentOpacity, finishContentScale, onFinish]);
+  }, [currentPage, userId, setSubscriptionType, finishOverlayOpacity, finishContentOpacity, finishContentScale, onFinish]);
 
   const handleScroll = (event: any) => {
     const offsetX = event.nativeEvent.contentOffset.x;
@@ -2243,14 +2518,29 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
     setCurrentPage(page);
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     // If on premium page (page 5)
     if (currentPage === 5) {
-      // If user already has premium subscription, skip payment page and finish
-      if (subscriptionType === 'premium') {
-        console.log('✅ [Onboarding] User has premium, skipping payment page');
-        handleFinish();
-        return;
+      // Check premium status directly from database, not from store
+      if (userId) {
+        try {
+          const userProfile = await getUserProfile(userId);
+          if (userProfile?.subscription_type === 'premium') {
+            console.log('✅ [Onboarding] User has premium from database, skipping payment page');
+            // Update store with database value
+            setSubscriptionType('premium');
+            handleFinish();
+            return;
+          } else {
+            // Update store with database value (should be 'basic')
+            if (userProfile?.subscription_type) {
+              setSubscriptionType(userProfile.subscription_type);
+            }
+          }
+        } catch (error) {
+          console.error('❌ [Onboarding] Error checking premium status from database:', error);
+          // On error, continue with normal flow
+        }
       }
       
       // If plan is selected, go to payment page
@@ -2440,15 +2730,31 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
           <LoginPage 
             isActive={currentPage === 4}
             onLogin={handleLogin}
-            onNavigateToPremium={() => {
-              // Check if user already has premium subscription
-              if (subscriptionType === 'premium') {
-                console.log('✅ [Onboarding] User has premium, skipping premium and payment pages');
-                handleFinish();
-              } else {
-                // Navigate to premium features page (page 5)
-                scrollViewRef.current?.scrollTo({ x: SCREEN_WIDTH * 5, animated: true });
+            onNavigateToPremium={async () => {
+              // Check premium status directly from database, not from store
+              if (userId) {
+                try {
+                  const userProfile = await getUserProfile(userId);
+                  if (userProfile?.subscription_type === 'premium') {
+                    console.log('✅ [Onboarding] User has premium from database, skipping premium and payment pages');
+                    // Update store with database value
+                    setSubscriptionType('premium');
+                    handleFinish();
+                    return;
+                  } else {
+                    // Update store with database value (should be 'basic')
+                    if (userProfile?.subscription_type) {
+                      setSubscriptionType(userProfile.subscription_type);
+                    }
+                    console.log('✅ [Onboarding] User subscription from database:', userProfile?.subscription_type || 'not found');
+                  }
+                } catch (error) {
+                  console.error('❌ [Onboarding] Error checking subscription from database:', error);
+                  // On error, don't skip - let user go through premium flow
+                }
               }
+              // Navigate to premium features page (page 5)
+              scrollViewRef.current?.scrollTo({ x: SCREEN_WIDTH * 5, animated: true });
             }}
           />
           <PremiumFeaturesPage 

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, Image, Animated, StatusBar, TouchableOpacity, ScrollView, Dimensions, TextInput, KeyboardAvoidingView, Platform, Easing, Alert } from 'react-native';
+import { View, Text, StyleSheet, Image, Animated, StatusBar, TouchableOpacity, ScrollView, Dimensions, TextInput, KeyboardAvoidingView, Platform, Easing, Alert, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as WebBrowser from 'expo-web-browser';
 import Svg, { Path } from 'react-native-svg';
@@ -1564,6 +1564,9 @@ const LoginPage: React.FC<{
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const cursorHideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const cursorOpacity = useRef(new Animated.Value(1)).current;
+  const [isLoadingGoogleSignIn, setIsLoadingGoogleSignIn] = useState(false);
+  const loadingOpacity = useRef(new Animated.Value(0)).current;
+  const spinnerRotation = useRef(new Animated.Value(0)).current;
   
   const fullText = "Time to get started on your journey.";
 
@@ -1571,6 +1574,28 @@ const LoginPage: React.FC<{
   useEffect(() => {
     WebBrowser.maybeCompleteAuthSession();
   }, []);
+
+  // Spinner rotation animation
+  useEffect(() => {
+    if (isLoadingGoogleSignIn) {
+      const rotateAnimation = Animated.loop(
+        Animated.timing(spinnerRotation, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        })
+      );
+      rotateAnimation.start();
+      return () => rotateAnimation.stop();
+    } else {
+      spinnerRotation.setValue(0);
+    }
+  }, [isLoadingGoogleSignIn]);
+  
+  const spinnerInterpolate = spinnerRotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
   
   // Blinking cursor animation
   useEffect(() => {
@@ -1687,15 +1712,35 @@ const LoginPage: React.FC<{
   const handleGoogleSignIn = async () => {
     try {
       console.log('🔵 Starting Google sign in...');
-      const result = await signInWithGoogle();
+      
+      const result = await signInWithGoogle(() => {
+        // Callback fires immediately when browser closes (before token processing)
+        console.log('🔵 Browser closed callback fired - showing loading immediately');
+        setIsLoadingGoogleSignIn(true);
+        Animated.timing(loadingOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }).start();
+      });
       
       if (result.success && result.userId) {
         // Session was created immediately during signInWithGoogle
         console.log('✅ Google sign in completed immediately, navigating...');
-        onNavigateToPremium();
+        // Loading should already be showing from callback, just navigate after brief delay
+        setTimeout(() => {
+          setIsLoadingGoogleSignIn(false);
+          Animated.timing(loadingOpacity, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }).start(() => {
+            onNavigateToPremium();
+          });
+        }, 500);
       } else if (result.success) {
-        // OAuth flow initiated but session not yet created (browser opened)
-        console.log('🔵 Google OAuth flow initiated, waiting for authentication...');
+        // Browser closed but processing still happening - loading should already be showing
+        console.log('🔵 Browser closed, processing tokens...');
         
         let authCompleted = false;
         let authErrorOccurred = false;
@@ -1708,8 +1753,18 @@ const LoginPage: React.FC<{
             if (session?.user && !authCompleted) {
               console.log('✅ Session found immediately after OAuth, navigating...');
               authCompleted = true;
-              if (subscription) subscription.unsubscribe();
-              onNavigateToPremium();
+              // Hide loading and navigate after a brief delay
+              setTimeout(() => {
+                setIsLoadingGoogleSignIn(false);
+                Animated.timing(loadingOpacity, {
+                  toValue: 0,
+                  duration: 200,
+                  useNativeDriver: true,
+                }).start(() => {
+                  if (subscription) subscription.unsubscribe();
+                  onNavigateToPremium();
+                });
+              }, 500);
               return true;
             }
             return false;
@@ -1731,6 +1786,12 @@ const LoginPage: React.FC<{
                 console.error('❌ User was signed out during authentication');
                 authErrorOccurred = true;
                 authCompleted = true;
+                setIsLoadingGoogleSignIn(false);
+                Animated.timing(loadingOpacity, {
+                  toValue: 0,
+                  duration: 200,
+                  useNativeDriver: true,
+                }).start();
                 if (subscription) subscription.unsubscribe();
                 showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, 'Authentication was interrupted. Please try again.');
                 return;
@@ -1741,6 +1802,12 @@ const LoginPage: React.FC<{
                 console.error('❌ Token refresh failed - no session');
                 authErrorOccurred = true;
                 authCompleted = true;
+                setIsLoadingGoogleSignIn(false);
+                Animated.timing(loadingOpacity, {
+                  toValue: 0,
+                  duration: 200,
+                  useNativeDriver: true,
+                }).start();
                 if (subscription) subscription.unsubscribe();
                 showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, 'Session expired. Please sign in again.');
                 return;
@@ -1749,12 +1816,28 @@ const LoginPage: React.FC<{
               if (event === 'SIGNED_IN' && session?.user) {
                 console.log('✅ [Onboarding] Google sign in successful! Navigating...');
                 authCompleted = true;
-                if (subscription) subscription.unsubscribe();
-                onNavigateToPremium();
+                // Keep loading visible briefly, then navigate
+                setTimeout(() => {
+                  setIsLoadingGoogleSignIn(false);
+                  Animated.timing(loadingOpacity, {
+                    toValue: 0,
+                    duration: 200,
+                    useNativeDriver: true,
+                  }).start(() => {
+                    if (subscription) subscription.unsubscribe();
+                    onNavigateToPremium();
+                  });
+                }, 500);
               } else if (event === 'SIGNED_IN' && !session?.user) {
                 console.error('❌ SIGNED_IN event but no user in session');
                 authErrorOccurred = true;
                 authCompleted = true;
+                setIsLoadingGoogleSignIn(false);
+                Animated.timing(loadingOpacity, {
+                  toValue: 0,
+                  duration: 200,
+                  useNativeDriver: true,
+                }).start();
                 if (subscription) subscription.unsubscribe();
                 showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, 'Authentication completed but user data is missing. Please try again.');
               }
@@ -1762,6 +1845,12 @@ const LoginPage: React.FC<{
               console.error('❌ Error in auth state change handler:', error);
               authErrorOccurred = true;
               authCompleted = true;
+              setIsLoadingGoogleSignIn(false);
+              Animated.timing(loadingOpacity, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+              }).start();
               if (subscription) subscription.unsubscribe();
               showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, error);
             }
@@ -1804,17 +1893,35 @@ const LoginPage: React.FC<{
           if (subscription) subscription.unsubscribe();
           if (!authCompleted) {
             console.error('❌ Google sign in timed out');
+            setIsLoadingGoogleSignIn(false);
+            Animated.timing(loadingOpacity, {
+              toValue: 0,
+              duration: 200,
+              useNativeDriver: true,
+            }).start();
             showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, 'Sign in timed out. Please try again.');
           }
         }, 60000);
       } else {
         console.error('❌ Google sign in failed:', result.error);
+        setIsLoadingGoogleSignIn(false);
+        Animated.timing(loadingOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }).start();
         // Show error for all failures
         const errorMessage = result.error || 'Failed to sign in with Google';
         showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, errorMessage);
       }
     } catch (error: any) {
       console.error('❌ Google sign in error:', error);
+      setIsLoadingGoogleSignIn(false);
+      Animated.timing(loadingOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
       showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, error);
     }
   };
@@ -1967,6 +2074,34 @@ const LoginPage: React.FC<{
           </Animated.View>
         </View>
       </View>
+
+      {/* Loading Modal for Google Sign In */}
+      <Modal
+        visible={isLoadingGoogleSignIn}
+        transparent={true}
+        animationType="none"
+        onRequestClose={() => {}}
+      >
+        <Animated.View
+          style={[
+            styles.loadingOverlay,
+            { opacity: loadingOpacity }
+          ]}
+        >
+          <View style={styles.loadingContent}>
+            <View style={styles.loadingSpinnerContainer}>
+              <Animated.View 
+                style={[
+                  styles.loadingSpinner,
+                  { transform: [{ rotate: spinnerInterpolate }] }
+                ]}
+              />
+            </View>
+            <Text style={styles.loadingText}>Signing in with Google...</Text>
+            <Text style={styles.loadingSubtext}>Please wait</Text>
+          </View>
+        </Animated.View>
+      </Modal>
     </View>
   );
 };
@@ -2954,6 +3089,53 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  loadingContent: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 280,
+  },
+  loadingSpinnerContainer: {
+    width: 60,
+    height: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  loadingSpinner: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 4,
+    borderColor: '#007AFF',
+    borderTopColor: 'transparent',
+  },
+  loadingText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  loadingSubtext: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#8E8E93',
+    textAlign: 'center',
   },
   socialButtonText: {
     fontSize: 17,

@@ -58,7 +58,7 @@ export async function signInWithApple(): Promise<{
 /**
  * Sign in with Google
  */
-export async function signInWithGoogle(): Promise<{
+export async function signInWithGoogle(onBrowserClose?: () => void): Promise<{
   success: boolean;
   userId?: string;
   error?: string;
@@ -133,6 +133,11 @@ export async function signInWithGoogle(): Promise<{
     if (result.type === 'success' && result.url) {
       console.log('🔵 OAuth redirect received, processing...');
       console.log('🔵 Full redirect URL:', result.url);
+      
+      // Notify that browser closed (before processing tokens)
+      if (onBrowserClose) {
+        onBrowserClose();
+      }
       
       // Parse the redirect URL to check for errors and extract tokens
       let error: string | null = null;

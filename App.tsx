@@ -707,7 +707,7 @@ export default function App() {
             
             // Create profile if needed
             try {
-              console.log('🔵 [App] Creating user profile in auth state change handler...');
+              console.log('🔵 [App] Checking/creating user profile in auth state change handler...');
               // Extract first name consistently (split full name to get first name only)
               // Handle cases where Apple Sign-In doesn't provide names (trim to handle whitespace-only strings)
               const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || '';

@@ -3,7 +3,6 @@ import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform, Alert } from 'react-native';
 import { supabase } from './supabase';
-import { createUserProfile } from './userService';
 
 /**
  * Sign in with Apple
@@ -40,11 +39,8 @@ export async function signInWithApple(): Promise<{
       return { success: false, error: error?.message || 'Authentication failed' };
     }
 
-    // Create or update user profile
-    const email = credential.email || data.user.email || '';
-    const firstName = credential.fullName?.givenName || undefined;
-    
-    await createUserProfile(data.user.id, email, firstName);
+    // Profile creation will be handled by App.tsx auth state change handler
+    // This ensures consistent handling across all auth providers and prevents race conditions
 
     return {
       success: true,

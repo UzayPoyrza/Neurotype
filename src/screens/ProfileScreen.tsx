@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, NativeSyntheticEvent, NativeScrollEvent, Dimensions, Animated } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import Svg, { Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -15,7 +15,7 @@ import { InfoBox } from '../components/InfoBox';
 import { getUserCompletedSessions } from '../services/progressService';
 import { getSessionById } from '../services/sessionService';
 import { useUserId } from '../hooks/useUserId';
-import { getUserEmotionalFeedback, removeEmotionalFeedback as removeEmotionalFeedbackDB } from '../services/feedbackService';
+import { removeEmotionalFeedback as removeEmotionalFeedbackDB } from '../services/feedbackService';
 import type { CompletedSessionCacheEntry } from '../store/useStore';
 import { ShimmerActivityHistory, ShimmerEmotionalFeedbackHistory } from '../components/ShimmerSkeleton';
 
@@ -218,14 +218,25 @@ export const ProfileScreen: React.FC = () => {
       }));
   }, []);
 
-  // Helper function to process store feedback entries
+  // Helper function to process store feedback entries (uses cached sessions first)
   const processStoreFeedback = React.useCallback(async (storeEntries: typeof emotionalFeedbackHistoryFromStore) => {
     if (storeEntries.length === 0) return [];
     
-    // Fetch session details for feedback entries
+    // Fetch session details for feedback entries (try cache first)
     const feedbackWithSessions = await Promise.all(
       storeEntries.map(async (entry) => {
-        const session = await getSessionById(entry.sessionId);
+        // Try to get session from cache first
+        let session = getStoreState().getCachedSession(entry.sessionId);
+        
+        // If not in cache, fetch it
+        if (!session) {
+          session = await getSessionById(entry.sessionId);
+          if (session) {
+            // Cache it for future use
+            getStoreState().cacheSessions([session]);
+          }
+        }
+        
         return {
           feedback: {
             id: entry.id || `feedback-${entry.date}-${entry.sessionId}`,
@@ -258,7 +269,7 @@ export const ProfileScreen: React.FC = () => {
         timestampSeconds: fb.timestamp_seconds,
         date: fb.feedback_date,
       }));
-  }, []);
+  }, [getStoreState]);
 
   // Initialize from cache immediately on mount
   React.useEffect(() => {
@@ -604,112 +615,15 @@ export const ProfileScreen: React.FC = () => {
     }
   }, [userId, fetchActivityHistory]);
 
-  // Fetch emotional feedback from database and merge with cache
-  const fetchEmotionalFeedback = React.useCallback(async () => {
-    if (!userId) {
-      console.log('📊 [ProfileScreen] No user ID, skipping emotional feedback fetch');
-      setIsLoadingFeedback(false);
-      return;
-    }
-
-    console.log('📊 [ProfileScreen] Fetching emotional feedback for user:', userId);
-    // Only show loading if we don't have store data
-    if (emotionalFeedbackHistoryFromStore.length === 0) {
-      setIsLoadingFeedback(true);
-    }
-    
-    try {
-      // Fetch emotional feedback from database (most recent first, limit 20)
-      const feedback = await getUserEmotionalFeedback(userId, 20);
-      console.log('📊 [ProfileScreen] Fetched', feedback.length, 'emotional feedback entries from database');
-      console.log('📊 [ProfileScreen] Store has', emotionalFeedbackHistoryFromStore.length, 'entries');
-      
-      // Merge store cache with database data
-      // Convert store entries to same format as DB entries for easier merging
-      const storeEntries = emotionalFeedbackHistoryFromStore.map(entry => ({
-        id: entry.id || `feedback-${entry.date}-${entry.sessionId}`,
-        session_id: entry.sessionId,
-        label: entry.label,
-        timestamp_seconds: entry.timestampSeconds,
-        feedback_date: entry.date,
-      }));
-      
-      // Combine store and DB, deduplicate by id or session_id + date
-      const allFeedback = [...storeEntries, ...feedback]
-        .filter((entry, index, self) => {
-          const key = entry.id || `${entry.session_id}-${entry.feedback_date}`;
-          return index === self.findIndex(e => (e.id || `${e.session_id}-${e.feedback_date}`) === key);
-        })
-        .sort((a, b) => {
-          const aTime = new Date(a.feedback_date).getTime();
-          const bTime = new Date(b.feedback_date).getTime();
-          return bTime - aTime; // Most recent first
-        })
-        .slice(0, 20); // Keep top 20
-      
-      console.log('📊 [ProfileScreen] Merged to', allFeedback.length, 'total feedback entries');
-      
-      // Fetch session details for each feedback entry
-      const feedbackWithSessions = await Promise.all(
-        allFeedback.map(async (fb) => {
-          const session = await getSessionById(fb.session_id);
-          return {
-            feedback: fb,
-            session,
-          };
-        })
-      );
-      
-      // Build sessionsById map for feedback entries
-      const feedbackSessionsMap: Record<string, Session> = {};
-      feedbackWithSessions.forEach(({ session }) => {
-        if (session) {
-          feedbackSessionsMap[session.id] = session;
-        }
-      });
-      setSessionsById(prev => ({ ...prev, ...feedbackSessionsMap }));
-      
-      // Transform to match the expected format
-      const transformedFeedback = feedbackWithSessions
-        .filter(({ session }) => session !== null)
-        .map(({ feedback: fb }) => ({
-          id: fb.id || `feedback-${fb.feedback_date}-${fb.session_id}`,
-          sessionId: fb.session_id,
-          label: fb.label,
-          timestampSeconds: fb.timestamp_seconds,
-          date: fb.feedback_date,
-        }));
-      
-      console.log('📊 [ProfileScreen] Processed', transformedFeedback.length, 'emotional feedback items');
-      setEmotionalFeedbackHistory(transformedFeedback);
-    } catch (error) {
-      console.error('❌ [ProfileScreen] Error fetching emotional feedback:', error);
-    } finally {
-      setIsLoadingFeedback(false);
-    }
-  }, [userId, emotionalFeedbackHistoryFromStore, processStoreFeedback]);
-
-  // Fetch from database in background (runs after cache initialization)
-  // This merges store with DB to ensure we have the complete picture
+  // Update emotional feedback when cache changes (e.g., when new feedback is added)
   React.useEffect(() => {
-    if (userId) {
-      // Small delay to let cache initialization complete first
-      const timer = setTimeout(() => {
-        fetchEmotionalFeedback();
-      }, 100);
-      return () => clearTimeout(timer);
+    if (emotionalFeedbackHistoryFromStore.length > 0) {
+      console.log('📊 [ProfileScreen] Emotional feedback cache updated, processing...');
+      processStoreFeedback(emotionalFeedbackHistoryFromStore).then(feedback => {
+        setEmotionalFeedbackHistory(feedback);
+      });
     }
-  }, [userId, fetchEmotionalFeedback]);
-
-  // Refresh when screen comes into focus (only emotional feedback, not activity history)
-  useFocusEffect(
-    React.useCallback(() => {
-      console.log('📊 [ProfileScreen] Screen focused, refreshing emotional feedback...');
-      // Only refresh emotional feedback on focus, not activity history
-      // Activity history only loads from DB on app open
-      fetchEmotionalFeedback();
-    }, [fetchEmotionalFeedback])
-  );
+  }, [emotionalFeedbackHistoryFromStore, processStoreFeedback]);
 
   // Use completed sessions as recent activity (already sorted most recent first)
   const recentActivity = completedSessions;
@@ -795,16 +709,11 @@ export const ProfileScreen: React.FC = () => {
       });
     } else {
       console.error('❌ [ProfileScreen] Failed to remove emotional feedback:', result.error);
-      // Re-fetch to restore the correct state
-      const feedback = await getUserEmotionalFeedback(userId, 20);
-      const transformedFeedback = feedback.map(fb => ({
-        id: fb.id || `feedback-${fb.feedback_date}-${fb.session_id}`,
-        sessionId: fb.session_id,
-        label: fb.label,
-        timestampSeconds: fb.timestamp_seconds,
-        date: fb.feedback_date,
-      }));
-      setEmotionalFeedbackHistory(transformedFeedback);
+      // Re-process cache to restore the correct state
+      if (emotionalFeedbackHistoryFromStore.length > 0) {
+        const feedback = await processStoreFeedback(emotionalFeedbackHistoryFromStore);
+        setEmotionalFeedbackHistory(feedback);
+      }
     }
   }, [userId, toastAnim]);
 

@@ -28,6 +28,8 @@ import { ensureTestUser, verifyTestUserConnection } from './src/services/testUse
 import { getUserPreferences, createUserProfile, getUserProfile } from './src/services/userService';
 import { ensureDailyRecommendations } from './src/services/recommendationService';
 import { calculateUserStreak } from './src/services/progressService';
+import { getUserEmotionalFeedbackWithSessions } from './src/services/feedbackService';
+import type { EmotionalFeedbackEntry } from './src/types';
 
 const Tab = createBottomTabNavigator();
 const TodayStack = createStackNavigator();
@@ -462,10 +464,11 @@ export default function App() {
         // Continue - sync failure is not critical
       }
       
-      // Clear sessions and calendar caches on app open
-      console.log('🧹 [App] Clearing sessions and calendar caches on app open...');
+      // Clear sessions, calendar, and emotional feedback caches on app open
+      console.log('🧹 [App] Clearing sessions, calendar, and emotional feedback caches on app open...');
       useStore.getState().clearSessionsCache();
       useStore.getState().clearCalendarCache();
+      useStore.getState().clearEmotionalFeedbackCache();
       
       // Calculate and update streak from completed sessions
       console.log('🔥 [App] Calculating streak from completed sessions...');
@@ -490,6 +493,57 @@ export default function App() {
           [{ text: 'OK' }]
         );
         // Continue - streak calculation failure is not critical
+      }
+      
+      // Load emotional feedback history from database (with sessions in single query)
+      console.log('💭 [App] Loading emotional feedback history from database...');
+      try {
+        const feedbackWithSessions = await getUserEmotionalFeedbackWithSessions(userId, 20);
+        console.log('💭 [App] Fetched', feedbackWithSessions.length, 'emotional feedback entries with sessions');
+        
+        // Transform to EmotionalFeedbackEntry format and filter out entries without sessions
+        const emotionalFeedbackEntries: EmotionalFeedbackEntry[] = feedbackWithSessions
+          .filter(({ session }) => session !== null)
+          .map(({ feedback }) => ({
+            id: feedback.id || `feedback-${feedback.feedback_date}-${feedback.session_id}`,
+            sessionId: feedback.session_id,
+            label: feedback.label,
+            timestampSeconds: feedback.timestamp_seconds,
+            date: feedback.feedback_date,
+          }));
+        
+        // Cache session details for feedback entries
+        // Only cache if session doesn't already exist in cache (to avoid overwriting complete sessions)
+        const feedbackSessions = feedbackWithSessions
+          .filter(({ session }) => session !== null)
+          .map(({ session, feedback }) => ({
+            id: session!.id,
+            title: session!.title,
+            durationMin: session!.duration_min,
+            modality: session!.modality as any, // Already mapped from technique
+            goal: session!.goal as any, // Default 'anxiety'
+          }))
+          .filter((session) => {
+            // Only cache if session doesn't already exist in cache
+            // This prevents overwriting complete sessions with incomplete ones
+            const existing = useStore.getState().getCachedSession(session.id);
+            return !existing; // Only cache if it doesn't exist
+          });
+        
+        if (feedbackSessions.length > 0) {
+          useStore.getState().cacheSessions(feedbackSessions);
+        }
+        
+        // Set emotional feedback cache
+        useStore.getState().setEmotionalFeedbackCache(emotionalFeedbackEntries);
+        console.log('✅ [App] Emotional feedback history loaded and cached:', emotionalFeedbackEntries.length, 'entries');
+      } catch (feedbackError: any) {
+        console.error('❌ [App] Error loading emotional feedback history:', feedbackError);
+        console.error('❌ [App] Feedback error details:', {
+          message: feedbackError.message,
+          code: feedbackError.code,
+        });
+        // Continue - feedback loading failure is not critical
       }
       
       // Ensure daily recommendations exist for today (default module: anxiety)

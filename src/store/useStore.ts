@@ -272,8 +272,10 @@ interface AppState {
   addToCalendarCache: (entry: CompletedSession) => void;
   clearSessionsCache: () => void;
   clearCalendarCache: () => void;
+  clearEmotionalFeedbackCache: () => void;
   setSessionsCache: (sessions: { total: number; thisWeek: number; thisMonth: number }) => void;
   setCalendarCache: (sessions: CompletedSession[]) => void;
+  setEmotionalFeedbackCache: (feedback: EmotionalFeedbackEntry[]) => void;
   resetAppData: () => void;
   logout: () => void;
 }
@@ -799,6 +801,18 @@ export const useStore = create<AppState>((set, get) => ({
     set(() => {
       console.log(`📅 [Store] Setting calendar cache with ${sessions.length} entries`);
       return { calendarCache: sessions };
+    }),
+
+  clearEmotionalFeedbackCache: () =>
+    set(() => {
+      console.log('🧹 [Store] Clearing emotional feedback cache');
+      return { emotionalFeedbackHistory: [] };
+    }),
+
+  setEmotionalFeedbackCache: (feedback: EmotionalFeedbackEntry[]) =>
+    set(() => {
+      console.log(`💭 [Store] Setting emotional feedback cache with ${feedback.length} entries`);
+      return { emotionalFeedbackHistory: feedback };
     }),
 
   resetAppData: () => {

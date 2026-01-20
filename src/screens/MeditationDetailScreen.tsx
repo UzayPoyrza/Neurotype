@@ -89,15 +89,25 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           whyItWorks: cachedSession.whyItWorks?.substring(0, 50) + '...',
         });
         console.log('[MeditationDetailScreen] 📄 Full cached session object:', JSON.stringify(cachedSession, null, 2));
-        setSession(cachedSession);
         
-        // Fetch modules for this session even if cached
-        const modules = await getSessionModules(sessionId);
-        console.log('[MeditationDetailScreen] 📦 Fetched modules:', modules);
-        setSessionModules(modules);
+        // Check if cached session is complete (has description and whyItWorks)
+        const isComplete = cachedSession.description && cachedSession.whyItWorks;
         
-        setIsLoading(false);
-        return;
+        if (isComplete) {
+          // Use complete cached session
+          setSession(cachedSession);
+          
+          // Fetch modules for this session even if cached
+          const modules = await getSessionModules(sessionId);
+          console.log('[MeditationDetailScreen] 📦 Fetched modules:', modules);
+          setSessionModules(modules);
+          
+          setIsLoading(false);
+          return;
+        } else {
+          // Cached session is incomplete, fetch full data from database
+          console.log('[MeditationDetailScreen] ⚠️ Cached session is incomplete, fetching full data from database...');
+        }
       }
       
       // If not in cache, fetch from database

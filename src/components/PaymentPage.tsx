@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingView, Platform, Animated, Alert, Easing, Dimensions } from 'react-native';
+import { CardField, useConfirmPayment } from '@stripe/stripe-react-native';
 import { useStore } from '../store/useStore';
+import { createPaymentIntent, updateUserSubscription } from '../services/paymentService';
+import { useUserId } from '../hooks/useUserId';
 
 const pricingPlans = [
   {
@@ -53,22 +56,19 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
   const formTranslateY = useRef(new Animated.Value(30)).current;
   const hasAnimated = useRef(false);
   
-  const [cardNumber, setCardNumber] = useState('');
-  const [expiryDate, setExpiryDate] = useState('');
-  const [cvv, setCvv] = useState('');
   const [cardholderName, setCardholderName] = useState('');
   const [email, setEmail] = useState('');
+  const { confirmPayment } = useConfirmPayment();
+  const userId = useUserId();
+  const [cardDetails, setCardDetails] = useState<{
+    complete: boolean;
+    brand?: string;
+  } | null>(null);
   
   const [errors, setErrors] = useState<{
-    cardNumber: boolean;
-    expiryDate: boolean;
-    cvv: boolean;
     cardholderName: boolean;
     email: boolean;
   }>({
-    cardNumber: false,
-    expiryDate: false,
-    cvv: false,
     cardholderName: false,
     email: false,
   });
@@ -107,20 +107,6 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
   // Validate all fields
   const validateField = (field: string, value: string) => {
     switch (field) {
-      case 'cardNumber':
-        const cleanedCard = value.replace(/\s/g, '');
-        return cleanedCard.length >= 16 && cleanedCard.length <= 19;
-      case 'expiryDate':
-        if (value.length !== 5) return false;
-        const parts = value.split('/');
-        if (parts.length !== 2) return false;
-        const [month, year] = parts;
-        const monthNum = parseInt(month, 10);
-        const yearNum = parseInt(year, 10);
-        if (isNaN(monthNum) || isNaN(yearNum)) return false;
-        return monthNum >= 1 && monthNum <= 12 && yearNum >= 0 && yearNum <= 99;
-      case 'cvv':
-        return value.length === 3;
       case 'cardholderName':
         return value.trim().length >= 2;
       case 'email':
@@ -132,9 +118,7 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
   
   const isFormValid = () => {
     return (
-      validateField('cardNumber', cardNumber) &&
-      validateField('expiryDate', expiryDate) &&
-      validateField('cvv', cvv) &&
+      cardDetails?.complete === true &&
       validateField('cardholderName', cardholderName) &&
       validateField('email', email)
     );
@@ -175,48 +159,6 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
     }
   }, [isActive]);
 
-  const formatCardNumber = (text: string) => {
-    const cleaned = text.replace(/\s/g, '');
-    const formatted = cleaned.match(/.{1,4}/g)?.join(' ') || cleaned;
-    return formatted.substring(0, 19); // Max 16 digits + 3 spaces
-  };
-
-  const formatExpiryDate = (text: string) => {
-    // Remove all non-digits
-    const cleaned = text.replace(/\D/g, '');
-    
-    // Limit to 4 digits
-    const digits = cleaned.substring(0, 4);
-    
-    // Add slash after 2 digits
-    if (digits.length >= 2) {
-      return digits.substring(0, 2) + '/' + digits.substring(2, 4);
-    }
-    
-    return digits;
-  };
-
-  const handleCardNumberChange = (text: string) => {
-    const formatted = formatCardNumber(text);
-    setCardNumber(formatted);
-    const isValid = validateField('cardNumber', formatted);
-    setErrors(prev => ({ ...prev, cardNumber: formatted.length > 0 && !isValid }));
-  };
-
-  const handleExpiryChange = (text: string) => {
-    const formatted = formatExpiryDate(text);
-    setExpiryDate(formatted);
-    const isValid = validateField('expiryDate', formatted);
-    setErrors(prev => ({ ...prev, expiryDate: formatted.length > 0 && !isValid }));
-  };
-
-  const handleCvvChange = (text: string) => {
-    const cleaned = text.replace(/\D/g, '').substring(0, 3);
-    setCvv(cleaned);
-    const isValid = validateField('cvv', cleaned);
-    setErrors(prev => ({ ...prev, cvv: cleaned.length > 0 && !isValid }));
-  };
-  
   const handleCardholderNameChange = (text: string) => {
     setCardholderName(text);
     const isValid = validateField('cardholderName', text);
@@ -230,7 +172,14 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
   };
 
   const handlePayment = async () => {
-    if (!isFormValid()) {
+    // Validate form
+    if (!cardDetails?.complete || !cardholderName.trim() || !email.trim()) {
+      Alert.alert('Validation Error', 'Please fill in all required fields');
+      return;
+    }
+
+    if (!selectedPlanData || !userId) {
+      Alert.alert('Error', 'Missing plan information or user not logged in');
       return;
     }
 
@@ -245,33 +194,45 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
     }).start();
 
     try {
-      // Simulate payment processing (replace with actual payment API call)
-      await new Promise((resolve, reject) => {
-        setTimeout(() => {
-          // Simulate 80% success rate for demo
-          const isSuccessful = Math.random() > 0.2;
-          
-          if (isSuccessful) {
-            resolve(true);
-          } else {
-            // Simulate different error scenarios
-            const errorTypes = [
-              { reason: 'Insufficient funds', message: 'Your card has insufficient funds. Please use a different payment method.' },
-              { reason: 'Card declined', message: 'Your card was declined. Please check your card details or try a different card.' },
-              { reason: 'Expired card', message: 'Your card has expired. Please use a different payment method.' },
-              { reason: 'Invalid card', message: 'The card number you entered is invalid. Please check and try again.' },
-              { reason: 'Network error', message: 'Unable to process payment due to a network error. Please check your connection and try again.' },
-            ];
-            const randomError = errorTypes[Math.floor(Math.random() * errorTypes.length)];
-            reject(randomError);
-          }
-        }, 2000); // Simulate 2 second processing time
+      // Step 1: Create payment intent via your backend
+      const { clientSecret, paymentIntentId } = await createPaymentIntent({
+        amount: selectedPlanData.price,
+        currency: 'usd',
+        planId: selectedPlanData.id,
       });
 
-      // Payment successful - set subscription to premium
-      const setSubscriptionType = useStore.getState().setSubscriptionType;
-      setSubscriptionType('premium');
-      
+      // Step 2: Confirm payment with Stripe SDK
+      const { error: confirmError, paymentIntent } = await confirmPayment(clientSecret, {
+        paymentMethodType: 'Card',
+        paymentMethodData: {
+          billingDetails: {
+            name: cardholderName,
+            email: email,
+          },
+        },
+      });
+
+      if (confirmError) {
+        throw new Error(confirmError.message || 'Payment confirmation failed');
+      }
+
+      if (paymentIntent?.status !== 'Succeeded') {
+        throw new Error(`Payment status: ${paymentIntent?.status}`);
+      }
+
+      // Step 3: Update user subscription in database (optimistic update)
+      // Webhook will also update it, so this is safe
+      try {
+        await updateUserSubscription(userId, 'premium');
+        const setSubscriptionType = useStore.getState().setSubscriptionType;
+        setSubscriptionType('premium');
+        console.log('✅ Subscription updated optimistically');
+      } catch (updateError) {
+        console.warn('⚠️ Optimistic update failed, webhook will handle it:', updateError);
+        // Don't throw - webhook will update it
+      }
+
+      // Payment successful
       setIsProcessing(false);
       Animated.timing(processingOpacity, {
         toValue: 0,
@@ -293,7 +254,7 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
           }),
         ]).start();
 
-        // Complete onboarding after showing success animation
+        // Complete after showing success animation
         setTimeout(() => {
           onComplete();
         }, 1500);
@@ -312,9 +273,12 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
         successOpacity.setValue(0);
         successScale.setValue(0.8);
         
+        // Show user-friendly error message
+        const errorMessage = error.message || 'Unable to process your payment. Please try again.';
+        
         Alert.alert(
           'Payment Failed',
-          error.message || 'Unable to process your payment. Please try again.',
+          errorMessage,
           [
             {
               text: 'OK',
@@ -417,56 +381,27 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
           >
             <Text style={styles.formSectionTitle}>Payment Information</Text>
 
-            {/* Card Number */}
+            {/* Card Details - Using Stripe CardField */}
             <View style={styles.paymentInputContainer}>
-              <Text style={styles.paymentInputLabel}>Card Number</Text>
-              <TextInput
-                style={[
-                  styles.paymentInput,
-                  errors.cardNumber && styles.paymentInputError
-                ]}
-                placeholder="1234 5678 9012 3456"
-                value={cardNumber}
-                onChangeText={handleCardNumberChange}
-                keyboardType="numeric"
-                maxLength={19}
-                placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              <Text style={styles.paymentInputLabel}>Card Details</Text>
+              <CardField
+                postalCodeEnabled={false}
+                placeholders={{
+                  number: '4242 4242 4242 4242',
+                }}
+                cardStyle={{
+                  backgroundColor: '#ffffff',
+                  textColor: '#000000',
+                  borderWidth: 1,
+                  borderColor: cardDetails?.complete === false ? '#FF3B30' : 'rgba(0, 0, 0, 0.1)',
+                  borderRadius: 12,
+                  fontSize: 17,
+                }}
+                style={styles.cardField}
+                onCardChange={(cardDetails) => {
+                  setCardDetails(cardDetails);
+                }}
               />
-            </View>
-
-            {/* Expiry and CVV Row */}
-            <View style={styles.paymentInputRow}>
-              <View style={[styles.paymentInputContainer, { flex: 1, marginRight: 10 }]}>
-                <Text style={styles.paymentInputLabel}>Expiry Date</Text>
-                <TextInput
-                  style={[
-                    styles.paymentInput,
-                    errors.expiryDate && styles.paymentInputError
-                  ]}
-                  placeholder="MM/YY"
-                  value={expiryDate}
-                  onChangeText={handleExpiryChange}
-                  keyboardType="numeric"
-                  maxLength={5}
-                  placeholderTextColor="rgba(0, 0, 0, 0.3)"
-                />
-              </View>
-              <View style={[styles.paymentInputContainer, { flex: 1, marginLeft: 10 }]}>
-                <Text style={styles.paymentInputLabel}>CVV</Text>
-                <TextInput
-                  style={[
-                    styles.paymentInput,
-                    errors.cvv && styles.paymentInputError
-                  ]}
-                  placeholder="123"
-                  value={cvv}
-                  onChangeText={handleCvvChange}
-                  keyboardType="numeric"
-                  maxLength={3}
-                  secureTextEntry
-                  placeholderTextColor="rgba(0, 0, 0, 0.3)"
-                />
-              </View>
             </View>
 
             {/* Cardholder Name */}
@@ -914,6 +849,11 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: '#8E8E93',
     textAlign: 'center',
+  },
+  cardField: {
+    width: '100%',
+    height: 50,
+    marginVertical: 8,
   },
 });
 

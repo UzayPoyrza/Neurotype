@@ -94,10 +94,8 @@ serve(async (req) => {
       body: new URLSearchParams({
         amount: Math.round(amount * 100).toString(),
         currency,
-        metadata: JSON.stringify({
-          userId: user.id,
-          planId,
-        }),
+        'metadata[userId]': user.id,
+        'metadata[planId]': planId,
       }),
     });
 

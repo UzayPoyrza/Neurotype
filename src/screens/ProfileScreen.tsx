@@ -848,7 +848,7 @@ export const ProfileScreen: React.FC = () => {
             </View>
             
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>Your Profile</Text>
+              <Text style={styles.profileName}>Current Plan</Text>
               <View style={[
                 styles.subscriptionContainer,
                 subscriptionType === 'premium' && styles.subscriptionContainerPremium

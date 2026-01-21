@@ -11,4 +11,6 @@ export * from './likedService';
 export * from './recommendationService';
 export * from './userService';
 export * from './testUserService';
+export * from './paymentService';
+export * from './stripe';
 

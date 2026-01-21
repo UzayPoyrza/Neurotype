@@ -26,7 +26,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.anonymous.Neurotype"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -34,7 +35,13 @@
     "plugins": [
       "expo-font",
       "expo-apple-authentication",
-      "expo-dev-client"
+      "expo-dev-client",
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.anonymous.Neurotype"
+        }
+      ]
     ],
     "extra": {
       "eas": {

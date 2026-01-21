@@ -29,6 +29,7 @@ import { getUserPreferences, createUserProfile, getUserProfile } from './src/ser
 import { ensureDailyRecommendations } from './src/services/recommendationService';
 import { calculateUserStreak } from './src/services/progressService';
 import { getUserEmotionalFeedbackWithSessions } from './src/services/feedbackService';
+import { initializeStripe } from './src/services/stripe';
 import type { EmotionalFeedbackEntry } from './src/types';
 
 const Tab = createBottomTabNavigator();
@@ -329,6 +330,43 @@ export default function App() {
     const timer = setTimeout(() => {
       testSupabaseConnection();
     }, 1000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Test Stripe connection
+  useEffect(() => {
+    const testStripeConnection = async () => {
+      try {
+        console.log('\n💳 Testing Stripe connection...\n');
+        
+        const result = await initializeStripe();
+        
+        if (result.success) {
+          console.log('✅ Stripe connection successful!');
+          console.log('✅ Stripe SDK is ready to use');
+        } else {
+          console.error('❌ Stripe connection failed:', result.error);
+          Alert.alert(
+            'Stripe Configuration Error',
+            `Stripe initialization failed: ${result.error}\n\nPlease check your EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY in your .env file.`,
+            [{ text: 'OK' }]
+          );
+        }
+      } catch (error: any) {
+        console.error('❌ Error testing Stripe connection:', error);
+        Alert.alert(
+          'Stripe Error',
+          `Failed to test Stripe connection: ${error.message || 'Unknown error'}`,
+          [{ text: 'OK' }]
+        );
+      }
+    };
+
+    // Run test after Supabase test
+    const timer = setTimeout(() => {
+      testStripeConnection();
+    }, 1500);
 
     return () => clearTimeout(timer);
   }, []);

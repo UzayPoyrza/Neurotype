@@ -92,7 +92,7 @@ serve(async (req) => {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
-        amount: Math.round(amount * 100).toString(), // Convert to cents
+        amount: Math.round(amount * 100).toString(),
         currency,
         metadata: JSON.stringify({
           userId: user.id,

@@ -16,6 +16,17 @@ export interface PaymentIntentResponse {
   paymentIntentId: string;
 }
 
+export interface CreateSubscriptionParams {
+  planId: string;
+}
+
+export interface SubscriptionResponse {
+  clientSecret: string;
+  subscriptionId?: string;
+  paymentIntentId?: string;
+  type: 'subscription' | 'payment_intent';
+}
+
 /**
  * Create a payment intent via Supabase Edge Function
  * This function calls the Supabase Edge Function which creates a Stripe Payment Intent
@@ -72,6 +83,52 @@ export async function createPaymentIntent(
     };
   } catch (error: any) {
     console.error('❌ Error in createPaymentIntent:', error);
+    throw error;
+  }
+}
+
+/**
+ * Create a subscription via Supabase Edge Function
+ * This creates a Stripe Subscription for monthly/yearly plans or Payment Intent for lifetime
+ */
+export async function createSubscription(
+  params: CreateSubscriptionParams
+): Promise<SubscriptionResponse> {
+  try {
+    // Get current session to authenticate the request
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !session) {
+      throw new Error('Not authenticated. Please log in to continue.');
+    }
+
+    if (!params.planId) {
+      throw new Error('Plan ID is required');
+    }
+
+    console.log('💳 Creating subscription:', { planId: params.planId });
+
+    // Call Supabase Edge Function
+    const { data, error } = await supabase.functions.invoke('create-subscription', {
+      body: {
+        planId: params.planId,
+      },
+    });
+
+    if (error) {
+      console.error('❌ Error calling subscription function:', error);
+      throw new Error(error.message || 'Failed to create subscription');
+    }
+
+    if (!data || !data.clientSecret) {
+      throw new Error('Invalid response from payment server');
+    }
+
+    console.log('✅ Subscription created successfully:', data.subscriptionId || data.paymentIntentId);
+
+    return data;
+  } catch (error: any) {
+    console.error('❌ Error in createSubscription:', error);
     throw error;
   }
 }

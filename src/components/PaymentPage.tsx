@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingView, Platform, Animated, Alert, Easing, Dimensions } from 'react-native';
 import { CardField, useConfirmPayment } from '@stripe/stripe-react-native';
 import { useStore } from '../store/useStore';
-import { createPaymentIntent, updateUserSubscription } from '../services/paymentService';
+import { createSubscription, updateUserSubscription } from '../services/paymentService';
 import { useUserId } from '../hooks/useUserId';
 
 const pricingPlans = [
@@ -194,15 +194,13 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
     }).start();
 
     try {
-      // Step 1: Create payment intent via your backend
-      const { clientSecret, paymentIntentId } = await createPaymentIntent({
-        amount: selectedPlanData.price,
-        currency: 'usd',
+      // Step 1: Create subscription or payment intent via your backend
+      const subscriptionData = await createSubscription({
         planId: selectedPlanData.id,
       });
 
       // Step 2: Confirm payment with Stripe SDK
-      const { error: confirmError, paymentIntent } = await confirmPayment(clientSecret, {
+      const { error: confirmError, paymentIntent } = await confirmPayment(subscriptionData.clientSecret, {
         paymentMethodType: 'Card',
         paymentMethodData: {
           billingDetails: {
@@ -219,6 +217,12 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
       if (paymentIntent?.status !== 'Succeeded') {
         throw new Error(`Payment status: ${paymentIntent?.status}`);
       }
+
+      console.log('✅ Payment confirmed:', {
+        type: subscriptionData.type,
+        subscriptionId: subscriptionData.subscriptionId,
+        paymentIntentId: subscriptionData.paymentIntentId,
+      });
 
       // Step 3: Update user subscription in database (optimistic update)
       // Webhook will also update it, so this is safe

@@ -89,11 +89,7 @@ serve(async (req) => {
               console.log('🔄 Updating subscription status from incomplete to active');
             }
             
-            // Convert current_period_end (Unix timestamp) to ISO string for database
-            const subscriptionEndDate = subscription.current_period_end 
-              ? new Date(subscription.current_period_end * 1000).toISOString()
-              : null;
-            
+            // Note: current_period_end extraction removed - handled by customer.subscription.updated
             const { error: updateError } = await supabase
               .from('users')
               .update({
@@ -101,7 +97,7 @@ serve(async (req) => {
                 stripe_subscription_id: subscriptionId,
                 subscription_status: finalStatus,
                 stripe_customer_id: subscription.customer,
-                subscription_end_date: subscriptionEndDate,
+                // subscription_end_date will be set by customer.subscription.updated event
               })
               .eq('id', userId);
 
@@ -225,17 +221,15 @@ serve(async (req) => {
 
         console.log('✅ Subscription created, updating user:', { userId, subscriptionId: subscription.id });
 
-        const subscriptionEndDate = subscription.current_period_end 
-          ? new Date(subscription.current_period_end * 1000).toISOString()
-          : null;
-
+        // Note: current_period_end extraction removed - handled by customer.subscription.updated
         const { error: updateError } = await supabase
           .from('users')
           .update({
             subscription_type: 'premium',
             stripe_subscription_id: subscription.id,
             subscription_status: subscription.status,
-            subscription_end_date: subscriptionEndDate,
+            stripe_customer_id: subscription.customer,
+            // subscription_end_date will be set by customer.subscription.updated event
           })
           .eq('id', userId);
 
@@ -251,11 +245,19 @@ serve(async (req) => {
         const invoice = event.data.object;
         const subscriptionId = invoice.subscription;
 
+        console.log('📋 Invoice payment succeeded details:', {
+          invoiceId: invoice.id,
+          amount: invoice.amount_paid,
+          subscriptionId: subscriptionId,
+          subscriptionIdType: typeof subscriptionId,
+          hasPaymentIntent: !!invoice.payment_intent,
+        });
+
         if (!subscriptionId) {
-          // One-time payment (lifetime plan)
+          // Invoice doesn't have subscriptionId - check PaymentIntent metadata
           const paymentIntentId = invoice.payment_intent;
           if (paymentIntentId) {
-            console.log('💳 One-time payment succeeded (lifetime plan):', paymentIntentId);
+            console.log('💳 Invoice has no subscriptionId, checking PaymentIntent metadata:', paymentIntentId);
             
             // Fetch payment intent to get metadata
             const paymentIntentResponse = await fetch(`https://api.stripe.com/v1/payment_intents/${paymentIntentId}`, {
@@ -265,18 +267,82 @@ serve(async (req) => {
             if (paymentIntentResponse.ok) {
               const paymentIntent = await paymentIntentResponse.json();
               const userId = paymentIntent.metadata?.userId;
+              const subscriptionIdFromMetadata = paymentIntent.metadata?.subscriptionId;
               
-              if (userId) {
-                console.log('✅ Lifetime payment succeeded, updating user:', userId);
-                const { error } = await supabase
-                  .from('users')
-                  .update({ subscription_type: 'premium' })
-                  .eq('id', userId);
+              // If PaymentIntent has subscriptionId in metadata, it's a subscription payment
+              if (subscriptionIdFromMetadata) {
+                console.log('💳 Found subscriptionId in PaymentIntent metadata:', subscriptionIdFromMetadata);
                 
-                if (error) {
-                  console.error('❌ Error updating subscription:', error);
-                } else {
-                  console.log('✅ User updated successfully');
+                // Fetch subscription to get current_period_end
+                const subscriptionResponse = await fetch(`https://api.stripe.com/v1/subscriptions/${subscriptionIdFromMetadata}`, {
+                  headers: { 'Authorization': `Bearer ${stripeSecretKey}` }
+                });
+                
+                if (subscriptionResponse.ok) {
+                  const subscription = await subscriptionResponse.json();
+                  
+                  console.log('📋 Subscription details from PaymentIntent metadata:', {
+                    subscriptionId: subscription.id,
+                    status: subscription.status,
+                    current_period_end: subscription.current_period_end,
+                    userId: subscription.metadata?.userId || userId,
+                  });
+                  
+                  const finalUserId = subscription.metadata?.userId || userId;
+                  
+                  if (finalUserId) {
+                    // Note: current_period_end extraction removed - handled by customer.subscription.updated
+                    const { error } = await supabase
+                      .from('users')
+                      .update({
+                        subscription_type: 'premium',
+                        stripe_subscription_id: subscriptionIdFromMetadata,
+                        subscription_status: subscription.status || 'active',
+                        stripe_customer_id: subscription.customer,
+                        // subscription_end_date will be set by customer.subscription.updated event
+                      })
+                      .eq('id', finalUserId);
+                    
+                    if (error) {
+                      console.error('❌ Error updating subscription:', error);
+                    } else {
+                      console.log('✅ Subscription payment succeeded and user updated successfully');
+                    }
+                  }
+                }
+              } else {
+                // One-time payment (lifetime plan)
+                console.log('💳 One-time payment succeeded (lifetime plan):', paymentIntentId);
+                
+                if (userId) {
+                  // Set end date to 20 years from now for lifetime
+                  const twentyYearsFromNow = new Date();
+                  twentyYearsFromNow.setFullYear(twentyYearsFromNow.getFullYear() + 20);
+                  const subscriptionEndDate = twentyYearsFromNow.toISOString();
+                  
+                  const customerId = paymentIntent.customer;
+                  
+                  const updateData: any = {
+                    subscription_type: 'premium',
+                    subscription_end_date: subscriptionEndDate,
+                    stripe_subscription_id: null,
+                    subscription_status: null,
+                  };
+                  
+                  if (customerId) {
+                    updateData.stripe_customer_id = customerId;
+                  }
+                  
+                  const { error } = await supabase
+                    .from('users')
+                    .update(updateData)
+                    .eq('id', userId);
+                  
+                  if (error) {
+                    console.error('❌ Error updating subscription:', error);
+                  } else {
+                    console.log('✅ Lifetime payment processed, subscription set to 20 years from now');
+                  }
                 }
               }
             }
@@ -299,18 +365,19 @@ serve(async (req) => {
         const subscription = await subscriptionResponse.json();
         const userId = subscription.metadata?.userId;
 
+        console.log('📋 Subscription details from invoice.payment_succeeded:', {
+          subscriptionId: subscription.id,
+          status: subscription.status,
+          current_period_end: subscription.current_period_end,
+          hasMetadata: !!subscription.metadata,
+          metadata: subscription.metadata,
+          userId: userId,
+        });
+
         if (userId) {
           console.log('✅ Subscription payment succeeded, updating user:', userId);
           
-          const subscriptionEndDate = subscription.current_period_end 
-            ? new Date(subscription.current_period_end * 1000).toISOString()
-            : null;
-          
-          console.log('📅 Subscription end date:', {
-            current_period_end: subscription.current_period_end,
-            converted: subscriptionEndDate,
-          });
-          
+          // Note: current_period_end extraction removed - handled by customer.subscription.updated
           const { error } = await supabase
             .from('users')
             .update({
@@ -318,36 +385,71 @@ serve(async (req) => {
               stripe_subscription_id: subscriptionId,
               subscription_status: 'active',
               stripe_customer_id: subscription.customer,
-              subscription_end_date: subscriptionEndDate,
+              // subscription_end_date will be set by customer.subscription.updated event
             })
             .eq('id', userId);
 
           if (error) {
             console.error('❌ Error updating subscription:', error);
           } else {
-            console.log('✅ Subscription renewed successfully');
+            console.log('✅ Subscription payment succeeded and user updated successfully');
           }
+        } else {
+          console.warn('⚠️ No userId found in subscription metadata, cannot update user');
         }
         break;
       }
 
       case 'customer.subscription.updated': {
         const subscription = event.data.object;
-        const userId = subscription.metadata?.userId;
+        let userId = subscription.metadata?.userId;
+
+        // Comprehensive logging for debugging
+        console.log('🔍 customer.subscription.updated - Full subscription object keys:', Object.keys(subscription));
+        console.log('🔍 Subscription metadata:', subscription.metadata);
+        console.log('🔍 userId from metadata:', userId);
+        console.log('🔍 current_period_end exists at root:', 'current_period_end' in subscription);
+        console.log('🔍 current_period_end value at root:', subscription.current_period_end);
+        console.log('🔍 items.data[0]?.current_period_end:', subscription.items?.data?.[0]?.current_period_end);
+        console.log('🔍 subscription.id:', subscription.id);
+
+        // If userId not in metadata, try to look it up by subscription_id
+        if (!userId) {
+          console.log('⚠️ No userId in subscription metadata, looking up by subscription_id');
+          const { data: userData } = await supabase
+            .from('users')
+            .select('id')
+            .eq('stripe_subscription_id', subscription.id)
+            .single();
+          
+          userId = userData?.id;
+          console.log('🔍 userId from database lookup:', userId);
+        }
 
         if (userId) {
           console.log('🔄 Subscription updated:', { userId, status: subscription.status });
 
-          const subscriptionEndDate = subscription.current_period_end 
-            ? new Date(subscription.current_period_end * 1000).toISOString()
+          // Extract current_period_end - check both root level and items array (for flexible billing)
+          let currentPeriodEnd = subscription.current_period_end;
+          
+          // If not at root level, check in items.data[0] (for flexible billing subscriptions)
+          if (!currentPeriodEnd && subscription.items?.data?.[0]?.current_period_end) {
+            currentPeriodEnd = subscription.items.data[0].current_period_end;
+            console.log('✅ Found current_period_end in items.data[0]:', currentPeriodEnd);
+          }
+          
+          const subscriptionEndDate = currentPeriodEnd 
+            ? new Date(currentPeriodEnd * 1000).toISOString()
             : null;
           
-          console.log('📅 Subscription end date:', {
-            current_period_end: subscription.current_period_end,
+          console.log('📅 Subscription end date extraction:', {
+            current_period_end: currentPeriodEnd,
+            current_period_end_type: typeof currentPeriodEnd,
             converted: subscriptionEndDate,
+            isNull: subscriptionEndDate === null,
           });
 
-          const { error } = await supabase
+          const { data: updateData, error } = await supabase
             .from('users')
             .update({
               subscription_status: subscription.status,
@@ -356,13 +458,19 @@ serve(async (req) => {
               stripe_customer_id: subscription.customer,
               subscription_end_date: subscriptionEndDate,
             })
-            .eq('id', userId);
+            .eq('id', userId)
+            .select();
 
           if (error) {
             console.error('❌ Error updating subscription:', error);
           } else {
             console.log('✅ Subscription status updated successfully');
+            console.log('✅ Updated user data:', updateData);
+            console.log('✅ subscription_end_date saved:', updateData?.[0]?.subscription_end_date);
           }
+        } else {
+          console.error('❌ Could not find userId for subscription:', subscription.id);
+          console.error('❌ Subscription metadata:', subscription.metadata);
         }
         break;
       }

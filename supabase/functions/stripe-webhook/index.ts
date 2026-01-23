@@ -89,6 +89,11 @@ serve(async (req) => {
               console.log('🔄 Updating subscription status from incomplete to active');
             }
             
+            // Extract cancel_at timestamp
+            const cancelAt = subscription.cancel_at 
+              ? new Date(subscription.cancel_at * 1000).toISOString()
+              : null;
+            
             // Note: current_period_end extraction removed - handled by customer.subscription.updated
             const { error: updateError } = await supabase
               .from('users')
@@ -97,6 +102,7 @@ serve(async (req) => {
                 stripe_subscription_id: subscriptionId,
                 subscription_status: finalStatus,
                 stripe_customer_id: subscription.customer,
+                subscription_cancel_at: cancelAt,
                 // subscription_end_date will be set by customer.subscription.updated event
               })
               .eq('id', userId);
@@ -221,6 +227,11 @@ serve(async (req) => {
 
         console.log('✅ Subscription created, updating user:', { userId, subscriptionId: subscription.id });
 
+        // Extract cancel_at timestamp
+        const cancelAt = subscription.cancel_at 
+          ? new Date(subscription.cancel_at * 1000).toISOString()
+          : null;
+
         // Note: current_period_end extraction removed - handled by customer.subscription.updated
         const { error: updateError } = await supabase
           .from('users')
@@ -229,6 +240,7 @@ serve(async (req) => {
             stripe_subscription_id: subscription.id,
             subscription_status: subscription.status,
             stripe_customer_id: subscription.customer,
+            subscription_cancel_at: cancelAt,
             // subscription_end_date will be set by customer.subscription.updated event
           })
           .eq('id', userId);
@@ -291,6 +303,11 @@ serve(async (req) => {
                   const finalUserId = subscription.metadata?.userId || userId;
                   
                   if (finalUserId) {
+                    // Extract cancel_at timestamp
+                    const cancelAt = subscription.cancel_at 
+                      ? new Date(subscription.cancel_at * 1000).toISOString()
+                      : null;
+                    
                     // Note: current_period_end extraction removed - handled by customer.subscription.updated
                     const { error } = await supabase
                       .from('users')
@@ -299,6 +316,7 @@ serve(async (req) => {
                         stripe_subscription_id: subscriptionIdFromMetadata,
                         subscription_status: subscription.status || 'active',
                         stripe_customer_id: subscription.customer,
+                        subscription_cancel_at: cancelAt,
                         // subscription_end_date will be set by customer.subscription.updated event
                       })
                       .eq('id', finalUserId);
@@ -377,6 +395,11 @@ serve(async (req) => {
         if (userId) {
           console.log('✅ Subscription payment succeeded, updating user:', userId);
           
+          // Extract cancel_at timestamp
+          const cancelAt = subscription.cancel_at 
+            ? new Date(subscription.cancel_at * 1000).toISOString()
+            : null;
+          
           // Note: current_period_end extraction removed - handled by customer.subscription.updated
           const { error } = await supabase
             .from('users')
@@ -385,6 +408,7 @@ serve(async (req) => {
               stripe_subscription_id: subscriptionId,
               subscription_status: 'active',
               stripe_customer_id: subscription.customer,
+              subscription_cancel_at: cancelAt,
               // subscription_end_date will be set by customer.subscription.updated event
             })
             .eq('id', userId);
@@ -411,6 +435,7 @@ serve(async (req) => {
         console.log('🔍 current_period_end exists at root:', 'current_period_end' in subscription);
         console.log('🔍 current_period_end value at root:', subscription.current_period_end);
         console.log('🔍 items.data[0]?.current_period_end:', subscription.items?.data?.[0]?.current_period_end);
+        console.log('🔍 cancel_at:', subscription.cancel_at);
         console.log('🔍 subscription.id:', subscription.id);
 
         // If userId not in metadata, try to look it up by subscription_id
@@ -449,6 +474,16 @@ serve(async (req) => {
             isNull: subscriptionEndDate === null,
           });
 
+          // Extract cancel_at timestamp to track scheduled cancellation
+          const cancelAt = subscription.cancel_at 
+            ? new Date(subscription.cancel_at * 1000).toISOString()
+            : null;
+          
+          console.log('📋 Subscription cancellation status:', {
+            cancel_at: cancelAt,
+            will_renew: cancelAt === null,
+          });
+
           const { data: updateData, error } = await supabase
             .from('users')
             .update({
@@ -457,6 +492,7 @@ serve(async (req) => {
               stripe_subscription_id: subscription.id,
               stripe_customer_id: subscription.customer,
               subscription_end_date: subscriptionEndDate,
+              subscription_cancel_at: cancelAt,
             })
             .eq('id', userId)
             .select();
@@ -467,6 +503,7 @@ serve(async (req) => {
             console.log('✅ Subscription status updated successfully');
             console.log('✅ Updated user data:', updateData);
             console.log('✅ subscription_end_date saved:', updateData?.[0]?.subscription_end_date);
+            console.log('✅ subscription_cancel_at saved:', updateData?.[0]?.subscription_cancel_at);
           }
         } else {
           console.error('❌ Could not find userId for subscription:', subscription.id);

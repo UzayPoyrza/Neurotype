@@ -166,3 +166,47 @@ export async function updateUserSubscription(
   }
 }
 
+export interface PortalSessionResponse {
+  url: string;
+}
+
+/**
+ * Create a Stripe Customer Portal session
+ * This allows users to manage their subscription (cancel, update payment method, etc.)
+ */
+export async function createPortalSession(): Promise<PortalSessionResponse> {
+  try {
+    // Get current session to authenticate the request
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !session) {
+      throw new Error('Not authenticated. Please log in to continue.');
+    }
+
+    console.log('🔐 Creating portal session...');
+
+    // Call Supabase Edge Function
+    const { data, error } = await supabase.functions.invoke('create-portal-session', {
+      method: 'POST',
+    });
+
+    if (error) {
+      console.error('❌ Error calling portal session function:', error);
+      throw new Error(error.message || 'Failed to create portal session');
+    }
+
+    if (!data || !data.url) {
+      throw new Error('Invalid response from portal server');
+    }
+
+    console.log('✅ Portal session created successfully');
+
+    return {
+      url: data.url,
+    };
+  } catch (error: any) {
+    console.error('❌ Error in createPortalSession:', error);
+    throw error;
+  }
+}
+

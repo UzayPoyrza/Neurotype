@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Switch, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, Switch, ScrollView, TouchableOpacity, Alert, Linking, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { useStore } from '../store/useStore';
@@ -9,6 +9,7 @@ import { useUserId } from '../hooks/useUserId';
 import { HowToUseModal } from '../components/HowToUseModal';
 import { showErrorAlert, ERROR_TITLES } from '../utils/errorHandler';
 import { signOut } from '../services/authService';
+import { createPortalSession } from '../services/paymentService';
 
 type ProfileStackParamList = {
   ProfileMain: undefined;
@@ -35,6 +36,7 @@ export const SettingsScreen: React.FC = () => {
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
   const [backButtonWidth, setBackButtonWidth] = React.useState(0);
   const [showHowToUseModal, setShowHowToUseModal] = useState(false);
+  const [isLoadingPortal, setIsLoadingPortal] = useState(false);
   const handleResetAccount = React.useCallback(() => {
     Alert.alert(
       'Reset Account',
@@ -60,6 +62,33 @@ export const SettingsScreen: React.FC = () => {
   React.useEffect(() => {
     setCurrentScreen('settings');
   }, [setCurrentScreen]);
+
+  // Handle opening Stripe Customer Portal
+  const handleManageSubscription = React.useCallback(async () => {
+    setIsLoadingPortal(true);
+    try {
+      console.log('🔐 Opening subscription management portal...');
+      const { url } = await createPortalSession();
+      
+      // Open the portal URL
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+        console.log('✅ Portal opened successfully');
+      } else {
+        throw new Error('Cannot open portal URL');
+      }
+    } catch (error: any) {
+      console.error('❌ Error opening portal:', error);
+      Alert.alert(
+        'Error',
+        error.message || 'Failed to open subscription management. Please try again later.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsLoadingPortal(false);
+    }
+  }, []);
 
   // Handle reminder toggle with database save
   const handleToggleReminder = React.useCallback(async (value: boolean) => {
@@ -163,6 +192,20 @@ export const SettingsScreen: React.FC = () => {
                 onPress={() => navigation.navigate('Subscription')}
               >
                 <Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
+              </TouchableOpacity>
+            )}
+
+            {subscriptionType === 'premium' && (
+              <TouchableOpacity 
+                style={styles.manageButton}
+                onPress={handleManageSubscription}
+                disabled={isLoadingPortal}
+              >
+                {isLoadingPortal ? (
+                  <ActivityIndicator color="#007AFF" />
+                ) : (
+                  <Text style={styles.manageButtonText}>Manage Subscription</Text>
+                )}
               </TouchableOpacity>
             )}
           </View>
@@ -461,6 +504,20 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     color: '#ffffff',
+  },
+  manageButton: {
+    backgroundColor: '#f2f2f7',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#007AFF',
+  },
+  manageButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#007AFF',
   },
   aboutCard: {
     backgroundColor: '#ffffff',

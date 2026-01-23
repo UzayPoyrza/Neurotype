@@ -542,7 +542,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   resetCard: {
-    backgroundColor: '#fff5f5',
+    backgroundColor: '#ffffff',
     borderRadius: 16,
     padding: 20,
     marginHorizontal: 12,
@@ -551,8 +551,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
-    borderWidth: 1,
-    borderColor: '#ff3b30',
   },
   resetTitle: {
     fontSize: 19,
@@ -609,13 +607,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
-    borderWidth: 1.5,
-    borderColor: '#ff3b30',
   },
   logoutButtonText: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#ff3b30',
+    color: '#007AFF',
   },
   howToUseButton: {
     backgroundColor: '#ffffff',
@@ -624,10 +620,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
     marginTop: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
     alignItems: 'center',
   },
   howToUseButtonText: {

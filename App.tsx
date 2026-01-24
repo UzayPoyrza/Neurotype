@@ -25,7 +25,7 @@ import { useStore } from './src/store/useStore';
 import { supabase } from './src/services/supabase';
 import { getAllSessions, getSessionsByModality, getSessionById } from './src/services/sessionService';
 import { ensureTestUser, verifyTestUserConnection } from './src/services/testUserService';
-import { getUserPreferences, createUserProfile, getUserProfile, isPremiumUser } from './src/services/userService';
+import { getUserPreferences, createUserProfile, getUserProfile, isPremiumUser, getSubscriptionDetails } from './src/services/userService';
 import { ensureDailyRecommendations } from './src/services/recommendationService';
 import { calculateUserStreak } from './src/services/progressService';
 import { getUserEmotionalFeedbackWithSessions } from './src/services/feedbackService';
@@ -431,6 +431,17 @@ export default function App() {
             useStore.getState().setSubscriptionType(subscriptionType);
             console.log('📱 [App] Updated subscription type to:', subscriptionType, '(validated)');
           }
+          
+          // Fetch subscription details if premium
+          if (subscriptionType === 'premium') {
+            const details = await getSubscriptionDetails(userId);
+            if (details) {
+              useStore.getState().setSubscriptionCancelAt(details.cancelAt);
+              console.log('📱 [App] Subscription details loaded:', details.cancelAt);
+            }
+          } else {
+            useStore.getState().setSubscriptionCancelAt(null);
+          }
           // Update store with first name from database
           if (userProfile.first_name) {
             useStore.getState().setUserFirstName(userProfile.first_name);
@@ -720,6 +731,16 @@ export default function App() {
             useStore.getState().setSubscriptionType(subscriptionType);
             console.log('✅ [App] Updated subscription type from database after session restore:', subscriptionType, '(validated)');
             
+            // Fetch subscription details if premium
+            if (subscriptionType === 'premium') {
+              const details = await getSubscriptionDetails(userId);
+              if (details) {
+                useStore.getState().setSubscriptionCancelAt(details.cancelAt);
+              }
+            } else {
+              useStore.getState().setSubscriptionCancelAt(null);
+            }
+            
             useStore.setState({ 
               userId, 
               isLoggedIn: true,
@@ -764,6 +785,16 @@ export default function App() {
                   const subscriptionType = isPremium ? 'premium' : 'basic';
                   useStore.getState().setSubscriptionType(subscriptionType);
                   console.log('✅ [App] Updated subscription type from database:', subscriptionType, '(validated)');
+                  
+                  // Fetch subscription details if premium
+                  if (subscriptionType === 'premium') {
+                    const details = await getSubscriptionDetails(userId);
+                    if (details) {
+                      useStore.getState().setSubscriptionCancelAt(details.cancelAt);
+                    }
+                  } else {
+                    useStore.getState().setSubscriptionCancelAt(null);
+                  }
                 } catch (subscriptionError) {
                   console.error('❌ [App] Error checking subscription type:', subscriptionError);
                 }
@@ -851,6 +882,16 @@ export default function App() {
                     const subscriptionType = isPremium ? 'premium' : 'basic';
                     useStore.getState().setSubscriptionType(subscriptionType);
                     console.log('✅ [App] Updated subscription type from database after login:', subscriptionType, '(validated)');
+                    
+                    // Fetch subscription details if premium
+                    if (subscriptionType === 'premium') {
+                      const details = await getSubscriptionDetails(userId);
+                      if (details) {
+                        useStore.getState().setSubscriptionCancelAt(details.cancelAt);
+                      }
+                    } else {
+                      useStore.getState().setSubscriptionCancelAt(null);
+                    }
                   } catch (subscriptionError) {
                     console.error('❌ [App] Error checking subscription type after login:', subscriptionError);
                   }

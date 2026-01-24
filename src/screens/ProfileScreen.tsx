@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, NativeSyntheticEvent, NativeScrollEvent, Dimensions, Animated } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import Svg, { Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -164,7 +164,8 @@ export const ProfileScreen: React.FC = () => {
   // Initialize loading state: false if cache has data, true otherwise
   const [isLoadingActivity, setIsLoadingActivity] = React.useState(completedSessionsCache.length === 0);
   const [isLoadingFeedback, setIsLoadingFeedback] = React.useState(emotionalFeedbackHistoryFromStore.length === 0);
-  const [subscriptionDetails, setSubscriptionDetails] = React.useState<{ cancelAt: string | null } | null>(null);
+  // Get subscription cancel date from store (loaded during app initialization)
+  const subscriptionCancelAt = useStore(state => state.subscriptionCancelAt);
   
   // Track processed cache entries to avoid reprocessing
   const processedCacheKeysRef = React.useRef<Set<string>>(new Set());
@@ -301,18 +302,22 @@ export const ProfileScreen: React.FC = () => {
     initializeFromCache();
   }, []); // Only run on mount
 
-  // Fetch subscription details
-  React.useEffect(() => {
-    const fetchSubscriptionDetails = async () => {
-      if (userId && subscriptionType === 'premium') {
-        const details = await getSubscriptionDetails(userId);
-        if (details) {
-          setSubscriptionDetails({ cancelAt: details.cancelAt });
+  // Refresh subscription details when screen comes into focus (to catch any updates)
+  useFocusEffect(
+    React.useCallback(() => {
+      const refreshSubscriptionDetails = async () => {
+        if (userId && subscriptionType === 'premium') {
+          console.log('🔄 [ProfileScreen] Screen focused, refreshing subscription details...');
+          const details = await getSubscriptionDetails(userId);
+          if (details) {
+            useStore.getState().setSubscriptionCancelAt(details.cancelAt);
+            console.log('✅ [ProfileScreen] Subscription details refreshed on focus');
+          }
         }
-      }
-    };
-    fetchSubscriptionDetails();
-  }, [userId, subscriptionType]);
+      };
+      refreshSubscriptionDetails();
+    }, [userId, subscriptionType])
+  );
 
   // Update UI immediately when cache changes (e.g., when meditation completes)
   // Merges new cache entries with existing completedSessions and removes overwritten entries
@@ -873,10 +878,10 @@ export const ProfileScreen: React.FC = () => {
                   size="medium"
                 />
               </View>
-              {subscriptionType === 'premium' && subscriptionDetails?.cancelAt && (
+              {subscriptionType === 'premium' && subscriptionCancelAt && (
                 <View style={styles.cancelMessageContainer}>
                   <Text style={styles.cancelMessageText}>
-                    Your subscription ends at {new Date(subscriptionDetails.cancelAt).toLocaleDateString()}. Go to settings to manage your subscription.
+                    Your subscription ends at {new Date(subscriptionCancelAt).toLocaleDateString()}. Go to settings to manage your subscription.
                   </Text>
                 </View>
               )}

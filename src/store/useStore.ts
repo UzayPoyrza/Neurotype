@@ -189,6 +189,7 @@ const buildInitialStoreData = () => {
     darkThemeEnabled: false,
     profileIcon: '👤',
     subscriptionType: 'premium' as const,
+    subscriptionCancelAt: null as string | null,
     activeSession: null,
     activeModuleId: null,
     recentModuleIds: [] as string[],
@@ -224,6 +225,7 @@ interface AppState {
   darkThemeEnabled: boolean;
   profileIcon: string;
   subscriptionType: 'basic' | 'premium';
+  subscriptionCancelAt: string | null;
   activeSession: Session | null;
   activeModuleId: string | null;
   recentModuleIds: string[];
@@ -249,6 +251,7 @@ interface AppState {
   setUserFirstName: (name: string) => void;
   setProfileIcon: (icon: string) => void;
   setSubscriptionType: (type: 'basic' | 'premium') => void;
+  setSubscriptionCancelAt: (cancelAt: string | null) => void;
   setActiveSession: (session: Session | null) => void;
   setActiveModuleId: (moduleId: string | null) => void;
   addRecentModule: (moduleId: string) => void;
@@ -309,6 +312,9 @@ export const useStore = create<AppState>((set, get) => ({
     
   setSubscriptionType: (type: 'basic' | 'premium') => 
     set({ subscriptionType: type }),
+    
+  setSubscriptionCancelAt: (cancelAt: string | null) =>
+    set({ subscriptionCancelAt: cancelAt }),
     
   setActiveSession: (session: Session | null) => 
     set({ activeSession: session }),

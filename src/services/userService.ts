@@ -24,6 +24,14 @@ export interface SubscriptionData {
   subscription_cancel_at: string | null;
 }
 
+export interface SubscriptionDetails {
+  isPremium: boolean;
+  isLifetime: boolean;
+  cancelAt: string | null;
+  endDate: string | null;
+  status: string | null;
+}
+
 /**
  * Get user profile
  * Includes 5-second timeout to prevent hanging
@@ -301,5 +309,40 @@ export function validatePremiumStatus(subscriptionData: SubscriptionData): boole
   // For regular subscriptions, status check is sufficient
   // Stripe webhooks will update status when subscription expires/cancels
   return true;
+}
+
+/**
+ * Get detailed subscription information for display purposes
+ * 
+ * @param userId - User ID to check
+ * @returns Promise<SubscriptionDetails> - Detailed subscription information
+ */
+export async function getSubscriptionDetails(userId: string): Promise<SubscriptionDetails | null> {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('subscription_type, subscription_status, subscription_end_date, subscription_cancel_at')
+      .eq('id', userId)
+      .single();
+
+    if (error || !data) {
+      console.warn('⚠️ [getSubscriptionDetails] Could not fetch user subscription data:', error);
+      return null;
+    }
+
+    const isPremium = validatePremiumStatus(data as SubscriptionData);
+    const isLifetime = data.subscription_status === null && data.subscription_type === 'premium';
+
+    return {
+      isPremium,
+      isLifetime,
+      cancelAt: data.subscription_cancel_at,
+      endDate: data.subscription_end_date,
+      status: data.subscription_status,
+    };
+  } catch (error) {
+    console.error('❌ [getSubscriptionDetails] Error fetching subscription details:', error);
+    return null;
+  }
 }
 

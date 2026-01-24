@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
-import { updateUserPreferences } from '../services/userService';
+import { updateUserPreferences, getSubscriptionDetails } from '../services/userService';
 import { useUserId } from '../hooks/useUserId';
 import { HowToUseModal } from '../components/HowToUseModal';
 import { showErrorAlert, ERROR_TITLES } from '../utils/errorHandler';
@@ -37,6 +37,7 @@ export const SettingsScreen: React.FC = () => {
   const [backButtonWidth, setBackButtonWidth] = React.useState(0);
   const [showHowToUseModal, setShowHowToUseModal] = useState(false);
   const [isLoadingPortal, setIsLoadingPortal] = useState(false);
+  const [subscriptionDetails, setSubscriptionDetails] = React.useState<{ cancelAt: string | null; endDate: string | null; isLifetime: boolean } | null>(null);
   const handleResetAccount = React.useCallback(() => {
     Alert.alert(
       'Reset Account',
@@ -62,6 +63,23 @@ export const SettingsScreen: React.FC = () => {
   React.useEffect(() => {
     setCurrentScreen('settings');
   }, [setCurrentScreen]);
+
+  // Fetch subscription details
+  React.useEffect(() => {
+    const fetchSubscriptionDetails = async () => {
+      if (userId && subscriptionType === 'premium') {
+        const details = await getSubscriptionDetails(userId);
+        if (details) {
+          setSubscriptionDetails({
+            cancelAt: details.cancelAt,
+            endDate: details.endDate,
+            isLifetime: details.isLifetime,
+          });
+        }
+      }
+    };
+    fetchSubscriptionDetails();
+  }, [userId, subscriptionType]);
 
   // Handle opening Stripe Customer Portal
   const handleManageSubscription = React.useCallback(async () => {
@@ -185,6 +203,30 @@ export const SettingsScreen: React.FC = () => {
                 : 'Upgrade to Premium for unlimited access to all meditation modules.'
               }
             </Text>
+
+            {subscriptionType === 'premium' && subscriptionDetails && (
+              <>
+                {subscriptionDetails.isLifetime ? (
+                  <View style={styles.lifetimeMessageContainer}>
+                    <Text style={styles.lifetimeMessageText}>
+                      Thank you for Lifetime subscription
+                    </Text>
+                  </View>
+                ) : subscriptionDetails.cancelAt ? (
+                  <View style={styles.cancelMessageContainer}>
+                    <Text style={styles.cancelMessageText}>
+                      Your subscription ends at {new Date(subscriptionDetails.cancelAt).toLocaleDateString()}. Go to settings to cancel.
+                    </Text>
+                  </View>
+                ) : subscriptionDetails.endDate ? (
+                  <View style={styles.renewalMessageContainer}>
+                    <Text style={styles.renewalMessageText}>
+                      Your plan will be auto-renewed on {new Date(subscriptionDetails.endDate).toLocaleDateString()}.
+                    </Text>
+                  </View>
+                ) : null}
+              </>
+            )}
             
             {subscriptionType === 'basic' && (
               <TouchableOpacity 
@@ -195,7 +237,7 @@ export const SettingsScreen: React.FC = () => {
               </TouchableOpacity>
             )}
 
-            {subscriptionType === 'premium' && (
+            {subscriptionType === 'premium' && subscriptionDetails && !subscriptionDetails.isLifetime && (
               <TouchableOpacity 
                 style={styles.manageButton}
                 onPress={handleManageSubscription}
@@ -518,6 +560,52 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     color: '#007AFF',
+  },
+  cancelMessageContainer: {
+    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#fff3cd',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ffc107',
+    marginBottom: 12,
+  },
+  cancelMessageText: {
+    fontSize: 14,
+    color: '#856404',
+    lineHeight: 20,
+  },
+  renewalMessageContainer: {
+    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#d1ecf1',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#0c5460',
+    marginBottom: 12,
+  },
+  renewalMessageText: {
+    fontSize: 14,
+    color: '#0c5460',
+    lineHeight: 20,
+  },
+  lifetimeMessageContainer: {
+    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#d4edda',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#28a745',
+    marginBottom: 12,
+  },
+  lifetimeMessageText: {
+    fontSize: 14,
+    color: '#155724',
+    lineHeight: 20,
+    fontWeight: '600',
   },
   aboutCard: {
     backgroundColor: '#ffffff',

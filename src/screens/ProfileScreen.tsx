@@ -18,6 +18,7 @@ import { useUserId } from '../hooks/useUserId';
 import { removeEmotionalFeedback as removeEmotionalFeedbackDB } from '../services/feedbackService';
 import type { CompletedSessionCacheEntry } from '../store/useStore';
 import { ShimmerActivityHistory, ShimmerEmotionalFeedbackHistory } from '../components/ShimmerSkeleton';
+import { getSubscriptionDetails } from '../services/userService';
 
 const MAX_VISIBLE_ACTIVITY_ITEMS = 4;
 const APPROX_ACTIVITY_ROW_HEIGHT = 84;
@@ -163,6 +164,7 @@ export const ProfileScreen: React.FC = () => {
   // Initialize loading state: false if cache has data, true otherwise
   const [isLoadingActivity, setIsLoadingActivity] = React.useState(completedSessionsCache.length === 0);
   const [isLoadingFeedback, setIsLoadingFeedback] = React.useState(emotionalFeedbackHistoryFromStore.length === 0);
+  const [subscriptionDetails, setSubscriptionDetails] = React.useState<{ cancelAt: string | null } | null>(null);
   
   // Track processed cache entries to avoid reprocessing
   const processedCacheKeysRef = React.useRef<Set<string>>(new Set());
@@ -298,6 +300,19 @@ export const ProfileScreen: React.FC = () => {
     
     initializeFromCache();
   }, []); // Only run on mount
+
+  // Fetch subscription details
+  React.useEffect(() => {
+    const fetchSubscriptionDetails = async () => {
+      if (userId && subscriptionType === 'premium') {
+        const details = await getSubscriptionDetails(userId);
+        if (details) {
+          setSubscriptionDetails({ cancelAt: details.cancelAt });
+        }
+      }
+    };
+    fetchSubscriptionDetails();
+  }, [userId, subscriptionType]);
 
   // Update UI immediately when cache changes (e.g., when meditation completes)
   // Merges new cache entries with existing completedSessions and removes overwritten entries
@@ -858,6 +873,13 @@ export const ProfileScreen: React.FC = () => {
                   size="medium"
                 />
               </View>
+              {subscriptionType === 'premium' && subscriptionDetails?.cancelAt && (
+                <View style={styles.cancelMessageContainer}>
+                  <Text style={styles.cancelMessageText}>
+                    Your subscription ends at {new Date(subscriptionDetails.cancelAt).toLocaleDateString()}. Go to settings to cancel.
+                  </Text>
+                </View>
+              )}
               {subscriptionType === 'basic' && (
                 <TouchableOpacity 
                   style={styles.upgradeButton}
@@ -1400,6 +1422,20 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#ffffff',
+  },
+  cancelMessageContainer: {
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#fff3cd',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ffc107',
+  },
+  cancelMessageText: {
+    fontSize: 13,
+    color: '#856404',
+    lineHeight: 18,
   },
   profileSubtitle: {
     fontSize: 15,

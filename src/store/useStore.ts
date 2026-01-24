@@ -190,6 +190,8 @@ const buildInitialStoreData = () => {
     profileIcon: '👤',
     subscriptionType: 'premium' as const,
     subscriptionCancelAt: null as string | null,
+    subscriptionEndDate: null as string | null,
+    subscriptionIsLifetime: false,
     activeSession: null,
     activeModuleId: null,
     recentModuleIds: [] as string[],
@@ -226,6 +228,8 @@ interface AppState {
   profileIcon: string;
   subscriptionType: 'basic' | 'premium';
   subscriptionCancelAt: string | null;
+  subscriptionEndDate: string | null;
+  subscriptionIsLifetime: boolean;
   activeSession: Session | null;
   activeModuleId: string | null;
   recentModuleIds: string[];
@@ -252,6 +256,8 @@ interface AppState {
   setProfileIcon: (icon: string) => void;
   setSubscriptionType: (type: 'basic' | 'premium') => void;
   setSubscriptionCancelAt: (cancelAt: string | null) => void;
+  setSubscriptionEndDate: (endDate: string | null) => void;
+  setSubscriptionIsLifetime: (isLifetime: boolean) => void;
   setActiveSession: (session: Session | null) => void;
   setActiveModuleId: (moduleId: string | null) => void;
   addRecentModule: (moduleId: string) => void;
@@ -315,6 +321,12 @@ export const useStore = create<AppState>((set, get) => ({
     
   setSubscriptionCancelAt: (cancelAt: string | null) =>
     set({ subscriptionCancelAt: cancelAt }),
+    
+  setSubscriptionEndDate: (endDate: string | null) =>
+    set({ subscriptionEndDate: endDate }),
+    
+  setSubscriptionIsLifetime: (isLifetime: boolean) =>
+    set({ subscriptionIsLifetime: isLifetime }),
     
   setActiveSession: (session: Session | null) => 
     set({ activeSession: session }),
@@ -836,6 +848,9 @@ export const useStore = create<AppState>((set, get) => ({
       userId: null,
       hasCompletedOnboarding: false,
       emotionalFeedbackHistory: [] as EmotionalFeedbackEntry[],
+      subscriptionCancelAt: null,
+      subscriptionEndDate: null,
+      subscriptionIsLifetime: false,
     });
   },
 

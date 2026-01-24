@@ -437,10 +437,14 @@ export default function App() {
             const details = await getSubscriptionDetails(userId);
             if (details) {
               useStore.getState().setSubscriptionCancelAt(details.cancelAt);
-              console.log('📱 [App] Subscription details loaded:', details.cancelAt);
+              useStore.getState().setSubscriptionEndDate(details.endDate);
+              useStore.getState().setSubscriptionIsLifetime(details.isLifetime);
+              console.log('📱 [App] Subscription details loaded:', { cancelAt: details.cancelAt, endDate: details.endDate, isLifetime: details.isLifetime });
             }
           } else {
             useStore.getState().setSubscriptionCancelAt(null);
+            useStore.getState().setSubscriptionEndDate(null);
+            useStore.getState().setSubscriptionIsLifetime(false);
           }
           // Update store with first name from database
           if (userProfile.first_name) {
@@ -736,9 +740,13 @@ export default function App() {
               const details = await getSubscriptionDetails(userId);
               if (details) {
                 useStore.getState().setSubscriptionCancelAt(details.cancelAt);
+                useStore.getState().setSubscriptionEndDate(details.endDate);
+                useStore.getState().setSubscriptionIsLifetime(details.isLifetime);
               }
             } else {
               useStore.getState().setSubscriptionCancelAt(null);
+              useStore.getState().setSubscriptionEndDate(null);
+              useStore.getState().setSubscriptionIsLifetime(false);
             }
             
             useStore.setState({ 

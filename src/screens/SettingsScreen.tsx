@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Switch, ScrollView, TouchableOpacity, Alert, Linking, ActivityIndicator } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
@@ -37,7 +37,10 @@ export const SettingsScreen: React.FC = () => {
   const [backButtonWidth, setBackButtonWidth] = React.useState(0);
   const [showHowToUseModal, setShowHowToUseModal] = useState(false);
   const [isLoadingPortal, setIsLoadingPortal] = useState(false);
-  const [subscriptionDetails, setSubscriptionDetails] = React.useState<{ cancelAt: string | null; endDate: string | null; isLifetime: boolean } | null>(null);
+  // Get subscription details from store (loaded during app initialization)
+  const subscriptionCancelAt = useStore(state => state.subscriptionCancelAt);
+  const subscriptionEndDate = useStore(state => state.subscriptionEndDate);
+  const subscriptionIsLifetime = useStore(state => state.subscriptionIsLifetime);
   const handleResetAccount = React.useCallback(() => {
     Alert.alert(
       'Reset Account',
@@ -64,22 +67,24 @@ export const SettingsScreen: React.FC = () => {
     setCurrentScreen('settings');
   }, [setCurrentScreen]);
 
-  // Fetch subscription details
-  React.useEffect(() => {
-    const fetchSubscriptionDetails = async () => {
-      if (userId && subscriptionType === 'premium') {
-        const details = await getSubscriptionDetails(userId);
-        if (details) {
-          setSubscriptionDetails({
-            cancelAt: details.cancelAt,
-            endDate: details.endDate,
-            isLifetime: details.isLifetime,
-          });
+  // Refresh subscription details when screen comes into focus (to catch any updates)
+  useFocusEffect(
+    React.useCallback(() => {
+      const refreshSubscriptionDetails = async () => {
+        if (userId && subscriptionType === 'premium') {
+          console.log('🔄 [Settings] Screen focused, refreshing subscription details...');
+          const details = await getSubscriptionDetails(userId);
+          if (details) {
+            useStore.getState().setSubscriptionCancelAt(details.cancelAt);
+            useStore.getState().setSubscriptionEndDate(details.endDate);
+            useStore.getState().setSubscriptionIsLifetime(details.isLifetime);
+            console.log('✅ [Settings] Subscription details refreshed on focus');
+          }
         }
-      }
-    };
-    fetchSubscriptionDetails();
-  }, [userId, subscriptionType]);
+      };
+      refreshSubscriptionDetails();
+    }, [userId, subscriptionType])
+  );
 
   // Handle opening Stripe Customer Portal
   const handleManageSubscription = React.useCallback(async () => {
@@ -204,24 +209,24 @@ export const SettingsScreen: React.FC = () => {
               }
             </Text>
 
-            {subscriptionType === 'premium' && subscriptionDetails && (
+            {subscriptionType === 'premium' && (
               <>
-                {subscriptionDetails.isLifetime ? (
+                {subscriptionIsLifetime ? (
                   <View style={styles.lifetimeMessageContainer}>
                     <Text style={styles.lifetimeMessageText}>
                       Thank you for Lifetime subscription
                     </Text>
                   </View>
-                ) : subscriptionDetails.cancelAt ? (
+                ) : subscriptionCancelAt ? (
                   <View style={styles.cancelMessageContainer}>
                     <Text style={styles.cancelMessageText}>
-                      Your subscription ends at {new Date(subscriptionDetails.cancelAt).toLocaleDateString()}. You can modify your subscription below.
+                      Your subscription ends at {new Date(subscriptionCancelAt).toLocaleDateString()}. You can modify your subscription below.
                     </Text>
                   </View>
-                ) : subscriptionDetails.endDate ? (
+                ) : subscriptionEndDate ? (
                   <View style={styles.renewalMessageContainer}>
                     <Text style={styles.renewalMessageText}>
-                      Your plan will be auto-renewed on {new Date(subscriptionDetails.endDate).toLocaleDateString()}.
+                      Your plan will be auto-renewed on {new Date(subscriptionEndDate).toLocaleDateString()}.
                     </Text>
                   </View>
                 ) : null}
@@ -237,7 +242,7 @@ export const SettingsScreen: React.FC = () => {
               </TouchableOpacity>
             )}
 
-            {subscriptionType === 'premium' && subscriptionDetails && !subscriptionDetails.isLifetime && (
+            {subscriptionType === 'premium' && !subscriptionIsLifetime && (
               <TouchableOpacity 
                 style={styles.manageButton}
                 onPress={handleManageSubscription}

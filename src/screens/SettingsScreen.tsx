@@ -39,6 +39,7 @@ export const SettingsScreen: React.FC = () => {
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
   const [backButtonWidth, setBackButtonWidth] = React.useState(0);
   const [showHowToUseModal, setShowHowToUseModal] = useState(false);
+  const [isLoadingPortal, setIsLoadingPortal] = useState(false);
   // Get subscription details from store (loaded during app initialization)
   const subscriptionCancelAt = useStore(state => state.subscriptionCancelAt);
   const subscriptionEndDate = useStore(state => state.subscriptionEndDate);
@@ -238,8 +239,7 @@ export const SettingsScreen: React.FC = () => {
 
   // Handle opening Stripe Customer Portal
   const handleManageSubscription = React.useCallback(async () => {
-    // Don't set loading state - keep button responsive
-    // The browser will open when API call completes
+    setIsLoadingPortal(true);
     try {
       console.log('🔐 Opening subscription management portal...');
       const { url } = await createPortalSession();
@@ -259,8 +259,11 @@ export const SettingsScreen: React.FC = () => {
       });
       
       console.log('✅ Portal opened successfully');
+      // Reset loading state immediately after opening browser
+      setIsLoadingPortal(false);
     } catch (error: any) {
       portalOpenedRef.current = false; // Reset on error
+      setIsLoadingPortal(false);
       console.error('❌ Error opening portal:', error);
       Alert.alert(
         'Error',
@@ -403,8 +406,13 @@ export const SettingsScreen: React.FC = () => {
               <TouchableOpacity 
                 style={styles.manageButton}
                 onPress={handleManageSubscription}
+                disabled={isLoadingPortal}
               >
-                <Text style={styles.manageButtonText}>Manage Subscription</Text>
+                {isLoadingPortal ? (
+                  <ActivityIndicator color="#ffffff" />
+                ) : (
+                  <Text style={styles.manageButtonText}>Manage Subscription</Text>
+                )}
               </TouchableOpacity>
             )}
           </View>

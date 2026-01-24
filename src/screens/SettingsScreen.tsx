@@ -1,15 +1,18 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Switch, ScrollView, TouchableOpacity, Alert, Linking, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Switch, ScrollView, TouchableOpacity, Alert, Linking, ActivityIndicator, AppState, AppStateStatus, DevSettings } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
-import { updateUserPreferences, getSubscriptionDetails } from '../services/userService';
+import { updateUserPreferences, getSubscriptionDetails, getUserProfile, getUserPreferences, isPremiumUser } from '../services/userService';
 import { useUserId } from '../hooks/useUserId';
 import { HowToUseModal } from '../components/HowToUseModal';
 import { showErrorAlert, ERROR_TITLES } from '../utils/errorHandler';
 import { signOut } from '../services/authService';
 import { createPortalSession } from '../services/paymentService';
+import { calculateUserStreak } from '../services/progressService';
+import { ensureDailyRecommendations } from '../services/recommendationService';
+import { getUserEmotionalFeedbackWithSessions } from '../services/feedbackService';
 
 type ProfileStackParamList = {
   ProfileMain: undefined;
@@ -41,6 +44,10 @@ export const SettingsScreen: React.FC = () => {
   const subscriptionCancelAt = useStore(state => state.subscriptionCancelAt);
   const subscriptionEndDate = useStore(state => state.subscriptionEndDate);
   const subscriptionIsLifetime = useStore(state => state.subscriptionIsLifetime);
+  
+  // Track if portal was opened to trigger reload on return
+  const portalOpenedRef = useRef(false);
+  const appStateRef = useRef(AppState.currentState);
   const handleResetAccount = React.useCallback(() => {
     Alert.alert(
       'Reset Account',
@@ -86,6 +93,150 @@ export const SettingsScreen: React.FC = () => {
     }, [userId, subscriptionType])
   );
 
+  // Function to reload all user data (fallback for dev mode)
+  const reloadUserData = React.useCallback(async () => {
+    if (!userId) return;
+    
+    try {
+      console.log('🔄 [Settings] Reloading all user data after returning from Stripe portal...');
+      
+      // Reload user profile and subscription
+      const userProfile = await getUserProfile(userId);
+      if (userProfile) {
+        const isPremium = await isPremiumUser(userId);
+        const subscriptionType = isPremium ? 'premium' : 'basic';
+        useStore.getState().setSubscriptionType(subscriptionType);
+        
+        if (subscriptionType === 'premium') {
+          const details = await getSubscriptionDetails(userId);
+          if (details) {
+            useStore.getState().setSubscriptionCancelAt(details.cancelAt);
+            useStore.getState().setSubscriptionEndDate(details.endDate);
+            useStore.getState().setSubscriptionIsLifetime(details.isLifetime);
+          }
+        } else {
+          useStore.getState().setSubscriptionCancelAt(null);
+          useStore.getState().setSubscriptionEndDate(null);
+          useStore.getState().setSubscriptionIsLifetime(false);
+        }
+        
+        if (userProfile.first_name) {
+          useStore.getState().setUserFirstName(userProfile.first_name);
+        }
+      }
+      
+      // Reload preferences
+      const preferences = await getUserPreferences(userId);
+      if (preferences) {
+        const currentReminderEnabled = useStore.getState().reminderEnabled;
+        if (preferences.reminder_enabled !== currentReminderEnabled) {
+          if (preferences.reminder_enabled && !currentReminderEnabled) {
+            useStore.getState().toggleReminder();
+          } else if (!preferences.reminder_enabled && currentReminderEnabled) {
+            useStore.getState().toggleReminder();
+          }
+        }
+      }
+      
+      // Clear and reload caches
+      useStore.getState().clearSessionsCache();
+      useStore.getState().clearCalendarCache();
+      useStore.getState().clearEmotionalFeedbackCache();
+      
+      // Sync completed sessions
+      await useStore.getState().syncTodayCompletedSessionsFromDatabase(userId);
+      
+      // Recalculate streak
+      const streak = await calculateUserStreak(userId);
+      useStore.setState((state) => ({
+        userProgress: {
+          ...state.userProgress,
+          streak: streak,
+        },
+      }));
+      
+      // Reload emotional feedback
+      const feedbackWithSessions = await getUserEmotionalFeedbackWithSessions(userId, 20);
+      // Transform to EmotionalFeedbackEntry format and filter out entries without sessions
+      const emotionalFeedbackEntries = feedbackWithSessions
+        .filter(({ session }) => session !== null)
+        .map(({ feedback }) => ({
+          id: feedback.id || `feedback-${feedback.feedback_date}-${feedback.session_id}`,
+          sessionId: feedback.session_id,
+          label: feedback.label,
+          timestampSeconds: feedback.timestamp_seconds,
+          date: feedback.feedback_date,
+        }));
+      useStore.setState({ emotionalFeedbackHistory: emotionalFeedbackEntries });
+      
+      // Ensure daily recommendations
+      const defaultModuleId = useStore.getState().todayModuleId || 'anxiety';
+      await ensureDailyRecommendations(userId, defaultModuleId);
+      
+      console.log('✅ [Settings] User data reloaded successfully');
+    } catch (error: any) {
+      console.error('❌ [Settings] Error reloading user data:', error);
+    }
+  }, [userId]);
+
+  // Function to completely reload the app
+  const reloadApp = React.useCallback(async () => {
+    try {
+      console.log('🔄 [Settings] Reloading entire app after returning from Stripe portal...');
+      
+      // Try to use Updates.reloadAsync() if available (production builds)
+      try {
+        const Updates = require('expo-updates');
+        if (Updates.isEnabled && Updates.reloadAsync) {
+          console.log('✅ [Settings] Updates enabled, reloading app...');
+          await Updates.reloadAsync();
+          return;
+        }
+      } catch (updatesError) {
+        // Updates module not available, continue to fallback
+        console.log('⚠️ [Settings] Updates module not available');
+      }
+      
+      // Fallback 1: Use DevSettings.reload() for development mode
+      if (__DEV__ && DevSettings && DevSettings.reload) {
+        console.log('🔄 [Settings] Using DevSettings.reload() for dev mode...');
+        DevSettings.reload();
+        return;
+      }
+      
+      // Fallback 2: Reload all data if native reload isn't available
+      console.log('⚠️ [Settings] Native reload not available, reloading data instead...');
+      await reloadUserData();
+    } catch (error: any) {
+      console.error('❌ [Settings] Error reloading app:', error);
+      // Final fallback to data reload if app reload fails
+      await reloadUserData();
+    }
+  }, [reloadUserData]);
+
+  // Listen for app state changes to detect return from Stripe portal
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      const previousAppState = appStateRef.current;
+      appStateRef.current = nextAppState;
+      
+      // If app came back to foreground and we had opened the portal, reload everything
+      if (
+        previousAppState === 'background' || previousAppState === 'inactive'
+      ) {
+        if (nextAppState === 'active' && portalOpenedRef.current) {
+          console.log('🔄 [Settings] App returned to foreground after Stripe portal, reloading app...');
+          portalOpenedRef.current = false; // Reset flag
+          reloadApp();
+        }
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [reloadUserData]);
+
   // Handle opening Stripe Customer Portal
   const handleManageSubscription = React.useCallback(async () => {
     setIsLoadingPortal(true);
@@ -93,15 +244,20 @@ export const SettingsScreen: React.FC = () => {
       console.log('🔐 Opening subscription management portal...');
       const { url } = await createPortalSession();
       
+      // Mark that portal was opened
+      portalOpenedRef.current = true;
+      
       // Open the portal URL
       const canOpen = await Linking.canOpenURL(url);
       if (canOpen) {
         await Linking.openURL(url);
         console.log('✅ Portal opened successfully');
       } else {
+        portalOpenedRef.current = false; // Reset if failed to open
         throw new Error('Cannot open portal URL');
       }
     } catch (error: any) {
+      portalOpenedRef.current = false; // Reset on error
       console.error('❌ Error opening portal:', error);
       Alert.alert(
         'Error',

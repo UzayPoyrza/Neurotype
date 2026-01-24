@@ -17,6 +17,13 @@ export interface UserPreferences {
   reminder_enabled: boolean;
 }
 
+export interface SubscriptionData {
+  subscription_type: 'basic' | 'premium';
+  subscription_status: string | null;
+  subscription_end_date: string | null;
+  subscription_cancel_at: string | null;
+}
+
 /**
  * Get user profile
  * Includes 5-second timeout to prevent hanging
@@ -217,10 +224,82 @@ export async function createUserProfile(
     return result;
   } catch (error: any) {
     console.error('❌ [createUserProfile] Profile creation failed or timed out:', error);
-    return { 
+      return { 
       success: false, 
       error: error.message || 'Profile creation timed out after 15 seconds' 
     };
   }
+}
+
+/**
+ * Check if a user has valid premium subscription
+ * This is the authoritative function to determine premium status
+ * 
+ * Validates:
+ * - subscription_type === 'premium'
+ * - For regular subscriptions: subscription_status === 'active' (or 'trialing')
+ * - For lifetime subscriptions: subscription_status === null AND subscription_end_date is in the future
+ * 
+ * @param userId - User ID to check
+ * @returns Promise<boolean> - true if user has valid premium subscription
+ */
+export async function isPremiumUser(userId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('subscription_type, subscription_status, subscription_end_date, subscription_cancel_at')
+      .eq('id', userId)
+      .single();
+
+    if (error || !data) {
+      console.warn('⚠️ [isPremiumUser] Could not fetch user subscription data:', error);
+      return false;
+    }
+
+    return validatePremiumStatus(data as SubscriptionData);
+  } catch (error) {
+    console.error('❌ [isPremiumUser] Error checking premium status:', error);
+    return false;
+  }
+}
+
+/**
+ * Validate premium status from subscription data
+ * Can be used with already-fetched data to avoid extra database calls
+ * 
+ * Handles both regular subscriptions (with subscription_status) and lifetime subscriptions (subscription_status = null)
+ * 
+ * @param subscriptionData - Subscription data from database
+ * @returns boolean - true if subscription is valid premium
+ */
+export function validatePremiumStatus(subscriptionData: SubscriptionData): boolean {
+  const now = new Date();
+
+  // 1. Must have premium subscription type
+  if (subscriptionData.subscription_type !== 'premium') {
+    return false;
+  }
+
+  // 2. Handle lifetime subscriptions (subscription_status is null)
+  if (!subscriptionData.subscription_status) {
+    // Lifetime subscription - validate end date is in the future
+    if (subscriptionData.subscription_end_date) {
+      const endDate = new Date(subscriptionData.subscription_end_date);
+      return endDate > now;
+    }
+    // No end date = invalid lifetime subscription
+    return false;
+  }
+
+  // 3. Handle regular subscriptions (subscription_status exists)
+  // Status must be active or trialing
+  const validStatuses = ['active', 'trialing'];
+  if (!validStatuses.includes(subscriptionData.subscription_status)) {
+    return false;
+  }
+
+  // For regular subscriptions, status check is sufficient
+  // Stripe webhooks will update status when subscription expires/cancels
+  return true;
 }
 

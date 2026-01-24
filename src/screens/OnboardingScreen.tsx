@@ -13,7 +13,7 @@ import { Slider0to10 } from '../components/Slider0to10';
 import { signInWithGoogle, signInWithApple } from '../services/authService';
 import { showErrorAlert, ERROR_TITLES } from '../utils/errorHandler';
 import { supabase } from '../services/supabase';
-import { getUserProfile, createUserProfile } from '../services/userService';
+import { getUserProfile, createUserProfile, isPremiumUser } from '../services/userService';
 import { PaymentPage } from '../components/PaymentPage';
 import { PremiumFeaturesPage } from '../components/PremiumFeaturesPage';
 
@@ -2394,15 +2394,14 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
       if (userId && !hasCheckedSubscription.current) {
         hasCheckedSubscription.current = true;
         try {
-          const userProfile = await getUserProfile(userId);
-          if (userProfile && userProfile.subscription_type) {
-            setSubscriptionType(userProfile.subscription_type);
-            console.log('✅ [Onboarding] Loaded subscription type:', userProfile.subscription_type);
-            
-            // If user has premium, skip payment page
-            if (userProfile.subscription_type === 'premium') {
-              console.log('✅ [Onboarding] User has premium, will skip payment page');
-            }
+          const isPremium = await isPremiumUser(userId);
+          const subscriptionType = isPremium ? 'premium' : 'basic';
+          setSubscriptionType(subscriptionType);
+          console.log('✅ [Onboarding] Loaded subscription type:', subscriptionType, '(validated)');
+          
+          // If user has premium, skip payment page
+          if (isPremium) {
+            console.log('✅ [Onboarding] User has premium, will skip payment page');
           }
         } catch (error) {
           console.error('❌ [Onboarding] Error checking subscription type:', error);
@@ -2460,13 +2459,13 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
       let skipTimer: NodeJS.Timeout | null = null;
       let cancelled = false;
       
-      // Check premium status directly from database
-      getUserProfile(userId).then((userProfile) => {
+      // Validate premium status directly from database
+      isPremiumUser(userId).then((isPremium) => {
         if (cancelled) return;
         
-        if (userProfile?.subscription_type === 'premium') {
+        if (isPremium) {
           console.log('✅ [Onboarding] User has premium from database, auto-skipping premium page');
-          // Update store with database value
+          // Update store with validated premium status
           setSubscriptionType('premium');
           // Small delay to allow page to render, then finish
           skipTimer = setTimeout(() => {
@@ -2731,22 +2730,20 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
             isActive={currentPage === 4}
             onLogin={handleLogin}
             onNavigateToPremium={async () => {
-              // Check premium status directly from database, not from store
+              // Validate premium status directly from database, not from store
               if (userId) {
                 try {
-                  const userProfile = await getUserProfile(userId);
-                  if (userProfile?.subscription_type === 'premium') {
+                  const isPremium = await isPremiumUser(userId);
+                  if (isPremium) {
                     console.log('✅ [Onboarding] User has premium from database, skipping premium and payment pages');
-                    // Update store with database value
+                    // Update store with validated premium status
                     setSubscriptionType('premium');
                     handleFinish();
                     return;
                   } else {
-                    // Update store with database value (should be 'basic')
-                    if (userProfile?.subscription_type) {
-                      setSubscriptionType(userProfile.subscription_type);
-                    }
-                    console.log('✅ [Onboarding] User subscription from database:', userProfile?.subscription_type || 'not found');
+                    // Update store with validated basic status
+                    setSubscriptionType('basic');
+                    console.log('✅ [Onboarding] User subscription from database: basic (validated)');
                   }
                 } catch (error) {
                   console.error('❌ [Onboarding] Error checking subscription from database:', error);

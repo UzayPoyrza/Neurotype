@@ -25,7 +25,7 @@ import { useStore } from './src/store/useStore';
 import { supabase } from './src/services/supabase';
 import { getAllSessions, getSessionsByModality, getSessionById } from './src/services/sessionService';
 import { ensureTestUser, verifyTestUserConnection } from './src/services/testUserService';
-import { getUserPreferences, createUserProfile, getUserProfile } from './src/services/userService';
+import { getUserPreferences, createUserProfile, getUserProfile, isPremiumUser } from './src/services/userService';
 import { ensureDailyRecommendations } from './src/services/recommendationService';
 import { calculateUserStreak } from './src/services/progressService';
 import { getUserEmotionalFeedbackWithSessions } from './src/services/feedbackService';
@@ -423,11 +423,13 @@ export default function App() {
         
         if (userProfile) {
           console.log('✅ [App] Loaded user profile:', userProfile);
-          // Update store with subscription type from database
+          // Validate premium status and update store
+          const isPremium = await isPremiumUser(userId);
+          const subscriptionType = isPremium ? 'premium' : 'basic';
           const currentSubscriptionType = useStore.getState().subscriptionType;
-          if (userProfile.subscription_type !== currentSubscriptionType) {
-            useStore.getState().setSubscriptionType(userProfile.subscription_type);
-            console.log('📱 [App] Updated subscription type to:', userProfile.subscription_type);
+          if (subscriptionType !== currentSubscriptionType) {
+            useStore.getState().setSubscriptionType(subscriptionType);
+            console.log('📱 [App] Updated subscription type to:', subscriptionType, '(validated)');
           }
           // Update store with first name from database
           if (userProfile.first_name) {
@@ -712,11 +714,11 @@ export default function App() {
             // User profile exists - they've completed onboarding before
             console.log('✅ [App] User profile exists, user has completed onboarding');
             
-            // Check premium status from users table after successful login
-            if (userProfile.subscription_type) {
-              useStore.getState().setSubscriptionType(userProfile.subscription_type);
-              console.log('✅ [App] Updated subscription type from database after session restore:', userProfile.subscription_type);
-            }
+            // Validate premium status and update store
+            const isPremium = await isPremiumUser(userId);
+            const subscriptionType = isPremium ? 'premium' : 'basic';
+            useStore.getState().setSubscriptionType(subscriptionType);
+            console.log('✅ [App] Updated subscription type from database after session restore:', subscriptionType, '(validated)');
             
             useStore.setState({ 
               userId, 
@@ -756,13 +758,12 @@ export default function App() {
               if (result.success) {
                 console.log('✅ [App] User profile created successfully');
                 
-                // Check premium status from users table after profile creation
+                // Validate premium status and update store after profile creation
                 try {
-                  const userProfile = await getUserProfile(userId);
-                  if (userProfile?.subscription_type) {
-                    useStore.getState().setSubscriptionType(userProfile.subscription_type);
-                    console.log('✅ [App] Updated subscription type from database:', userProfile.subscription_type);
-                  }
+                  const isPremium = await isPremiumUser(userId);
+                  const subscriptionType = isPremium ? 'premium' : 'basic';
+                  useStore.getState().setSubscriptionType(subscriptionType);
+                  console.log('✅ [App] Updated subscription type from database:', subscriptionType, '(validated)');
                 } catch (subscriptionError) {
                   console.error('❌ [App] Error checking subscription type:', subscriptionError);
                 }
@@ -844,13 +845,12 @@ export default function App() {
                 if (result.success) {
                   console.log('✅ [App] User profile created successfully in auth state change handler');
                   
-                  // Check premium status from users table after profile creation
+                  // Validate premium status and update store after profile creation
                   try {
-                    const userProfile = await getUserProfile(userId);
-                    if (userProfile?.subscription_type) {
-                      useStore.getState().setSubscriptionType(userProfile.subscription_type);
-                      console.log('✅ [App] Updated subscription type from database after login:', userProfile.subscription_type);
-                    }
+                    const isPremium = await isPremiumUser(userId);
+                    const subscriptionType = isPremium ? 'premium' : 'basic';
+                    useStore.getState().setSubscriptionType(subscriptionType);
+                    console.log('✅ [App] Updated subscription type from database after login:', subscriptionType, '(validated)');
                   } catch (subscriptionError) {
                     console.error('❌ [App] Error checking subscription type after login:', subscriptionError);
                   }

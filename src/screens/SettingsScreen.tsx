@@ -553,18 +553,16 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   manageButton: {
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#007AFF',
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 20,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#007AFF',
   },
   manageButtonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#ffffff',
   },
   cancelMessageContainer: {
     marginTop: 12,

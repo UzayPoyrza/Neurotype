@@ -30,6 +30,8 @@ import { ensureDailyRecommendations } from './src/services/recommendationService
 import { calculateUserStreak } from './src/services/progressService';
 import { getUserEmotionalFeedbackWithSessions } from './src/services/feedbackService';
 import { initializeStripe } from './src/services/stripe';
+import { scheduleDailyNotification, requestNotificationPermissions } from './src/services/notificationService';
+import * as Notifications from 'expo-notifications';
 import type { EmotionalFeedbackEntry } from './src/types';
 
 const Tab = createBottomTabNavigator();
@@ -256,6 +258,25 @@ export default function App() {
   const hasCompletedOnboarding = useStore(state => state.hasCompletedOnboarding);
   const [isInitialDataLoaded, setIsInitialDataLoaded] = useState(false);
 
+  // Set up notification handlers
+  useEffect(() => {
+    // Handle notification received while app is in foreground
+    const notificationReceivedListener = Notifications.addNotificationReceivedListener(notification => {
+      console.log('📬 [App] Notification received:', notification);
+    });
+
+    // Handle notification tapped/opened
+    const notificationResponseListener = Notifications.addNotificationResponseReceivedListener(response => {
+      console.log('👆 [App] Notification tapped:', response);
+      // You can navigate to a specific screen here if needed
+      // For example: navigation.navigate('Today');
+    });
+
+    return () => {
+      notificationReceivedListener.remove();
+      notificationResponseListener.remove();
+    };
+  }, []);
 
   // Test Supabase connection and session migration
   useEffect(() => {
@@ -481,6 +502,18 @@ export default function App() {
               useStore.getState().toggleReminder(); // Toggle from true to false
             }
             console.log('📱 [App] Updated reminder preference to:', preferences.reminder_enabled);
+          }
+          
+          // Restore scheduled notifications if reminder is enabled
+          if (preferences.reminder_enabled) {
+            console.log('📱 [App] Restoring scheduled notifications...');
+            const hasPermission = await requestNotificationPermissions();
+            if (hasPermission) {
+              await scheduleDailyNotification();
+              console.log('✅ [App] Daily notifications restored');
+            } else {
+              console.warn('⚠️ [App] Cannot restore notifications - permissions not granted');
+            }
           }
         } else {
           console.log('⚠️ [App] No preferences found, using defaults');
@@ -997,6 +1030,18 @@ export default function App() {
                 useStore.getState().toggleReminder(); // Toggle from true to false
               }
               console.log('📱 [App] Updated reminder preference to:', preferences.reminder_enabled);
+            }
+            
+            // Restore scheduled notifications if reminder is enabled
+            if (preferences.reminder_enabled) {
+              console.log('📱 [App] Restoring scheduled notifications...');
+              const hasPermission = await requestNotificationPermissions();
+              if (hasPermission) {
+                await scheduleDailyNotification();
+                console.log('✅ [App] Daily notifications restored');
+              } else {
+                console.warn('⚠️ [App] Cannot restore notifications - permissions not granted');
+              }
             }
           } else {
             console.log('📱 [App] No preferences found, using defaults');

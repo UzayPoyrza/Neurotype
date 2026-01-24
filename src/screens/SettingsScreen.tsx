@@ -13,6 +13,7 @@ import { createPortalSession } from '../services/paymentService';
 import { calculateUserStreak } from '../services/progressService';
 import { ensureDailyRecommendations } from '../services/recommendationService';
 import { getUserEmotionalFeedbackWithSessions } from '../services/feedbackService';
+import { scheduleDailyNotification, cancelDailyNotification, requestNotificationPermissions } from '../services/notificationService';
 
 type ProfileStackParamList = {
   ProfileMain: undefined;
@@ -273,7 +274,7 @@ export const SettingsScreen: React.FC = () => {
     }
   }, []);
 
-  // Handle reminder toggle with database save
+  // Handle reminder toggle with database save and notification scheduling
   const handleToggleReminder = React.useCallback(async (value: boolean) => {
     console.log('📱 [SettingsScreen] Toggling reminder to:', value);
     
@@ -282,6 +283,32 @@ export const SettingsScreen: React.FC = () => {
     // Update local state immediately for responsive UI
     if (currentValue !== value) {
       toggleReminder(); // This will toggle to the new value
+    }
+    
+    // Handle notifications
+    if (value) {
+      // Request permissions and schedule notification
+      const hasPermission = await requestNotificationPermissions();
+      if (hasPermission) {
+        const scheduled = await scheduleDailyNotification();
+        if (!scheduled) {
+          console.warn('⚠️ [SettingsScreen] Failed to schedule notification');
+          Alert.alert(
+            'Notification Permission',
+            'Please enable notifications in your device settings to receive daily reminders.',
+            [{ text: 'OK' }]
+          );
+        }
+      } else {
+        Alert.alert(
+          'Notification Permission Required',
+          'Please enable notifications in your device settings to receive daily reminders.',
+          [{ text: 'OK' }]
+        );
+      }
+    } else {
+      // Cancel notification
+      await cancelDailyNotification();
     }
     
     // Save to database
@@ -299,6 +326,12 @@ export const SettingsScreen: React.FC = () => {
         if (currentValue !== value) {
           toggleReminder(); // Toggle back
         }
+        // Revert notification state
+        if (value) {
+          await cancelDailyNotification();
+        } else {
+          await scheduleDailyNotification();
+        }
         // Show error alert to user
         showErrorAlert(ERROR_TITLES.DATABASE_ERROR, result.error || 'Failed to save reminder preference');
       }
@@ -307,6 +340,12 @@ export const SettingsScreen: React.FC = () => {
       // Revert if no user ID
       if (currentValue !== value) {
         toggleReminder(); // Toggle back
+      }
+      // Revert notification state
+      if (value) {
+        await cancelDailyNotification();
+      } else {
+        await scheduleDailyNotification();
       }
     }
   }, [userId, reminderEnabled, toggleReminder]);

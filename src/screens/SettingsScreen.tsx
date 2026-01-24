@@ -215,7 +215,7 @@ export const SettingsScreen: React.FC = () => {
                 ) : subscriptionDetails.cancelAt ? (
                   <View style={styles.cancelMessageContainer}>
                     <Text style={styles.cancelMessageText}>
-                      Your subscription ends at {new Date(subscriptionDetails.cancelAt).toLocaleDateString()}. Go to settings to cancel.
+                      Your subscription ends at {new Date(subscriptionDetails.cancelAt).toLocaleDateString()}. You can modify your subscription below.
                     </Text>
                   </View>
                 ) : subscriptionDetails.endDate ? (

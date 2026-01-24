@@ -876,7 +876,7 @@ export const ProfileScreen: React.FC = () => {
               {subscriptionType === 'premium' && subscriptionDetails?.cancelAt && (
                 <View style={styles.cancelMessageContainer}>
                   <Text style={styles.cancelMessageText}>
-                    Your subscription ends at {new Date(subscriptionDetails.cancelAt).toLocaleDateString()}. Go to settings to cancel.
+                    Your subscription ends at {new Date(subscriptionDetails.cancelAt).toLocaleDateString()}. Go to settings to manage your subscription.
                   </Text>
                 </View>
               )}
@@ -1425,17 +1425,14 @@ const styles = StyleSheet.create({
   },
   cancelMessageContainer: {
     marginTop: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#fff3cd',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ffc107',
+    paddingHorizontal: 0,
+    paddingVertical: 0,
   },
   cancelMessageText: {
     fontSize: 13,
-    color: '#856404',
+    color: '#8e8e93',
     lineHeight: 18,
+    fontStyle: 'italic',
   },
   profileSubtitle: {
     fontSize: 15,

@@ -39,7 +39,6 @@ export const SettingsScreen: React.FC = () => {
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
   const [backButtonWidth, setBackButtonWidth] = React.useState(0);
   const [showHowToUseModal, setShowHowToUseModal] = useState(false);
-  const [isLoadingPortal, setIsLoadingPortal] = useState(false);
   // Get subscription details from store (loaded during app initialization)
   const subscriptionCancelAt = useStore(state => state.subscriptionCancelAt);
   const subscriptionEndDate = useStore(state => state.subscriptionEndDate);
@@ -239,7 +238,8 @@ export const SettingsScreen: React.FC = () => {
 
   // Handle opening Stripe Customer Portal
   const handleManageSubscription = React.useCallback(async () => {
-    setIsLoadingPortal(true);
+    // Don't set loading state - keep button responsive
+    // The browser will open when API call completes
     try {
       console.log('🔐 Opening subscription management portal...');
       const { url } = await createPortalSession();
@@ -247,15 +247,18 @@ export const SettingsScreen: React.FC = () => {
       // Mark that portal was opened
       portalOpenedRef.current = true;
       
-      // Open the portal URL
-      const canOpen = await Linking.canOpenURL(url);
-      if (canOpen) {
-        await Linking.openURL(url);
-        console.log('✅ Portal opened successfully');
-      } else {
+      // Open the portal URL immediately (don't await - fire and forget)
+      Linking.openURL(url).catch((openError) => {
         portalOpenedRef.current = false; // Reset if failed to open
-        throw new Error('Cannot open portal URL');
-      }
+        console.error('❌ Error opening URL:', openError);
+        Alert.alert(
+          'Error',
+          'Failed to open subscription management. Please try again later.',
+          [{ text: 'OK' }]
+        );
+      });
+      
+      console.log('✅ Portal opened successfully');
     } catch (error: any) {
       portalOpenedRef.current = false; // Reset on error
       console.error('❌ Error opening portal:', error);
@@ -264,8 +267,6 @@ export const SettingsScreen: React.FC = () => {
         error.message || 'Failed to open subscription management. Please try again later.',
         [{ text: 'OK' }]
       );
-    } finally {
-      setIsLoadingPortal(false);
     }
   }, []);
 
@@ -402,13 +403,8 @@ export const SettingsScreen: React.FC = () => {
               <TouchableOpacity 
                 style={styles.manageButton}
                 onPress={handleManageSubscription}
-                disabled={isLoadingPortal}
               >
-                {isLoadingPortal ? (
-                  <ActivityIndicator color="#007AFF" />
-                ) : (
-                  <Text style={styles.manageButtonText}>Manage Subscription</Text>
-                )}
+                <Text style={styles.manageButtonText}>Manage Subscription</Text>
               </TouchableOpacity>
             )}
           </View>

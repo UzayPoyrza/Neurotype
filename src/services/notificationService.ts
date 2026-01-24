@@ -4,7 +4,7 @@
  */
 
 import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
+import { Platform, Linking } from 'react-native';
 
 export interface NotificationTime {
   hour: number; // 0-23
@@ -178,6 +178,22 @@ export async function isDailyNotificationScheduled(): Promise<boolean> {
   } catch (error) {
     console.error('❌ [Notifications] Error checking if notification is scheduled:', error);
     return false;
+  }
+}
+
+/**
+ * Open device settings for the app
+ */
+export async function openNotificationSettings(): Promise<void> {
+  try {
+    if (Platform.OS === 'ios') {
+      await Linking.openURL('app-settings:');
+    } else {
+      // Android
+      await Linking.openSettings();
+    }
+  } catch (error) {
+    console.error('❌ [Notifications] Error opening settings:', error);
   }
 }
 

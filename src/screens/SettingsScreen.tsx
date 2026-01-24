@@ -13,7 +13,7 @@ import { createPortalSession } from '../services/paymentService';
 import { calculateUserStreak } from '../services/progressService';
 import { ensureDailyRecommendations } from '../services/recommendationService';
 import { getUserEmotionalFeedbackWithSessions } from '../services/feedbackService';
-import { scheduleDailyNotification, cancelDailyNotification, requestNotificationPermissions } from '../services/notificationService';
+import { scheduleDailyNotification, cancelDailyNotification, requestNotificationPermissions, hasNotificationPermissions, openNotificationSettings } from '../services/notificationService';
 
 type ProfileStackParamList = {
   ProfileMain: undefined;
@@ -41,6 +41,7 @@ export const SettingsScreen: React.FC = () => {
   const [backButtonWidth, setBackButtonWidth] = React.useState(0);
   const [showHowToUseModal, setShowHowToUseModal] = useState(false);
   const [isLoadingPortal, setIsLoadingPortal] = useState(false);
+  const [hasNotificationPermission, setHasNotificationPermission] = React.useState(true);
   // Get subscription details from store (loaded during app initialization)
   const subscriptionCancelAt = useStore(state => state.subscriptionCancelAt);
   const subscriptionEndDate = useStore(state => state.subscriptionEndDate);
@@ -74,6 +75,38 @@ export const SettingsScreen: React.FC = () => {
   React.useEffect(() => {
     setCurrentScreen('settings');
   }, [setCurrentScreen]);
+
+  // Check notification permissions on mount and when screen comes into focus
+  const checkNotificationPermissions = React.useCallback(async () => {
+    const hasPermission = await hasNotificationPermissions();
+    setHasNotificationPermission(hasPermission);
+    
+    // If permissions are denied and reminder is enabled, turn it off
+    if (!hasPermission && reminderEnabled) {
+      console.log('⚠️ [Settings] Notifications denied, disabling reminder');
+      toggleReminder();
+      await cancelDailyNotification();
+      
+      // Update database if user ID exists
+      if (userId) {
+        await updateUserPreferences(userId, {
+          reminder_enabled: false,
+        });
+      }
+    }
+  }, [reminderEnabled, toggleReminder, userId]);
+
+  // Check permissions on mount
+  React.useEffect(() => {
+    checkNotificationPermissions();
+  }, [checkNotificationPermissions]);
+
+  // Check permissions when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      checkNotificationPermissions();
+    }, [checkNotificationPermissions])
+  );
 
   // Refresh subscription details when screen comes into focus (to catch any updates)
   useFocusEffect(
@@ -215,17 +248,23 @@ export const SettingsScreen: React.FC = () => {
     }
   }, [reloadUserData]);
 
-  // Listen for app state changes to detect return from Stripe portal
+  // Listen for app state changes to detect return from Stripe portal and check notification permissions
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+    const subscription = AppState.addEventListener('change', async (nextAppState: AppStateStatus) => {
       const previousAppState = appStateRef.current;
       appStateRef.current = nextAppState;
       
-      // If app came back to foreground and we had opened the portal, reload everything
+      // If app came back to foreground, check notification permissions
       if (
-        previousAppState === 'background' || previousAppState === 'inactive'
+        (previousAppState === 'background' || previousAppState === 'inactive') &&
+        nextAppState === 'active'
       ) {
-        if (nextAppState === 'active' && portalOpenedRef.current) {
+        // Check notification permissions when app returns to foreground
+        // (user might have enabled them in device settings)
+        await checkNotificationPermissions();
+        
+        // If we had opened the portal, reload everything
+        if (portalOpenedRef.current) {
           console.log('🔄 [Settings] App returned to foreground after Stripe portal, reloading app...');
           portalOpenedRef.current = false; // Reset flag
           reloadApp();
@@ -236,7 +275,7 @@ export const SettingsScreen: React.FC = () => {
     return () => {
       subscription.remove();
     };
-  }, [reloadUserData]);
+  }, [reloadUserData, checkNotificationPermissions]);
 
   // Handle opening Stripe Customer Portal
   const handleManageSubscription = React.useCallback(async () => {
@@ -280,6 +319,34 @@ export const SettingsScreen: React.FC = () => {
     
     const currentValue = reminderEnabled;
     
+    // If trying to enable, check permissions first
+    if (value) {
+      // Check current permission status
+      const hasPermission = await hasNotificationPermissions();
+      setHasNotificationPermission(hasPermission);
+      
+      if (!hasPermission) {
+        // Permissions denied - show alert with option to open settings
+        Alert.alert(
+          'Notification Permission Required',
+          'To receive daily reminders, please enable notifications in your device settings.',
+          [
+            {
+              text: 'Cancel',
+              style: 'cancel',
+            },
+            {
+              text: 'Open Settings',
+              onPress: async () => {
+                await openNotificationSettings();
+              },
+            },
+          ]
+        );
+        return; // Don't toggle if permissions are denied
+      }
+    }
+    
     // Update local state immediately for responsive UI
     if (currentValue !== value) {
       toggleReminder(); // This will toggle to the new value
@@ -293,17 +360,47 @@ export const SettingsScreen: React.FC = () => {
         const scheduled = await scheduleDailyNotification();
         if (!scheduled) {
           console.warn('⚠️ [SettingsScreen] Failed to schedule notification');
+          // Revert toggle if scheduling failed
+          if (currentValue !== value) {
+            toggleReminder();
+          }
           Alert.alert(
             'Notification Permission',
             'Please enable notifications in your device settings to receive daily reminders.',
-            [{ text: 'OK' }]
+            [
+              {
+                text: 'Cancel',
+                style: 'cancel',
+              },
+              {
+                text: 'Open Settings',
+                onPress: async () => {
+                  await openNotificationSettings();
+                },
+              },
+            ]
           );
         }
       } else {
+        // Revert toggle if permissions denied
+        if (currentValue !== value) {
+          toggleReminder();
+        }
         Alert.alert(
           'Notification Permission Required',
-          'Please enable notifications in your device settings to receive daily reminders.',
-          [{ text: 'OK' }]
+          'To receive daily reminders, please enable notifications in your device settings.',
+          [
+            {
+              text: 'Cancel',
+              style: 'cancel',
+            },
+            {
+              text: 'Open Settings',
+              onPress: async () => {
+                await openNotificationSettings();
+              },
+            },
+          ]
         );
       }
     } else {

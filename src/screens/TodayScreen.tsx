@@ -1600,7 +1600,7 @@ const styles = StyleSheet.create({
   },
   recommendedSessionContainer: {
     paddingHorizontal: 16,
-    paddingBottom: 20,
+    paddingBottom: 12,
   },
   recommendedSession: {
     backgroundColor: '#ffffff',
@@ -1648,8 +1648,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 12,
-    paddingBottom: 12,
+    paddingTop: 8,
+    paddingBottom: 8,
     paddingHorizontal: 16,
   },
   hoursRemainingText: {
@@ -1689,7 +1689,7 @@ const styles = StyleSheet.create({
   },
   alternativeSessionsList: {
     paddingTop: 0,
-    paddingBottom: 20,
+    paddingBottom: 12,
   },
   alternativeSession: {
     flexDirection: 'row',

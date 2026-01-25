@@ -108,10 +108,10 @@ export async function hasNotificationPermissions(): Promise<boolean> {
 
 /**
  * Schedule a daily notification at the specified time
- * @param time - The time to send the notification (default: 9:00 AM)
+ * @param time - The time to send the notification (default: 7:00 PM)
  */
 export async function scheduleDailyNotification(
-  time: NotificationTime = { hour: 9, minute: 0 }
+  time: NotificationTime = { hour: 19, minute: 0 }
 ): Promise<boolean> {
   try {
     // Ensure handler is set before using notifications

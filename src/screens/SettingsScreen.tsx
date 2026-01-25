@@ -44,7 +44,7 @@ export const SettingsScreen: React.FC = () => {
   const [showTimePickerModal, setShowTimePickerModal] = useState(false);
   const [isLoadingPortal, setIsLoadingPortal] = useState(false);
   const [hasNotificationPermission, setHasNotificationPermission] = React.useState(true);
-  const [reminderHour, setReminderHour] = useState(9);
+  const [reminderHour, setReminderHour] = useState(19);
   const [reminderMinute, setReminderMinute] = useState(0);
   // Get subscription details from store (loaded during app initialization)
   const subscriptionCancelAt = useStore(state => state.subscriptionCancelAt);

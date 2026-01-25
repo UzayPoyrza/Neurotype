@@ -509,8 +509,8 @@ export default function App() {
             console.log('📱 [App] Restoring scheduled notifications...');
             const hasPermission = await requestNotificationPermissions();
             if (hasPermission) {
-              // Use saved reminder time if available, otherwise default to 9:00 AM
-              let notificationTime = { hour: 9, minute: 0 };
+              // Use saved reminder time if available, otherwise default to 7:00 PM
+              let notificationTime = { hour: 19, minute: 0 };
               if (preferences.reminder_time) {
                 const [hour, minute] = preferences.reminder_time.split(':').map(Number);
                 if (!isNaN(hour) && !isNaN(minute)) {
@@ -1046,8 +1046,8 @@ export default function App() {
               console.log('📱 [App] Restoring scheduled notifications...');
               const hasPermission = await requestNotificationPermissions();
               if (hasPermission) {
-                // Use saved reminder time if available, otherwise default to 9:00 AM
-                let notificationTime = { hour: 9, minute: 0 };
+                // Use saved reminder time if available, otherwise default to 7:00 PM
+                let notificationTime = { hour: 19, minute: 0 };
                 if (preferences.reminder_time) {
                   const [hour, minute] = preferences.reminder_time.split(':').map(Number);
                   if (!isNaN(hour) && !isNaN(minute)) {

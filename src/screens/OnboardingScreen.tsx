@@ -18,6 +18,7 @@ import { PaymentPage } from '../components/PaymentPage';
 import { PremiumFeaturesPage } from '../components/PremiumFeaturesPage';
 import { TermsOfServiceScreen } from './TermsOfServiceScreen';
 import { PrivacyPolicyScreen } from './PrivacyPolicyScreen';
+import { ConsumerHealthDataPrivacyScreen } from './ConsumerHealthDataPrivacyScreen';
 
 interface OnboardingScreenProps {
   onFinish: (skipped?: boolean) => void;
@@ -1572,6 +1573,7 @@ const LoginPage: React.FC<{
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showHealthDataModal, setShowHealthDataModal] = useState(false);
   
   const fullText = "Time to get started on your journey.";
 
@@ -2311,6 +2313,13 @@ const LoginPage: React.FC<{
                 >
                   <Text style={styles.termsLink}>Privacy Policy</Text>
                 </TouchableOpacity>
+                <Text style={styles.termsText}>, and </Text>
+                <TouchableOpacity 
+                  onPress={() => setShowHealthDataModal(true)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.termsLink}>Consumer Health Data Privacy</Text>
+                </TouchableOpacity>
                 <Text style={styles.termsText}>.</Text>
               </View>
             </View>
@@ -2416,6 +2425,16 @@ const LoginPage: React.FC<{
         onRequestClose={() => setShowPrivacyModal(false)}
       >
         <PrivacyPolicyScreen onClose={() => setShowPrivacyModal(false)} />
+      </Modal>
+
+      {/* Consumer Health Data Privacy Modal */}
+      <Modal
+        visible={showHealthDataModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowHealthDataModal(false)}
+      >
+        <ConsumerHealthDataPrivacyScreen onClose={() => setShowHealthDataModal(false)} />
       </Modal>
     </View>
   );

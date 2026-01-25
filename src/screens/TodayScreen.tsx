@@ -88,6 +88,7 @@ export const TodayScreen: React.FC = () => {
   const moduleButtonFade = useRef(new Animated.Value(1)).current;
   const toastAnim = useRef(new Animated.Value(0)).current;
   const floatingButtonOffset = useRef(new Animated.Value(0)).current;
+  const hoursNumberScale = useRef(new Animated.Value(1)).current;
   
   const selectedModule = mentalHealthModules.find(m => m.id === selectedModuleId) || mentalHealthModules[0];
   
@@ -982,6 +983,50 @@ export const TodayScreen: React.FC = () => {
     return () => clearInterval(interval);
   }, [calculateHoursUntilMidnight]);
 
+  // Animate hours number pop every 6 seconds
+  useEffect(() => {
+    // Only animate if there are hours remaining (not 0)
+    if (hoursUntilNewRecommendations === 0) {
+      hoursNumberScale.setValue(1);
+      return;
+    }
+
+    // Ensure starting value
+    hoursNumberScale.setValue(1);
+
+    const triggerPopAnimation = () => {
+      // Reset to 1 to ensure clean animation
+      hoursNumberScale.setValue(1);
+      
+      Animated.sequence([
+        Animated.spring(hoursNumberScale, {
+          toValue: 1.15,
+          tension: 200,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+        Animated.spring(hoursNumberScale, {
+          toValue: 1,
+          tension: 200,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    };
+
+    // Trigger after a short delay, then every 6 seconds
+    const initialTimeout = setTimeout(() => {
+      triggerPopAnimation();
+    }, 1000);
+    
+    const interval = setInterval(triggerPopAnimation, 6000);
+
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(interval);
+    };
+  }, [hoursUntilNewRecommendations, hoursNumberScale]);
+
   // Get current date info
   const getCurrentDateInfo = () => {
     const today = new Date();
@@ -1214,13 +1259,29 @@ export const TodayScreen: React.FC = () => {
           <MergedCard.Section style={styles.mergedSectionHours} hideDividerBefore>
             <View style={styles.hoursRemainingContainer}>
               <ClockIcon size={14} color="#8e8e93" />
-              <Text style={styles.hoursRemainingText}>
-                {hoursUntilNewRecommendations === 0 
-                  ? 'New recommendations available' 
-                  : hoursUntilNewRecommendations === 1
-                  ? '1 hour until new recommendations'
-                  : `${hoursUntilNewRecommendations} hours until new recommendations`}
-              </Text>
+              {hoursUntilNewRecommendations === 0 ? (
+                <Text style={styles.hoursRemainingText}>
+                  New recommendations available
+                </Text>
+              ) : hoursUntilNewRecommendations === 1 ? (
+                <View style={styles.hoursRemainingTextRow}>
+                  <Animated.View style={{ transform: [{ scale: hoursNumberScale }] }}>
+                    <Text style={[styles.hoursRemainingText, styles.hoursRemainingTextBold]}>1 hour</Text>
+                  </Animated.View>
+                  <Text style={styles.hoursRemainingText}>
+                    {' until new recommendations'}
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.hoursRemainingTextRow}>
+                  <Animated.View style={{ transform: [{ scale: hoursNumberScale }] }}>
+                    <Text style={[styles.hoursRemainingText, styles.hoursRemainingTextBold]}>{hoursUntilNewRecommendations} hours</Text>
+                  </Animated.View>
+                  <Text style={styles.hoursRemainingText}>
+                    {' until new recommendations'}
+                  </Text>
+                </View>
+              )}
             </View>
           </MergedCard.Section>
         </MergedCard>
@@ -1595,8 +1656,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#8e8e93',
     fontWeight: '400',
-    marginLeft: 6,
     letterSpacing: -0.1,
+  },
+  hoursRemainingTextBold: {
+    fontWeight: '700',
+  },
+  hoursRemainingTextRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 6,
   },
   sessionPlayButton: {
     width: 44,

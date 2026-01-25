@@ -74,6 +74,8 @@ export const SessionCard: React.FC<SessionCardProps> = ({
     }
   };
 
+  const modalityColor = getModalityColor(session.modality);
+
   return (
     <TouchableOpacity
       style={[
@@ -85,8 +87,8 @@ export const SessionCard: React.FC<SessionCardProps> = ({
     >
       <View style={styles.content}>
         <View style={styles.leftSection}>
-          <View style={styles.playIcon}>
-            <Text style={styles.playIconText}>▶</Text>
+          <View style={[styles.playIcon, { backgroundColor: modalityColor + '15' }]}>
+            <Text style={[styles.playIconText, { color: modalityColor }]}>▶</Text>
           </View>
           <View style={styles.sessionInfo}>
             <Text style={styles.title}>{session.title}</Text>
@@ -111,7 +113,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
               <HeartOutlineIcon size={28} color="#8e8e93" />
             )}
           </TouchableOpacity>
-          <View style={styles.durationBadge}>
+          <View style={[styles.durationBadge, { backgroundColor: modalityColor }]}>
             <Text style={styles.durationText}>{session.durationMin}m</Text>
           </View>
         </View>
@@ -164,17 +166,14 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#f2f2f7',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
   },
   playIconText: {
     fontSize: 14,
-    color: '#007AFF',
     marginLeft: 1,
+    fontWeight: '600',
   },
   sessionInfo: {
     flex: 1,
@@ -239,13 +238,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   durationBadge: {
-    backgroundColor: '#007AFF',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 10,
     minWidth: 36,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 2,
   },
   durationText: {
     fontSize: 11,

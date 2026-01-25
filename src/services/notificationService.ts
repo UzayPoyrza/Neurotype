@@ -47,33 +47,45 @@ export async function requestNotificationPermissions(): Promise<boolean> {
     // Ensure handler is set before using notifications
     ensureNotificationHandler();
     
+    console.log('📱 [Notifications] Checking notification permissions...');
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    console.log(`📱 [Notifications] Current permission status: ${existingStatus}`);
     let finalStatus = existingStatus;
 
     if (existingStatus !== 'granted') {
+      console.log('📱 [Notifications] Requesting notification permissions...');
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
+      console.log(`📱 [Notifications] Permission request result: ${status}`);
     }
 
     if (finalStatus !== 'granted') {
-      console.warn('⚠️ [Notifications] Permission not granted');
+      console.warn(`⚠️ [Notifications] Permission not granted. Status: ${finalStatus}`);
       return false;
     }
 
     // On Android, we need to create a notification channel
     if (Platform.OS === 'android') {
+      console.log('📱 [Notifications] Setting up Android notification channel...');
       await Notifications.setNotificationChannelAsync('default', {
         name: 'Default',
         importance: Notifications.AndroidImportance.HIGH,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: '#FF231F7C',
       });
+      console.log('✅ [Notifications] Android notification channel created');
     }
 
     console.log('✅ [Notifications] Permissions granted');
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ [Notifications] Error requesting permissions:', error);
+    console.error('❌ [Notifications] Permission error details:', {
+      message: error?.message,
+      code: error?.code,
+      stack: error?.stack,
+      name: error?.name,
+    });
     return false;
   }
 }
@@ -116,11 +128,12 @@ export async function scheduleDailyNotification(
     }
 
     // Schedule the notification
-    // For daily repeating notifications, use type: 'daily' with hour and minute
+    // For daily repeating notifications, use type: 'calendar' with repeats: true
     const trigger: any = {
-      type: 'daily',
+      type: 'calendar',
       hour: time.hour,
       minute: time.minute,
+      repeats: true, // This makes it repeat daily
     };
     
     // Add channelId for Android
@@ -128,7 +141,11 @@ export async function scheduleDailyNotification(
       trigger.channelId = 'default';
     }
     
-    await Notifications.scheduleNotificationAsync({
+    const currentTime = new Date().toLocaleTimeString();
+    console.log(`📅 [Notifications] Scheduling daily notification with trigger:`, JSON.stringify(trigger, null, 2));
+    console.log(`🕐 [Notifications] Current time: ${currentTime}`);
+    
+    const notificationId = await Notifications.scheduleNotificationAsync({
       content: {
         title: 'Daily Meditation Reminder 🧘',
         body: 'Don\'t forget to complete your meditation today!',
@@ -139,10 +156,40 @@ export async function scheduleDailyNotification(
       identifier: NOTIFICATION_IDENTIFIER,
     });
 
-    console.log(`✅ [Notifications] Daily notification scheduled for ${time.hour}:${time.minute.toString().padStart(2, '0')}`);
+    console.log(`✅ [Notifications] Daily notification scheduled successfully. ID: ${notificationId}`);
+    console.log(`✅ [Notifications] Scheduled for ${time.hour}:${time.minute.toString().padStart(2, '0')} daily`);
+    console.log(`🕐 [Notifications] Current time: ${new Date().toLocaleTimeString()}`);
+    
+    // Verify the notification was actually scheduled
+    const scheduledNotifications = await getScheduledNotifications();
+    const ourNotification = scheduledNotifications.find(n => n.identifier === NOTIFICATION_IDENTIFIER);
+    
+    if (ourNotification) {
+      console.log(`✅ [Notifications] Verification: Notification found in scheduled list`);
+      console.log(`🕐 [Notifications] Current time: ${new Date().toLocaleTimeString()}`);
+      console.log(`📋 [Notifications] Notification details:`, JSON.stringify({
+        identifier: ourNotification.identifier,
+        trigger: ourNotification.trigger,
+        content: ourNotification.content,
+      }, null, 2));
+    } else {
+      console.warn(`⚠️ [Notifications] Warning: Notification not found in scheduled list after scheduling`);
+      console.log(`🕐 [Notifications] Current time: ${new Date().toLocaleTimeString()}`);
+      console.log(`📋 [Notifications] All scheduled notifications:`, JSON.stringify(scheduledNotifications.map(n => ({
+        identifier: n.identifier,
+        trigger: n.trigger,
+      })), null, 2));
+    }
+    
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ [Notifications] Error scheduling notification:', error);
+    console.error('❌ [Notifications] Error details:', {
+      message: error?.message,
+      code: error?.code,
+      stack: error?.stack,
+      name: error?.name,
+    });
     return false;
   }
 }
@@ -155,10 +202,26 @@ export async function cancelDailyNotification(): Promise<void> {
     // Ensure handler is set before using notifications
     ensureNotificationHandler();
     
+    console.log(`📱 [Notifications] Cancelling notification with identifier: ${NOTIFICATION_IDENTIFIER}`);
     await Notifications.cancelScheduledNotificationAsync(NOTIFICATION_IDENTIFIER);
-    console.log('✅ [Notifications] Daily notification cancelled');
-  } catch (error) {
+    
+    // Verify it was cancelled
+    const scheduledNotifications = await getScheduledNotifications();
+    const stillExists = scheduledNotifications.some(n => n.identifier === NOTIFICATION_IDENTIFIER);
+    
+    if (stillExists) {
+      console.warn(`⚠️ [Notifications] Warning: Notification still exists after cancellation attempt`);
+    } else {
+      console.log('✅ [Notifications] Daily notification cancelled successfully');
+    }
+  } catch (error: any) {
     console.error('❌ [Notifications] Error cancelling notification:', error);
+    console.error('❌ [Notifications] Cancellation error details:', {
+      message: error?.message,
+      code: error?.code,
+      stack: error?.stack,
+      name: error?.name,
+    });
   }
 }
 

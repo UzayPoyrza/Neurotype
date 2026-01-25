@@ -34,9 +34,16 @@ export const SessionCard: React.FC<SessionCardProps> = ({
         return '#af52de'; // Purple
       case 'mindfulness':
         return '#ff2d92'; // Pink
+      case 'mantra':
+        return '#ff9500'; // Orange
       default:
         return '#8e8e93'; // Gray
     }
+  };
+
+  const getLightBorderColor = (color: string) => {
+    // Add opacity to make border lighter (80 = ~50% opacity)
+    return color + '80';
   };
 
   const getModalityIcon = (modality: string) => {
@@ -84,9 +91,10 @@ export const SessionCard: React.FC<SessionCardProps> = ({
           <View style={styles.sessionInfo}>
             <Text style={styles.title}>{session.title}</Text>
             <View style={styles.metaInfo}>
-              <View style={[styles.modalityBadge, { backgroundColor: getModalityColor(session.modality) }]}>
-                <Text style={styles.modalityIcon}>{getModalityIcon(session.modality)}</Text>
-                <Text style={styles.modalityText}>{session.modality}</Text>
+              <View style={[styles.modalityBadge, styles.modalityBadgeColored, { borderColor: getLightBorderColor(getModalityColor(session.modality)) }]}>
+                <Text style={styles.modalityText}>
+                  {getModalityIcon(session.modality)} {session.modality}
+                </Text>
               </View>
             </View>
           </View>
@@ -186,20 +194,26 @@ const styles = StyleSheet.create({
   modalityBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
     marginRight: 6,
   },
-  modalityIcon: {
-    fontSize: 10,
-    marginRight: 2,
+  modalityBadgeColored: {
+    backgroundColor: '#FAFAFA',
   },
   modalityText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
-    color: '#ffffff',
     textTransform: 'capitalize',
+    letterSpacing: -0.06,
+    color: '#1C1C1E',
   },
   goalText: {
     fontSize: 12,

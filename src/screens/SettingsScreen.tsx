@@ -13,7 +13,7 @@ import { createPortalSession } from '../services/paymentService';
 import { calculateUserStreak } from '../services/progressService';
 import { ensureDailyRecommendations } from '../services/recommendationService';
 import { getUserEmotionalFeedbackWithSessions } from '../services/feedbackService';
-import { scheduleDailyNotification, cancelDailyNotification, requestNotificationPermissions, hasNotificationPermissions, openNotificationSettings } from '../services/notificationService';
+import { scheduleDailyNotification, cancelDailyNotification, requestNotificationPermissions, hasNotificationPermissions, openNotificationSettings, scheduleTestNotification } from '../services/notificationService';
 
 type ProfileStackParamList = {
   ProfileMain: undefined;
@@ -447,6 +447,16 @@ export const SettingsScreen: React.FC = () => {
     }
   }, [userId, reminderEnabled, toggleReminder]);
 
+  // Handle test notification
+  const handleTestNotification = React.useCallback(async () => {
+    const scheduled = await scheduleTestNotification(5); // 5 seconds
+    if (scheduled) {
+      Alert.alert('Test Notification', 'Notification will appear in 5 seconds!');
+    } else {
+      Alert.alert('Error', 'Failed to schedule test notification. Make sure notifications are enabled.');
+    }
+  }, []);
+
   return (
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
       {/* Header */}
@@ -482,6 +492,14 @@ export const SettingsScreen: React.FC = () => {
               thumbColor={reminderEnabled ? '#ffffff' : '#ffffff'}
             />
           </View>
+          
+          {/* Test Notification Button */}
+          <TouchableOpacity 
+            style={styles.testButton}
+            onPress={handleTestNotification}
+          >
+            <Text style={styles.testButtonText}>Test Notification (5s)</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Subscription */}
@@ -1017,5 +1035,24 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     color: '#007AFF',
+  },
+  testButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginHorizontal: 12,
+    marginTop: 8,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  testButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
   },
 });

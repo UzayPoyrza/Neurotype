@@ -28,6 +28,8 @@ function ensureNotificationHandler() {
           shouldShowAlert: true,
           shouldPlaySound: true,
           shouldSetBadge: true,
+          shouldShowBanner: true,
+          shouldShowList: true,
         }),
       });
       notificationHandlerSet = true;
@@ -114,6 +116,18 @@ export async function scheduleDailyNotification(
     }
 
     // Schedule the notification
+    // For daily repeating notifications, use type: 'daily' with hour and minute
+    const trigger: any = {
+      type: 'daily',
+      hour: time.hour,
+      minute: time.minute,
+    };
+    
+    // Add channelId for Android
+    if (Platform.OS === 'android') {
+      trigger.channelId = 'default';
+    }
+    
     await Notifications.scheduleNotificationAsync({
       content: {
         title: 'Time for Meditation 🧘',
@@ -121,12 +135,7 @@ export async function scheduleDailyNotification(
         sound: true,
         priority: Notifications.AndroidNotificationPriority.HIGH,
       },
-      trigger: {
-        type: 'daily',
-        hour: time.hour,
-        minute: time.minute,
-        repeats: true,
-      },
+      trigger: trigger,
       identifier: NOTIFICATION_IDENTIFIER,
     });
 
@@ -194,6 +203,53 @@ export async function openNotificationSettings(): Promise<void> {
     }
   } catch (error) {
     console.error('❌ [Notifications] Error opening settings:', error);
+  }
+}
+
+/**
+ * Schedule a test notification X seconds from now
+ * Useful for testing notification functionality
+ * @param secondsFromNow - Number of seconds from now to schedule the notification (default: 5)
+ */
+export async function scheduleTestNotification(secondsFromNow: number = 5): Promise<boolean> {
+  try {
+    ensureNotificationHandler();
+    
+    // Request permissions if not already granted
+    const hasPermission = await requestNotificationPermissions();
+    if (!hasPermission) {
+      console.warn('⚠️ [Notifications] Cannot schedule test notification without permissions');
+      return false;
+    }
+
+    // Schedule the test notification
+    // Create a trigger with proper type
+    const trigger: any = {
+      type: 'timeInterval',
+      seconds: secondsFromNow,
+    };
+    
+    // Add channelId for Android
+    if (Platform.OS === 'android') {
+      trigger.channelId = 'default';
+    }
+    
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'Time for Meditation 🧘',
+        body: 'Take a moment to practice mindfulness and check in with yourself today.',
+        sound: true,
+        priority: Notifications.AndroidNotificationPriority.HIGH,
+      },
+      trigger: trigger,
+      identifier: 'test-notification',
+    });
+
+    console.log(`✅ [Notifications] Test notification scheduled for ${secondsFromNow} second(s) from now`);
+    return true;
+  } catch (error) {
+    console.error('❌ [Notifications] Error scheduling test notification:', error);
+    return false;
   }
 }
 

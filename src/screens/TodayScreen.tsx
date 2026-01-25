@@ -17,6 +17,7 @@ import { HowToUseModal } from '../components/HowToUseModal';
 import { MeditationDetailModal } from '../components/MeditationDetailModal';
 import { MergedCard } from '../components/MergedCard';
 import { LineGraphIcon } from '../components/icons/LineGraphIcon';
+import { ClockIcon } from '../components/icons/ClockIcon';
 import { ShimmerSessionCard, ShimmerAlternativeSessionCard, ShimmerProgressPathCard } from '../components/ShimmerSkeleton';
 import { ensureDailyRecommendations, getDailyRecommendations } from '../services/recommendationService';
 import { useUserId } from '../hooks/useUserId';
@@ -64,6 +65,7 @@ export const TodayScreen: React.FC = () => {
   const [showHowToUseModal, setShowHowToUseModal] = useState(false);
   const [showModuleToast, setShowModuleToast] = useState(false);
   const [toastModuleName, setToastModuleName] = useState('');
+  const [hoursUntilNewRecommendations, setHoursUntilNewRecommendations] = useState(0);
   const prevModuleIdRef = useRef<string | null>(null);
   const recommendationCheckInProgressRef = useRef<Record<string, boolean>>({});
   
@@ -955,6 +957,31 @@ export const TodayScreen: React.FC = () => {
     );
   }
 
+  // Calculate hours until midnight (when new recommendations are generated)
+  const calculateHoursUntilMidnight = useCallback(() => {
+    const now = new Date();
+    const midnight = new Date();
+    midnight.setHours(24, 0, 0, 0);
+    const diffMs = midnight.getTime() - now.getTime();
+    const diffHours = diffMs / (1000 * 60 * 60);
+    return Math.max(0, Math.ceil(diffHours));
+  }, []);
+
+  // Update hours until new recommendations
+  useEffect(() => {
+    const updateHours = () => {
+      setHoursUntilNewRecommendations(calculateHoursUntilMidnight());
+    };
+
+    // Update immediately
+    updateHours();
+
+    // Update every minute to keep it accurate
+    const interval = setInterval(updateHours, 60000);
+
+    return () => clearInterval(interval);
+  }, [calculateHoursUntilMidnight]);
+
   // Get current date info
   const getCurrentDateInfo = () => {
     const today = new Date();
@@ -1180,6 +1207,20 @@ export const TodayScreen: React.FC = () => {
                   <Text style={styles.alternativeSessionTitle}>No alternative sessions available</Text>
                 </View>
               )}
+            </View>
+          </MergedCard.Section>
+
+          {/* Hours until new recommendations */}
+          <MergedCard.Section style={styles.mergedSectionHours} hideDividerBefore>
+            <View style={styles.hoursRemainingContainer}>
+              <ClockIcon size={14} color="#8e8e93" />
+              <Text style={styles.hoursRemainingText}>
+                {hoursUntilNewRecommendations === 0 
+                  ? 'New recommendations available' 
+                  : hoursUntilNewRecommendations === 1
+                  ? '1 hour until new recommendations'
+                  : `${hoursUntilNewRecommendations} hours until new recommendations`}
+              </Text>
             </View>
           </MergedCard.Section>
         </MergedCard>
@@ -1537,6 +1578,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#8e8e93',
     fontWeight: '400',
+  },
+  mergedSectionHours: {
+    paddingTop: 0,
+    paddingBottom: 0,
+  },
+  hoursRemainingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 12,
+    paddingBottom: 12,
+    paddingHorizontal: 16,
+  },
+  hoursRemainingText: {
+    fontSize: 12,
+    color: '#8e8e93',
+    fontWeight: '400',
+    marginLeft: 6,
+    letterSpacing: -0.1,
   },
   sessionPlayButton: {
     width: 44,

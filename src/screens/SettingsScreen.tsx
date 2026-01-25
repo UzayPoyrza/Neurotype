@@ -57,14 +57,14 @@ export const SettingsScreen: React.FC = () => {
   const handleResetAccount = React.useCallback(() => {
     Alert.alert(
       'Reset Account',
-      'This will permanently delete all your progress, preferences, and saved data. This action cannot be undone.',
+      'This will permanently delete all your progress, preferences, and saved sessions. You will start fresh, but your account will remain. This action cannot be undone.',
       [
         {
           text: 'Cancel',
           style: 'cancel',
         },
         {
-          text: 'Reset Everything',
+          text: 'Reset Account',
           style: 'destructive',
           onPress: () => {
             resetAppData();
@@ -74,6 +74,28 @@ export const SettingsScreen: React.FC = () => {
       { cancelable: true }
     );
   }, [resetAppData]);
+
+  const handleDeleteAccount = React.useCallback(() => {
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your account and all associated data. This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: () => {
+            // TODO: Implement account deletion
+            Alert.alert('Not Implemented', 'Account deletion is not yet implemented.');
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  }, []);
 
   // Set screen context when component mounts
   React.useEffect(() => {
@@ -666,20 +688,24 @@ export const SettingsScreen: React.FC = () => {
           <Text style={styles.sectionTitle}>Clear Data</Text>
 
           <View style={styles.resetCard}>
-            <Text style={styles.resetTitle}>Reset Account</Text>
+            <Text style={styles.resetTitle}>Reset or Delete Account</Text>
             <Text style={styles.resetDescription}>
-              Remove all personal progress, preferences, and saved sessions to start fresh.
+              Reset your account to start fresh, or permanently delete your account and all data.
             </Text>
 
             <View style={styles.resetWarningBox}>
               <Text style={styles.resetWarningTitle}>Warning</Text>
               <Text style={styles.resetWarningText}>
-                This action is permanent. Once you reset, your data cannot be recovered.
+                These actions are permanent. Once you reset or delete, your data cannot be recovered.
               </Text>
             </View>
 
             <TouchableOpacity style={styles.resetButton} onPress={handleResetAccount}>
               <Text style={styles.resetButtonText}>Reset Account</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteAccount}>
+              <Text style={styles.deleteButtonText}>Delete Account</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1095,12 +1121,26 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   resetButton: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#ff3b30',
+    marginBottom: 12,
+  },
+  resetButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#ff3b30',
+  },
+  deleteButton: {
     backgroundColor: '#ff3b30',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
   },
-  resetButtonText: {
+  deleteButtonText: {
     fontSize: 17,
     fontWeight: '600',
     color: '#ffffff',

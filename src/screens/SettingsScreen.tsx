@@ -120,9 +120,38 @@ export const SettingsScreen: React.FC = () => {
               
               if (result.success) {
                 Alert.alert(
-                  'Request Submitted',
-                  'Your account deletion request has been submitted and is being processed. This may take up to 24 hours to complete. You will be notified once the deletion is complete.',
-                  [{ text: 'OK' }]
+                  '24 Hours',
+                  'Your account deletion request has been submitted. This will be processed within 24 hours.',
+                  [
+                    {
+                      text: 'OK',
+                      onPress: async () => {
+                        // Logout user
+                        try {
+                          console.log('🔄 [Settings] Logging out after delete request...');
+                          const signOutResult = await signOut();
+                          
+                          if (signOutResult.success) {
+                            // Clear local state
+                            useStore.setState({
+                              userId: null,
+                              isLoggedIn: false,
+                              hasCompletedOnboarding: false,
+                              emotionalFeedbackHistory: [],
+                            });
+                            useStore.getState().clearSessionsCache();
+                            useStore.getState().clearCalendarCache();
+                            useStore.setState({ completedTodaySessions: {} });
+                            console.log('✅ [Settings] Logged out successfully after delete request');
+                          } else {
+                            console.warn('⚠️ [Settings] Failed to logout after delete request:', signOutResult.error);
+                          }
+                        } catch (logoutError: any) {
+                          console.error('❌ [Settings] Error logging out after delete request:', logoutError);
+                        }
+                      },
+                    },
+                  ]
                 );
               } else {
                 showErrorAlert(ERROR_TITLES.DATABASE_ERROR, result.error || 'Failed to submit deletion request. Please try again.');

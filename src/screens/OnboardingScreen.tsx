@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, Image, Animated, StatusBar, TouchableOpacity, ScrollView, Dimensions, TextInput, KeyboardAvoidingView, Platform, Easing, Alert, Modal } from 'react-native';
+import { View, Text, StyleSheet, Image, Animated, StatusBar, TouchableOpacity, ScrollView, Dimensions, TextInput, KeyboardAvoidingView, Platform, Easing, Alert, Modal, Linking } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as WebBrowser from 'expo-web-browser';
 import Svg, { Path } from 'react-native-svg';
@@ -16,9 +16,6 @@ import { supabase } from '../services/supabase';
 import { getUserProfile, createUserProfile, isPremiumUser } from '../services/userService';
 import { PaymentPage } from '../components/PaymentPage';
 import { PremiumFeaturesPage } from '../components/PremiumFeaturesPage';
-import { TermsOfServiceScreen } from './TermsOfServiceScreen';
-import { PrivacyPolicyScreen } from './PrivacyPolicyScreen';
-import { ConsumerHealthDataPrivacyScreen } from './ConsumerHealthDataPrivacyScreen';
 
 interface OnboardingScreenProps {
   onFinish: (skipped?: boolean) => void;
@@ -1571,9 +1568,6 @@ const LoginPage: React.FC<{
   const loadingOpacity = useRef(new Animated.Value(0)).current;
   const spinnerRotation = useRef(new Animated.Value(0)).current;
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [showTermsModal, setShowTermsModal] = useState(false);
-  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
-  const [showHealthDataModal, setShowHealthDataModal] = useState(false);
   
   const fullText = "Time to get started on your journey.";
 
@@ -2404,21 +2398,21 @@ const LoginPage: React.FC<{
                   By clicking this box, you accept our{' '}
                 </Text>
                 <TouchableOpacity 
-                  onPress={() => setShowTermsModal(true)}
+                  onPress={() => Linking.openURL('https://www.neurotypeapp.com/terms-of-service.html')}
                   activeOpacity={0.7}
                 >
                   <Text style={styles.termsLink}>Terms of Service</Text>
                 </TouchableOpacity>
                 <Text style={styles.termsText}> and </Text>
                 <TouchableOpacity 
-                  onPress={() => setShowPrivacyModal(true)}
+                  onPress={() => Linking.openURL('https://www.neurotypeapp.com/privacy-policy.html')}
                   activeOpacity={0.7}
                 >
                   <Text style={styles.termsLink}>Privacy Policy</Text>
                 </TouchableOpacity>
                 <Text style={styles.termsText}>, and </Text>
                 <TouchableOpacity 
-                  onPress={() => setShowHealthDataModal(true)}
+                  onPress={() => Linking.openURL('https://www.neurotypeapp.com/consumer-health-data-privacy-policy.html')}
                   activeOpacity={0.7}
                 >
                   <Text style={styles.termsLink}>Consumer Health Data Privacy</Text>
@@ -2510,35 +2504,6 @@ const LoginPage: React.FC<{
         </Animated.View>
       </Modal>
 
-      {/* Terms of Service Modal */}
-      <Modal
-        visible={showTermsModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowTermsModal(false)}
-      >
-        <TermsOfServiceScreen onClose={() => setShowTermsModal(false)} />
-      </Modal>
-
-      {/* Privacy Policy Modal */}
-      <Modal
-        visible={showPrivacyModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowPrivacyModal(false)}
-      >
-        <PrivacyPolicyScreen onClose={() => setShowPrivacyModal(false)} />
-      </Modal>
-
-      {/* Consumer Health Data Privacy Modal */}
-      <Modal
-        visible={showHealthDataModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowHealthDataModal(false)}
-      >
-        <ConsumerHealthDataPrivacyScreen onClose={() => setShowHealthDataModal(false)} />
-      </Modal>
     </View>
   );
 };

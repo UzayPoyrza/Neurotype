@@ -112,6 +112,26 @@ export const SettingsScreen: React.FC = () => {
     }, [checkNotificationPermissions])
   );
 
+  // Load reminder time from preferences when screen loads
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadReminderTime = async () => {
+        if (userId) {
+          const preferences = await getUserPreferences(userId);
+          if (preferences?.reminder_time) {
+            const [hour, minute] = preferences.reminder_time.split(':').map(Number);
+            if (!isNaN(hour) && !isNaN(minute)) {
+              setReminderHour(hour);
+              setReminderMinute(minute);
+              console.log(`✅ [Settings] Loaded reminder time: ${hour}:${minute.toString().padStart(2, '0')}`);
+            }
+          }
+        }
+      };
+      loadReminderTime();
+    }, [userId])
+  );
+
   // Refresh subscription details when screen comes into focus (to catch any updates)
   useFocusEffect(
     React.useCallback(() => {
@@ -361,7 +381,9 @@ export const SettingsScreen: React.FC = () => {
       // Request permissions and schedule notification
       const hasPermission = await requestNotificationPermissions();
       if (hasPermission) {
-        const scheduled = await scheduleDailyNotification();
+        // Use saved reminder time if available, otherwise use current state
+        const timeToUse = { hour: reminderHour, minute: reminderMinute };
+        const scheduled = await scheduleDailyNotification(timeToUse);
         if (!scheduled) {
           console.warn('⚠️ [SettingsScreen] Failed to schedule notification');
           // Revert toggle if scheduling failed
@@ -449,23 +471,36 @@ export const SettingsScreen: React.FC = () => {
         await scheduleDailyNotification();
       }
     }
-  }, [userId, reminderEnabled, toggleReminder]);
+  }, [userId, reminderEnabled, toggleReminder, reminderHour, reminderMinute]);
 
   // Handle time picker confirmation
   const handleTimeConfirm = React.useCallback(async (hour: number, minute: number) => {
     setReminderHour(hour);
     setReminderMinute(minute);
     
+    // Format time as "HH:MM" for database storage
+    const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+    
+    // Save time to database
+    if (userId) {
+      console.log('💾 [Settings] Saving reminder time to database...');
+      const result = await updateUserPreferences(userId, {
+        reminder_time: timeString,
+      });
+      
+      if (!result.success) {
+        console.error('❌ [Settings] Failed to save reminder time:', result.error);
+        Alert.alert('Error', 'Failed to save reminder time. Please try again.');
+        return;
+      }
+      console.log('✅ [Settings] Reminder time saved successfully');
+    }
+    
     // If reminder is enabled, reschedule with new time
     if (reminderEnabled) {
       const scheduled = await scheduleDailyNotification({ hour, minute });
       if (scheduled) {
         console.log(`✅ [Settings] Notification rescheduled for ${hour}:${minute.toString().padStart(2, '0')}`);
-        // Optionally save to database if you have a reminder_time field
-        if (userId) {
-          // You can add reminder_time to user preferences if needed
-          // await updateUserPreferences(userId, { reminder_time: `${hour}:${minute}` });
-        }
       } else {
         Alert.alert('Error', 'Failed to update notification time. Please try again.');
       }

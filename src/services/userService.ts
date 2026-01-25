@@ -15,6 +15,7 @@ export interface UserProfile {
 export interface UserPreferences {
   user_id: string;
   reminder_enabled: boolean;
+  reminder_time?: string; // Format: "HH:MM" (24-hour format, e.g., "09:00" or "21:30")
 }
 
 export interface SubscriptionData {
@@ -104,6 +105,7 @@ export async function getUserPreferences(userId: string): Promise<UserPreference
         return {
           user_id: userId,
           reminder_enabled: false,
+          reminder_time: undefined,
         };
       }
       console.error('Error fetching user preferences:', error);
@@ -113,6 +115,7 @@ export async function getUserPreferences(userId: string): Promise<UserPreference
     return {
       user_id: data.user_id,
       reminder_enabled: data.reminder_enabled,
+      reminder_time: data.reminder_time || undefined,
     };
   } catch (error) {
     console.error('Error in getUserPreferences:', error);

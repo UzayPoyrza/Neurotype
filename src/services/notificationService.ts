@@ -130,8 +130,8 @@ export async function scheduleDailyNotification(
     
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: 'Time for Meditation 🧘',
-        body: 'Take a moment to practice mindfulness and check in with yourself today.',
+        title: 'Daily Meditation Reminder 🧘',
+        body: 'Don\'t forget to complete your meditation today!',
         sound: true,
         priority: Notifications.AndroidNotificationPriority.HIGH,
       },

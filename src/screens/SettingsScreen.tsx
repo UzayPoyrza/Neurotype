@@ -1106,7 +1106,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   logoutButton: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#007AFF',
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 20,
@@ -1121,10 +1121,10 @@ const styles = StyleSheet.create({
   logoutButtonText: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#007AFF',
+    color: '#ffffff',
   },
   howToUseButton: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#007AFF',
     borderRadius: 16,
     padding: 16,
     marginHorizontal: 12,
@@ -1139,7 +1139,7 @@ const styles = StyleSheet.create({
   howToUseButtonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#ffffff',
   },
   customiseButton: {
     backgroundColor: '#007AFF',

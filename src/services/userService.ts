@@ -33,6 +33,12 @@ export interface SubscriptionDetails {
   status: string | null;
 }
 
+export interface UserConsentData {
+  termsAcceptedAt: string; // ISO timestamp
+  privacyAcceptedAt: string; // ISO timestamp
+  healthDataPrivacyAcceptedAt: string; // ISO timestamp
+}
+
 /**
  * Get user profile
  * Includes 5-second timeout to prevent hanging
@@ -157,7 +163,8 @@ export async function updateUserPreferences(
 export async function createUserProfile(
   userId: string,
   email: string,
-  firstName?: string
+  firstName?: string,
+  consentData?: UserConsentData
 ): Promise<{ success: boolean; error?: string }> {
   const timeoutMs = 15000; // 15 seconds
   
@@ -219,6 +226,47 @@ export async function createUserProfile(
       } catch (prefError) {
         console.warn('⚠️ [createUserProfile] Exception creating default preferences (non-critical):', prefError);
         // Don't fail the entire operation if preferences creation fails
+      }
+
+      // Record user consents if provided
+      if (consentData) {
+        console.log('🔵 [createUserProfile] Recording user consents...');
+        try {
+          const consents = [
+            {
+              user_id: userId,
+              consent_type: 'terms_of_service',
+              accepted_at: consentData.termsAcceptedAt,
+            },
+            {
+              user_id: userId,
+              consent_type: 'privacy_policy',
+              accepted_at: consentData.privacyAcceptedAt,
+            },
+            {
+              user_id: userId,
+              consent_type: 'consumer_health_data_privacy',
+              accepted_at: consentData.healthDataPrivacyAcceptedAt,
+            },
+          ];
+
+          const { error: consentError } = await supabase
+            .from('user_consents')
+            .insert(consents);
+
+          if (consentError) {
+            console.error('❌ [createUserProfile] Error recording user consents:', consentError);
+            // Don't fail the entire operation if consent recording fails, but log it
+            // This is important for compliance, so we should retry or handle it
+          } else {
+            console.log('✅ [createUserProfile] User consents recorded successfully');
+          }
+        } catch (consentError) {
+          console.error('❌ [createUserProfile] Exception recording user consents:', consentError);
+          // Don't fail the entire operation, but this should be addressed
+        }
+      } else {
+        console.warn('⚠️ [createUserProfile] No consent data provided - consents not recorded');
       }
 
       console.log('✅ [createUserProfile] User profile creation completed successfully');

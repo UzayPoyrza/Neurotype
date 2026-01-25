@@ -1754,17 +1754,27 @@ const LoginPage: React.FC<{
           const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || '';
           const firstName = fullName?.trim() ? fullName.trim().split(' ')[0] : undefined;
           
+          // Capture consent timestamps (all three are accepted at the same time when user checks the box)
+          const consentTimestamp = new Date().toISOString();
+          const consentData = {
+            termsAcceptedAt: consentTimestamp,
+            privacyAcceptedAt: consentTimestamp,
+            healthDataPrivacyAcceptedAt: consentTimestamp,
+          };
+          
           console.log('🔵 [Onboarding] Creating user profile immediately with:', {
             userId: result.userId,
             email: session.user.email || '',
             firstName,
+            consentData,
           });
           
           // Wait for profile creation to complete (has 15-second timeout)
           const profileResult = await createUserProfile(
             result.userId,
             session.user.email || '',
-            firstName
+            firstName,
+            consentData
           );
           
           if (!profileResult.success) {
@@ -1853,17 +1863,27 @@ const LoginPage: React.FC<{
                 const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || '';
                 const firstName = fullName?.trim() ? fullName.trim().split(' ')[0] : undefined;
                 
+                // Capture consent timestamps (all three are accepted at the same time when user checks the box)
+                const consentTimestamp = new Date().toISOString();
+                const consentData = {
+                  termsAcceptedAt: consentTimestamp,
+                  privacyAcceptedAt: consentTimestamp,
+                  healthDataPrivacyAcceptedAt: consentTimestamp,
+                };
+                
                 console.log('🔵 [Onboarding] Creating user profile in checkSessionImmediately with:', {
                   userId,
                   email: session.user.email || '',
                   firstName,
+                  consentData,
                 });
                 
                 // Wait for profile creation to complete (has 15-second timeout)
                 const profileResult = await createUserProfile(
                   userId,
                   session.user.email || '',
-                  firstName
+                  firstName,
+                  consentData
                 );
                 
                 if (!profileResult.success) {
@@ -2000,17 +2020,27 @@ const LoginPage: React.FC<{
                   const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || '';
                   const firstName = fullName?.trim() ? fullName.trim().split(' ')[0] : undefined;
                   
+                  // Capture consent timestamps (all three are accepted at the same time when user checks the box)
+                  const consentTimestamp = new Date().toISOString();
+                  const consentData = {
+                    termsAcceptedAt: consentTimestamp,
+                    privacyAcceptedAt: consentTimestamp,
+                    healthDataPrivacyAcceptedAt: consentTimestamp,
+                  };
+                  
                   console.log('🔵 [Onboarding] Creating user profile with:', {
                     userId,
                     email: session.user.email || '',
                     firstName,
+                    consentData,
                   });
                   
                   // Wait for profile creation to complete (has 15-second timeout)
                   const profileResult = await createUserProfile(
                     userId,
                     session.user.email || '',
-                    firstName
+                    firstName,
+                    consentData
                   );
                   
                   if (!profileResult.success) {
@@ -2196,11 +2226,84 @@ const LoginPage: React.FC<{
       
       const result = await signInWithApple();
       if (result.success && result.userId) {
-        // Auth state listener in App.tsx will handle setting userId
-        // Add a small delay to ensure smooth navigation and animation
-        setTimeout(() => {
+        console.log('✅ Apple sign in completed, creating user profile...');
+        
+        // CRITICAL: Wait for user profile creation before navigating
+        try {
+          // Get session to get user email and metadata
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session?.user) {
+            console.error('❌ [Onboarding] No session found after Apple sign in');
+            showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, 'Session not found after sign in. Please try again.');
+            return;
+          }
+          
+          const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || '';
+          const firstName = fullName?.trim() ? fullName.trim().split(' ')[0] : undefined;
+          
+          // Capture consent timestamps (all three are accepted at the same time when user checks the box)
+          const consentTimestamp = new Date().toISOString();
+          const consentData = {
+            termsAcceptedAt: consentTimestamp,
+            privacyAcceptedAt: consentTimestamp,
+            healthDataPrivacyAcceptedAt: consentTimestamp,
+          };
+          
+          console.log('🔵 [Onboarding] Creating user profile for Apple sign in with:', {
+            userId: result.userId,
+            email: session.user.email || '',
+            firstName,
+            consentData,
+          });
+          
+          // Wait for profile creation to complete (has 15-second timeout)
+          const profileResult = await createUserProfile(
+            result.userId,
+            session.user.email || '',
+            firstName,
+            consentData
+          );
+          
+          if (!profileResult.success) {
+            console.error('❌ [Onboarding] Failed to create user profile:', profileResult.error);
+            showErrorAlert(
+              ERROR_TITLES.AUTHENTICATION_FAILED,
+              `Failed to create user profile: ${profileResult.error || 'Unknown error'}. Please try again.`
+            );
+            return;
+          }
+          
+          console.log('✅ [Onboarding] User profile created successfully for Apple sign in');
+          
+          // Double-check that user exists in database before navigating
+          const userProfile = await getUserProfile(result.userId);
+          if (!userProfile) {
+            console.error('❌ [Onboarding] User profile not found in database after creation');
+            showErrorAlert(
+              ERROR_TITLES.AUTHENTICATION_FAILED,
+              'User profile was not created successfully. Please try again.'
+            );
+            return;
+          }
+          
+          console.log('✅ [Onboarding] User profile verified in database for Apple sign in');
+          
+          // Check premium status from database after profile creation
+          if (userProfile.subscription_type) {
+            const setSubscriptionType = useStore.getState().setSubscriptionType;
+            setSubscriptionType(userProfile.subscription_type);
+            console.log('✅ [Onboarding] Updated subscription type from database:', userProfile.subscription_type);
+          }
+          
+          // Navigate after user profile is confirmed to exist
           onNavigateToPremium();
-        }, 300);
+        } catch (profileError: any) {
+          console.error('❌ [Onboarding] Error creating user profile for Apple sign in:', profileError);
+          showErrorAlert(
+            ERROR_TITLES.AUTHENTICATION_FAILED,
+            `Error creating user profile: ${profileError?.message || 'Unknown error'}. Please try again.`
+          );
+        }
       } else {
         // Show error for all failures
         const errorMessage = result.error || 'Failed to sign in with Apple';

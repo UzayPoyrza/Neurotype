@@ -7,13 +7,14 @@ import { theme } from '../styles/theme';
 import { updateUserPreferences, getSubscriptionDetails, getUserProfile, getUserPreferences, isPremiumUser } from '../services/userService';
 import { useUserId } from '../hooks/useUserId';
 import { HowToUseModal } from '../components/HowToUseModal';
+import { TimePickerModal } from '../components/TimePickerModal';
 import { showErrorAlert, ERROR_TITLES } from '../utils/errorHandler';
 import { signOut } from '../services/authService';
 import { createPortalSession } from '../services/paymentService';
 import { calculateUserStreak } from '../services/progressService';
 import { ensureDailyRecommendations } from '../services/recommendationService';
 import { getUserEmotionalFeedbackWithSessions } from '../services/feedbackService';
-import { scheduleDailyNotification, cancelDailyNotification, requestNotificationPermissions, hasNotificationPermissions, openNotificationSettings, scheduleTestNotification } from '../services/notificationService';
+import { scheduleDailyNotification, cancelDailyNotification, requestNotificationPermissions, hasNotificationPermissions, openNotificationSettings } from '../services/notificationService';
 
 type ProfileStackParamList = {
   ProfileMain: undefined;
@@ -40,8 +41,11 @@ export const SettingsScreen: React.FC = () => {
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
   const [backButtonWidth, setBackButtonWidth] = React.useState(0);
   const [showHowToUseModal, setShowHowToUseModal] = useState(false);
+  const [showTimePickerModal, setShowTimePickerModal] = useState(false);
   const [isLoadingPortal, setIsLoadingPortal] = useState(false);
   const [hasNotificationPermission, setHasNotificationPermission] = React.useState(true);
+  const [reminderHour, setReminderHour] = useState(9);
+  const [reminderMinute, setReminderMinute] = useState(0);
   // Get subscription details from store (loaded during app initialization)
   const subscriptionCancelAt = useStore(state => state.subscriptionCancelAt);
   const subscriptionEndDate = useStore(state => state.subscriptionEndDate);
@@ -447,15 +451,26 @@ export const SettingsScreen: React.FC = () => {
     }
   }, [userId, reminderEnabled, toggleReminder]);
 
-  // Handle test notification
-  const handleTestNotification = React.useCallback(async () => {
-    const scheduled = await scheduleTestNotification(5); // 5 seconds
-    if (scheduled) {
-      Alert.alert('Test Notification', 'Notification will appear in 5 seconds!');
-    } else {
-      Alert.alert('Error', 'Failed to schedule test notification. Make sure notifications are enabled.');
+  // Handle time picker confirmation
+  const handleTimeConfirm = React.useCallback(async (hour: number, minute: number) => {
+    setReminderHour(hour);
+    setReminderMinute(minute);
+    
+    // If reminder is enabled, reschedule with new time
+    if (reminderEnabled) {
+      const scheduled = await scheduleDailyNotification({ hour, minute });
+      if (scheduled) {
+        console.log(`✅ [Settings] Notification rescheduled for ${hour}:${minute.toString().padStart(2, '0')}`);
+        // Optionally save to database if you have a reminder_time field
+        if (userId) {
+          // You can add reminder_time to user preferences if needed
+          // await updateUserPreferences(userId, { reminder_time: `${hour}:${minute}` });
+        }
+      } else {
+        Alert.alert('Error', 'Failed to update notification time. Please try again.');
+      }
     }
-  }, []);
+  }, [reminderEnabled, userId]);
 
   return (
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
@@ -480,26 +495,41 @@ export const SettingsScreen: React.FC = () => {
         <View style={styles.settingSection}>
           <Text style={styles.sectionTitle}>Notifications</Text>
           
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingLabel}>Daily Reminders</Text>
-              <Text style={styles.settingDescription}>Get notified for your meditation sessions</Text>
+          <View style={styles.reminderCard}>
+            <View style={styles.reminderHeader}>
+              <View style={styles.reminderHeaderContent}>
+                <Text style={styles.reminderTitle}>Daily Reminders</Text>
+                <Text style={styles.reminderDescription}>Get notified for your meditation sessions</Text>
+              </View>
+              <Switch
+                value={reminderEnabled}
+                onValueChange={handleToggleReminder}
+                trackColor={{ false: '#e0e0e0', true: '#007AFF' }}
+                thumbColor={reminderEnabled ? '#ffffff' : '#ffffff'}
+              />
             </View>
-            <Switch
-              value={reminderEnabled}
-              onValueChange={handleToggleReminder}
-              trackColor={{ false: '#e0e0e0', true: '#007AFF' }}
-              thumbColor={reminderEnabled ? '#ffffff' : '#ffffff'}
-            />
+            
+            {/* Customise Button */}
+            <TouchableOpacity 
+              style={[
+                styles.customiseButton,
+                !reminderEnabled && styles.customiseButtonDisabled
+              ]}
+              onPress={() => {
+                if (reminderEnabled) {
+                  setShowTimePickerModal(true);
+                }
+              }}
+              disabled={!reminderEnabled}
+            >
+              <Text style={[
+                styles.customiseButtonText,
+                !reminderEnabled && styles.customiseButtonTextDisabled
+              ]}>
+                Customise
+              </Text>
+            </TouchableOpacity>
           </View>
-          
-          {/* Test Notification Button */}
-          <TouchableOpacity 
-            style={styles.testButton}
-            onPress={handleTestNotification}
-          >
-            <Text style={styles.testButtonText}>Test Notification (5s)</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Subscription */}
@@ -721,6 +751,15 @@ export const SettingsScreen: React.FC = () => {
         isVisible={showHowToUseModal}
         onClose={() => setShowHowToUseModal(false)}
       />
+
+      {/* Time Picker Modal */}
+      <TimePickerModal
+        visible={showTimePickerModal}
+        onClose={() => setShowTimePickerModal(false)}
+        onConfirm={handleTimeConfirm}
+        initialHour={reminderHour}
+        initialMinute={reminderMinute}
+      />
     </View>
   );
 };
@@ -812,6 +851,37 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   settingDescription: {
+    fontSize: 15,
+    color: '#8e8e93',
+  },
+  reminderCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    marginHorizontal: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  reminderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  reminderHeaderContent: {
+    flex: 1,
+    marginRight: 16,
+  },
+  reminderTitle: {
+    fontSize: 19,
+    fontWeight: '700',
+    color: '#000000',
+    marginBottom: 4,
+  },
+  reminderDescription: {
     fontSize: 15,
     color: '#8e8e93',
   },
@@ -1036,23 +1106,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#007AFF',
   },
-  testButton: {
+  customiseButton: {
     backgroundColor: '#007AFF',
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 20,
-    marginHorizontal: 12,
-    marginTop: 8,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
   },
-  testButtonText: {
-    fontSize: 16,
+  customiseButtonDisabled: {
+    backgroundColor: '#e0e0e0',
+    opacity: 0.6,
+  },
+  customiseButtonText: {
+    fontSize: 17,
     fontWeight: '600',
     color: '#ffffff',
+  },
+  customiseButtonTextDisabled: {
+    color: '#999999',
   },
 });

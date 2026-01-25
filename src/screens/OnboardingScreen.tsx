@@ -16,6 +16,8 @@ import { supabase } from '../services/supabase';
 import { getUserProfile, createUserProfile, isPremiumUser } from '../services/userService';
 import { PaymentPage } from '../components/PaymentPage';
 import { PremiumFeaturesPage } from '../components/PremiumFeaturesPage';
+import { TermsOfServiceScreen } from './TermsOfServiceScreen';
+import { PrivacyPolicyScreen } from './PrivacyPolicyScreen';
 
 interface OnboardingScreenProps {
   onFinish: (skipped?: boolean) => void;
@@ -1567,6 +1569,9 @@ const LoginPage: React.FC<{
   const [isLoadingGoogleSignIn, setIsLoadingGoogleSignIn] = useState(false);
   const loadingOpacity = useRef(new Animated.Value(0)).current;
   const spinnerRotation = useRef(new Animated.Value(0)).current;
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   
   const fullText = "Time to get started on your journey.";
 
@@ -2276,11 +2281,46 @@ const LoginPage: React.FC<{
             {/* Subtitle inside box */}
             <Text style={styles.loginBoxSubtitle}>Create an account to save your progress and personalize your experience</Text>
 
+            {/* Terms of Service Checkbox */}
+            <View style={styles.termsContainer}>
+              <TouchableOpacity 
+                style={styles.checkboxWrapper}
+                onPress={() => setTermsAccepted(!termsAccepted)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.checkbox, termsAccepted && styles.checkboxChecked]}>
+                  {termsAccepted && (
+                    <Text style={styles.checkmark}>✓</Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+              <View style={styles.termsTextContainer}>
+                <Text style={styles.termsText}>
+                  By clicking this box, you accept our{' '}
+                </Text>
+                <TouchableOpacity 
+                  onPress={() => setShowTermsModal(true)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.termsLink}>Terms of Service</Text>
+                </TouchableOpacity>
+                <Text style={styles.termsText}> and </Text>
+                <TouchableOpacity 
+                  onPress={() => setShowPrivacyModal(true)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.termsLink}>Privacy Policy</Text>
+                </TouchableOpacity>
+                <Text style={styles.termsText}>.</Text>
+              </View>
+            </View>
+
             {/* Google Sign In Button */}
             <TouchableOpacity 
-              style={styles.socialButton}
+              style={[styles.socialButton, !termsAccepted && styles.socialButtonDisabled]}
               onPress={handleGoogleSignIn}
               activeOpacity={0.7}
+              disabled={!termsAccepted}
             >
               <View style={styles.socialButtonContent}>
                 <View style={styles.googleIconContainer}>
@@ -2310,9 +2350,10 @@ const LoginPage: React.FC<{
             {/* Apple Sign In Button - iOS only */}
             {Platform.OS === 'ios' && (
               <TouchableOpacity 
-                style={[styles.socialButton, styles.appleButton]}
+                style={[styles.socialButton, styles.appleButton, !termsAccepted && styles.socialButtonDisabled]}
                 onPress={handleAppleSignIn}
                 activeOpacity={0.7}
+                disabled={!termsAccepted}
               >
                 <View style={styles.socialButtonContent}>
                   <View style={styles.appleIconContainer}>
@@ -2355,6 +2396,26 @@ const LoginPage: React.FC<{
             <Text style={styles.loadingSubtext}>Please wait</Text>
           </View>
         </Animated.View>
+      </Modal>
+
+      {/* Terms of Service Modal */}
+      <Modal
+        visible={showTermsModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowTermsModal(false)}
+      >
+        <TermsOfServiceScreen onClose={() => setShowTermsModal(false)} />
+      </Modal>
+
+      {/* Privacy Policy Modal */}
+      <Modal
+        visible={showPrivacyModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowPrivacyModal(false)}
+      >
+        <PrivacyPolicyScreen onClose={() => setShowPrivacyModal(false)} />
       </Modal>
     </View>
   );
@@ -3364,6 +3425,54 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     paddingHorizontal: 8,
   },
+  termsContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+    paddingHorizontal: 4,
+  },
+  checkboxWrapper: {
+    marginRight: 12,
+    marginTop: 2,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#8e8e93',
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  checkmark: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  termsTextContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'flex-start',
+  },
+  termsText: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: '#666666',
+    lineHeight: 18,
+  },
+  termsLink: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#007AFF',
+    lineHeight: 18,
+    textDecorationLine: 'underline',
+  },
   socialButton: {
     backgroundColor: '#f2f2f7',
     borderRadius: 12,
@@ -3373,6 +3482,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e5e5ea',
     minHeight: 56,
+  },
+  socialButtonDisabled: {
+    opacity: 0.5,
+    backgroundColor: '#e5e5ea',
   },
   socialButtonContent: {
     flexDirection: 'row',

@@ -397,3 +397,105 @@ export async function getSubscriptionDetails(userId: string): Promise<Subscripti
   }
 }
 
+/**
+ * Create a delete or reset account request
+ * This will be processed by a scheduled database function within 24 hours
+ * 
+ * @param userId - User ID
+ * @param requestType - Either 'delete' or 'reset'
+ * @returns Promise with success status and optional error message
+ */
+export async function createDeleteOrResetRequest(
+  userId: string,
+  requestType: 'delete' | 'reset'
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    console.log(`🔵 [createDeleteOrResetRequest] Creating ${requestType} request for user:`, userId);
+
+    // Validate request type
+    if (requestType !== 'delete' && requestType !== 'reset') {
+      return { 
+        success: false, 
+        error: 'Invalid request type. Must be "delete" or "reset"' 
+      };
+    }
+
+    // Check if user exists
+    const userProfile = await getUserProfile(userId);
+    if (!userProfile) {
+      return { 
+        success: false, 
+        error: 'User not found' 
+      };
+    }
+
+    // First, try to use the database function if it exists
+    try {
+      const { data, error } = await supabase.rpc('create_delete_or_reset_request', {
+        p_user_id: userId,
+        p_request_type: requestType,
+      });
+
+      if (!error) {
+        console.log(`✅ [createDeleteOrResetRequest] ${requestType} request created via function. Request ID:`, data);
+        return { success: true };
+      }
+
+      // If function doesn't exist (42883 error), fall back to direct insert
+      if (error.code === '42883' || error.message?.includes('function') || error.message?.includes('does not exist')) {
+        console.log('⚠️ [createDeleteOrResetRequest] Database function not found, using direct insert');
+      } else {
+        // Other error from function call
+        console.error('❌ [createDeleteOrResetRequest] Error calling function:', error);
+        return { 
+          success: false, 
+          error: error.message || 'Failed to create request' 
+        };
+      }
+    } catch (rpcError: any) {
+      // Function might not exist, fall through to direct insert
+      if (rpcError.code === '42883' || rpcError.message?.includes('function') || rpcError.message?.includes('does not exist')) {
+        console.log('⚠️ [createDeleteOrResetRequest] Database function not found, using direct insert');
+      } else {
+        throw rpcError;
+      }
+    }
+
+    // Fallback: Direct insert into delete_or_reset table
+    // Delete any existing pending request for this user first
+    await supabase
+      .from('delete_or_reset')
+      .delete()
+      .eq('user_id', userId)
+      .eq('status', 'pending');
+
+    // Insert new request
+    const { data, error } = await supabase
+      .from('delete_or_reset')
+      .insert({
+        user_id: userId,
+        request_type: requestType,
+        status: 'pending',
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ [createDeleteOrResetRequest] Error creating request:', error);
+      return { 
+        success: false, 
+        error: error.message || 'Failed to create request' 
+      };
+    }
+
+    console.log(`✅ [createDeleteOrResetRequest] ${requestType} request created successfully. Request ID:`, data?.id);
+    return { success: true };
+  } catch (error: any) {
+    console.error('❌ [createDeleteOrResetRequest] Exception creating request:', error);
+    return { 
+      success: false, 
+      error: error.message || 'An unexpected error occurred' 
+    };
+  }
+}
+

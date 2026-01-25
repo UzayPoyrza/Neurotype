@@ -4,7 +4,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
-import { updateUserPreferences, getSubscriptionDetails, getUserProfile, getUserPreferences, isPremiumUser } from '../services/userService';
+import { updateUserPreferences, getSubscriptionDetails, getUserProfile, getUserPreferences, isPremiumUser, createDeleteOrResetRequest } from '../services/userService';
 import { useUserId } from '../hooks/useUserId';
 import { HowToUseModal } from '../components/HowToUseModal';
 import { TimePickerModal } from '../components/TimePickerModal';
@@ -54,10 +54,15 @@ export const SettingsScreen: React.FC = () => {
   // Track if portal was opened to trigger reload on return
   const portalOpenedRef = useRef(false);
   const appStateRef = useRef(AppState.currentState);
-  const handleResetAccount = React.useCallback(() => {
+  const handleResetAccount = React.useCallback(async () => {
+    if (!userId) {
+      Alert.alert('Error', 'User not found. Please try logging in again.');
+      return;
+    }
+
     Alert.alert(
       'Reset Account',
-      'This will permanently delete all your progress, preferences, and saved sessions. You will start fresh, but your account will remain. This action cannot be undone.',
+      'This will permanently delete all your progress, preferences, and saved sessions. You will start fresh, but your account and subscription will remain. This action cannot be undone.',
       [
         {
           text: 'Cancel',
@@ -66,19 +71,40 @@ export const SettingsScreen: React.FC = () => {
         {
           text: 'Reset Account',
           style: 'destructive',
-          onPress: () => {
-            resetAppData();
+          onPress: async () => {
+            try {
+              console.log('🔄 [Settings] Creating reset account request...');
+              const result = await createDeleteOrResetRequest(userId, 'reset');
+              
+              if (result.success) {
+                Alert.alert(
+                  'Request Submitted',
+                  'Your account reset request has been submitted and is being processed. This may take up to 24 hours to complete. You will be notified once the reset is complete.',
+                  [{ text: 'OK' }]
+                );
+              } else {
+                showErrorAlert(ERROR_TITLES.DATABASE_ERROR, result.error || 'Failed to submit reset request. Please try again.');
+              }
+            } catch (error: any) {
+              console.error('❌ [Settings] Error creating reset request:', error);
+              showErrorAlert(ERROR_TITLES.DATABASE_ERROR, error.message || 'Failed to submit reset request. Please try again.');
+            }
           },
         },
       ],
       { cancelable: true }
     );
-  }, [resetAppData]);
+  }, [userId, resetAppData]);
 
-  const handleDeleteAccount = React.useCallback(() => {
+  const handleDeleteAccount = React.useCallback(async () => {
+    if (!userId) {
+      Alert.alert('Error', 'User not found. Please try logging in again.');
+      return;
+    }
+
     Alert.alert(
       'Delete Account',
-      'This will permanently delete your account and all associated data. This action cannot be undone.',
+      'This will permanently delete your account and all associated data. Any subscription that your account is currently subscribed to will also be removed. This action cannot be undone.',
       [
         {
           text: 'Cancel',
@@ -87,15 +113,30 @@ export const SettingsScreen: React.FC = () => {
         {
           text: 'Delete Account',
           style: 'destructive',
-          onPress: () => {
-            // TODO: Implement account deletion
-            Alert.alert('Not Implemented', 'Account deletion is not yet implemented.');
+          onPress: async () => {
+            try {
+              console.log('🔄 [Settings] Creating delete account request...');
+              const result = await createDeleteOrResetRequest(userId, 'delete');
+              
+              if (result.success) {
+                Alert.alert(
+                  'Request Submitted',
+                  'Your account deletion request has been submitted and is being processed. This may take up to 24 hours to complete. You will be notified once the deletion is complete.',
+                  [{ text: 'OK' }]
+                );
+              } else {
+                showErrorAlert(ERROR_TITLES.DATABASE_ERROR, result.error || 'Failed to submit deletion request. Please try again.');
+              }
+            } catch (error: any) {
+              console.error('❌ [Settings] Error creating delete request:', error);
+              showErrorAlert(ERROR_TITLES.DATABASE_ERROR, error.message || 'Failed to submit deletion request. Please try again.');
+            }
           },
         },
       ],
       { cancelable: true }
     );
-  }, []);
+  }, [userId]);
 
   // Set screen context when component mounts
   React.useEffect(() => {

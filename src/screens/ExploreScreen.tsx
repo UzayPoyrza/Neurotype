@@ -18,6 +18,7 @@ import { ModuleCard } from '../components/ModuleCard';
 import { Chip } from '../components/Chip';
 import { SearchBar } from '../components/SearchBar';
 import { FilterCategory, FilterSelection } from '../components/SpotifyFilterBar';
+import { PinIcon } from '../components/icons/PinIcon';
 import { ExploreIcon } from '../components/icons';
 import { useStore } from '../store/useStore';
 import { mentalHealthModules, MentalHealthModule } from '../data/modules';
@@ -379,7 +380,7 @@ export const ExploreScreen: React.FC = () => {
                               </Text>
                             </View>
                             <View style={styles.pinBadge}>
-                              <Text style={styles.pinIcon}>📌</Text>
+                              <PinIcon size={14} color="#000000" />
                             </View>
                           </View>
                           
@@ -661,7 +662,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderWidth: 1,
-    borderColor: '#FF6B6B',
+    borderColor: '#000000',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.15,

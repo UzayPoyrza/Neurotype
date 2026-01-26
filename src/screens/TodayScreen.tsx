@@ -19,6 +19,7 @@ import { MergedCard } from '../components/MergedCard';
 import { LineGraphIcon } from '../components/icons/LineGraphIcon';
 import { ClockIcon } from '../components/icons/ClockIcon';
 import { MeditationIcon } from '../components/icons/MeditationIcon';
+import { LightbulbIcon } from '../components/icons/LightbulbIcon';
 import { ShimmerSessionCard, ShimmerAlternativeSessionCard, ShimmerProgressPathCard } from '../components/ShimmerSkeleton';
 import { ensureDailyRecommendations, getDailyRecommendations } from '../services/recommendationService';
 import { useUserId } from '../hooks/useUserId';
@@ -1204,7 +1205,14 @@ export const TodayScreen: React.FC = () => {
           <MergedCard.Section style={styles.mergedSectionList} hideDividerBefore>
             <View style={styles.cardHeader}>
               <View style={styles.cardHeaderTop}>
-                <Text style={styles.cardTitle}>💡 Other Options</Text>
+                <View style={styles.cardTitleContainer}>
+                  <View style={styles.cardTitleIconWrapper}>
+                    <LightbulbIcon size={24} color="#000000" />
+                  </View>
+                  <View style={styles.cardTitleTextWrapper}>
+                    <Text style={styles.cardTitle}>Other Options</Text>
+                  </View>
+                </View>
               </View>
             </View>
             

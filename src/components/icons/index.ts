@@ -6,4 +6,5 @@ export { UserIcon } from './UserIcon';
 export { SettingsIcon } from './SettingsIcon';
 export { ShareIcon } from './ShareIcon';
 export { ClockIcon } from './ClockIcon';
-export { MeditationIcon } from './MeditationIcon'; 
+export { MeditationIcon } from './MeditationIcon';
+export { LightbulbIcon } from './LightbulbIcon'; 

@@ -19,6 +19,7 @@ import { removeEmotionalFeedback as removeEmotionalFeedbackDB } from '../service
 import type { CompletedSessionCacheEntry } from '../store/useStore';
 import { ShimmerActivityHistory, ShimmerEmotionalFeedbackHistory } from '../components/ShimmerSkeleton';
 import { getSubscriptionDetails } from '../services/userService';
+import { GiftIcon } from '../components/icons/GiftIcon';
 
 const MAX_VISIBLE_ACTIVITY_ITEMS = 4;
 const APPROX_ACTIVITY_ROW_HEIGHT = 84;
@@ -905,7 +906,14 @@ export const ProfileScreen: React.FC = () => {
           <MergedCard.Section style={[styles.mergedSectionTop, styles.mergedSectionReducedBottomPadding]}>
             <View style={styles.cardHeader}>
               <View style={styles.cardHeaderTop}>
-                <Text style={styles.cardTitle}>🎁 Share & Earn</Text>
+                <View style={styles.cardTitleContainer}>
+                  <View style={styles.cardTitleIconWrapper}>
+                    <GiftIcon size={24} color="#000000" />
+                  </View>
+                  <View style={styles.cardTitleTextWrapper}>
+                    <Text style={styles.cardTitle}>Share & Earn</Text>
+                  </View>
+                </View>
               </View>
               <Text style={styles.shareSubtitle}>
                 Give your friends 30 days of premium
@@ -1455,6 +1463,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 4,
+  },
+  cardTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cardTitleIconWrapper: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardTitleTextWrapper: {
+    justifyContent: 'center',
+    marginLeft: 6,
+    paddingTop: 1,
   },
   shareContent: {
     paddingTop: 0,

@@ -14,4 +14,5 @@ export { BarChartIcon } from './BarChartIcon';
 export { PinIcon } from './PinIcon';
 export { RecentIcon } from './RecentIcon';
 export { AlphabeticalIcon } from './AlphabeticalIcon';
-export { CategoryIcon } from './CategoryIcon'; 
+export { CategoryIcon } from './CategoryIcon';
+export { GiftIcon } from './GiftIcon'; 

@@ -16,4 +16,5 @@ export { RecentIcon } from './RecentIcon';
 export { AlphabeticalIcon } from './AlphabeticalIcon';
 export { CategoryIcon } from './CategoryIcon';
 export { GiftIcon } from './GiftIcon';
-export { ActivityHistoryIcon } from './ActivityHistoryIcon'; 
+export { ActivityHistoryIcon } from './ActivityHistoryIcon';
+export { ChatWritingIcon } from './ChatWritingIcon'; 

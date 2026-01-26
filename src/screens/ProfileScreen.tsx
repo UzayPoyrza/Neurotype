@@ -21,6 +21,7 @@ import { ShimmerActivityHistory, ShimmerEmotionalFeedbackHistory } from '../comp
 import { getSubscriptionDetails } from '../services/userService';
 import { GiftIcon } from '../components/icons/GiftIcon';
 import { ActivityHistoryIcon } from '../components/icons/ActivityHistoryIcon';
+import { ChatWritingIcon } from '../components/icons/ChatWritingIcon';
 
 const MAX_VISIBLE_ACTIVITY_ITEMS = 4;
 const APPROX_ACTIVITY_ROW_HEIGHT = 84;
@@ -909,7 +910,7 @@ export const ProfileScreen: React.FC = () => {
               <View style={styles.cardHeaderTop}>
                 <View style={styles.cardTitleContainer}>
                   <View style={styles.cardTitleIconWrapper}>
-                    <GiftIcon size={24} color="#000000" />
+                    <GiftIcon size={23} color="#000000" />
                   </View>
                   <View style={styles.cardTitleTextWrapper}>
                     <Text style={styles.cardTitle}>Share & Earn</Text>
@@ -1134,7 +1135,14 @@ export const ProfileScreen: React.FC = () => {
         <View style={styles.card}>
         <View style={styles.cardHeader}>
           <View style={styles.cardHeaderTop}>
-            <Text style={styles.cardTitle}>💬 Emotional Feedback History</Text>
+            <View style={styles.cardTitleContainer}>
+              <View style={styles.cardTitleIconWrapper}>
+                <ChatWritingIcon size={22} color="#000000" />
+              </View>
+              <View style={styles.cardTitleTextWrapper}>
+                <Text style={styles.cardTitle}>Emotional Feedback History</Text>
+              </View>
+            </View>
             <TouchableOpacity
               ref={feedbackInfoButtonRef}
               style={[styles.infoButton, isFeedbackInfoActive && styles.infoButtonActive]}

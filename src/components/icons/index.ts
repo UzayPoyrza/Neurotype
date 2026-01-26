@@ -9,4 +9,5 @@ export { ClockIcon } from './ClockIcon';
 export { MeditationIcon } from './MeditationIcon';
 export { LightbulbIcon } from './LightbulbIcon';
 export { PathIcon } from './PathIcon';
-export { LockIcon } from './LockIcon'; 
+export { LockIcon } from './LockIcon';
+export { BarChartIcon } from './BarChartIcon'; 

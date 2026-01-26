@@ -9,6 +9,7 @@ import { InfoBox } from '../components/InfoBox';
 import { ShimmerCalendarCard, ShimmerSessionsCard } from '../components/ShimmerSkeleton';
 import { getUserCompletedSessions, CompletedSession } from '../services/progressService';
 import { useUserId } from '../hooks/useUserId';
+import { BarChartIcon } from '../components/icons/BarChartIcon';
 
 
 
@@ -222,7 +223,14 @@ export const ProgressScreen: React.FC = () => {
           <View style={[styles.card, styles.sessionsCard]}>
             <View style={styles.cardHeader}>
               <View style={styles.cardHeaderTop}>
-                <Text style={styles.cardTitle}>📊 Sessions</Text>
+                <View style={styles.cardTitleContainer}>
+                  <View style={styles.cardTitleIconWrapper}>
+                    <BarChartIcon size={26} color="#000000" />
+                  </View>
+                  <View style={styles.cardTitleTextWrapper}>
+                    <Text style={styles.cardTitle}>Sessions</Text>
+                  </View>
+                </View>
               </View>
             </View>
             
@@ -320,6 +328,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 0,
+  },
+  cardTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cardTitleIconWrapper: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardTitleTextWrapper: {
+    justifyContent: 'center',
+    marginLeft: 6,
+    paddingTop: 1,
   },
   sessionsContent: {
     flexDirection: 'row',

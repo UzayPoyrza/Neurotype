@@ -20,6 +20,7 @@ import type { CompletedSessionCacheEntry } from '../store/useStore';
 import { ShimmerActivityHistory, ShimmerEmotionalFeedbackHistory } from '../components/ShimmerSkeleton';
 import { getSubscriptionDetails } from '../services/userService';
 import { GiftIcon } from '../components/icons/GiftIcon';
+import { ActivityHistoryIcon } from '../components/icons/ActivityHistoryIcon';
 
 const MAX_VISIBLE_ACTIVITY_ITEMS = 4;
 const APPROX_ACTIVITY_ROW_HEIGHT = 84;
@@ -986,7 +987,14 @@ export const ProfileScreen: React.FC = () => {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <View style={styles.cardHeaderTop}>
-              <Text style={styles.cardTitle}>📈 Activity History</Text>
+              <View style={styles.cardTitleContainer}>
+                <View style={styles.cardTitleIconWrapper}>
+                  <ActivityHistoryIcon size={20} color="#000000" />
+                </View>
+                <View style={styles.cardTitleTextWrapper}>
+                  <Text style={styles.cardTitle}>Activity History</Text>
+                </View>
+              </View>
             </View>
             {recentActivity.length > 0 && (
               <Text style={styles.activitySubtitle}>

@@ -15,4 +15,5 @@ export { PinIcon } from './PinIcon';
 export { RecentIcon } from './RecentIcon';
 export { AlphabeticalIcon } from './AlphabeticalIcon';
 export { CategoryIcon } from './CategoryIcon';
-export { GiftIcon } from './GiftIcon'; 
+export { GiftIcon } from './GiftIcon';
+export { ActivityHistoryIcon } from './ActivityHistoryIcon'; 

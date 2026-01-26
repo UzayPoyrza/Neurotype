@@ -18,6 +18,7 @@ import { MeditationDetailModal } from '../components/MeditationDetailModal';
 import { MergedCard } from '../components/MergedCard';
 import { LineGraphIcon } from '../components/icons/LineGraphIcon';
 import { ClockIcon } from '../components/icons/ClockIcon';
+import { MeditationIcon } from '../components/icons/MeditationIcon';
 import { ShimmerSessionCard, ShimmerAlternativeSessionCard, ShimmerProgressPathCard } from '../components/ShimmerSkeleton';
 import { ensureDailyRecommendations, getDailyRecommendations } from '../services/recommendationService';
 import { useUserId } from '../hooks/useUserId';
@@ -1117,7 +1118,14 @@ export const TodayScreen: React.FC = () => {
           <MergedCard.Section style={styles.mergedSectionTop}>
             <View style={styles.cardHeader}>
               <View style={styles.cardHeaderTop}>
-                <Text style={styles.cardTitle}>🧘‍♀️ Today's Focus</Text>
+                <View style={styles.cardTitleContainer}>
+                  <View style={styles.cardTitleIconWrapper}>
+                    <MeditationIcon size={24} color="#000000" />
+                  </View>
+                  <View style={styles.cardTitleTextWrapper}>
+                    <Text style={styles.cardTitle}>Today's Focus</Text>
+                  </View>
+                </View>
                 <TouchableOpacity 
                   style={styles.moduleButton}
                   onPress={handleModuleButtonPress}
@@ -1591,6 +1599,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 4,
+  },
+  cardTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cardTitleIconWrapper: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardTitleTextWrapper: {
+    justifyContent: 'center',
+    marginLeft: 6,
+    paddingTop: 1,
   },
   focusSubtitle: {
     fontSize: 15,

@@ -11,4 +11,7 @@ export { LightbulbIcon } from './LightbulbIcon';
 export { PathIcon } from './PathIcon';
 export { LockIcon } from './LockIcon';
 export { BarChartIcon } from './BarChartIcon';
-export { PinIcon } from './PinIcon'; 
+export { PinIcon } from './PinIcon';
+export { RecentIcon } from './RecentIcon';
+export { AlphabeticalIcon } from './AlphabeticalIcon';
+export { CategoryIcon } from './CategoryIcon'; 

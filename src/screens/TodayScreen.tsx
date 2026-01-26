@@ -21,6 +21,7 @@ import { ClockIcon } from '../components/icons/ClockIcon';
 import { MeditationIcon } from '../components/icons/MeditationIcon';
 import { LightbulbIcon } from '../components/icons/LightbulbIcon';
 import { PathIcon } from '../components/icons/PathIcon';
+import { LockIcon } from '../components/icons/LockIcon';
 import { ShimmerSessionCard, ShimmerAlternativeSessionCard, ShimmerProgressPathCard } from '../components/ShimmerSkeleton';
 import { ensureDailyRecommendations, getDailyRecommendations } from '../services/recommendationService';
 import { useUserId } from '../hooks/useUserId';
@@ -1406,7 +1407,7 @@ export const TodayScreen: React.FC = () => {
                   <Text style={styles.progressPreviewSectionLabel}>Coming Up</Text>
                   <View style={styles.progressPreviewLockedState}>
                     <View style={[styles.progressPreviewItemIcon, styles.progressPreviewItemIconLocked]}>
-                      <Text style={styles.progressPreviewLockIconText}>🔒</Text>
+                      <LockIcon size={20} color="#8e8e93" />
                     </View>
                     <View style={styles.progressPreviewItemBody}>
                       <Text style={styles.progressPreviewLockedText}>

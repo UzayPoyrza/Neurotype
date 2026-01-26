@@ -20,6 +20,7 @@ import { LineGraphIcon } from '../components/icons/LineGraphIcon';
 import { ClockIcon } from '../components/icons/ClockIcon';
 import { MeditationIcon } from '../components/icons/MeditationIcon';
 import { LightbulbIcon } from '../components/icons/LightbulbIcon';
+import { PathIcon } from '../components/icons/PathIcon';
 import { ShimmerSessionCard, ShimmerAlternativeSessionCard, ShimmerProgressPathCard } from '../components/ShimmerSkeleton';
 import { ensureDailyRecommendations, getDailyRecommendations } from '../services/recommendationService';
 import { useUserId } from '../hooks/useUserId';
@@ -1306,7 +1307,14 @@ export const TodayScreen: React.FC = () => {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <View style={styles.cardHeaderTop}>
-              <Text style={styles.cardTitle}>🗺️ Progress Path</Text>
+              <View style={styles.cardTitleContainer}>
+                <View style={styles.cardTitleIconWrapper}>
+                  <PathIcon size={24} color="#000000" />
+                </View>
+                <View style={styles.cardTitleTextWrapper}>
+                  <Text style={styles.cardTitle}>Progress Path</Text>
+                </View>
+              </View>
             </View>
           </View>
 

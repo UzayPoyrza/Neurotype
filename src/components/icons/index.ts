@@ -7,4 +7,5 @@ export { SettingsIcon } from './SettingsIcon';
 export { ShareIcon } from './ShareIcon';
 export { ClockIcon } from './ClockIcon';
 export { MeditationIcon } from './MeditationIcon';
-export { LightbulbIcon } from './LightbulbIcon'; 
+export { LightbulbIcon } from './LightbulbIcon';
+export { PathIcon } from './PathIcon'; 

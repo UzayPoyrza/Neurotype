@@ -28,6 +28,7 @@ import { useUserId } from '../hooks/useUserId';
 import { getSessionById } from '../services/sessionService';
 import { getCompletedSessionsByDateRange, isSessionCompleted, getUserCompletedSessions } from '../services/progressService';
 import { supabase } from '../services/supabase';
+import { getLocalDateString } from '../utils/dateUtils';
 
 type SessionState = 'not_started' | 'in_progress' | 'completed' | 'rating';
 
@@ -196,7 +197,7 @@ export const TodayScreen: React.FC = () => {
                   // Check which recommended sessions are completed today (from cache)
                   // Note: We don't re-mark sessions here - syncTodayCompletedSessionsFromDatabase already
                   // populated the cache on app open. We just check the cache to show checkmarks.
-                  const today = new Date().toISOString().split('T')[0];
+                  const today = getLocalDateString();
                   console.log('✅ [TodayScreen] Checking completed sessions from cache after module change:', today);
                   
                   for (const session of sessions) {
@@ -442,7 +443,7 @@ export const TodayScreen: React.FC = () => {
         // Note: We don't re-mark sessions here - syncTodayCompletedSessionsFromDatabase already
         // populated the cache on app open. We just check the cache to show checkmarks.
         if (!recResult.generated) {
-          const today = new Date().toISOString().split('T')[0];
+          const today = getLocalDateString();
           console.log('✅ [TodayScreen] Recommendations already exist, checking completion status from cache');
           
           // Check each recommended session if it's completed today (from cache)
@@ -609,7 +610,7 @@ export const TodayScreen: React.FC = () => {
             const session = sessionsMap.get(cs.session_id);
             if (session) {
               // Create a unique key combining session_id and completed_date
-              const completedDate = cs.completed_date || cs.created_at || new Date().toISOString().split('T')[0];
+              const completedDate = cs.completed_date || cs.created_at || getLocalDateString();
               const uniqueKey = `${cs.session_id}-${completedDate}`;
               
               // Skip if we've already added this exact completion

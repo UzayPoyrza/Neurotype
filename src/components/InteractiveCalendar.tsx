@@ -12,6 +12,7 @@ import {
 import { theme } from '../styles/theme';
 import { mentalHealthModules, getCategoryColor, categoryColors } from '../data/modules';
 import { CompletedSession } from '../services/progressService';
+import { getLocalDateString } from '../utils/dateUtils';
 
 const { width } = Dimensions.get('window');
 
@@ -48,7 +49,7 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
 
   // Get all unique categories for completed meditations on a specific date
   const getCompletedCategoriesForDate = (date: Date): Array<'disorder' | 'wellness' | 'skill' | 'other'> => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = getLocalDateString(date);
     // Get all entries for this date
     const entriesForDate = completedSessions.filter(entry => entry.completed_date === dateStr);
     

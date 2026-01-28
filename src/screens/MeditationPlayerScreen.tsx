@@ -36,6 +36,7 @@ import MeditationCompletionLanding from '../components/MeditationCompletionLandi
 import MeditationFeedbackLanding from '../components/MeditationFeedbackLanding';
 import { addSessionRating } from '../services/ratingService';
 import { addEmotionalFeedback } from '../services/feedbackService';
+import { getLocalDateString } from '../utils/dateUtils';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -1773,7 +1774,7 @@ export const MeditationPlayerScreen: React.FC = () => {
             // Always call markSessionCompletedToday - it handles update/create logic internally:
             // - Same session + same context_module + same day: UPDATE existing entry
             // - Different day OR different context_module: CREATE new entry
-            const today = new Date().toISOString().split('T')[0];
+            const today = getLocalDateString();
             const minutesCompleted = Math.round(currentTime / 60);
             
             console.log('✅ [Session Completion] Marking session as completed (cache + database)');

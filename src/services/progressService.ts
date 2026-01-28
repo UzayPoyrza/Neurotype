@@ -4,6 +4,7 @@
  */
 
 import { supabase } from './supabase';
+import { getLocalDateString } from '../utils/dateUtils';
 
 export interface CompletedSession {
   id?: string;
@@ -86,7 +87,7 @@ export async function markSessionCompleted(
   date?: string
 ): Promise<{ success: boolean; error?: string; wasUpdate?: boolean; updatedEntryId?: string }> {
   try {
-    const completedDate = date || new Date().toISOString().split('T')[0];
+    const completedDate = date || getLocalDateString();
     // Normalize context_module: empty string or undefined becomes null, trim whitespace
     const contextModuleValue = contextModule && contextModule.trim() ? contextModule.trim() : null;
     
@@ -253,7 +254,7 @@ export async function isSessionCompleted(
   date?: string
 ): Promise<boolean> {
   try {
-    const checkDate = date || new Date().toISOString().split('T')[0];
+    const checkDate = date || getLocalDateString();
 
     const { data, error } = await supabase
       .from('completed_sessions')
@@ -332,13 +333,13 @@ export function calculateCurrentStreak(completedSessions: CompletedSession[]): n
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const todayStr = today.toISOString().split('T')[0];
+  const todayStr = getLocalDateString(today);
 
   // Check if user completed a session today or yesterday
   // (allow 1 day gap for timezone/edge cases)
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().split('T')[0];
+  const yesterdayStr = getLocalDateString(yesterday);
 
   const mostRecentDate = uniqueDates[0];
   

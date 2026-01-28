@@ -5,6 +5,7 @@
 
 import { supabase } from './supabase';
 import type { EmotionalFeedbackLabel } from '../types';
+import { getLocalDateString } from '../utils/dateUtils';
 
 export interface EmotionalFeedback {
   id?: string;
@@ -28,7 +29,7 @@ export async function addEmotionalFeedback(
   date?: string
 ): Promise<{ success: boolean; error?: string; id?: string }> {
   try {
-    const feedbackDate = date || new Date().toISOString().split('T')[0];
+    const feedbackDate = date || getLocalDateString();
 
     const { data, error } = await supabase
       .from('emotional_feedback')

@@ -1233,7 +1233,7 @@ export const TodayScreen: React.FC = () => {
                   ]}
                 >
                   <Text style={styles.focusSubtitle}>
-                    Complete one of the meditations below.
+                    {isTodayCompleted ? 'You are done for today 🎉' : 'Complete one of the meditations below.'}
                   </Text>
                 </Animated.View>
               </View>

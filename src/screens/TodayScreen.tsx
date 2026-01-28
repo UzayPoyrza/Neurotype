@@ -94,6 +94,13 @@ export const TodayScreen: React.FC = () => {
   const floatingButtonOffset = useRef(new Animated.Value(0)).current;
   const hoursNumberScale = useRef(new Animated.Value(1)).current;
   
+  // Alternating text animation refs
+  const text1TranslateY = useRef(new Animated.Value(0)).current;
+  const text1Opacity = useRef(new Animated.Value(1)).current;
+  const text2TranslateY = useRef(new Animated.Value(30)).current;
+  const text2Opacity = useRef(new Animated.Value(0)).current;
+  const currentTextIndexRef = useRef(0);
+  
   const selectedModule = mentalHealthModules.find(m => m.id === selectedModuleId) || mentalHealthModules[0];
   
   // Update global background color when module changes
@@ -1031,6 +1038,68 @@ export const TodayScreen: React.FC = () => {
     };
   }, [hoursUntilNewRecommendations, hoursNumberScale]);
 
+  // Alternating text animation - Instagram style
+  useEffect(() => {
+    // Initialize animation values
+    text1TranslateY.setValue(0);
+    text1Opacity.setValue(1);
+    text2TranslateY.setValue(30);
+    text2Opacity.setValue(0);
+    currentTextIndexRef.current = 0;
+
+    const animateTextTransition = () => {
+      const isText1Visible = currentTextIndexRef.current === 0;
+      
+      // Animate both texts simultaneously for smooth Instagram-style transition
+      Animated.parallel([
+        // Current text out (down)
+        Animated.timing(isText1Visible ? text1TranslateY : text2TranslateY, {
+          toValue: -30,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(isText1Visible ? text1Opacity : text2Opacity, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        // New text in (up)
+        Animated.timing(isText1Visible ? text2TranslateY : text1TranslateY, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(isText1Visible ? text2Opacity : text1Opacity, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        // Reset the hidden text position (below) after animation completes
+        if (isText1Visible) {
+          text1TranslateY.setValue(30);
+        } else {
+          text2TranslateY.setValue(30);
+        }
+      });
+
+      // Switch to the other text
+      currentTextIndexRef.current = isText1Visible ? 1 : 0;
+    };
+
+    // Start animation after 3 seconds, then repeat every 3 seconds
+    const initialTimeout = setTimeout(() => {
+      animateTextTransition();
+    }, 3000);
+    
+    const interval = setInterval(animateTextTransition, 3000);
+
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(interval);
+    };
+  }, [selectedModuleId, text1TranslateY, text1Opacity, text2TranslateY, text2Opacity]); // Re-run when module changes
+
   // Get current date info
   const getCurrentDateInfo = () => {
     const today = new Date();
@@ -1140,9 +1209,34 @@ export const TodayScreen: React.FC = () => {
                   </Animated.View>
                 </TouchableOpacity>
               </View>
-              <Text style={styles.focusSubtitle}>
-                Personalized for your {selectedModule.title.toLowerCase()} journey
-              </Text>
+              <View style={styles.focusSubtitleContainer}>
+                <Animated.View
+                  style={[
+                    styles.focusSubtitleAnimated,
+                    {
+                      opacity: text1Opacity,
+                      transform: [{ translateY: text1TranslateY }],
+                    },
+                  ]}
+                >
+                  <Text style={styles.focusSubtitle}>
+                    Personalized for your {selectedModule.title.toLowerCase()} journey
+                  </Text>
+                </Animated.View>
+                <Animated.View
+                  style={[
+                    styles.focusSubtitleAnimated,
+                    {
+                      opacity: text2Opacity,
+                      transform: [{ translateY: text2TranslateY }],
+                    },
+                  ]}
+                >
+                  <Text style={styles.focusSubtitle}>
+                    Complete one of the meditations below.
+                  </Text>
+                </Animated.View>
+              </View>
             </View>
 
             {/* Recommended Session */}
@@ -1629,6 +1723,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: 6,
     paddingTop: 1,
+  },
+  focusSubtitleContainer: {
+    position: 'relative',
+    height: 22, // Fixed height to prevent layout shift
+    marginBottom: 0,
+    overflow: 'hidden',
+  },
+  focusSubtitleAnimated: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
   },
   focusSubtitle: {
     fontSize: 15,

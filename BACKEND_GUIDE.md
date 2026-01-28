@@ -2,135 +2,102 @@
 
 ## Overview
 
-Your Neurotype app is currently using mock data stored in Zustand. To make it production-ready, you need to implement a backend that handles:
+The Neurotype app uses **Supabase** as its backend service, providing a complete PostgreSQL database, authentication, real-time subscriptions, and edge functions for payment processing.
 
-1. **User Authentication** (login/register/social auth)
-2. **User Data Persistence** (profile, progress, preferences)
-3. **Session Tracking** (completed sessions, feedback, progress)
-4. **Analytics** (streaks, effectiveness tracking)
+## Current Implementation Status
 
-## Backend Architecture Options
+✅ **Fully Implemented**
+- Supabase project setup and configuration
+- Database schema with all required tables
+- Row Level Security (RLS) policies
+- Authentication system (email, Google OAuth, Apple Sign-In)
+- API service layer with all endpoints
+- Zustand store integration with API calls
+- Stripe payment integration
+- Push notification system
+- Real-time data synchronization
 
-### Option 1: Firebase (Recommended for Quick Start)
-**Pros:**
-- Quick setup (1-2 days)
-- Built-in authentication (email, Google, Apple, Facebook)
-- Real-time database (Firestore)
-- Free tier is generous
-- No server management
+## Backend Architecture
 
-**Cons:**
-- Vendor lock-in
-- Less control over data
-- Pricing can scale up
+### Supabase Setup
 
-### Option 2: Supabase (Recommended for Full Control)
-**Pros:**
-- Open source
-- PostgreSQL database
-- Built-in authentication
-- Real-time subscriptions
-- Generous free tier
-- More control than Firebase
+The app uses Supabase for:
+- **PostgreSQL Database** - All data storage
+- **Authentication** - User auth with multiple providers
+- **Real-time Subscriptions** - Live data updates
+- **Edge Functions** - Serverless functions for payments
+- **Storage** - Secure token storage via Expo SecureStore
 
-**Cons:**
-- Slightly more setup than Firebase
-- Still a managed service
+### Database Schema
 
-### Option 3: Custom Backend (Node.js/Express + PostgreSQL)
-**Pros:**
-- Full control
-- Can host anywhere
-- Most flexible
-
-**Cons:**
-- More development time
-- Need to manage infrastructure
-- Need to implement auth yourself
-
-### Option 4: Backend-as-a-Service (AWS Amplify, Azure, etc.)
-**Pros:**
-- Enterprise-grade
-- Scalable
-
-**Cons:**
-- More complex setup
-- Can be expensive
-
-## Recommended Approach: Supabase
-
-I recommend **Supabase** because it:
-- Provides everything you need out of the box
-- Uses PostgreSQL (standard SQL database)
-- Has excellent React Native support
-- Is free for development
-- Easy to migrate away from if needed
-
-## Required API Endpoints
-
-Based on your app structure, here are the endpoints you need:
-
-### Authentication
-- `POST /auth/register` - Register new user
-- `POST /auth/login` - Login with email/password
-- `POST /auth/logout` - Logout
-- `GET /auth/me` - Get current user
-- `POST /auth/social/{provider}` - Social login (Google, Apple, Facebook)
-- `POST /auth/forgot-password` - Password reset
-
-### User Profile
-- `GET /users/me` - Get user profile
-- `PATCH /users/me` - Update user profile (firstName, profileIcon)
-- `GET /users/me/preferences` - Get user preferences
-- `PATCH /users/me/preferences` - Update preferences (reminders, theme, subscription)
-
-### Sessions & Progress
-- `GET /sessions` - Get all sessions (can be cached/static)
-- `GET /sessions/:id` - Get session details
-- `POST /sessions/:id/complete` - Mark session as completed
-- `GET /sessions/completed` - Get user's completed sessions
-- `POST /sessions/:id/like` - Like/unlike a session
-
-### Progress Tracking
-- `GET /progress` - Get user progress (streaks, sessionDeltas, etc.)
-- `POST /progress/session-delta` - Record session delta (before/after)
-- `GET /progress/streak` - Get current streak
-- `GET /progress/effectiveness` - Get technique effectiveness data
-
-### Emotional Feedback
-- `POST /feedback` - Add emotional feedback entry
-- `GET /feedback` - Get feedback history
-- `DELETE /feedback/:id` - Remove feedback entry
-
-### Modules
-- `GET /modules` - Get all modules (can be cached/static)
-
-## Database Schema
-
-### Users Table
+#### Users Table
 ```sql
 CREATE TABLE users (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT UNIQUE NOT NULL,
   first_name TEXT,
   profile_icon TEXT DEFAULT '👤',
   subscription_type TEXT DEFAULT 'basic' CHECK (subscription_type IN ('basic', 'premium')),
+  stripe_customer_id TEXT,
+  stripe_subscription_id TEXT,
+  subscription_status TEXT,
+  cancel_at_period_end BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
 ```
 
-### User Preferences Table
+#### User Preferences Table
 ```sql
 CREATE TABLE user_preferences (
   user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   reminder_enabled BOOLEAN DEFAULT FALSE,
+  reminder_time TIME,
   dark_theme_enabled BOOLEAN DEFAULT FALSE,
   updated_at TIMESTAMP DEFAULT NOW()
 );
 ```
 
-### Session Deltas Table
+#### Sessions Table
+```sql
+CREATE TABLE sessions (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  duration_min INTEGER NOT NULL,
+  technique TEXT NOT NULL,
+  description TEXT,
+  why_it_works TEXT,
+  audio_url TEXT,
+  thumbnail_url TEXT,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+#### Session Modalities Table
+```sql
+CREATE TABLE session_modalities (
+  session_id TEXT REFERENCES sessions(id) ON DELETE CASCADE,
+  module_id TEXT NOT NULL,
+  PRIMARY KEY (session_id, module_id)
+);
+```
+
+#### Completed Sessions Table
+```sql
+CREATE TABLE completed_sessions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  session_id TEXT NOT NULL,
+  context_module TEXT,
+  completed_date DATE NOT NULL,
+  minutes_completed INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(user_id, session_id, context_module, completed_date)
+);
+```
+
+#### Session Deltas Table
 ```sql
 CREATE TABLE session_deltas (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -142,24 +109,9 @@ CREATE TABLE session_deltas (
   after_rating INTEGER NOT NULL CHECK (after_rating >= 0 AND after_rating <= 10),
   created_at TIMESTAMP DEFAULT NOW()
 );
-CREATE INDEX idx_session_deltas_user_date ON session_deltas(user_id, date DESC);
 ```
 
-### Completed Sessions Table
-```sql
-CREATE TABLE completed_sessions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-  session_id TEXT NOT NULL,
-  module_id TEXT NOT NULL,
-  completed_date DATE NOT NULL,
-  created_at TIMESTAMP DEFAULT NOW(),
-  UNIQUE(user_id, session_id, module_id, completed_date)
-);
-CREATE INDEX idx_completed_sessions_user ON completed_sessions(user_id, completed_date DESC);
-```
-
-### Emotional Feedback Table
+#### Emotional Feedback Table
 ```sql
 CREATE TABLE emotional_feedback (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -170,10 +122,9 @@ CREATE TABLE emotional_feedback (
   feedback_date DATE NOT NULL,
   created_at TIMESTAMP DEFAULT NOW()
 );
-CREATE INDEX idx_emotional_feedback_user ON emotional_feedback(user_id, feedback_date DESC);
 ```
 
-### Liked Sessions Table
+#### Liked Sessions Table
 ```sql
 CREATE TABLE liked_sessions (
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -183,69 +134,201 @@ CREATE TABLE liked_sessions (
 );
 ```
 
-### User Progress (Computed/View)
+#### Recommendations Table
 ```sql
--- This can be a view or computed on-the-fly
-CREATE VIEW user_progress_view AS
-SELECT 
-  u.id as user_id,
-  COUNT(DISTINCT DATE(sd.date)) as streak,
-  MAX(sd.date) as last_session_date,
-  COUNT(sd.id) as total_sessions
-FROM users u
-LEFT JOIN session_deltas sd ON u.id = sd.user_id
-GROUP BY u.id;
+CREATE TABLE recommendations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  module_id TEXT NOT NULL,
+  session_id TEXT NOT NULL,
+  recommendation_date DATE NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(user_id, module_id, recommendation_date)
+);
 ```
 
-## Implementation Steps
+#### Modules Table
+```sql
+CREATE TABLE modules (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  description TEXT,
+  color TEXT,
+  icon TEXT,
+  category TEXT CHECK (category IN ('disorder', 'wellness', 'skill')),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+```
 
-### Step 1: Set Up Supabase Project
-1. Go to https://supabase.com
-2. Create a new project
-3. Get your project URL and anon key
-4. Install Supabase client: `npm install @supabase/supabase-js`
+## Service Layer
 
-### Step 2: Create Database Schema
-1. Run the SQL schema above in Supabase SQL Editor
-2. Set up Row Level Security (RLS) policies
-3. Enable email authentication
+All backend interactions are handled through service files in `src/services/`:
 
-### Step 3: Create API Service Layer
-1. Create service files in `src/services/`
-2. Set up Supabase client
-3. Create functions for each endpoint
+### Authentication Service (`authService.ts`)
+- `signUpWithEmail()` - Email/password registration
+- `signInWithEmail()` - Email/password login
+- `signInWithGoogle()` - Google OAuth
+- `signInWithApple()` - Apple Sign-In
+- `signOut()` - User logout
+- `resetPassword()` - Password reset
 
-### Step 4: Update Zustand Store
-1. Replace mock data with API calls
-2. Add loading/error states
-3. Implement optimistic updates where appropriate
+### User Service (`userService.ts`)
+- `getUserProfile()` - Get user profile
+- `updateUserProfile()` - Update profile (name, icon)
+- `getUserPreferences()` - Get user preferences
+- `updateUserPreferences()` - Update preferences
+- `isPremiumUser()` - Check premium status
+- `getSubscriptionDetails()` - Get subscription info
+- `createUserProfile()` - Create new user profile
 
-### Step 5: Update Authentication Flow
-1. Replace mock login/register with real API calls
-2. Store auth tokens securely (using Expo SecureStore)
-3. Add auth state persistence
+### Session Service (`sessionService.ts`)
+- `getAllSessions()` - Get all active sessions
+- `getSessionById()` - Get single session
+- `getSessionsByModality()` - Get sessions by module
+- `getSessionModules()` - Get modules for a session
 
-### Step 6: Add Offline Support (Optional but Recommended)
-1. Use React Query or SWR for caching
-2. Implement offline-first strategy
-3. Sync when online
+### Progress Service (`progressService.ts`)
+- `markSessionCompleted()` - Mark session as completed
+- `getCompletedSessionsByDateRange()` - Get completed sessions
+- `isSessionCompleted()` - Check if session completed
+- `calculateUserStreak()` - Calculate user streak
+- `addSessionDelta()` - Record before/after rating
+
+### Feedback Service (`feedbackService.ts`)
+- `addEmotionalFeedback()` - Add emotional feedback
+- `getUserEmotionalFeedback()` - Get feedback history
+- `getUserEmotionalFeedbackWithSessions()` - Get feedback with session data
+- `deleteEmotionalFeedback()` - Delete feedback entry
+
+### Payment Service (`paymentService.ts`)
+- `createPaymentIntent()` - Create one-time payment
+- `createSubscription()` - Create recurring subscription
+
+### Recommendation Service (`recommendationService.ts`)
+- `ensureDailyRecommendations()` - Generate daily recommendations
+- `getDailyRecommendations()` - Get today's recommendations
+
+### Notification Service (`notificationService.ts`)
+- `requestNotificationPermissions()` - Request permissions
+- `scheduleDailyNotification()` - Schedule daily reminder
+- `cancelAllNotifications()` - Cancel all notifications
+
+### Liked Service (`likedService.ts`)
+- `toggleLikedSession()` - Like/unlike a session
+- `getLikedSessions()` - Get user's liked sessions
+
+## Row Level Security (RLS)
+
+All tables have RLS policies enabled to ensure users can only access their own data:
+
+- Users can only read/update their own profile
+- Users can only see their own completed sessions
+- Users can only see their own feedback and progress
+- Users can only manage their own preferences
+
+## Authentication Flow
+
+1. **Onboarding**: New users complete onboarding screen
+2. **Sign In**: Users can sign in with email, Google, or Apple
+3. **Session Restoration**: App automatically restores session on launch
+4. **Profile Creation**: User profile created automatically on first sign-in
+5. **Data Loading**: User data loaded from database on app open
+
+## Data Synchronization
+
+- **On App Open**: All user data synced from database
+- **Real-time Updates**: Zustand store updated immediately for UI responsiveness
+- **Optimistic Updates**: UI updates immediately, syncs to database in background
+- **Cache Management**: Session and calendar caches cleared on app open for fresh data
 
 ## Security Considerations
 
-1. **Row Level Security (RLS)**: Enable RLS on all tables so users can only access their own data
-2. **API Keys**: Never commit API keys to git, use environment variables
-3. **Password Hashing**: Supabase handles this automatically
-4. **Input Validation**: Validate all user inputs on backend
-5. **Rate Limiting**: Implement rate limiting on auth endpoints
+1. **Row Level Security (RLS)**: Enabled on all tables
+2. **API Keys**: Stored in environment variables, never committed
+3. **Password Hashing**: Handled automatically by Supabase
+4. **Input Validation**: All inputs validated on backend
+5. **Secure Storage**: Auth tokens stored in Expo SecureStore
+6. **HTTPS Only**: All API calls use HTTPS
 
-## Next Steps
+## Edge Functions
 
-I can help you implement:
-1. ✅ Supabase setup and configuration
-2. ✅ Database schema creation
-3. ✅ API service layer
-4. ✅ Updated Zustand store with API integration
-5. ✅ Authentication flow updates
+Supabase Edge Functions handle payment processing:
 
-Would you like me to start implementing any of these steps?
+### `create-subscription`
+- Creates Stripe subscriptions for monthly/yearly plans
+- Handles lifetime one-time payments
+- Updates user subscription status in database
 
+### `create-payment-intent`
+- Creates Stripe Payment Intents for one-time payments
+- Used for lifetime subscriptions
+
+### `create-portal-session`
+- Creates Stripe Customer Portal sessions
+- Allows users to manage subscriptions
+
+### `stripe-webhook`
+- Handles Stripe webhook events
+- Updates subscription status on payment events
+- Handles subscription cancellations and renewals
+
+## Testing
+
+The app includes a test user system for development:
+- Test user automatically created if needed
+- Test user ID: `00000000-0000-0000-0000-000000000001`
+- Can be used for testing without authentication
+
+## Environment Variables
+
+Required environment variables:
+```bash
+EXPO_PUBLIC_SUPABASE_URL=your_supabase_project_url
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
+```
+
+## Deployment
+
+### Supabase Edge Functions
+Deploy edge functions using Supabase CLI:
+```bash
+supabase functions deploy create-subscription --project-ref your_project_ref
+supabase functions deploy create-payment-intent --project-ref your_project_ref
+supabase functions deploy create-portal-session --project-ref your_project_ref
+supabase functions deploy stripe-webhook --project-ref your_project_ref
+```
+
+### Database Migrations
+Run SQL migrations in Supabase Dashboard → SQL Editor
+
+## Monitoring
+
+- Check Supabase Dashboard for database metrics
+- Monitor Edge Function logs in Supabase Dashboard
+- Check Stripe Dashboard for payment events
+- Review app logs for authentication and data sync issues
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Authentication fails**
+   - Check Supabase URL and keys in environment variables
+   - Verify RLS policies are correctly configured
+   - Check network connectivity
+
+2. **Data not syncing**
+   - Verify user is logged in (check `userId` in store)
+   - Check Supabase connection in logs
+   - Verify RLS policies allow user access
+
+3. **Payments not working**
+   - Verify Stripe keys are set correctly
+   - Check Edge Function logs
+   - Verify webhook endpoint is configured in Stripe
+
+4. **Notifications not working**
+   - Check notification permissions
+   - Verify notification service is initialized
+   - Check device notification settings

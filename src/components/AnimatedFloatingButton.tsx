@@ -78,6 +78,12 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
 
   // Animate to pill mode
   useEffect(() => {
+    // Stop any running animations first to prevent jittering
+    buttonWidth.stopAnimation();
+    buttonTranslateX.stopAnimation();
+    textOpacity.stopAnimation();
+    iconScale.stopAnimation();
+    
     if (isPillMode) {
       // Calculate how much to translate left for right-side buttons
       const translateAmount = isLeftSide ? 0 : -(pillWidth - buttonSize);

@@ -1,6 +1,6 @@
 # Meditation Player Mock Data
 
-I've created realistic mock data for testing the meditation player functionality. Here's what's included:
+Realistic mock data for testing the meditation player functionality during development.
 
 ## 🎵 Audio Data (`meditationAudioData`)
 
@@ -60,18 +60,22 @@ I've created realistic mock data for testing the meditation player functionality
 - ✅ **Progress Tracking**: Accurate timing and progress bars
 - ✅ **Emotional Feedback**: Tracks mood every 30 seconds
 - ✅ **Session Completion**: Saves progress and statistics
+- ✅ **Like/Unlike**: Like sessions and save to database
+- ✅ **Seeking**: Skip forward/backward 10 seconds
+- ✅ **Play/Pause**: Full playback control
 
 ### Player States:
 - ✅ **Ready**: Shows initial meditation setup
 - ✅ **Playing**: Displays guided segments + "How do you feel?" slider
 - ✅ **Paused**: Shows Finish/Discard buttons
-- ✅ **Finished**: Session complete with action buttons
+- ✅ **Finished**: Session complete with completion landing
 
 ### Mock Audio Player:
 - ✅ **Play/Pause/Stop**: Full audio control simulation
 - ✅ **Seeking**: Jump to specific times
-- ✅ **Volume Control**: Adjustable audio levels
+- ✅ **Volume Control**: Adjustable audio levels (not exposed in UI)
 - ✅ **Loading States**: Realistic audio loading simulation
+- ✅ **Progress Callbacks**: Real-time progress updates
 
 ## 📊 Data Tracking
 
@@ -81,16 +85,19 @@ The mock data includes:
 - Tracks mood ratings every 30 seconds during playback
 - Stores emotional state changes
 - Provides average improvement statistics
+- Saves to database via `feedbackService`
 
 ### Session Progress:
 - Records completion times and ratings
 - Tracks session statistics (completions, ratings, last session)
 - Simulates user progress data
+- Saves to database via `progressService`
 
 ### Audio Analytics:
 - Mock audio file loading and playback
 - Realistic timing and duration tracking
 - Volume and seeking functionality
+- Progress callbacks for UI updates
 
 ## 🔧 Technical Details
 
@@ -98,10 +105,25 @@ The mock data includes:
 ```
 src/data/meditationMockData.ts
 ├── meditationAudioData     # Audio segments and timing
-├── emotionalFeedbackData   # Mood tracking
-├── sessionProgressData     # Completion tracking  
+├── emotionalFeedbackData   # Mood tracking (legacy)
+├── sessionProgressData     # Completion tracking (legacy)
 ├── mockAudioPlayer        # Audio player simulation
 └── createMockMeditationSession # Session factory
+```
+
+### Mock Audio Player API:
+```typescript
+interface MockAudioPlayer {
+  play(): void;
+  pause(): void;
+  stop(): void;
+  seekTo(time: number): void;
+  getCurrentTime(): number;
+  getDuration(): number;
+  setVolume(volume: number): void;
+  onProgress(callback: (time: number) => void): void;
+  onEnd(callback: () => void): void;
+}
 ```
 
 ### Integration:
@@ -109,13 +131,42 @@ src/data/meditationMockData.ts
 - Provides realistic timing and content
 - Tracks all user interactions
 - Simulates real meditation app behavior
+- Integrates with database services for persistence
 
-## 🚀 Next Steps
+## 🗄️ Database Integration
 
-This mock data provides a complete foundation for:
-1. **Real Audio Integration**: Replace mock audio with actual meditation tracks
-2. **Backend Integration**: Connect to real meditation content APIs
-3. **Analytics**: Implement real user progress tracking
-4. **Personalization**: Add adaptive content based on user preferences
+While the player uses mock audio data, all user interactions are saved to the database:
 
-The meditation player now has realistic, testable functionality that closely mimics a real meditation app experience!
+- **Session Completion**: Saved to `completed_sessions` table
+- **Session Ratings**: Saved to `session_deltas` table (before/after ratings)
+- **Emotional Feedback**: Saved to `emotional_feedback` table (real-time feedback)
+- **Liked Sessions**: Saved to `liked_sessions` table
+
+## 🚀 Migration to Real Audio
+
+When ready to integrate real audio:
+
+1. **Replace Mock Player**: Replace `mockAudioPlayer` with real audio player (Expo AV)
+2. **Update Audio URLs**: Use real audio URLs from database (`sessions.audio_url`)
+3. **Update Segments**: Load guided segments from database or API
+4. **Remove Mock Data**: Remove `meditationMockData.ts` or keep for fallback
+
+### Example Migration:
+```typescript
+// Replace mock player
+import { Audio } from 'expo-av';
+
+const sound = new Audio.Sound();
+await sound.loadAsync({ uri: session.audio_url });
+await sound.playAsync();
+```
+
+## 📝 Notes
+
+- Mock data is used for development and testing
+- All user data (completions, ratings, feedback) is saved to real database
+- Mock audio player simulates real audio behavior
+- Guided segments are realistic meditation instructions
+- Timing matches real meditation session durations
+
+The meditation player now has realistic, testable functionality that closely mimics a real meditation app experience while maintaining full database integration for user data!

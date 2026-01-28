@@ -126,22 +126,12 @@ export const SettingsScreen: React.FC = () => {
                     {
                       text: 'OK',
                       onPress: async () => {
-                        // Logout user
+                        // Logout user - signOut() will trigger SIGNED_OUT event in App.tsx which handles state clearing
                         try {
                           console.log('🔄 [Settings] Logging out after delete request...');
                           const signOutResult = await signOut();
                           
                           if (signOutResult.success) {
-                            // Clear local state
-                            useStore.setState({
-                              userId: null,
-                              isLoggedIn: false,
-                              hasCompletedOnboarding: false,
-                              emotionalFeedbackHistory: [],
-                            });
-                            useStore.getState().clearSessionsCache();
-                            useStore.getState().clearCalendarCache();
-                            useStore.setState({ completedTodaySessions: {} });
                             console.log('✅ [Settings] Logged out successfully after delete request');
                           } else {
                             console.warn('⚠️ [Settings] Failed to logout after delete request:', signOutResult.error);

@@ -172,6 +172,8 @@ export const ProfileScreen: React.FC = () => {
   
   // Track processed cache entries to avoid reprocessing
   const processedCacheKeysRef = React.useRef<Set<string>>(new Set());
+  // Track last processed feedback to prevent infinite loops
+  const lastProcessedFeedbackRef = React.useRef<string>('');
 
   const modulesById = React.useMemo(() => {
     return mentalHealthModules.reduce<Record<string, MentalHealthModule>>((acc, module) => {
@@ -296,6 +298,11 @@ export const ProfileScreen: React.FC = () => {
       
       if (emotionalFeedbackHistoryFromStore.length > 0) {
         console.log('📊 [ProfileScreen] Initializing feedback from store:', emotionalFeedbackHistoryFromStore.length, 'entries');
+        // Set the ref to prevent reprocessing in the other effect
+        const feedbackKey = emotionalFeedbackHistoryFromStore
+          .map(e => `${e.id || e.sessionId}-${e.date}-${e.timestampSeconds}`)
+          .join('|');
+        lastProcessedFeedbackRef.current = feedbackKey;
         const feedback = await processStoreFeedback(emotionalFeedbackHistoryFromStore);
         setEmotionalFeedbackHistory(feedback);
         setIsLoadingFeedback(false);
@@ -505,16 +512,34 @@ export const ProfileScreen: React.FC = () => {
   // Update UI immediately when store feedback changes
   React.useEffect(() => {
     const updateFromStore = async () => {
-      if (emotionalFeedbackHistoryFromStore.length > 0) {
-        console.log('📊 [ProfileScreen] Store feedback updated, refreshing from store');
-        const feedback = await processStoreFeedback(emotionalFeedbackHistoryFromStore);
-        setEmotionalFeedbackHistory(feedback);
+      if (emotionalFeedbackHistoryFromStore.length === 0) {
+        // Reset ref when array becomes empty
+        lastProcessedFeedbackRef.current = '';
+        setEmotionalFeedbackHistory([]);
         setIsLoadingFeedback(false);
+        return;
       }
+
+      // Create a stable key from the feedback entries to detect actual changes
+      const feedbackKey = emotionalFeedbackHistoryFromStore
+        .map(e => `${e.id || e.sessionId}-${e.date}-${e.timestampSeconds}`)
+        .join('|');
+      
+      // Skip if we've already processed this exact feedback
+      if (lastProcessedFeedbackRef.current === feedbackKey) {
+        console.log('📊 [ProfileScreen] Feedback already processed, skipping');
+        return;
+      }
+
+      console.log('📊 [ProfileScreen] Store feedback updated, refreshing from store');
+      lastProcessedFeedbackRef.current = feedbackKey;
+      const feedback = await processStoreFeedback(emotionalFeedbackHistoryFromStore);
+      setEmotionalFeedbackHistory(feedback);
+      setIsLoadingFeedback(false);
     };
     
     updateFromStore();
-  }, [emotionalFeedbackHistoryFromStore, processStoreFeedback]);
+  }, [emotionalFeedbackHistoryFromStore]); // Removed processStoreFeedback from deps
 
   // Set screen context when component mounts
   React.useEffect(() => {
@@ -637,16 +662,6 @@ export const ProfileScreen: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [userId, fetchActivityHistory]);
-
-  // Update emotional feedback when cache changes (e.g., when new feedback is added)
-  React.useEffect(() => {
-    if (emotionalFeedbackHistoryFromStore.length > 0) {
-      console.log('📊 [ProfileScreen] Emotional feedback cache updated, processing...');
-      processStoreFeedback(emotionalFeedbackHistoryFromStore).then(feedback => {
-        setEmotionalFeedbackHistory(feedback);
-      });
-    }
-  }, [emotionalFeedbackHistoryFromStore, processStoreFeedback]);
 
   // Use completed sessions as recent activity (already sorted most recent first)
   const recentActivity = completedSessions;

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { UserProgress, FilterState, SessionDelta, Session, EmotionalFeedbackEntry } from '../types';
 import { mentalHealthModules } from '../data/modules';
 import { toggleLikedSession as toggleLikedSessionDB } from '../services/likedService';
-import { getCompletedSessionsByDateRange, markSessionCompleted, isSessionCompleted, CompletedSession, calculateUserStreak } from '../services/progressService';
+import { getCompletedSessionsByDateRange, markSessionCompleted, isSessionCompleted, CompletedSession, calculateUserStreak, getUserCompletedSessions } from '../services/progressService';
 import { getSessionModules } from '../services/sessionService';
 import { getLocalDateString } from '../utils/dateUtils';
 
@@ -273,6 +273,7 @@ interface AppState {
   markSessionCompletedToday: (moduleId: string, sessionId: string, date?: string, minutesCompleted?: number) => Promise<{ wasUpdate: boolean }>;
   isSessionCompletedToday: (moduleId: string, sessionId: string, date?: string) => boolean;
   syncTodayCompletedSessionsFromDatabase: (userId: string) => Promise<void>;
+  syncAllCompletedSessionsFromDatabase: (userId: string) => Promise<void>;
   cleanupOldCompletedSessions: () => void;
   cacheSessions: (sessions: Session[]) => void;
   getCachedSession: (sessionId: string) => Session | null;
@@ -491,6 +492,42 @@ export const useStore = create<AppState>((set, get) => ({
       console.error('❌ [Store] Error syncing completed sessions from database:', error);
       // On error, keep empty cache
       set({ completedTodaySessions: {} });
+    }
+  },
+
+  syncAllCompletedSessionsFromDatabase: async (userId: string) => {
+    try {
+      console.log('📊 [Store] Syncing all completed sessions from database...');
+      const allSessions = await getUserCompletedSessions(userId);
+      console.log('📊 [Store] Found', allSessions.length, 'total completed sessions');
+
+      // Calculate date boundaries
+      const today = new Date();
+      const todayStr = getLocalDateString();
+      const weekAgo = new Date(today);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const weekAgoStr = getLocalDateString(weekAgo);
+      const currentYear = today.getFullYear();
+      const currentMonth = today.getMonth();
+
+      // Calculate stats
+      const total = allSessions.length;
+      const thisWeek = allSessions.filter(session =>
+        session.completed_date >= weekAgoStr && session.completed_date <= todayStr
+      ).length;
+      const thisMonth = allSessions.filter(session => {
+        const sessionDate = new Date(session.completed_date);
+        return sessionDate.getFullYear() === currentYear && sessionDate.getMonth() === currentMonth;
+      }).length;
+
+      // Update caches
+      set({
+        sessionsCache: { total, thisWeek, thisMonth },
+        calendarCache: allSessions
+      });
+      console.log('✅ [Store] Sessions cache updated:', { total, thisWeek, thisMonth });
+    } catch (error) {
+      console.error('❌ [Store] Error syncing all completed sessions:', error);
     }
   },
 

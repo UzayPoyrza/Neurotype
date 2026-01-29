@@ -566,7 +566,17 @@ export default function App() {
       useStore.getState().clearSessionsCache();
       useStore.getState().clearCalendarCache();
       useStore.getState().clearEmotionalFeedbackCache();
-      
+
+      // Sync all historical completed sessions for Progress screen
+      console.log('📊 [App] Syncing all completed sessions from database...');
+      try {
+        await useStore.getState().syncAllCompletedSessionsFromDatabase(userId);
+        console.log('✅ [App] All completed sessions synced');
+      } catch (syncError: any) {
+        console.error('❌ [App] Error syncing all completed sessions:', syncError);
+        // Continue - sync failure is not critical
+      }
+
       // Calculate and update streak from completed sessions
       console.log('🔥 [App] Calculating streak from completed sessions...');
       try {

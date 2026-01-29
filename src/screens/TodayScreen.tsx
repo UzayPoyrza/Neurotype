@@ -293,6 +293,15 @@ export const TodayScreen: React.FC = () => {
     setIsPillMode(false);
   }, []);
 
+  // Memoized callbacks for AnimatedFloatingButton to prevent re-renders
+  const handleFloatingButtonPress = useCallback(() => {
+    setShowModuleModal(true);
+  }, []);
+
+  const handleFloatingButtonScroll = useCallback((scrollY: number) => {
+    setScrollY(scrollY);
+  }, []);
+
   // Pill mode logic - trigger when screen comes into focus
   useFocusEffect(
     useCallback(() => {
@@ -658,10 +667,11 @@ export const TodayScreen: React.FC = () => {
 
   const recommendedSession = todaySessions.find(s => s.isRecommended) || todaySessions[0];
   
-  // Check if recommended session is completed
-  const isRecommendedCompleted = recommendedSession 
-    ? isSessionCompletedToday(selectedModuleId, recommendedSession.id)
-    : false;
+  // Check if recommended session is completed - memoized to avoid recalculation on scroll
+  const isRecommendedCompleted = useMemo(() => {
+    if (!recommendedSession) return false;
+    return isSessionCompletedToday(selectedModuleId, recommendedSession.id);
+  }, [recommendedSession, selectedModuleId, isSessionCompletedToday, completedTodaySessions]);
   
   const moduleSessionsForRoadmap = useMemo(() => {
     const relevantGoals = {
@@ -1603,9 +1613,9 @@ export const TodayScreen: React.FC = () => {
       >
         <AnimatedFloatingButton
           backgroundColor={selectedModule.color}
-          onPress={() => setShowModuleModal(true)}
+          onPress={handleFloatingButtonPress}
           isPillMode={isPillMode}
-          onScroll={(scrollY) => setScrollY(scrollY)}
+          onScroll={handleFloatingButtonScroll}
           onDragStart={handleDragStart}
         />
       </Animated.View>

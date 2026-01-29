@@ -31,7 +31,7 @@ interface AnimatedFloatingButtonProps {
   onDragStart?: () => void;
 }
 
-export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
+const AnimatedFloatingButtonComponent: React.FC<AnimatedFloatingButtonProps> = ({
   backgroundColor,
   onPress,
   isPillMode,
@@ -307,6 +307,9 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
     </Animated.View>
   );
 };
+
+// Memoize to prevent re-renders when props haven't changed
+export const AnimatedFloatingButton = React.memo(AnimatedFloatingButtonComponent);
 
 const styles = StyleSheet.create({
   container: {

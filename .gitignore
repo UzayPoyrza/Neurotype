@@ -41,3 +41,5 @@ yarn-error.*
 
 # EAS build config (contains sensitive credentials)
 eas.json
+
+.well-known/

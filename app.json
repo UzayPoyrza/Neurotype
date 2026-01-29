@@ -17,6 +17,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.anonymous.Neurotype",
       "usesAppleSignIn": true,
+      "associatedDomains": [
+        "applinks:www.neurotypeapp.com"
+      ],
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -27,7 +30,21 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.Neurotype"
+      "package": "com.anonymous.Neurotype",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "www.neurotypeapp.com",
+              "pathPrefix": "/sessions"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"

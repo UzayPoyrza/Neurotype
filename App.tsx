@@ -3,7 +3,9 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
 import { Easing } from 'react-native-reanimated';
-import { Modal, StatusBar, Linking, Alert } from 'react-native';
+import { Modal, StatusBar, Linking as RNLinking, Alert } from 'react-native';
+import * as Linking from 'expo-linking';
+import { linking } from './src/config/linking';
 import { TodayIcon, ProgressIcon, ExploreIcon, ProfileIcon } from './src/components/icons';
 import { AnimatedTabBar } from './src/components/AnimatedTabBar';
 
@@ -276,6 +278,23 @@ export default function App() {
       notificationReceivedListener.remove();
       notificationResponseListener.remove();
     };
+  }, []);
+
+  // Handle deep links
+  useEffect(() => {
+    const handleDeepLink = async () => {
+      const initialUrl = await Linking.getInitialURL();
+      if (initialUrl) {
+        console.log('🔗 [App] App opened from deep link:', initialUrl);
+      }
+    };
+    handleDeepLink();
+
+    const subscription = Linking.addEventListener('url', (event) => {
+      console.log('🔗 [App] Deep link received while app running:', event.url);
+    });
+
+    return () => subscription.remove();
   }, []);
 
   // Test Supabase connection and session migration
@@ -1141,7 +1160,7 @@ export default function App() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" translucent={false} />
-      <NavigationContainer>
+      <NavigationContainer linking={linking}>
         <Tab.Navigator
           tabBar={props => <AnimatedTabBar {...props} />}
           screenOptions={{

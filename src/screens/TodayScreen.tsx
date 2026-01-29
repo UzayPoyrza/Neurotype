@@ -277,16 +277,14 @@ export const TodayScreen: React.FC = () => {
   // Immediate pill trigger function for scroll events
   const triggerPillAnimationImmediate = useCallback(() => {
     const currentTime = Date.now();
-    
+
     // Prevent rapid successive triggers (debounce)
     if (currentTime - lastFocusTime < 500) {
       return;
     }
-    
+
     setLastFocusTime(currentTime);
-    setIsPillMode(false);
-    
-    // Trigger pill mode immediately
+    // Directly set to true - no need to reset to false first
     setIsPillMode(true);
   }, [lastFocusTime]);
 

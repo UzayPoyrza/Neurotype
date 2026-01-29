@@ -371,8 +371,10 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
             </Text>
           </View>
           <Text style={styles.moduleTitle}>
-            {moduleId === 'liked-meditations' 
-              ? `${moduleSessions.length} favorite meditation${moduleSessions.length === 1 ? '' : 's'}`
+            {moduleId === 'liked-meditations'
+              ? (isLoading
+                  ? 'Loading...'
+                  : `${moduleSessions.length} favorite meditation${moduleSessions.length === 1 ? '' : 's'}`)
               : module?.title
             }
           </Text>

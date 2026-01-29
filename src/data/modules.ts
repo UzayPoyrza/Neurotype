@@ -12,9 +12,9 @@ export interface MentalHealthModule {
 // Category-based color system
 export const categoryColors = {
   disorder: '#FF6B6B', // Red for disorders
-  wellness: '#4ECDC4', // Teal for wellness
-  skill: '#96CEB4',    // Green for skills
-  winddown: '#9B8FD9'  // Purple for wind down
+  wellness: '#6BCB77', // Green for wellness
+  skill: '#5B8DEE',    // Blue for skills
+  winddown: '#B8A9E8'  // Light purple for wind down
 };
 
 // Function to get color based on category

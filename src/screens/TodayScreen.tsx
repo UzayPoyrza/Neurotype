@@ -678,15 +678,14 @@ export const TodayScreen: React.FC = () => {
       'anxiety': ['anxiety'],
       'adhd': ['focus'],
       'depression': ['sleep', 'focus'],
-      'bipolar': ['anxiety', 'sleep'],
       'panic': ['anxiety'],
-      'ptsd': ['anxiety', 'sleep'],
       'stress': ['anxiety', 'focus'],
       'sleep': ['sleep'],
       'focus': ['focus'],
-      'emotional-regulation': ['anxiety', 'focus'],
       'mindfulness': ['focus', 'sleep'],
       'self-compassion': ['sleep', 'focus'],
+      'burnout': ['stress', 'sleep'],
+      'addiction': ['anxiety', 'focus'],
     };
 
     const goals = relevantGoals[selectedModule.id as keyof typeof relevantGoals] || ['focus'];

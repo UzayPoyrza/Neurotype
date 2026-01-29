@@ -27,8 +27,8 @@ export const RoadmapScreen: React.FC = () => {
     setActiveSession(session);
   };
   
-  // Set todayCompleted to true for anxiety and ptsd modules to show preview
-  const isTodayCompleted = selectedModule.id === 'anxiety' || selectedModule.id === 'ptsd';
+  // Set todayCompleted to true for anxiety module to show preview
+  const isTodayCompleted = selectedModule.id === 'anxiety';
   
   const recommendedSession = route.params?.recommendedSession;
   

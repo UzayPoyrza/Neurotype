@@ -7,10 +7,10 @@ import { getSessionModules } from '../services/sessionService';
 import { getLocalDateString } from '../utils/dateUtils';
 
 // Helper function to get category from moduleId
-const getCategoryFromModuleId = (moduleId: string | undefined): 'disorder' | 'wellness' | 'skill' | 'other' => {
-  if (!moduleId) return 'other';
+const getCategoryFromModuleId = (moduleId: string | undefined): 'disorder' | 'wellness' | 'skill' | 'winddown' => {
+  if (!moduleId) return 'wellness';
   const module = mentalHealthModules.find(m => m.id === moduleId);
-  return module?.category || 'other';
+  return module?.category || 'wellness';
 };
 
 // Helper function to create subtle background colors from module colors

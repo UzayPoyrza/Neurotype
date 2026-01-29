@@ -345,15 +345,14 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
       anxiety: ['anxiety'],
       adhd: ['focus'],
       depression: ['sleep', 'focus'],
-      bipolar: ['anxiety', 'sleep'],
       panic: ['anxiety'],
-      ptsd: ['anxiety', 'sleep'],
       stress: ['anxiety', 'focus'],
       sleep: ['sleep'],
       focus: ['focus'],
-      'emotional-regulation': ['anxiety', 'focus'],
       mindfulness: ['focus', 'sleep'],
       'self-compassion': ['sleep', 'focus'],
+      burnout: ['stress', 'sleep'],
+      addiction: ['anxiety', 'focus'],
     };
 
     // Use all fetched completed sessions from database for counting (already sorted with most recent first)

@@ -19,7 +19,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { Session } from '../types';
 import { theme } from '../styles/theme';
 import { useStore } from '../store/useStore';
-import { ShareIcon } from '../components/icons';
+import { ShareIcon, BookOpenIcon } from '../components/icons';
 import { DraggableActionBar } from '../components/DraggableActionBar';
 import { meditationAudioData } from '../data/meditationMockData';
 import { getSessionById, getSessionModules } from '../services/sessionService';
@@ -992,7 +992,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         {...(hasTutorial ? {
           secondaryAction: {
             title: "Tutorial",
-            icon: "📖",
+            icon: <BookOpenIcon size={12} color="#ffffff" />,
             onPress: handleTutorialPress,
           }
         } : {})}

@@ -13,12 +13,12 @@ interface DraggableActionBarProps {
   primaryAction: {
     title: string;
     onPress: () => void;
-    icon?: string;
+    icon?: string | React.ReactNode;
   };
   secondaryAction?: {
     title: string;
     onPress: () => void;
-    icon?: string;
+    icon?: string | React.ReactNode;
   };
   primaryColor?: string;
   secondaryColor?: string;
@@ -251,14 +251,18 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
                   <Animated.View
                     style={[
                       styles.iconContainer,
-                      { 
+                      {
                         transform: [{ scale: leftIconScale }],
                       }
                     ]}
                   >
-                    <Text style={styles.icon}>
-                      {secondaryAction.icon || '📖'}
-                    </Text>
+                    {typeof secondaryAction.icon === 'string' || !secondaryAction.icon ? (
+                      <Text style={styles.icon}>
+                        {secondaryAction.icon || '📖'}
+                      </Text>
+                    ) : (
+                      secondaryAction.icon
+                    )}
                   </Animated.View>
                   
                   <Animated.View
@@ -317,14 +321,18 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
                 <Animated.View
                   style={[
                     styles.iconContainerRight,
-                    { 
+                    {
                       transform: [{ scale: rightIconScale }],
                     }
                   ]}
                 >
-                  <Text style={styles.icon}>
-                    {primaryAction.icon || '▶'}
-                  </Text>
+                  {typeof primaryAction.icon === 'string' || !primaryAction.icon ? (
+                    <Text style={styles.icon}>
+                      {primaryAction.icon || '▶'}
+                    </Text>
+                  ) : (
+                    primaryAction.icon
+                  )}
                 </Animated.View>
                 
                 <Animated.View

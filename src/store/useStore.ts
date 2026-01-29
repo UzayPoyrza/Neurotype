@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { UserProgress, FilterState, SessionDelta, Session, EmotionalFeedbackEntry } from '../types';
 import { mentalHealthModules } from '../data/modules';
-import { toggleLikedSession as toggleLikedSessionDB } from '../services/likedService';
+import { toggleLikedSession as toggleLikedSessionDB, getLikedSessionIds } from '../services/likedService';
 import { getCompletedSessionsByDateRange, markSessionCompleted, isSessionCompleted, CompletedSession, calculateUserStreak, getUserCompletedSessions } from '../services/progressService';
 import { getSessionModules } from '../services/sessionService';
 import { getLocalDateString } from '../utils/dateUtils';
@@ -267,6 +267,7 @@ interface AppState {
   setTodayModuleId: (moduleId: string | null) => void;
   toggleLikedSession: (sessionId: string) => Promise<void>;
   isSessionLiked: (sessionId: string) => boolean;
+  syncLikedSessionsFromDatabase: (userId: string) => Promise<void>;
   setIsTransitioning: (isTransitioning: boolean) => void;
   addEmotionalFeedbackEntry: (entry: EmotionalFeedbackEntry) => void;
   removeEmotionalFeedbackEntry: (entryId: string) => void;
@@ -403,7 +404,18 @@ export const useStore = create<AppState>((set, get) => ({
     const state = get();
     return state.likedSessionIds.includes(sessionId);
   },
-  
+
+  syncLikedSessionsFromDatabase: async (userId: string) => {
+    try {
+      console.log('💙 [Store] Syncing liked sessions from database...');
+      const likedIds = await getLikedSessionIds(userId);
+      set({ likedSessionIds: likedIds });
+      console.log('✅ [Store] Liked sessions synced:', likedIds.length, 'sessions');
+    } catch (error) {
+      console.error('❌ [Store] Error syncing liked sessions:', error);
+    }
+  },
+
   setIsTransitioning: (isTransitioning: boolean) => 
     set({ isTransitioning }),
 

@@ -577,6 +577,16 @@ export default function App() {
         // Continue - sync failure is not critical
       }
 
+      // Sync liked sessions from database
+      console.log('💙 [App] Syncing liked sessions from database...');
+      try {
+        await useStore.getState().syncLikedSessionsFromDatabase(userId);
+        console.log('✅ [App] Liked sessions synced');
+      } catch (syncError: any) {
+        console.error('❌ [App] Error syncing liked sessions:', syncError);
+        // Continue - sync failure is not critical
+      }
+
       // Calculate and update streak from completed sessions
       console.log('🔥 [App] Calculating streak from completed sessions...');
       try {

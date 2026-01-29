@@ -47,6 +47,7 @@ export const TodayScreen: React.FC = () => {
   const { setActiveSession, setGlobalBackgroundColor, setCurrentScreen, setTodayModuleId, markSessionCompletedToday, isSessionCompletedToday } = useStore();
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const userProgress = useStore(state => state.userProgress);
+  const completedTodaySessions = useStore(state => state.completedTodaySessions);
   
   // Module and session state management
   const [selectedModuleId, setSelectedModuleId] = useState('anxiety'); // Default to anxiety
@@ -690,12 +691,14 @@ export const TodayScreen: React.FC = () => {
   }, [fetchedCompletedSessions]);
 
   // Check if today's meditation is completed
+  // Note: completedTodaySessions is included as a dependency to ensure this recalculates
+  // when a session is marked complete (the function reference isSessionCompletedToday doesn't change)
   const isTodayCompleted = useMemo(() => {
     return todaySessions.some(session => {
       const originalSessionId = session.id.replace('-today', '');
       return isSessionCompletedToday(selectedModuleId, originalSessionId);
     });
-  }, [todaySessions, selectedModuleId, isSessionCompletedToday]);
+  }, [todaySessions, selectedModuleId, isSessionCompletedToday, completedTodaySessions]);
 
   // Filter to only count one session per day for neuroadaptation
   const uniqueDailySessionsCount = useMemo(() => {

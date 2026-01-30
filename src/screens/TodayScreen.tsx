@@ -1495,7 +1495,7 @@ export const TodayScreen: React.FC = () => {
                   {completedPreviewSessions.length === 0 && (
                     <View style={styles.progressPreviewLockedState}>
                       <View style={[styles.progressPreviewItemIcon, styles.progressPreviewItemIconLocked]}>
-                        <Text style={styles.progressPreviewLockIconText}>🔒</Text>
+                        <LockIcon size={20} color="#8e8e93" />
                       </View>
                       <View style={styles.progressPreviewItemBody}>
                         <Text style={styles.progressPreviewLockedText}>

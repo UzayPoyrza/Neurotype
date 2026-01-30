@@ -28,6 +28,7 @@ import { Session } from '../types';
 import { theme } from '../styles/theme';
 import { useStore, prerenderedModuleBackgrounds } from '../store/useStore';
 import { ShareIcon, BookOpenIcon } from '../components/icons';
+import { BarChartIcon } from '../components/icons/BarChartIcon';
 import { DraggableActionBar } from '../components/DraggableActionBar';
 import { meditationAudioData } from '../data/meditationMockData';
 import { getSessionById, getSessionModules } from '../services/sessionService';
@@ -779,7 +780,9 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
             </>
           ) : (
             <View style={styles.historyEmptyState}>
-              <Text style={styles.historyEmptyIcon}>📊</Text>
+              <View style={styles.historyEmptyIconContainer}>
+                <BarChartIcon size={48} color="#8e8e93" />
+              </View>
               <Text style={styles.historyEmptyText}>No sessions completed</Text>
               <Text style={styles.historyEmptySubtext}>Start your first meditation to see your progress here</Text>
             </View>
@@ -1550,8 +1553,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 40,
   },
-  historyEmptyIcon: {
-    fontSize: 48,
+  historyEmptyIconContainer: {
     marginBottom: 16,
   },
   historyEmptyText: {

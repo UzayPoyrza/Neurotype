@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { theme } from '../styles/theme';
 import { mentalHealthModules, getCategoryColor, categoryColors } from '../data/modules';
+import { MeditationIcon } from './icons/MeditationIcon';
 import { CompletedSession } from '../services/progressService';
 import { getLocalDateString } from '../utils/dateUtils';
 
@@ -252,7 +253,9 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
     return (
       <View style={styles.noMeditationsContainer}>
         <View style={styles.noMeditationsBox}>
-          <Text style={styles.noMeditationsIcon}>🧘‍♀️</Text>
+          <View style={styles.noMeditationsIconContainer}>
+            <MeditationIcon size={48} color="#8e8e93" />
+          </View>
           <Text style={styles.noMeditationsTitle}>No Meditations This Month</Text>
           <Text style={styles.noMeditationsText}>
             Start your mindfulness journey by completing your first meditation session.
@@ -518,8 +521,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flex: 1,
   },
-  noMeditationsIcon: {
-    fontSize: 32,
+  noMeditationsIconContainer: {
     marginBottom: 12,
   },
   noMeditationsTitle: {

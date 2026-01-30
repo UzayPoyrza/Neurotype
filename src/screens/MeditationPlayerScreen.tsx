@@ -23,8 +23,11 @@ import Reanimated, {
   useAnimatedStyle,
   runOnJS,
   withSpring,
+  withTiming,
   interpolate,
   Extrapolate,
+  Easing,
+  cancelAnimation,
 } from 'react-native-reanimated';
 import { useStore, type CompletedSessionCacheEntry } from '../store/useStore';
 import { theme } from '../styles/theme';
@@ -130,7 +133,23 @@ export const MeditationPlayerScreen: React.FC = () => {
   const [sleepModeEnabled, setSleepModeEnabled] = useState(false);
   const [downloadEnabled, setDownloadEnabled] = useState(false);
   const [idleTimerEnabled, setIdleTimerEnabled] = useState(true);
-  const optionsMenuAnim = useRef(new Animated.Value(0)).current;
+  const optionsMenuProgress = useSharedValue(0);
+
+  // Animated styles for options menu (using native driver via Reanimated)
+  const optionsMenuBackdropStyle = useAnimatedStyle(() => ({
+    opacity: optionsMenuProgress.value,
+  }));
+
+  const optionsMenuContainerStyle = useAnimatedStyle(() => ({
+    transform: [{
+      translateY: interpolate(
+        optionsMenuProgress.value,
+        [0, 1],
+        [300, 0],
+        Extrapolate.CLAMP
+      ),
+    }],
+  }));
   
   // Dark mode state
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -514,21 +533,26 @@ export const MeditationPlayerScreen: React.FC = () => {
 
   const handleOptions = () => {
     setShowOptionsMenu(true);
-    Animated.timing(optionsMenuAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+    cancelAnimation(optionsMenuProgress);
+    // Spring animation for smooth, natural opening
+    optionsMenuProgress.value = withSpring(1, {
+      damping: 25,
+      stiffness: 400,
+      mass: 0.6,
+    });
   };
 
   const handleCloseOptions = () => {
-    Animated.timing(optionsMenuAnim, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      setShowOptionsMenu(false);
+    cancelAnimation(optionsMenuProgress);
+    // Smooth timing animation for close
+    optionsMenuProgress.value = withTiming(0, {
+      duration: 250,
+      easing: Easing.bezier(0.25, 0.1, 0.25, 1),
     });
+    // Hide after animation completes
+    setTimeout(() => {
+      setShowOptionsMenu(false);
+    }, 260);
   };
 
   // Function to activate dark mode with animation
@@ -1654,30 +1678,21 @@ export const MeditationPlayerScreen: React.FC = () => {
       {/* Options Menu Bottom Sheet */}
       {showOptionsMenu && (
         <View style={styles.optionsMenuOverlay}>
-          <Animated.View 
+          <Reanimated.View
             style={[
               styles.optionsMenuBackdrop,
-              {
-                opacity: optionsMenuAnim,
-              }
+              optionsMenuBackdropStyle,
             ]}
           >
-            <TouchableOpacity 
-              style={styles.optionsMenuBackdropTouchable} 
+            <TouchableOpacity
+              style={styles.optionsMenuBackdropTouchable}
               onPress={handleCloseOptions}
               activeOpacity={1}
             />
-          </Animated.View>
-          <Animated.View style={[
+          </Reanimated.View>
+          <Reanimated.View style={[
             styles.optionsMenuContainer,
-            {
-              transform: [{
-                translateY: optionsMenuAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [300, 0],
-                })
-              }]
-            }
+            optionsMenuContainerStyle,
           ]}>
             <View style={styles.optionsMenuHandle} />
             
@@ -1732,7 +1747,7 @@ export const MeditationPlayerScreen: React.FC = () => {
                 />
               </View>
             </View>
-          </Animated.View>
+          </Reanimated.View>
         </View>
       )}
       {/* Completion Landing Overlay */}

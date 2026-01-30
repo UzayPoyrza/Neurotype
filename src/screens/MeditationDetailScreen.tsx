@@ -1053,42 +1053,48 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
             <View style={styles.shareHandle} />
 
             <View style={styles.shareContent}>
-              <View style={styles.sharePreviewCard}>
-                <View style={styles.sharePreviewHeader}>
-                  <View style={[styles.sharePreviewGlyph, { backgroundColor: getGoalColor(session.goal) }]}>
-                    <Text style={styles.sharePreviewGlyphText}>{getModalityIcon(session.modality)}</Text>
-                  </View>
-                  <View style={styles.sharePreviewHeaderText}>
-                    <Text style={styles.sharePreviewTitle}>{session.title}</Text>
-                    <Text style={styles.sharePreviewSubtitle}>{formattedGoal} · {session.durationMin} min</Text>
-                  </View>
+              {/* Header with icon and title */}
+              <View style={styles.shareHeader}>
+                <View style={[styles.shareIconContainer, { backgroundColor: getGoalColor(session.goal) + '15' }]}>
+                  <Text style={styles.shareIconText}>{getModalityIcon(session.modality)}</Text>
                 </View>
-
-                <Text style={styles.sharePreviewDescription}>
-                  {session.description || 'A guided experience designed to help you feel your best.'}
-                </Text>
-
-                <View style={styles.sharePreviewMetaRow}>
-                  <View style={styles.sharePreviewMetaPill}>
-                    <Text style={styles.sharePreviewMetaLabel}>Duration</Text>
-                    <Text style={styles.sharePreviewMetaValue}>{session.durationMin} min</Text>
-                  </View>
-                  <View style={styles.sharePreviewMetaPill}>
-                    <Text style={styles.sharePreviewMetaLabel}>Focus</Text>
-                    <Text style={styles.sharePreviewMetaValue}>{formattedGoal}</Text>
-                  </View>
-                  <View style={styles.sharePreviewMetaPill}>
-                    <Text style={styles.sharePreviewMetaLabel}>Modality</Text>
-                    <Text style={styles.sharePreviewMetaValue}>{session.modality}</Text>
-                  </View>
+                <View style={styles.shareTitleContainer}>
+                  <Text style={styles.shareTitle} numberOfLines={2}>{session.title}</Text>
+                  <Text style={styles.shareDuration}>{session.durationMin} min</Text>
                 </View>
               </View>
 
+              {/* Tags row */}
+              <View style={styles.shareTagsRow}>
+                <View style={[styles.shareTag, { borderColor: getGoalColor(session.goal) + '40' }]}>
+                  <Text style={styles.shareTagText}>{formattedGoal}</Text>
+                </View>
+                <View style={[styles.shareTag, { borderColor: getModalityColor(session.modality) + '40' }]}>
+                  <Text style={styles.shareTagText}>{session.modality}</Text>
+                </View>
+              </View>
+
+              {/* Description */}
+              {session.description && (
+                <Text style={styles.shareDescription} numberOfLines={3}>
+                  {session.description}
+                </Text>
+              )}
+
+              {/* Actions */}
               <View style={styles.shareActions}>
-                <TouchableOpacity onPress={handleShareSession} style={styles.sharePrimaryButton}>
-                  <Text style={styles.sharePrimaryButtonText}>Share Meditation</Text>
+                <TouchableOpacity
+                  onPress={handleShareSession}
+                  style={[styles.sharePrimaryButton, { backgroundColor: getGoalColor(session.goal) }]}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.sharePrimaryButtonText}>Share</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={handleCloseShareSheet} style={styles.shareSecondaryButton}>
+                <TouchableOpacity
+                  onPress={handleCloseShareSheet}
+                  style={styles.shareSecondaryButton}
+                  activeOpacity={0.6}
+                >
                   <Text style={styles.shareSecondaryButtonText}>Cancel</Text>
                 </TouchableOpacity>
               </View>
@@ -1830,120 +1836,109 @@ const styles = StyleSheet.create({
   },
   shareSheet: {
     backgroundColor: theme.health.container.backgroundColor,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 24,
-    paddingHorizontal: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 100,
+    paddingHorizontal: 24,
     paddingTop: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 12,
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 16,
   },
   shareHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(0,0,0,0.2)',
+    width: 36,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: 'rgba(0,0,0,0.12)',
     alignSelf: 'center',
-    marginBottom: 16,
-  },
-  shareContent: {
-    paddingBottom: 8,
-  },
-  sharePreviewCard: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.xl,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
     marginBottom: 20,
   },
-  sharePreviewHeader: {
+  shareContent: {
+    gap: 20,
+  },
+  shareHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    gap: 16,
   },
-  sharePreviewGlyph: {
-    width: 48,
-    height: 48,
+  shareIconContainer: {
+    width: 56,
+    height: 56,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
   },
-  sharePreviewGlyphText: {
-    fontSize: 24,
+  shareIconText: {
+    fontSize: 28,
   },
-  sharePreviewHeaderText: {
+  shareTitleContainer: {
     flex: 1,
+    gap: 4,
   },
-  sharePreviewTitle: {
-    fontSize: 19,
+  shareTitle: {
+    fontSize: 20,
     fontWeight: '700',
     color: theme.colors.text.primary,
-    marginBottom: 2,
+    letterSpacing: -0.4,
   },
-  sharePreviewSubtitle: {
+  shareDuration: {
     fontSize: 15,
     color: '#8e8e93',
     fontWeight: '500',
   },
-  sharePreviewDescription: {
-    fontSize: 16,
-    lineHeight: 22,
-    color: theme.colors.text.secondary,
-    marginBottom: 18,
-  },
-  sharePreviewMetaRow: {
+  shareTagsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 10,
+    gap: 8,
   },
-  sharePreviewMetaPill: {
-    flex: 1,
-    backgroundColor: '#f2f2f7',
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    alignItems: 'center',
+  shareTag: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    backgroundColor: '#FAFAFA',
   },
-  sharePreviewMetaLabel: {
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    color: '#8e8e93',
-    marginBottom: 4,
-  },
-  sharePreviewMetaValue: {
-    fontSize: 15,
+  shareTagText: {
+    fontSize: 14,
     fontWeight: '600',
     color: theme.colors.text.primary,
+    textTransform: 'capitalize',
+  },
+  shareDescription: {
+    fontSize: 16,
+    lineHeight: 23,
+    color: theme.colors.text.secondary,
+    letterSpacing: -0.2,
   },
   shareActions: {
-    marginTop: 4,
+    flexDirection: 'row',
     gap: 12,
+    marginTop: 4,
   },
   sharePrimaryButton: {
-    ...theme.health.button,
-    shadowColor: '#007aff',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.16,
-    shadowRadius: 10,
-    elevation: 5,
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sharePrimaryButtonText: {
-    ...theme.health.buttonText,
-    textTransform: 'none',
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#ffffff',
   },
   shareSecondaryButton: {
-    ...theme.health.secondaryButton,
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.06)',
   },
   shareSecondaryButtonText: {
-    ...theme.health.secondaryButtonText,
+    fontSize: 17,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
   },
 });

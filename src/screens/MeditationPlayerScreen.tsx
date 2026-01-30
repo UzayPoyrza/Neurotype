@@ -130,7 +130,6 @@ export const MeditationPlayerScreen: React.FC = () => {
   
   // Options menu state
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
-  const [sleepModeEnabled, setSleepModeEnabled] = useState(false);
   const [downloadEnabled, setDownloadEnabled] = useState(false);
   const [idleTimerEnabled, setIdleTimerEnabled] = useState(true);
   const optionsMenuProgress = useSharedValue(0);
@@ -1699,20 +1698,6 @@ export const MeditationPlayerScreen: React.FC = () => {
             <View style={styles.optionsMenuContent}>
               <Text style={styles.optionsMenuTitle}>Options</Text>
               
-              {/* Sleep Mode Toggle */}
-              <View style={styles.optionsMenuItem}>
-                <View style={styles.optionsMenuTextContainer}>
-                  <Text style={styles.optionsMenuLabel}>Sleep Mode</Text>
-                  <Text style={styles.optionsMenuDescription}>Automatically pause when you fall asleep</Text>
-                </View>
-                <Switch
-                  value={sleepModeEnabled}
-                  onValueChange={setSleepModeEnabled}
-                  trackColor={{ false: '#e0e0e0', true: '#007AFF' }}
-                  thumbColor="#ffffff"
-                />
-              </View>
-
               {/* Download Toggle */}
               <View style={styles.optionsMenuItem}>
                 <View style={styles.optionsMenuTextContainer}>

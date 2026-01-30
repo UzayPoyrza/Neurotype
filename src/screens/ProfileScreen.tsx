@@ -965,7 +965,7 @@ export const ProfileScreen: React.FC = () => {
               <View style={styles.referralSection}>
                 <Text style={styles.referralLabel}>Your referral link:</Text>
                 <View style={styles.referralLinkContainer}>
-                  <Text style={styles.referralLink}>neurotype.app/ref/user123</Text>
+                  <Text style={styles.referralLink}>www.neurotypeapp.com/ref/user123</Text>
                   <TouchableOpacity style={styles.copyButton}>
                     <Text style={styles.copyButtonText}>Copy</Text>
                   </TouchableOpacity>
@@ -974,11 +974,11 @@ export const ProfileScreen: React.FC = () => {
 
               <View style={styles.actionButtons}>
                 <TouchableOpacity style={styles.shareButton}>
-                  <Text style={styles.shareButtonText}>📱 Share Link</Text>
+                  <Text style={styles.shareButtonText}>Share Link</Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity style={styles.inviteButton}>
-                  <Text style={styles.inviteButtonText}>✉️ Send Invite</Text>
+                  <Text style={styles.inviteButtonText}>Send Invite</Text>
                 </TouchableOpacity>
               </View>
             </View>

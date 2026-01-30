@@ -656,7 +656,7 @@ export const SettingsScreen: React.FC = () => {
           <View style={styles.subscriptionCard}>
             <View style={styles.subscriptionHeader}>
               <Text style={styles.subscriptionTitle}>
-                {subscriptionType === 'premium' ? '💎 Premium Plan' : '📱 Basic Plan'}
+                {subscriptionType === 'premium' ? 'Premium Plan' : 'Basic Plan'}
               </Text>
               <Text style={styles.subscriptionStatus}>
                 {subscriptionType === 'premium' ? 'Premium' : 'Basic'}

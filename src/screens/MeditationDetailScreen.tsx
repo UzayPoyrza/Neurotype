@@ -237,7 +237,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   }, [activeTab, sessionId, userId, hasFetchedHistory]);
 
   const hasTutorial = !!(session && (meditationAudioData[session.id as keyof typeof meditationAudioData] as any)?.tutorialBackgroundAudio);
-  const sessionShareLink = session ? `https://neurotype.app/sessions/${session.id}` : '';
+  const sessionShareLink = session ? `https://www.neurotypeapp.com/sessions/${session.id}` : '';
   const formattedGoal = session ? session.goal.charAt(0).toUpperCase() + session.goal.slice(1) : '';
   
   const handleTabChange = (tab: TabType) => {

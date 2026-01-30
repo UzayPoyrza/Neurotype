@@ -26,7 +26,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Session } from '../types';
 import { theme } from '../styles/theme';
-import { useStore } from '../store/useStore';
+import { useStore, prerenderedModuleBackgrounds } from '../store/useStore';
 import { ShareIcon, BookOpenIcon } from '../components/icons';
 import { DraggableActionBar } from '../components/DraggableActionBar';
 import { meditationAudioData } from '../data/meditationMockData';
@@ -68,7 +68,6 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const [historySortOrder, setHistorySortOrder] = useState<'latest' | 'earliest'>('latest');
   const [showSortOptions, setShowSortOptions] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-  const [isBenefitsExpanded, setIsBenefitsExpanded] = useState(false);
   const userId = useUserId();
   const scrollX = useRef(new Animated.Value(0)).current;
   const horizontalScrollRef = useRef<ScrollView>(null);
@@ -512,13 +511,25 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   };
 
   const getGoalColor = (goal: string) => {
-    const colors: { [key: string]: string } = {
+    // Map goals to their category colors (matching modules.ts categoryColors)
+    const goalToColor: { [key: string]: string } = {
+      // Disorder (red)
       anxiety: '#FF6B6B',
-      focus: '#4ECDC4', 
-      sleep: '#45B7D1',
-      stress: '#9B59B6',
+      panic: '#FF6B6B',
+      depression: '#FF6B6B',
+      adhd: '#FF6B6B',
+      // Wellness (green)
+      burnout: '#6BCB77',
+      'self-compassion': '#6BCB77',
+      stress: '#6BCB77',
+      // Skill (blue)
+      focus: '#5B8DEE',
+      addiction: '#5B8DEE',
+      mindfulness: '#5B8DEE',
+      // Wind down (purple)
+      sleep: '#B8A9E8',
     };
-    return colors[goal] || theme.colors.primary;
+    return goalToColor[goal] || '#5B8DEE'; // Default to blue
   };
 
   const renderVisualSection = () => (
@@ -618,82 +629,35 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   };
 
   const renderBenefitsExplanation = () => {
-    if (!session) {
+    if (!session || !session.whyItWorks) {
       return null;
     }
-    
-    // Parse whyItWorks into numbered points - split more aggressively
-    let benefitItems: string[] = [];
-    if (session.whyItWorks) {
-      // Check if content already has bullet points or numbered lists
-      if (session.whyItWorks.includes('\n-') || session.whyItWorks.includes('\n•') || session.whyItWorks.includes('\n *') || session.whyItWorks.includes('\n1.') || session.whyItWorks.includes('\n2.')) {
-        benefitItems = session.whyItWorks
-          .split(/\n/)
-          .map(line => line.trim())
-          .filter(line => line.length > 0)
-          .map(line => line.replace(/^[-•*]\s*/, '').replace(/^\d+\.\s*/, '').trim())
-          .filter(line => line.length > 0);
-      } else {
-        // More aggressive splitting: split by sentences first
-        const sentences = session.whyItWorks
-          .split(/[.!?]+\s+/)
-          .map(s => s.trim())
-          .filter(s => s.length > 8); // Lower threshold for more points
-        
-        if (sentences.length > 0) {
-          benefitItems = sentences;
-        } else {
-          // Split by commas and semicolons for longer content
-          const parts = session.whyItWorks
-            .split(/[,;]\s+/)
-            .map(p => p.trim())
-            .filter(p => p.length > 10); // Lower threshold
-          
-          if (parts.length > 1) {
-            benefitItems = parts;
-          } else {
-            // Last resort: split by "and", "or", "but" connectors
-            const connectorSplit = session.whyItWorks
-              .split(/\s+(and|or|but|also|additionally|furthermore|moreover)\s+/i)
-              .map(p => p.trim())
-              .filter(p => p.length > 10);
-            
-            benefitItems = connectorSplit.length > 1 ? connectorSplit : [session.whyItWorks];
-          }
-        }
+
+    // Use the whyItWorks text directly as 1-2 sentences
+    const whyText = session.whyItWorks.trim();
+
+    if (whyText.length === 0) {
+      return null;
+    }
+
+    // Get the accent color by finding which module matches the current background color
+    let accentColor = getGoalColor(session.goal);
+    const matchingModuleId = Object.entries(prerenderedModuleBackgrounds).find(
+      ([_, bgColor]) => bgColor === globalBackgroundColor
+    )?.[0];
+
+    if (matchingModuleId) {
+      const matchingModule = mentalHealthModules.find(m => m.id === matchingModuleId);
+      if (matchingModule) {
+        accentColor = getCategoryColor(matchingModule.category);
       }
     }
-    
-    if (benefitItems.length === 0) {
-      return null;
-    }
-    
-    const MAX_ITEMS = 3;
-    const displayItems = isBenefitsExpanded ? benefitItems : benefitItems.slice(0, MAX_ITEMS);
-    const hasMore = benefitItems.length > MAX_ITEMS;
-    
+
     return (
       <View style={styles.benefitsSection} testID="benefits-section">
         <Text style={styles.whyThisMeditationTitle}>Why This Meditation?</Text>
-        <View style={styles.benefitList}>
-          {displayItems.map((item, index) => (
-            <View key={index} style={styles.benefitInstructionItem}>
-              <View style={styles.benefitInstructionNumber}>
-                <Text style={styles.benefitInstructionNumberText}>{index + 1}</Text>
-              </View>
-              <Text style={styles.benefitInstructionText}>{item}</Text>
-            </View>
-          ))}
-          {hasMore && (
-            <TouchableOpacity 
-              onPress={() => setIsBenefitsExpanded(!isBenefitsExpanded)}
-              style={styles.readMoreButton}
-            >
-              <Text style={styles.readMoreText}>
-                {isBenefitsExpanded ? 'Show less' : `Show ${benefitItems.length - MAX_ITEMS} more`}
-              </Text>
-            </TouchableOpacity>
-          )}
+        <View style={[styles.whyCalloutCard, { borderLeftColor: accentColor, borderRightColor: accentColor }]}>
+          <Text style={styles.whyCalloutText}>{whyText}</Text>
         </View>
       </View>
     );
@@ -1354,6 +1318,30 @@ const styles = StyleSheet.create({
     color: '#000000',
     marginBottom: 14,
     letterSpacing: -0.3,
+  },
+  whyCalloutCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 18,
+    borderLeftWidth: 4,
+    borderRightWidth: 4,
+    borderTopWidth: 0.5,
+    borderBottomWidth: 0.5,
+    borderTopColor: '#E5E5EA',
+    borderBottomColor: '#E5E5EA',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  whyCalloutText: {
+    flex: 1,
+    fontSize: 16,
+    lineHeight: 24,
+    color: '#3C3C43',
+    fontWeight: '400',
+    letterSpacing: -0.2,
   },
   benefitList: {
     gap: 4,

@@ -12,7 +12,15 @@ import {
   Share,
   ActivityIndicator,
 } from 'react-native';
-import { PanGestureHandler, State } from 'react-native-gesture-handler';
+import Reanimated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  Easing,
+  interpolate,
+  Extrapolation,
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -67,7 +75,26 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const draggableActionBarRef = useRef<any>(null);
   const horizontalScrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isShareSheetOpen, setShareSheetOpen] = useState(false);
-  const shareSheetAnim = useRef(new Animated.Value(0)).current;
+  const shareSheetProgress = useSharedValue(0);
+
+  // Animated styles for share sheet using reanimated
+  const shareBackdropAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: shareSheetProgress.value,
+    };
+  });
+
+  const shareSheetAnimatedStyle = useAnimatedStyle(() => {
+    const translateY = interpolate(
+      shareSheetProgress.value,
+      [0, 1],
+      [320, 0],
+      Extrapolation.CLAMP
+    );
+    return {
+      transform: [{ translateY }],
+    };
+  });
   const screenWidth = Dimensions.get('window').width;
   
   // Load session from cache or database
@@ -339,24 +366,23 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
       return;
     }
     setShareSheetOpen(true);
-    shareSheetAnim.stopAnimation();
-    shareSheetAnim.setValue(0);
-    Animated.timing(shareSheetAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+    shareSheetProgress.value = 0;
+    shareSheetProgress.value = withSpring(1, {
+      damping: 20,
+      stiffness: 300,
+      mass: 0.8,
+    });
   };
 
   const closeShareSheet = () => {
-    shareSheetAnim.stopAnimation();
-    Animated.timing(shareSheetAnim, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      setShareSheetOpen(false);
+    shareSheetProgress.value = withTiming(0, {
+      duration: 200,
+      easing: Easing.out(Easing.cubic),
     });
+    // Delay setting state to allow animation to complete
+    setTimeout(() => {
+      setShareSheetOpen(false);
+    }, 200);
   };
 
   const handleSharePress = () => {
@@ -1004,12 +1030,10 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
       {/* Share Preview Bottom Sheet */}
       {session && isShareSheetOpen && (
         <View style={styles.shareOverlay} pointerEvents="box-none">
-          <Animated.View
+          <Reanimated.View
             style={[
               styles.shareBackdrop,
-              {
-                opacity: shareSheetAnim,
-              },
+              shareBackdropAnimatedStyle,
             ]}
           >
             <TouchableOpacity
@@ -1017,23 +1041,13 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
               onPress={handleCloseShareSheet}
               activeOpacity={1}
             />
-          </Animated.View>
+          </Reanimated.View>
 
-          <Animated.View
+          <Reanimated.View
             style={[
               styles.shareSheet,
               { backgroundColor: globalBackgroundColor },
-              {
-                transform: [
-                  {
-                    translateY: shareSheetAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [320, 0],
-                      extrapolate: 'clamp',
-                    }),
-                  },
-                ],
-              },
+              shareSheetAnimatedStyle,
             ]}
           >
             <View style={styles.shareHandle} />
@@ -1079,7 +1093,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
                 </TouchableOpacity>
               </View>
             </View>
-          </Animated.View>
+          </Reanimated.View>
         </View>
       )}
     </View>

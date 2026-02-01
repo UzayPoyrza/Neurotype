@@ -10,7 +10,7 @@ import { ShimmerCalendarCard, ShimmerSessionsCard } from '../components/ShimmerS
 import { getUserCompletedSessions, CompletedSession } from '../services/progressService';
 import { useUserId } from '../hooks/useUserId';
 import { BarChartIcon } from '../components/icons/BarChartIcon';
-import { getLocalDateString } from '../utils/dateUtils';
+import { getLocalDateString, parseLocalDate } from '../utils/dateUtils';
 
 
 
@@ -106,7 +106,7 @@ export const ProgressScreen: React.FC = () => {
           return session.completed_date >= weekAgoStr && session.completed_date <= todayStr;
         }).length;
         const thisMonth = allSessions.filter(session => {
-          const sessionDate = new Date(session.completed_date);
+          const sessionDate = parseLocalDate(session.completed_date);
           return sessionDate.getFullYear() === currentYear && sessionDate.getMonth() === currentMonth;
         }).length;
         

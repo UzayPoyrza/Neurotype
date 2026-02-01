@@ -4,7 +4,7 @@ import { mentalHealthModules } from '../data/modules';
 import { toggleLikedSession as toggleLikedSessionDB, getLikedSessionIds } from '../services/likedService';
 import { getCompletedSessionsByDateRange, markSessionCompleted, isSessionCompleted, CompletedSession, calculateUserStreak, getUserCompletedSessions } from '../services/progressService';
 import { getSessionModules } from '../services/sessionService';
-import { getLocalDateString } from '../utils/dateUtils';
+import { getLocalDateString, parseLocalDate } from '../utils/dateUtils';
 
 // Helper function to get category from moduleId
 const getCategoryFromModuleId = (moduleId: string | undefined): 'disorder' | 'wellness' | 'skill' | 'winddown' => {
@@ -528,7 +528,7 @@ export const useStore = create<AppState>((set, get) => ({
         session.completed_date >= weekAgoStr && session.completed_date <= todayStr
       ).length;
       const thisMonth = allSessions.filter(session => {
-        const sessionDate = new Date(session.completed_date);
+        const sessionDate = parseLocalDate(session.completed_date);
         return sessionDate.getFullYear() === currentYear && sessionDate.getMonth() === currentMonth;
       }).length;
 

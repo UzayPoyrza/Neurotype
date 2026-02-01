@@ -13,7 +13,7 @@ import { theme } from '../styles/theme';
 import { mentalHealthModules, getCategoryColor, categoryColors } from '../data/modules';
 import { MeditationIcon } from './icons/MeditationIcon';
 import { CompletedSession } from '../services/progressService';
-import { getLocalDateString } from '../utils/dateUtils';
+import { getLocalDateString, parseLocalDate } from '../utils/dateUtils';
 
 const { width } = Dimensions.get('window');
 
@@ -69,7 +69,7 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
     const month = currentDate.getMonth();
     
     return completedSessions.some(entry => {
-      const sessionDate = new Date(entry.completed_date);
+      const sessionDate = parseLocalDate(entry.completed_date);
       return sessionDate.getFullYear() === year && sessionDate.getMonth() === month;
     });
   };
@@ -272,7 +272,7 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
     
     const completedCategories = completedSessions
       .filter(entry => {
-        const sessionDate = new Date(entry.completed_date);
+        const sessionDate = parseLocalDate(entry.completed_date);
         return sessionDate.getFullYear() === year && sessionDate.getMonth() === month;
       })
       .map(entry => getCategoryFromModuleId(entry.context_module))

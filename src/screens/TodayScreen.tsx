@@ -1274,13 +1274,13 @@ export const TodayScreen: React.FC = () => {
                   activeOpacity={1}
                 >
                   <View style={styles.sessionContent}>
-                    <Text style={styles.sessionTitle}>{recommendedSession.title}</Text>
-                    <Text style={styles.sessionSubtitle}>
+                    <Text style={styles.sessionTitle} numberOfLines={1}>{recommendedSession.title}</Text>
+                    <Text style={styles.sessionSubtitle} numberOfLines={1}>
                       {recommendedSession.adaptiveReason || 'Recommended for you'}
                     </Text>
-                    
+
                     <View style={styles.sessionMeta}>
-                      <Text style={styles.sessionMetaText}>
+                      <Text style={styles.sessionMetaText} numberOfLines={1}>
                         {recommendedSession.durationMin} min • {recommendedSession.modality}
                       </Text>
                       <View style={styles.recommendedBadge}>
@@ -1348,13 +1348,16 @@ export const TodayScreen: React.FC = () => {
                     activeOpacity={0.8}
                   >
                     <View style={styles.alternativeSessionContent}>
-                      <Text style={[
-                        styles.alternativeSessionTitle,
-                        isCompleted && styles.alternativeSessionTitleCompleted
-                      ]}>
+                      <Text
+                        style={[
+                          styles.alternativeSessionTitle,
+                          isCompleted && styles.alternativeSessionTitleCompleted
+                        ]}
+                        numberOfLines={1}
+                      >
                         {session.title}
                       </Text>
-                      <Text style={styles.alternativeSessionMeta}>
+                      <Text style={styles.alternativeSessionMeta} numberOfLines={1}>
                         {session.durationMin} min • {session.modality}
                       </Text>
                     </View>
@@ -1756,6 +1759,7 @@ const styles = StyleSheet.create({
   recommendedSessionContainer: {
     paddingHorizontal: 16,
     paddingBottom: 12,
+    height: 116, // Fixed height to prevent layout shift during loading
   },
   recommendedSession: {
     backgroundColor: '#ffffff',
@@ -1766,7 +1770,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
     position: 'relative',
-    minHeight: 88, // Standardized height
+    minHeight: 104, // Standardized height to match skeleton
   },
   sessionContent: {
     flex: 1,
@@ -1845,6 +1849,7 @@ const styles = StyleSheet.create({
   alternativeSessionsList: {
     paddingTop: 0,
     paddingBottom: 12,
+    height: 228, // Fixed height for 3 cards to prevent layout shift during loading
   },
   alternativeSession: {
     flexDirection: 'row',

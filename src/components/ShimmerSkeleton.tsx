@@ -432,6 +432,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: '#e0e0e0',
+    minHeight: 104,
   },
   cardContent: {
     flex: 1,
@@ -457,6 +458,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: '#e0e0e0',
+    minHeight: 64,
   },
   alternativeCardContent: {
     flex: 1,

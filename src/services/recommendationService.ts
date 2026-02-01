@@ -5,6 +5,7 @@
 
 import { supabase } from './supabase';
 import { getSessionsByModality, getAllSessions } from './sessionService';
+import { getLocalDateString } from '../utils/dateUtils';
 
 export interface DailyRecommendation {
   id?: string;
@@ -26,7 +27,7 @@ export async function getDailyRecommendations(
   date?: string
 ): Promise<DailyRecommendation[]> {
   try {
-    const recommendationDate = date || new Date().toISOString().split('T')[0];
+    const recommendationDate = date || getLocalDateString();
 
     const { data, error } = await supabase
       .from('daily_recommendations')
@@ -38,8 +39,9 @@ export async function getDailyRecommendations(
       .limit(4); // Limit to exactly 4 recommendations
 
     if (error) {
-      console.error('Error fetching daily recommendations:', error);
-      return [];
+      console.error('❌ [Recommendations] Error fetching daily recommendations:', error);
+      // ADD: Throw error instead of returning empty array
+      throw new Error(`Failed to fetch recommendations: ${error.message} (Code: ${error.code || 'N/A'})`);
     }
 
     const recommendations = (data || []).map(rec => ({
@@ -59,9 +61,10 @@ export async function getDailyRecommendations(
     }
 
     return recommendations;
-  } catch (error) {
-    console.error('Error in getDailyRecommendations:', error);
-    return [];
+  } catch (error: any) {
+    console.error('❌ [Recommendations] Error in getDailyRecommendations:', error);
+    // ADD: Re-throw instead of returning empty array
+    throw error;
   }
 }
 
@@ -100,8 +103,8 @@ export async function validRecommendationsExistForToday(
   moduleId: string
 ): Promise<{ exists: boolean; date?: string }> {
   try {
-    const today = new Date().toISOString().split('T')[0];
-    
+    const today = getLocalDateString();
+
     const { data, error } = await supabase
       .from('daily_recommendations')
       .select('recommendation_date, is_recommended')
@@ -211,9 +214,9 @@ export async function generatePlaceholderRecommendations(
     const selectedSessions = shuffled.slice(0, 4);
     
     console.log('🎲 [Recommendations] Selected sessions:', selectedSessions.map(s => s.title));
-    
+
     // Create recommendations: first one is recommended, others are alternatives
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     const recommendations = selectedSessions.map((session, index) => ({
       session_id: session.id,
       is_recommended: index === 0, // First one is recommended
@@ -251,10 +254,10 @@ export async function ensureDailyRecommendations(
   try {
     console.log('🔍 [Recommendations] Checking if recommendations exist for today...');
     console.log('🔍 [Recommendations] Module:', moduleId, 'Force regenerate:', forceRegenerate);
-    
+
     const checkResult = await validRecommendationsExistForToday(userId, moduleId);
-    const today = new Date().toISOString().split('T')[0];
-    
+    const today = getLocalDateString();
+
     // If recommendations exist for today and we're not forcing regeneration, return early
     if (!forceRegenerate && checkResult.exists && checkResult.date === today) {
       console.log('✅ [Recommendations] Valid recommendations already exist for today for module:', moduleId);

@@ -4,6 +4,7 @@
  */
 
 import { supabase } from './supabase';
+import { getLocalDateString } from '../utils/dateUtils';
 
 export interface SessionRating {
   id?: string;
@@ -31,7 +32,7 @@ export async function addSessionRating(
         session_id: sessionId,
         rating,
         context_module: contextModule || null,
-        date: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
+        date: getLocalDateString(), // YYYY-MM-DD format
       });
 
     if (error) {

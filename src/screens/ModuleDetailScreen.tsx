@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Animated, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Animated, ActivityIndicator, Easing } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { SessionCard } from '../components/SessionCard';
@@ -8,6 +8,7 @@ import { mentalHealthModules } from '../data/modules';
 import { useStore } from '../store/useStore';
 import { theme } from '../styles/theme';
 import { getAllSessions, getSessionsByModality } from '../services/sessionService';
+import { showErrorAlert, ERROR_TITLES } from '../utils/errorHandler';
 
 type ExploreStackParamList = {
   ExploreMain: undefined;
@@ -92,6 +93,10 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Animation for sessions list fade-in
+  const listFadeAnim = useRef(new Animated.Value(0)).current;
+  const listTranslateAnim = useRef(new Animated.Value(20)).current;
+  
   // Track sessions that are being removed (for animation)
   const [removingSessionIds, setRemovingSessionIds] = useState<Set<string>>(new Set());
   
@@ -171,6 +176,10 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
       setIsLoading(true);
       setError(null);
       
+      // Reset animation values for fresh animation
+      listFadeAnim.setValue(0);
+      listTranslateAnim.setValue(20);
+      
       try {
         let fetchedSessions: Session[] = [];
         
@@ -209,7 +218,9 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
         console.log('[ModuleDetailScreen] ✅ Sessions cached successfully');
       } catch (err) {
         console.error('[ModuleDetailScreen] ❌ Error fetching sessions:', err);
-        setError('Failed to load sessions. Please try again.');
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load sessions';
+        setError(errorMessage);
+        showErrorAlert(ERROR_TITLES.NETWORK_ERROR, err);
       } finally {
         setIsLoading(false);
         console.log('[ModuleDetailScreen] ✨ Finished loading sessions');
@@ -304,6 +315,26 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
     return sessions;
   }, [sessions, moduleId, likedSessionIds, removingSessionIds]);
 
+  // Animate in sessions list when loading completes
+  useEffect(() => {
+    if (!isLoading && !error) {
+      // Trigger animation when loading completes (whether sessions exist or not)
+      Animated.parallel([
+        Animated.timing(listFadeAnim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(listTranslateAnim, {
+          toValue: 0,
+          duration: 400,
+          easing: Easing.out(Easing.cubic), // Smooth ease-out curve
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [isLoading, error]);
+
   const handleSessionStart = (session: Session) => {
     console.log('[ModuleDetailScreen] 👆 User clicked session:', session.id, session.title);
     // Navigate to MeditationDetail screen instead of setting active session
@@ -340,8 +371,10 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
             </Text>
           </View>
           <Text style={styles.moduleTitle}>
-            {moduleId === 'liked-meditations' 
-              ? `${moduleSessions.length} favorite meditation${moduleSessions.length === 1 ? '' : 's'}`
+            {moduleId === 'liked-meditations'
+              ? (isLoading
+                  ? 'Loading...'
+                  : `${moduleSessions.length} favorite meditation${moduleSessions.length === 1 ? '' : 's'}`)
               : module?.title
             }
           </Text>
@@ -369,7 +402,13 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
             </View>
           </View>
         ) : (
-          <>
+          <Animated.View
+            style={{
+              flex: 1,
+              opacity: listFadeAnim,
+              transform: [{ translateY: listTranslateAnim }],
+            }}
+          >
             <FlatList
               data={moduleSessions}
               renderItem={({ item }) => {
@@ -405,7 +444,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
                 </View>
               </View>
             )}
-          </>
+          </Animated.View>
         )}
       </View>
       
@@ -515,6 +554,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 60,
+    marginTop: -100, // Move loading icon up to better center it
   },
   loadingText: {
     marginTop: 16,
@@ -544,13 +584,17 @@ const styles = StyleSheet.create({
     top: 60,
     left: 0,
     right: 0,
-    paddingHorizontal: 20,
+    paddingHorizontal: 0, // Remove padding to allow wider card
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingVertical: 56,
+    paddingHorizontal: 40,
     backgroundColor: '#ffffff',
     borderRadius: 16,
+    marginHorizontal: 16, // Add side margins for spacing from edges
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -560,14 +604,14 @@ const styles = StyleSheet.create({
   emptyText: {
     color: '#000000',
     textAlign: 'center',
-    fontSize: 19,
+    fontSize: 22,
     fontWeight: '600',
   },
   emptySubtext: {
     color: '#8e8e93',
     textAlign: 'center',
-    marginTop: 12,
-    fontSize: 17,
+    marginTop: 16,
+    fontSize: 18,
     fontWeight: '400',
   },
   errorContainer: {

@@ -1,169 +1,112 @@
 # Neurotype
 
-The first meditation app that adapts to your brain type, using neuroscience to match you with the meditation method proven to work for you.
+A React Native meditation app that adapts to your brain type, using neuroscience-backed methods to reduce anxiety. Built with Expo, TypeScript, Supabase, and Stripe.
 
-## Features
+## Screenshots
 
-### 🎯 Core Loop
-- **Pick a session** → **Record before/after feeling** → **See your trend**
-- Simple, fast, and clean meditation experience
-- Anxiety reduction tracking (0-10 scale)
+<p align="center">
+  <img src="screenshots/today.png" width="150" alt="Today Screen" />
+  <img src="screenshots/explore.png" width="150" alt="Explore Modules" />
+  <img src="screenshots/modules.png" width="150" alt="Module Selection" />
+  <img src="screenshots/detail.png" width="150" alt="Session Detail" />
+  <img src="screenshots/player.png" width="150" alt="Meditation Player" />
+  <img src="screenshots/profile.png" width="150" alt="Profile & History" />
+</p>
 
-### 📱 Three Main Tabs
+## Overview
 
-#### Today Tab
-- Personalized greeting with streak counter
-- Recommended session card
-- Mini trend sparkline showing last 7 sessions
-- Quick stats overview
+Neurotype helps users manage mental health through personalized meditation. The app features:
 
-#### Explore Tab
-- Browse all available sessions
-- Filter by modality (Sound, Movement, Mantra, etc.)
-- Filter by goal (Anxiety, Focus, Sleep)
-- Session cards with duration and tags
+- **12 mental health modules** across disorders (Anxiety, ADHD, Depression), wellness (Sleep, Stress), and skills (Focus, Mindfulness)
+- **217+ meditation sessions** with varied modalities (visualization, somatic, movement, sound)
+- **Before/after tracking** to measure anxiety reduction over time
+- **Daily personalized recommendations** based on user progress and selected focus area
+- **Real-time emotional feedback** captured during meditation sessions
 
-#### Profile Tab
-- Personal stats (streak, sessions completed, avg reduction)
-- Your neurotype information
-- Daily reminder toggle
-- App information
+## Technical Highlights
 
-### 🧠 Session Experience
-- Before/after anxiety check-in (0-10 scale)
-- Timer-based meditation sessions
-- Haptic feedback on completion
-- Progress tracking and trends
+### Architecture
+- **Service layer pattern** - All backend calls go through typed service functions, keeping components clean
+- **Zustand for state** - Global store with optimistic updates and cache invalidation
+- **Row Level Security** - Supabase RLS policies ensure users only access their own data
+
+### Key Technical Decisions
+- **expo-secure-store** for auth token storage instead of AsyncStorage
+- **React Navigation 7** with custom Instagram-style animated headers (1:1 scroll movement)
+- **Supabase Edge Functions** for Stripe payment processing (subscriptions, one-time payments, webhooks)
+- **Real-time emotional feedback** stored with timestamps during playback for session analytics
+
+### Authentication
+- Email/password, Google OAuth, and Apple Sign-In
+- Custom storage adapter integrating expo-secure-store with Supabase client
+
+### Payment Integration
+- Stripe subscriptions (monthly/yearly) and one-time lifetime purchase
+- Customer portal for subscription management
+- Webhook handling for subscription state changes
 
 ## Tech Stack
 
-- **Expo SDK 51+** with React Native
-- **TypeScript** for type safety
-- **React Navigation** for bottom tabs
-- **NativeWind** for styling (Tailwind CSS)
-- **Zustand** for state management
-- **Phosphor Icons** for beautiful icons
-
-## Getting Started
-
-### Prerequisites
-- Node.js (v18 or higher)
-- Expo CLI
-- iOS Simulator or Android Emulator
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd Neurotype
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Start the development server:
-```bash
-npm start
-```
-
-4. Run on your preferred platform:
-```bash
-# iOS
-npm run ios
-
-# Android
-npm run android
-
-# Web
-npm run web
-```
+| Category | Technology |
+|----------|------------|
+| Framework | React Native 0.81 with Expo SDK 54 |
+| Language | TypeScript |
+| Backend | Supabase (PostgreSQL, Auth, Edge Functions) |
+| State | Zustand |
+| Navigation | React Navigation 7 |
+| Payments | Stripe React Native |
+| Audio | Expo AV |
+| Notifications | Expo Notifications |
+| Animations | React Native Reanimated |
 
 ## Project Structure
 
 ```
 src/
-├── components/          # Reusable UI components
-│   ├── Chip.tsx        # Filter and tag chips
-│   ├── PrimaryButton.tsx # Main action buttons
-│   ├── SessionCard.tsx # Session display cards
-│   ├── Slider0to10.tsx # Anxiety scale slider
-│   └── Sparkline.tsx   # Progress trend visualization
-├── screens/            # Main app screens
-│   ├── TodayScreen.tsx # Home tab with recommendations
-│   ├── ExploreScreen.tsx # Session browser
-│   ├── ProfileScreen.tsx # User profile and stats
-│   └── PlayerScreen.tsx # Session experience modal
-├── store/              # State management
-│   └── useStore.ts     # Zustand store
-├── types/              # TypeScript definitions
-│   └── index.ts        # App type definitions
-└── data/               # Mock data
-    └── mockData.ts     # Sample sessions and user data
+├── components/     # Reusable UI (SessionCard, AnimatedTabBar, Sparkline, etc.)
+├── screens/        # App screens (Today, Progress, Explore, Profile, Player)
+├── services/       # Backend service layer (auth, sessions, progress, payments)
+├── store/          # Zustand global state
+├── types/          # TypeScript definitions
+└── styles/         # Theme configuration
 ```
 
-## Data Models
+## Database Schema
 
-### Session
-```typescript
-type Session = {
-  id: string;
-  title: string;
-  durationMin: number;
-  modality: 'sound' | 'movement' | 'mantra' | 'visualization' | 'somatic' | 'mindfulness';
-  goal: 'anxiety' | 'focus' | 'sleep';
-};
+Core tables with Row Level Security:
+- `users` - Profiles with subscription info and Stripe customer ID
+- `sessions` - Meditation content with duration, description, and technique explanations
+- `session_modalities` - Many-to-many relationship linking sessions to modules
+- `completed_sessions` - Completion tracking with context module
+- `session_deltas` - Before/after anxiety ratings (0-10 scale)
+- `emotional_feedback` - Real-time feedback captured during sessions
+- `daily_recommendations` - AI-generated daily session recommendations
+
+## Getting Started
+
+```bash
+# Install dependencies
+npm install
+
+# Configure environment
+cp .env.example .env
+# Add your Supabase URL, anon key, and Stripe publishable key
+
+# Start development server
+npm start
+
+# Run on iOS/Android
+npm run ios
+npm run android
 ```
 
-### User Progress
-```typescript
-type UserProgress = {
-  streak: number;
-  sessionDeltas: {
-    date: string;
-    before: number;
-    after: number;
-  }[];
-};
-```
+## Features in Development
 
-## Testing
-
-The app includes testIDs on primary CTAs for automated testing:
-- `start-session` - Recommended session start button
-- `start-from-explore` - Explore tab session start buttons
-- `save-session` - Save session after completion
-- `toggle-reminder` - Profile reminder toggle
-
-## Development Notes
-
-- **Light mode only** - No dark theme implementation yet
-- **In-memory data** - No backend or persistence
-- **Mock sessions** - 12 pre-seeded sessions covering all modalities
-- **Static recommendations** - No AI/ML yet
-- **No authentication** - Single user experience
-
-## Future Enhancements
-
-- [ ] Dark mode support
-- [ ] Backend integration
-- [ ] Real video content
-- [ ] Push notifications
-- [ ] GAD-7 assessment
-- [ ] Scientific citations
-- [ ] User authentication
-- [ ] Advanced analytics
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+- Dark mode (UI exists, full implementation pending)
+- Offline mode with local caching
+- Advanced analytics dashboard
+- Multi-language support
 
 ## License
 
-This project is licensed under the MIT License. 
+MIT

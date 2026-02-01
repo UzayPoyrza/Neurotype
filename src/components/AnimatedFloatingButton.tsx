@@ -31,7 +31,7 @@ interface AnimatedFloatingButtonProps {
   onDragStart?: () => void;
 }
 
-export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
+const AnimatedFloatingButtonComponent: React.FC<AnimatedFloatingButtonProps> = ({
   backgroundColor,
   onPress,
   isPillMode,
@@ -78,6 +78,12 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
 
   // Animate to pill mode
   useEffect(() => {
+    // Stop any running animations first to prevent jittering
+    buttonWidth.stopAnimation();
+    buttonTranslateX.stopAnimation();
+    textOpacity.stopAnimation();
+    iconScale.stopAnimation();
+    
     if (isPillMode) {
       // Calculate how much to translate left for right-side buttons
       const translateAmount = isLeftSide ? 0 : -(pillWidth - buttonSize);
@@ -301,6 +307,9 @@ export const AnimatedFloatingButton: React.FC<AnimatedFloatingButtonProps> = ({
     </Animated.View>
   );
 };
+
+// Memoize to prevent re-renders when props haven't changed
+export const AnimatedFloatingButton = React.memo(AnimatedFloatingButtonComponent);
 
 const styles = StyleSheet.create({
   container: {

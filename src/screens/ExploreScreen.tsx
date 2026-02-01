@@ -18,6 +18,10 @@ import { ModuleCard } from '../components/ModuleCard';
 import { Chip } from '../components/Chip';
 import { SearchBar } from '../components/SearchBar';
 import { FilterCategory, FilterSelection } from '../components/SpotifyFilterBar';
+import { PinIcon } from '../components/icons/PinIcon';
+import { RecentIcon } from '../components/icons/RecentIcon';
+import { AlphabeticalIcon } from '../components/icons/AlphabeticalIcon';
+import { CategoryIcon } from '../components/icons/CategoryIcon';
 import { ExploreIcon } from '../components/icons';
 import { useStore } from '../store/useStore';
 import { mentalHealthModules, MentalHealthModule } from '../data/modules';
@@ -328,11 +332,24 @@ export const ExploreScreen: React.FC = () => {
               onPress={() => setShowSortModal(true)}
             >
               <View style={styles.sortingHeader}>
-                <Text style={styles.sortingTitle}>
-                  {selectedSort === 'recents' ? '📚 Recents' : 
-                   selectedSort === 'alphabetical' ? '🔤 Alphabetical' : 
-                   '📂 By Category'}
-                </Text>
+                <View style={styles.sortingTitleContainer}>
+                  {selectedSort === 'recents' ? (
+                    <>
+                      <RecentIcon size={20} color="#000000" />
+                      <Text style={[styles.sortingTitle, { marginLeft: 6 }]}>Recents</Text>
+                    </>
+                  ) : selectedSort === 'alphabetical' ? (
+                    <>
+                      <AlphabeticalIcon size={20} color="#141124" />
+                      <Text style={[styles.sortingTitle, { marginLeft: 6 }]}>Alphabetical</Text>
+                    </>
+                  ) : (
+                    <>
+                      <CategoryIcon size={20} color="#141124" />
+                      <Text style={[styles.sortingTitle, { marginLeft: 6 }]}>By Category</Text>
+                    </>
+                  )}
+                </View>
                 <Text style={styles.sortingArrow}>⌄</Text>
               </View>
             </TouchableOpacity>
@@ -379,7 +396,7 @@ export const ExploreScreen: React.FC = () => {
                               </Text>
                             </View>
                             <View style={styles.pinBadge}>
-                              <Text style={styles.pinIcon}>📌</Text>
+                              <PinIcon size={14} color="#000000" />
                             </View>
                           </View>
                           
@@ -508,12 +525,16 @@ export const ExploreScreen: React.FC = () => {
                       }
                     }}
                   >
-                    <Text style={[
-                      styles.sortOptionText,
-                      selectedSort === 'recents' && styles.sortOptionTextActive
-                    ]}>
-                      📚 Recents
-                    </Text>
+                    <View style={styles.sortOptionTextContainer}>
+                      <RecentIcon size={18} color={selectedSort === 'recents' ? '#000000' : '#8e8e93'} />
+                      <Text style={[
+                        styles.sortOptionText,
+                        selectedSort === 'recents' && styles.sortOptionTextActive,
+                        { marginLeft: 6 }
+                      ]}>
+                        Recents
+                      </Text>
+                    </View>
                     {selectedSort === 'recents' && (
                       <Text style={styles.checkMark}>✓</Text>
                     )}
@@ -533,12 +554,16 @@ export const ExploreScreen: React.FC = () => {
                       }
                     }}
                   >
-                    <Text style={[
-                      styles.sortOptionText,
-                      selectedSort === 'alphabetical' && styles.sortOptionTextActive
-                    ]}>
-                      🔤 Alphabetical
-                    </Text>
+                    <View style={styles.sortOptionTextContainer}>
+                      <AlphabeticalIcon size={18} color={selectedSort === 'alphabetical' ? '#141124' : '#8e8e93'} />
+                      <Text style={[
+                        styles.sortOptionText,
+                        selectedSort === 'alphabetical' && styles.sortOptionTextActive,
+                        { marginLeft: 6 }
+                      ]}>
+                        Alphabetical
+                      </Text>
+                    </View>
                     {selectedSort === 'alphabetical' && (
                       <Text style={styles.checkMark}>✓</Text>
                     )}
@@ -558,12 +583,16 @@ export const ExploreScreen: React.FC = () => {
                       }
                     }}
                   >
-                    <Text style={[
-                      styles.sortOptionText,
-                      selectedSort === 'category' && styles.sortOptionTextActive
-                    ]}>
-                      📂 By Category
-                    </Text>
+                    <View style={styles.sortOptionTextContainer}>
+                      <CategoryIcon size={18} color={selectedSort === 'category' ? '#141124' : '#8e8e93'} />
+                      <Text style={[
+                        styles.sortOptionText,
+                        selectedSort === 'category' && styles.sortOptionTextActive,
+                        { marginLeft: 6 }
+                      ]}>
+                        By Category
+                      </Text>
+                    </View>
                     {selectedSort === 'category' && (
                       <Text style={styles.checkMark}>✓</Text>
                     )}
@@ -613,10 +642,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  sortingTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   sortingTitle: {
     fontSize: 17,
     fontWeight: '600',
     color: '#000000',
+  },
+  sortOptionTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   sortingArrow: {
     fontSize: 16,
@@ -661,7 +698,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderWidth: 1,
-    borderColor: '#FF6B6B',
+    borderColor: '#000000',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.15,

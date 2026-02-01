@@ -34,9 +34,16 @@ export const SessionCard: React.FC<SessionCardProps> = ({
         return '#af52de'; // Purple
       case 'mindfulness':
         return '#ff2d92'; // Pink
+      case 'mantra':
+        return '#ff9500'; // Orange
       default:
         return '#8e8e93'; // Gray
     }
+  };
+
+  const getLightBorderColor = (color: string) => {
+    // Add opacity to make border lighter (80 = ~50% opacity)
+    return color + '80';
   };
 
   const getModalityIcon = (modality: string) => {
@@ -67,6 +74,8 @@ export const SessionCard: React.FC<SessionCardProps> = ({
     }
   };
 
+  const modalityColor = getModalityColor(session.modality);
+
   return (
     <TouchableOpacity
       style={[
@@ -78,15 +87,16 @@ export const SessionCard: React.FC<SessionCardProps> = ({
     >
       <View style={styles.content}>
         <View style={styles.leftSection}>
-          <View style={styles.playIcon}>
-            <Text style={styles.playIconText}>▶</Text>
+          <View style={[styles.playIcon, { backgroundColor: modalityColor + '15' }]}>
+            <Text style={[styles.playIconText, { color: modalityColor }]}>▶</Text>
           </View>
           <View style={styles.sessionInfo}>
             <Text style={styles.title}>{session.title}</Text>
             <View style={styles.metaInfo}>
-              <View style={[styles.modalityBadge, { backgroundColor: getModalityColor(session.modality) }]}>
-                <Text style={styles.modalityIcon}>{getModalityIcon(session.modality)}</Text>
-                <Text style={styles.modalityText}>{session.modality}</Text>
+              <View style={[styles.modalityBadge, styles.modalityBadgeColored, { borderColor: getLightBorderColor(getModalityColor(session.modality)) }]}>
+                <Text style={styles.modalityText}>
+                  {getModalityIcon(session.modality)} {session.modality}
+                </Text>
               </View>
             </View>
           </View>
@@ -103,7 +113,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
               <HeartOutlineIcon size={28} color="#8e8e93" />
             )}
           </TouchableOpacity>
-          <View style={styles.durationBadge}>
+          <View style={[styles.durationBadge, { backgroundColor: modalityColor }]}>
             <Text style={styles.durationText}>{session.durationMin}m</Text>
           </View>
         </View>
@@ -127,6 +137,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
     borderLeftWidth: 4,
     borderLeftColor: '#007AFF',
   },
@@ -154,17 +166,14 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#f2f2f7',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
   },
   playIconText: {
     fontSize: 14,
-    color: '#007AFF',
     marginLeft: 1,
+    fontWeight: '600',
   },
   sessionInfo: {
     flex: 1,
@@ -184,20 +193,26 @@ const styles = StyleSheet.create({
   modalityBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
     marginRight: 6,
   },
-  modalityIcon: {
-    fontSize: 10,
-    marginRight: 2,
+  modalityBadgeColored: {
+    backgroundColor: '#FAFAFA',
   },
   modalityText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
-    color: '#ffffff',
     textTransform: 'capitalize',
+    letterSpacing: -0.06,
+    color: '#1C1C1E',
   },
   goalText: {
     fontSize: 12,
@@ -223,13 +238,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   durationBadge: {
-    backgroundColor: '#007AFF',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 10,
     minWidth: 36,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 2,
   },
   durationText: {
     fontSize: 11,

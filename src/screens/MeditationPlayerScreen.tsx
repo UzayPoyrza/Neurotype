@@ -8,7 +8,6 @@ import {
   Dimensions,
   StatusBar,
   SafeAreaView,
-  Vibration,
   ActivityIndicator,
   Switch,
 } from 'react-native';
@@ -24,8 +23,11 @@ import Reanimated, {
   useAnimatedStyle,
   runOnJS,
   withSpring,
+  withTiming,
   interpolate,
   Extrapolate,
+  Easing,
+  cancelAnimation,
 } from 'react-native-reanimated';
 import { useStore, type CompletedSessionCacheEntry } from '../store/useStore';
 import { theme } from '../styles/theme';
@@ -37,6 +39,7 @@ import MeditationCompletionLanding from '../components/MeditationCompletionLandi
 import MeditationFeedbackLanding from '../components/MeditationFeedbackLanding';
 import { addSessionRating } from '../services/ratingService';
 import { addEmotionalFeedback } from '../services/feedbackService';
+import { getLocalDateString } from '../utils/dateUtils';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -113,8 +116,8 @@ export const MeditationPlayerScreen: React.FC = () => {
   const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
   const countdownProgressAnim = useRef(new Animated.Value(0)).current;
   const countdownScaleAnim = useRef(new Animated.Value(1)).current;
-  const confirmationMessageAnim = useRef(new Animated.Value(0)).current;
-  const [showConfirmationMessage, setShowConfirmationMessage] = useState(false);
+  const toastAnim = useRef(new Animated.Value(0)).current;
+  const [showFeedbackToast, setShowFeedbackToast] = useState(false);
   const canceledMessageAnim = useRef(new Animated.Value(0)).current;
   const [showCanceledMessage, setShowCanceledMessage] = useState(false);
   const pulseAnimationRef = useRef<Animated.CompositeAnimation | null>(null);
@@ -127,10 +130,25 @@ export const MeditationPlayerScreen: React.FC = () => {
   
   // Options menu state
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
-  const [sleepModeEnabled, setSleepModeEnabled] = useState(false);
   const [downloadEnabled, setDownloadEnabled] = useState(false);
   const [idleTimerEnabled, setIdleTimerEnabled] = useState(true);
-  const optionsMenuAnim = useRef(new Animated.Value(0)).current;
+  const optionsMenuProgress = useSharedValue(0);
+
+  // Animated styles for options menu (using native driver via Reanimated)
+  const optionsMenuBackdropStyle = useAnimatedStyle(() => ({
+    opacity: optionsMenuProgress.value,
+  }));
+
+  const optionsMenuContainerStyle = useAnimatedStyle(() => ({
+    transform: [{
+      translateY: interpolate(
+        optionsMenuProgress.value,
+        [0, 1],
+        [300, 0],
+        Extrapolate.CLAMP
+      ),
+    }],
+  }));
   
   // Dark mode state
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -514,21 +532,26 @@ export const MeditationPlayerScreen: React.FC = () => {
 
   const handleOptions = () => {
     setShowOptionsMenu(true);
-    Animated.timing(optionsMenuAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+    cancelAnimation(optionsMenuProgress);
+    // Spring animation for smooth, natural opening
+    optionsMenuProgress.value = withSpring(1, {
+      damping: 25,
+      stiffness: 400,
+      mass: 0.6,
+    });
   };
 
   const handleCloseOptions = () => {
-    Animated.timing(optionsMenuAnim, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      setShowOptionsMenu(false);
+    cancelAnimation(optionsMenuProgress);
+    // Smooth timing animation for close
+    optionsMenuProgress.value = withTiming(0, {
+      duration: 250,
+      easing: Easing.bezier(0.25, 0.1, 0.25, 1),
     });
+    // Hide after animation completes
+    setTimeout(() => {
+      setShowOptionsMenu(false);
+    }, 260);
   };
 
   // Function to activate dark mode with animation
@@ -661,11 +684,6 @@ export const MeditationPlayerScreen: React.FC = () => {
     resetIdleTimer();
   };
 
-  // Helper function to trigger haptic feedback
-  const triggerHapticFeedback = () => {
-    Vibration.vibrate(10); // Short vibration for touch feedback
-  };
-
   // Enhanced gesture handler using newer Gesture API
   const panGesture = Gesture.Pan()
     .onStart(() => {
@@ -675,7 +693,6 @@ export const MeditationPlayerScreen: React.FC = () => {
         damping: 15,
         stiffness: 200,
       });
-      runOnJS(triggerHapticFeedback)();
     })
     .onUpdate((event) => {
       // Calculate new position: start position + finger movement
@@ -925,23 +942,26 @@ export const MeditationPlayerScreen: React.FC = () => {
     countdownProgressAnim.setValue(0);
     countdownScaleAnim.setValue(1);
     
-    // Then show confirmation message after a brief delay
+    // Then show toast notification after a brief delay
     setTimeout(() => {
-      setShowConfirmationMessage(true);
+      toastAnim.stopAnimation();
+      toastAnim.setValue(0);
+      setShowFeedbackToast(true);
+      
       Animated.sequence([
-        Animated.timing(confirmationMessageAnim, {
+        Animated.timing(toastAnim, {
           toValue: 1,
           duration: 300,
           useNativeDriver: true,
         }),
         Animated.delay(2000),
-        Animated.timing(confirmationMessageAnim, {
+        Animated.timing(toastAnim, {
           toValue: 0,
           duration: 300,
           useNativeDriver: true,
         }),
       ]).start(() => {
-        setShowConfirmationMessage(false);
+        setShowFeedbackToast(false);
       });
     }, 200); // Small delay to ensure countdown disappears first
   };
@@ -1103,10 +1123,10 @@ export const MeditationPlayerScreen: React.FC = () => {
 
   // Helper function to hide confirmation message
   const hideConfirmationMessage = () => {
-    // Stop any ongoing animation and hide the message
-    confirmationMessageAnim.stopAnimation(() => {
-      confirmationMessageAnim.setValue(0);
-      setShowConfirmationMessage(false);
+    // Stop any ongoing animation and hide the toast
+    toastAnim.stopAnimation(() => {
+      toastAnim.setValue(0);
+      setShowFeedbackToast(false);
     });
     // Also hide canceled message if showing
     canceledMessageAnim.stopAnimation(() => {
@@ -1511,33 +1531,6 @@ export const MeditationPlayerScreen: React.FC = () => {
                 </View>
               )}
               
-              {/* Confirmation Message - Positioned between Bad and Great */}
-              {showConfirmationMessage && (
-                <Animated.View
-                  style={[
-                    styles.confirmationMessageOverlayBetweenLabels,
-                    {
-                      opacity: confirmationMessageAnim,
-                      transform: [
-                        {
-                          scale: confirmationMessageAnim.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [0.9, 1],
-                          }),
-                        },
-                      ],
-                    },
-                  ]}
-                >
-                  <View style={styles.confirmationMessageContainer}>
-                    <Text style={styles.confirmationMessageIcon}>✓</Text>
-                    <Text style={styles.confirmationMessageText}>
-                      Saved! View in Profile
-                    </Text>
-                  </View>
-                </Animated.View>
-              )}
-              
               {/* Canceled Message - Positioned between Bad and Great */}
               {showCanceledMessage && (
                 <Animated.View
@@ -1616,6 +1609,28 @@ export const MeditationPlayerScreen: React.FC = () => {
         </Animated.View>
       )}
 
+      {/* Feedback Saved Toast */}
+      {showFeedbackToast && (
+        <Animated.View
+          style={[
+            styles.toastContainer,
+            {
+              opacity: toastAnim,
+              transform: [{
+                translateY: toastAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [20, 0],
+                }),
+              }],
+            },
+          ]}
+        >
+          <Text style={styles.toastText}>
+            Saved! View in Profile
+          </Text>
+        </Animated.View>
+      )}
+
       {/* Liked/Unliked Message */}
       {showLikedMessage && (
         <Animated.View
@@ -1662,50 +1677,27 @@ export const MeditationPlayerScreen: React.FC = () => {
       {/* Options Menu Bottom Sheet */}
       {showOptionsMenu && (
         <View style={styles.optionsMenuOverlay}>
-          <Animated.View 
+          <Reanimated.View
             style={[
               styles.optionsMenuBackdrop,
-              {
-                opacity: optionsMenuAnim,
-              }
+              optionsMenuBackdropStyle,
             ]}
           >
-            <TouchableOpacity 
-              style={styles.optionsMenuBackdropTouchable} 
+            <TouchableOpacity
+              style={styles.optionsMenuBackdropTouchable}
               onPress={handleCloseOptions}
               activeOpacity={1}
             />
-          </Animated.View>
-          <Animated.View style={[
+          </Reanimated.View>
+          <Reanimated.View style={[
             styles.optionsMenuContainer,
-            {
-              transform: [{
-                translateY: optionsMenuAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [300, 0],
-                })
-              }]
-            }
+            optionsMenuContainerStyle,
           ]}>
             <View style={styles.optionsMenuHandle} />
             
             <View style={styles.optionsMenuContent}>
               <Text style={styles.optionsMenuTitle}>Options</Text>
               
-              {/* Sleep Mode Toggle */}
-              <View style={styles.optionsMenuItem}>
-                <View style={styles.optionsMenuTextContainer}>
-                  <Text style={styles.optionsMenuLabel}>Sleep Mode</Text>
-                  <Text style={styles.optionsMenuDescription}>Automatically pause when you fall asleep</Text>
-                </View>
-                <Switch
-                  value={sleepModeEnabled}
-                  onValueChange={setSleepModeEnabled}
-                  trackColor={{ false: '#e0e0e0', true: '#007AFF' }}
-                  thumbColor="#ffffff"
-                />
-              </View>
-
               {/* Download Toggle */}
               <View style={styles.optionsMenuItem}>
                 <View style={styles.optionsMenuTextContainer}>
@@ -1740,7 +1732,7 @@ export const MeditationPlayerScreen: React.FC = () => {
                 />
               </View>
             </View>
-          </Animated.View>
+          </Reanimated.View>
         </View>
       )}
       {/* Completion Landing Overlay */}
@@ -1782,7 +1774,7 @@ export const MeditationPlayerScreen: React.FC = () => {
             // Always call markSessionCompletedToday - it handles update/create logic internally:
             // - Same session + same context_module + same day: UPDATE existing entry
             // - Different day OR different context_module: CREATE new entry
-            const today = new Date().toISOString().split('T')[0];
+            const today = getLocalDateString();
             const minutesCompleted = Math.round(currentTime / 60);
             
             console.log('✅ [Session Completion] Marking session as completed (cache + database)');
@@ -2190,37 +2182,27 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     lineHeight: 18,
   },
-  confirmationMessageOverlayBetweenLabels: {
+  toastContainer: {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 4, // Position slightly below the labels
+    bottom: 30,
+    left: 20,
+    right: 20,
+    backgroundColor: '#000000',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    pointerEvents: 'none',
-    zIndex: 300, // Ensure it's above dark mode overlay
-    elevation: 10, // Android elevation
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 1000,
   },
-  confirmationMessageContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(46, 213, 115, 0.2)',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(46, 213, 115, 0.4)',
-  },
-  confirmationMessageIcon: {
-    fontSize: 14,
-    color: '#2ed573',
-    fontWeight: '700',
-    marginRight: 6,
-  },
-  confirmationMessageText: {
+  toastText: {
     color: '#ffffff',
-    fontSize: 12,
+    fontSize: 15,
     fontWeight: '600',
   },
   canceledMessageContainer: {

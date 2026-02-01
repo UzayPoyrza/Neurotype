@@ -9,6 +9,8 @@ import { InfoBox } from '../components/InfoBox';
 import { ShimmerCalendarCard, ShimmerSessionsCard } from '../components/ShimmerSkeleton';
 import { getUserCompletedSessions, CompletedSession } from '../services/progressService';
 import { useUserId } from '../hooks/useUserId';
+import { BarChartIcon } from '../components/icons/BarChartIcon';
+import { getLocalDateString } from '../utils/dateUtils';
 
 
 
@@ -86,14 +88,14 @@ export const ProgressScreen: React.FC = () => {
         console.log('📊 [ProgressScreen] Fetching session stats and calendar data from database (app open)...');
         // Fetch all completed sessions (no limit) to get accurate counts
         const allSessions = await getUserCompletedSessions(userId);
-        
+
         const today = new Date();
-        const todayStr = today.toISOString().split('T')[0];
-        
+        const todayStr = getLocalDateString(today);
+
         // Calculate this week (last 7 days)
         const weekAgo = new Date(today);
         weekAgo.setDate(today.getDate() - 7);
-        const weekAgoStr = weekAgo.toISOString().split('T')[0];
+        const weekAgoStr = getLocalDateString(weekAgo);
         
         // Calculate this month
         const currentYear = today.getFullYear();
@@ -196,11 +198,11 @@ export const ProgressScreen: React.FC = () => {
         {isLoadingCalendar ? (
           <ShimmerCalendarCard />
         ) : (
-          <InteractiveCalendar 
+          <InteractiveCalendar
             completedSessions={completedSessionsForCalendar}
             onDateSelect={(date) => {
               // Handle date selection - could show meditation details for that date
-              const dateStr = date.toISOString().split('T')[0];
+              const dateStr = getLocalDateString(date);
               const completedMeditations = completedSessionsForCalendar.filter(
                 entry => entry.completed_date === dateStr && entry.context_module
               );
@@ -222,7 +224,14 @@ export const ProgressScreen: React.FC = () => {
           <View style={[styles.card, styles.sessionsCard]}>
             <View style={styles.cardHeader}>
               <View style={styles.cardHeaderTop}>
-                <Text style={styles.cardTitle}>📊 Sessions</Text>
+                <View style={styles.cardTitleContainer}>
+                  <View style={styles.cardTitleIconWrapper}>
+                    <BarChartIcon size={26} color="#000000" />
+                  </View>
+                  <View style={styles.cardTitleTextWrapper}>
+                    <Text style={styles.cardTitle}>Sessions</Text>
+                  </View>
+                </View>
               </View>
             </View>
             
@@ -320,6 +329,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 0,
+  },
+  cardTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cardTitleIconWrapper: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardTitleTextWrapper: {
+    justifyContent: 'center',
+    marginLeft: 6,
+    paddingTop: 1,
   },
   sessionsContent: {
     flexDirection: 'row',

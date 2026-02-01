@@ -1,200 +1,276 @@
-# Instagram-Style Navigation System
+# Navigation System
 
 ## Overview
 
-This navigation system implements Instagram-style header behavior with two distinct layers:
+The Neurotype app uses React Navigation 7 with a custom bottom tab bar and stack navigators for each tab. The navigation system provides smooth iOS-style transitions and custom navigation components for specific screens.
 
-1. **TopShell** - A thin, always-visible strip pinned to the safe area/Dynamic Island
-2. **RevealBar** - The actual toolbar (title + actions) that slides under the TopShell
+## Navigation Structure
 
-## Behavior Specification
+### Main Navigation
+- **Bottom Tab Navigator**: Four main tabs (Today, Progress, Explore, Profile)
+- **Stack Navigators**: Each tab has its own stack for nested screens
+- **Modal Presentation**: Meditation player presented as full-screen modal
 
-### Scroll Behavior
-- **During scroll/drag**: RevealBar moves 1:1 with scroll (no easing)
-- **Scrolling down**: RevealBar translates up (hides) up to its own height
-- **Scrolling up**: RevealBar translates down (reveals)
-- **Snap behavior**: Only after scrolling stops (drag end / momentum end) to nearest state (fully shown or fully hidden) with a short 140–180ms animation
-
-### Position Behavior
-- **At top of page**: RevealBar fully shown
-- **Near bottom**: Keep RevealBar shown (but respect scroll direction)
-- **At bottom scrolling down**: Keep RevealBar hidden
-- **No layout jumps**: Content scrolls under the header; we don't reflow content height
-- **No "stacking over" bug**: TopShell is above RevealBar; RevealBar slides under it, not on top of it
+### Tab Structure
+```
+Tab Navigator
+├── Today Stack
+│   ├── TodayMain (TodayScreen)
+│   ├── Roadmap (RoadmapScreen)
+│   └── MeditationDetail (MeditationDetailScreen)
+├── Progress Stack
+│   └── ProgressMain (ProgressScreen)
+├── Explore Stack
+│   ├── ExploreMain (ExploreScreen)
+│   ├── ModuleDetail (ModuleDetailScreen)
+│   └── MeditationDetail (MeditationDetailScreen)
+└── Profile Stack
+    ├── ProfileMain (ProfileScreen)
+    ├── Settings (SettingsScreen)
+    ├── Subscription (SubscriptionScreen)
+    └── Payment (PaymentScreen)
+```
 
 ## Components
 
-### InstagramStyleNav
-The main navigation component that implements the Instagram-style behavior.
+### AnimatedTabBar
+Custom animated bottom tab bar with smooth transitions and active state indicators.
 
+**Location**: `src/components/AnimatedTabBar.tsx`
+
+**Features**:
+- Smooth tab switching animations
+- Active tab highlighting
+- Custom tab icons
+- Gesture support
+
+**Usage**:
+```tsx
+<Tab.Navigator
+  tabBar={props => <AnimatedTabBar {...props} />}
+  screenOptions={{
+    headerShown: false,
+    tabBarShowLabel: false,
+  }}
+>
+  <Tab.Screen name="Today" component={TodayStackNavigator} />
+  <Tab.Screen name="Progress" component={ProgressScreen} />
+  <Tab.Screen name="Explore" component={ExploreStackNavigator} />
+  <Tab.Screen name="Profile" component={ProfileStackNavigator} />
+</Tab.Navigator>
+```
+
+### TopNav
+Simple static header component for screens that don't need scroll behavior.
+
+**Location**: `src/components/TopNav.tsx`
+
+**Props**:
+- `title: string` - Screen title
+- `showBackButton?: boolean` - Show back button
+- `onBackPress?: () => void` - Custom back handler
+- `rightComponent?: React.ReactNode` - Right side content
+- `titleMaxLength?: number` - Max title length
+
+**Usage**:
+```tsx
+import { TopNav } from '../components/TopNav';
+
+<TopNav
+  title="Settings"
+  showBackButton={true}
+  onBackPress={() => navigation.goBack()}
+  rightComponent={<CustomButton />}
+/>
+```
+
+### InstagramStyleNav
+Scroll-aware navigation component that hides/shows on scroll, inspired by Instagram's navigation behavior.
+
+**Location**: `src/components/InstagramStyleNav.tsx`
+
+**Features**:
+- Two-layer design (TopShell + RevealBar)
+- Scroll-based hide/show behavior
+- Smooth animations
+- Search component support
+
+**Props**:
+- `title?: string | React.ReactNode` - Screen title
+- `searchComponent?: React.ReactNode` - Search bar component
+- `showBackButton?: boolean` - Show back button
+- `onBackPress?: () => void` - Custom back handler
+- `leftComponent?: React.ReactNode` - Left side content
+- `rightComponent?: React.ReactNode` - Right side content
+- `scrollY?: Animated.Value` - Scroll position for 1:1 movement
+- `onScrollEnd?: (direction: 'up' | 'down') => void` - Scroll end callback
+- `contentHeight?: number` - Content height for bottom detection
+- `scrollViewHeight?: number` - Scroll view height for bottom detection
+- `isSearchFocused?: boolean` - Search focus state
+- `forceInitialPosition?: 'up' | 'down'` - Force initial position
+
+**Ref Methods**:
+- `showRevealBar()` - Programmatically show the RevealBar
+- `hideRevealBar()` - Programmatically hide the RevealBar
+- `snapToNearest()` - Snap to the nearest state
+
+**Usage**:
 ```tsx
 import { InstagramStyleNav, InstagramStyleNavRef } from '../components/InstagramStyleNav';
 
-// Usage
+const navRef = useRef<InstagramStyleNavRef>(null);
+
 <InstagramStyleNav
+  ref={navRef}
   title="Screen Title"
   showBackButton={true}
   onBackPress={() => navigation.goBack()}
   rightComponent={<CustomButton />}
   scrollY={scrollY}
+  searchComponent={<SearchBar />}
   onScrollEnd={(direction) => {
-    // Handle scroll end events
+    // Handle scroll end
   }}
 />
 ```
 
-**Props:**
-- `title: string` - The screen title
-- `showBackButton?: boolean` - Whether to show the back button
-- `onBackPress?: () => void` - Custom back button handler
-- `rightComponent?: React.ReactNode` - Right side component
-- `scrollY?: Animated.Value` - Scroll position for 1:1 movement
-- `contentHeight?: number` - Content height for bottom detection
-- `scrollViewHeight?: number` - Scroll view height for bottom detection
-- `onScrollEnd?: (direction: 'up' | 'down') => void` - Scroll end callback
+### ExploreScreenNav
+Specialized navigation component for the Explore screen with search and filter support.
 
-**Ref Methods:**
-- `showRevealBar()` - Programmatically show the RevealBar
-- `hideRevealBar()` - Programmatically hide the RevealBar
-- `snapToNearest()` - Snap to the nearest state
+**Location**: `src/components/ExploreScreenNav.tsx`
 
-### InstagramStyleScreen
-A screen wrapper that integrates the navigation with scroll handling.
+**Features**:
+- Integrated search bar
+- Filter support
+- Scroll-aware behavior
+- Module selection
 
-```tsx
-import { InstagramStyleScreen } from '../components/InstagramStyleScreen';
+## Screen Transitions
 
-// Usage
-<InstagramStyleScreen title="Screen Title">
-  <YourContent />
-</InstagramStyleScreen>
-```
+### iOS-Style Transitions
+All stack navigators use iOS-style card transitions with optimized timing:
 
-**Props:**
-- `title: string` - The screen title
-- `showBackButton?: boolean` - Whether to show the back button
-- `onBackPress?: () => void` - Custom back button handler
-- `rightComponent?: React.ReactNode` - Right side component
-- `children: React.ReactNode` - Screen content
-- `style?: any` - Container style
-- `contentStyle?: any` - Content container style
-- `scrollViewStyle?: any` - ScrollView style
-
-### TopNav
-A simple static header for screens that don't need scroll behavior.
-
-```tsx
-import { TopNav } from '../components/TopNav';
-
-// Usage
-<TopNav
-  title="Static Screen"
-  showBackButton={true}
-  rightComponent={<CustomButton />}
-/>
-```
-
-## Hooks
-
-### useInstagramScrollDetection
-Custom hook that handles scroll detection for the Instagram-style behavior.
-
-```tsx
-import { useInstagramScrollDetection } from '../hooks/useInstagramScrollDetection';
-
-const { scrollY, handleScroll, isAtTop, isAtBottom, isScrolling } = useInstagramScrollDetection({
-  onScrollEnd: (direction) => {
-    // Handle scroll end
+```typescript
+cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+transitionSpec: {
+  open: {
+    animation: 'timing',
+    config: { duration: 250 },
   },
-  scrollViewHeight: 600,
-  contentHeight: 1200,
-  headerHeight: 120,
-});
+  close: {
+    animation: 'timing',
+    config: { duration: 80, easing: Easing.out(Easing.cubic) },
+  },
+},
 ```
 
-**Returns:**
-- `scrollY: Animated.Value` - Scroll position for 1:1 animation
-- `handleScroll: (event: any) => void` - Scroll event handler
-- `isAtTop: boolean` - Whether at the top of content
-- `isAtBottom: boolean` - Whether at the bottom of content
-- `isScrolling: boolean` - Whether currently scrolling
+### Gesture Configuration
+- **Gesture Enabled**: All stack screens support swipe-back gesture
+- **Gesture Response Distance**: 60px for extra large response area
+- **Gesture Velocity Impact**: 0.005 for minimal velocity needed
+- **Gesture Direction**: Horizontal for iOS-style swipe
 
-## Implementation Details
+## Modal Presentation
 
-### Layout Structure
-```
-┌─────────────────────────┐
-│      TopShell (60px)    │ ← Always visible, status bar padding
-├─────────────────────────┤
-│    RevealBar (60px)     │ ← Slides under TopShell during scroll
-├─────────────────────────┤
-│                         │
-│      Content Area       │ ← Scrolls under header
-│                         │
-└─────────────────────────┘
-```
-
-### Animation Timing
-- **Scroll movement**: 1:1 with scroll (no easing)
-- **Snap animation**: 160ms timing animation
-- **Scroll end detection**: 150ms debounce
-
-### Z-Index Layering
-- TopShell: `zIndex: 1000`
-- RevealBar: Slides under TopShell
-- Content: Scrolls under both layers
-
-## Migration from Old System
-
-### Removed Components
-- `ScrollAwareTopNav`
-- `TwoLayerHeader`
-- `ScrollAwareScreen`
-- `TwoLayerScreen`
-- `withScrollAwareNav`
-- `SearchTopNav`
-
-### Removed Hooks
-- `useScrollDetection`
-- `useTwoLayerScrollDetection`
-- `useScrollLinkedDetection`
-
-### Updated Screens
-All screens have been updated to use the new `InstagramStyleScreen`:
-- `TodayScreen`
-- `ExploreScreen`
-- `ProgressScreen`
-- `ProfileScreen`
-
-## Visual Style
-
-The navigation maintains the existing paper-like aesthetic:
-- **Colors**: Uses theme colors (surface, primary, secondary)
-- **Typography**: Uses theme typography settings
-- **Shadows**: Uses theme shadow definitions
-- **Borders**: Uses theme border styles
-- **Spacing**: Uses theme spacing values
-
-No visual changes were made to maintain consistency with the existing design system.
-
-## Testing
-
-Use the `DemoScreen` component to test the navigation behavior:
+### Meditation Player
+The meditation player is presented as a full-screen modal:
 
 ```tsx
-import { DemoScreen } from '../screens/DemoScreen';
-
-// Add to your navigation stack for testing
+<Modal
+  visible={!!activeSession}
+  animationType="slide"
+  presentationStyle="fullScreen"
+>
+  {(activeSession as any)?.isTutorial ? (
+    <TutorialPlayerScreen />
+  ) : (
+    <MeditationPlayerScreen />
+  )}
+</Modal>
 ```
 
-The demo screen includes:
-- Scrollable content to test hide/show behavior
-- Bottom content to test "near bottom" behavior
-- Visual indicators for scroll position
+## Navigation Hooks
+
+### useNavigation
+Standard React Navigation hook for navigation actions:
+
+```tsx
+import { useNavigation } from '@react-navigation/native';
+
+const navigation = useNavigation();
+navigation.navigate('ScreenName', { param: value });
+navigation.goBack();
+```
+
+### useRoute
+Access route parameters:
+
+```tsx
+import { useRoute } from '@react-navigation/native';
+
+const route = useRoute();
+const { sessionId } = route.params;
+```
+
+## Screen-Specific Navigation
+
+### Today Screen
+- Uses standard navigation with custom header
+- Navigates to Roadmap and MeditationDetail screens
+- Module selection affects recommendations
+
+### Explore Screen
+- Uses ExploreScreenNav component
+- Supports search and filtering
+- Navigates to ModuleDetail and MeditationDetail screens
+- Module grid modal for module selection
+
+### Profile Screen
+- Uses TopNav for static header
+- Navigates to Settings, Subscription, and Payment screens
+- Account management flows
+
+### Progress Screen
+- Simple screen with static header
+- Calendar and statistics views
+- No nested navigation
+
+## Custom Navigation Patterns
+
+### Module-Based Navigation
+Modules are selected and affect the context throughout the app:
+- Today screen shows recommendations for selected module
+- Explore screen can filter by module
+- Session completion is tracked per module
+
+### Session Flow
+1. User selects session from Today/Explore
+2. Opens MeditationDetailScreen
+3. Starts session → Opens MeditationPlayerScreen (modal)
+4. Completes session → Shows completion landing
+5. Returns to previous screen
 
 ## Performance Considerations
 
 - Uses `useNativeDriver: true` for all animations
 - `scrollEventThrottle={1}` for maximum responsiveness
-- Debounced scroll end detection to prevent excessive snap animations
-- Efficient re-renders with proper memoization 
+- Efficient re-renders with proper memoization
+- Optimized gesture handlers with Reanimated
+
+## Styling
+
+Navigation components use the centralized theme:
+- Colors from `theme.colors`
+- Typography from `theme.typography`
+- Spacing from `theme.spacing`
+- Shadows from `theme.shadows`
+
+All navigation maintains the app's paper-like aesthetic with consistent styling.
+
+## Future Enhancements
+
+- [ ] Deep linking support
+- [ ] Navigation state persistence
+- [ ] Advanced gesture customization
+- [ ] Navigation analytics
+- [ ] Accessibility improvements

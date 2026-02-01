@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, Image, Animated, StatusBar, TouchableOpacity, ScrollView, Dimensions, TextInput, KeyboardAvoidingView, Platform, Easing } from 'react-native';
+import { View, Text, StyleSheet, Image, Animated, StatusBar, TouchableOpacity, ScrollView, Dimensions, TextInput, KeyboardAvoidingView, Platform, Easing, Alert, Modal, Linking } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as WebBrowser from 'expo-web-browser';
 import Svg, { Path } from 'react-native-svg';
@@ -10,9 +10,15 @@ import { useStore } from '../store/useStore';
 import { AnimatedFloatingButton } from '../components/AnimatedFloatingButton';
 import { ModuleGridModal } from '../components/ModuleGridModal';
 import { Slider0to10 } from '../components/Slider0to10';
+import { signInWithGoogle, signInWithApple } from '../services/authService';
+import { showErrorAlert, ERROR_TITLES } from '../utils/errorHandler';
+import { supabase } from '../services/supabase';
+import { getUserProfile, createUserProfile, isPremiumUser } from '../services/userService';
+import { PaymentPage } from '../components/PaymentPage';
+import { PremiumFeaturesPage } from '../components/PremiumFeaturesPage';
 
 interface OnboardingScreenProps {
-  onFinish: () => void;
+  onFinish: (skipped?: boolean) => void;
 }
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -78,7 +84,6 @@ const WelcomePage: React.FC = () => {
   const iconScale = useRef(new Animated.Value(0.8)).current;
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleTranslateY = useRef(new Animated.Value(20)).current;
-  const disclaimerOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -111,13 +116,6 @@ const WelcomePage: React.FC = () => {
         useNativeDriver: true,
       }),
     ]).start();
-
-    Animated.timing(disclaimerOpacity, {
-      toValue: 1,
-      duration: 600,
-      delay: 1800,
-      useNativeDriver: true,
-    }).start();
   }, []);
 
   return (
@@ -173,12 +171,6 @@ const WelcomePage: React.FC = () => {
             delay={1300}
           />
         </View>
-
-        <Animated.View style={[styles.disclaimerContainer, { opacity: disclaimerOpacity }]}>
-          <Text style={styles.disclaimerTextLight}>
-            Your meditation data and progress are used to improve your personalized experience.
-          </Text>
-        </Animated.View>
       </View>
     </View>
   );
@@ -1572,6 +1564,10 @@ const LoginPage: React.FC<{
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const cursorHideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const cursorOpacity = useRef(new Animated.Value(1)).current;
+  const [isLoadingGoogleSignIn, setIsLoadingGoogleSignIn] = useState(false);
+  const loadingOpacity = useRef(new Animated.Value(0)).current;
+  const spinnerRotation = useRef(new Animated.Value(0)).current;
+  const [termsAccepted, setTermsAccepted] = useState(false);
   
   const fullText = "Time to get started on your journey.";
 
@@ -1579,6 +1575,28 @@ const LoginPage: React.FC<{
   useEffect(() => {
     WebBrowser.maybeCompleteAuthSession();
   }, []);
+
+  // Spinner rotation animation
+  useEffect(() => {
+    if (isLoadingGoogleSignIn) {
+      const rotateAnimation = Animated.loop(
+        Animated.timing(spinnerRotation, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        })
+      );
+      rotateAnimation.start();
+      return () => rotateAnimation.stop();
+    } else {
+      spinnerRotation.setValue(0);
+    }
+  }, [isLoadingGoogleSignIn]);
+  
+  const spinnerInterpolate = spinnerRotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
   
   // Blinking cursor animation
   useEffect(() => {
@@ -1694,55 +1712,637 @@ const LoginPage: React.FC<{
 
   const handleGoogleSignIn = async () => {
     try {
-      // Open OAuth URL in browser
-      // TODO: Replace with your actual Google OAuth URL
-      // For demo: using a test URL that will open in browser
-      const authUrl = 'https://accounts.google.com/signin/v2/identifier?flowName=GlifWebSignIn&flowEntry=ServiceLogin';
+      console.log('🔵 Starting Google sign in...');
       
-      const result = await WebBrowser.openAuthSessionAsync(
-        authUrl,
-        'neurotype://auth/callback'
-      );
-
-      // For testing: Navigate to premium page regardless of how browser closes
-      // (success, dismiss, cancel, etc.)
-      // In production, you'd check result.type === 'success' and verify the auth code
-      onNavigateToPremium();
-    } catch (error) {
-      console.error('Google sign in error:', error);
-      // Navigate to premium even on error for demo purposes
-      onNavigateToPremium();
+      const result = await signInWithGoogle(() => {
+        // Callback fires immediately when browser closes (before token processing)
+        console.log('🔵 Browser closed callback fired - showing loading immediately');
+        setIsLoadingGoogleSignIn(true);
+        Animated.timing(loadingOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }).start();
+      });
+      
+      if (result.success && result.userId) {
+        // Session was created immediately during signInWithGoogle
+        console.log('✅ Google sign in completed immediately, creating user profile...');
+        
+        // CRITICAL: Wait for user profile creation before navigating
+        try {
+          // Get session to get user email and metadata
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session?.user) {
+            console.error('❌ [Onboarding] No session found after sign in');
+            setIsLoadingGoogleSignIn(false);
+            Animated.timing(loadingOpacity, {
+              toValue: 0,
+              duration: 200,
+              useNativeDriver: true,
+            }).start();
+            showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, 'Session not found after sign in. Please try again.');
+            return;
+          }
+          
+          const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || '';
+          const firstName = fullName?.trim() ? fullName.trim().split(' ')[0] : undefined;
+          
+          // Capture consent timestamps (all three are accepted at the same time when user checks the box)
+          const consentTimestamp = new Date().toISOString();
+          const consentData = {
+            termsAcceptedAt: consentTimestamp,
+            privacyAcceptedAt: consentTimestamp,
+            healthDataPrivacyAcceptedAt: consentTimestamp,
+          };
+          
+          console.log('🔵 [Onboarding] Creating user profile immediately with:', {
+            userId: result.userId,
+            email: session.user.email || '',
+            firstName,
+            consentData,
+          });
+          
+          // Wait for profile creation to complete (has 15-second timeout)
+          const profileResult = await createUserProfile(
+            result.userId,
+            session.user.email || '',
+            firstName,
+            consentData
+          );
+          
+          if (!profileResult.success) {
+            console.error('❌ [Onboarding] Failed to create user profile:', profileResult.error);
+            setIsLoadingGoogleSignIn(false);
+            Animated.timing(loadingOpacity, {
+              toValue: 0,
+              duration: 200,
+              useNativeDriver: true,
+            }).start();
+            showErrorAlert(
+              ERROR_TITLES.AUTHENTICATION_FAILED,
+              `Failed to create user profile: ${profileResult.error || 'Unknown error'}. Please try again.`
+            );
+            return;
+          }
+          
+          console.log('✅ [Onboarding] User profile created successfully, verifying...');
+          
+          // Double-check that user exists in database before navigating
+          const userProfile = await getUserProfile(result.userId);
+          if (!userProfile) {
+            console.error('❌ [Onboarding] User profile not found in database after creation');
+            setIsLoadingGoogleSignIn(false);
+            Animated.timing(loadingOpacity, {
+              toValue: 0,
+              duration: 200,
+              useNativeDriver: true,
+            }).start();
+            showErrorAlert(
+              ERROR_TITLES.AUTHENTICATION_FAILED,
+              'User profile was not created successfully. Please try again.'
+            );
+            return;
+          }
+          
+          console.log('✅ [Onboarding] User profile verified in database');
+          
+          // Check premium status from database after profile creation
+          if (userProfile.subscription_type) {
+            const setSubscriptionType = useStore.getState().setSubscriptionType;
+            setSubscriptionType(userProfile.subscription_type);
+            console.log('✅ [Onboarding] Updated subscription type from database:', userProfile.subscription_type);
+          }
+          
+          // Only navigate after user profile is confirmed to exist
+          setIsLoadingGoogleSignIn(false);
+          Animated.timing(loadingOpacity, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }).start(() => {
+            onNavigateToPremium();
+          });
+        } catch (profileError: any) {
+          console.error('❌ [Onboarding] Error creating user profile:', profileError);
+          setIsLoadingGoogleSignIn(false);
+          Animated.timing(loadingOpacity, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
+          showErrorAlert(
+            ERROR_TITLES.AUTHENTICATION_FAILED,
+            `Error creating user profile: ${profileError?.message || 'Unknown error'}. Please try again.`
+          );
+        }
+      } else if (result.success) {
+        // Browser closed but processing still happening - loading should already be showing
+        console.log('🔵 Browser closed, processing tokens...');
+        
+        let authCompleted = false;
+        let authErrorOccurred = false;
+        let subscription: { unsubscribe: () => void } | null = null;
+        
+        // Check session immediately in case it was already set
+        const checkSessionImmediately = async () => {
+          try {
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            if (session?.user && !authCompleted) {
+              console.log('✅ Session found immediately after OAuth, creating user profile...');
+              const userId = session.user.id;
+              
+              // CRITICAL: Wait for user profile creation before navigating
+              try {
+                const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || '';
+                const firstName = fullName?.trim() ? fullName.trim().split(' ')[0] : undefined;
+                
+                // Capture consent timestamps (all three are accepted at the same time when user checks the box)
+                const consentTimestamp = new Date().toISOString();
+                const consentData = {
+                  termsAcceptedAt: consentTimestamp,
+                  privacyAcceptedAt: consentTimestamp,
+                  healthDataPrivacyAcceptedAt: consentTimestamp,
+                };
+                
+                console.log('🔵 [Onboarding] Creating user profile in checkSessionImmediately with:', {
+                  userId,
+                  email: session.user.email || '',
+                  firstName,
+                  consentData,
+                });
+                
+                // Wait for profile creation to complete (has 15-second timeout)
+                const profileResult = await createUserProfile(
+                  userId,
+                  session.user.email || '',
+                  firstName,
+                  consentData
+                );
+                
+                if (!profileResult.success) {
+                  console.error('❌ [Onboarding] Failed to create user profile:', profileResult.error);
+                  authErrorOccurred = true;
+                  authCompleted = true;
+                  setIsLoadingGoogleSignIn(false);
+                  Animated.timing(loadingOpacity, {
+                    toValue: 0,
+                    duration: 200,
+                    useNativeDriver: true,
+                  }).start();
+                  if (subscription) subscription.unsubscribe();
+                  showErrorAlert(
+                    ERROR_TITLES.AUTHENTICATION_FAILED,
+                    `Failed to create user profile: ${profileResult.error || 'Unknown error'}. Please try again.`
+                  );
+                  return false;
+                }
+                
+                console.log('✅ [Onboarding] User profile created successfully in checkSessionImmediately, verifying...');
+                
+                // Double-check that user exists in database before navigating
+                const userProfile = await getUserProfile(userId);
+                if (!userProfile) {
+                  console.error('❌ [Onboarding] User profile not found in database after creation');
+                  authErrorOccurred = true;
+                  authCompleted = true;
+                  setIsLoadingGoogleSignIn(false);
+                  Animated.timing(loadingOpacity, {
+                    toValue: 0,
+                    duration: 200,
+                    useNativeDriver: true,
+                  }).start();
+                  if (subscription) subscription.unsubscribe();
+                  showErrorAlert(
+                    ERROR_TITLES.AUTHENTICATION_FAILED,
+                    'User profile was not created successfully. Please try again.'
+                  );
+                  return false;
+                }
+                
+                console.log('✅ [Onboarding] User profile verified in database');
+                
+                // Check premium status from database after profile creation
+                if (userProfile.subscription_type) {
+                  const setSubscriptionType = useStore.getState().setSubscriptionType;
+                  setSubscriptionType(userProfile.subscription_type);
+                  console.log('✅ [Onboarding] Updated subscription type from database:', userProfile.subscription_type);
+                }
+                
+                authCompleted = true;
+                // Only navigate after user profile is confirmed to exist
+                setIsLoadingGoogleSignIn(false);
+                Animated.timing(loadingOpacity, {
+                  toValue: 0,
+                  duration: 200,
+                  useNativeDriver: true,
+                }).start(() => {
+                  if (subscription) subscription.unsubscribe();
+                  onNavigateToPremium();
+                });
+                return true;
+              } catch (profileError: any) {
+                console.error('❌ [Onboarding] Error creating user profile:', profileError);
+                authErrorOccurred = true;
+                authCompleted = true;
+                setIsLoadingGoogleSignIn(false);
+                Animated.timing(loadingOpacity, {
+                  toValue: 0,
+                  duration: 200,
+                  useNativeDriver: true,
+                }).start();
+                if (subscription) subscription.unsubscribe();
+                showErrorAlert(
+                  ERROR_TITLES.AUTHENTICATION_FAILED,
+                  `Error creating user profile: ${profileError?.message || 'Unknown error'}. Please try again.`
+                );
+                return false;
+              }
+            }
+            return false;
+          } catch (error) {
+            console.error('❌ Error checking session:', error);
+            return false;
+          }
+        };
+        
+        // Set up listener for auth state changes FIRST (before checking session)
+        // This ensures we catch the SIGNED_IN event even if it fires immediately
+        const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
+          async (event, session) => {
+            try {
+              console.log('🔵 [Onboarding] Auth state changed:', event, session?.user?.id);
+              
+              // Handle errors from auth state change
+              if (event === 'SIGNED_OUT' && !authCompleted) {
+                console.error('❌ User was signed out during authentication');
+                authErrorOccurred = true;
+                authCompleted = true;
+                setIsLoadingGoogleSignIn(false);
+                Animated.timing(loadingOpacity, {
+                  toValue: 0,
+                  duration: 200,
+                  useNativeDriver: true,
+                }).start();
+                if (subscription) subscription.unsubscribe();
+                showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, 'Authentication was interrupted. Please try again.');
+                return;
+              }
+              
+              // Handle token refresh errors
+              if (event === 'TOKEN_REFRESHED' && !session) {
+                console.error('❌ Token refresh failed - no session');
+                authErrorOccurred = true;
+                authCompleted = true;
+                setIsLoadingGoogleSignIn(false);
+                Animated.timing(loadingOpacity, {
+                  toValue: 0,
+                  duration: 200,
+                  useNativeDriver: true,
+                }).start();
+                if (subscription) subscription.unsubscribe();
+                showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, 'Session expired. Please sign in again.');
+                return;
+              }
+              
+              if (event === 'SIGNED_IN' && session?.user) {
+                console.log('✅ [Onboarding] Google sign in successful! Creating user profile...');
+                const userId = session.user.id;
+                
+                // CRITICAL: Wait for user profile creation before navigating
+                try {
+                  const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || '';
+                  const firstName = fullName?.trim() ? fullName.trim().split(' ')[0] : undefined;
+                  
+                  // Capture consent timestamps (all three are accepted at the same time when user checks the box)
+                  const consentTimestamp = new Date().toISOString();
+                  const consentData = {
+                    termsAcceptedAt: consentTimestamp,
+                    privacyAcceptedAt: consentTimestamp,
+                    healthDataPrivacyAcceptedAt: consentTimestamp,
+                  };
+                  
+                  console.log('🔵 [Onboarding] Creating user profile with:', {
+                    userId,
+                    email: session.user.email || '',
+                    firstName,
+                    consentData,
+                  });
+                  
+                  // Wait for profile creation to complete (has 15-second timeout)
+                  const profileResult = await createUserProfile(
+                    userId,
+                    session.user.email || '',
+                    firstName,
+                    consentData
+                  );
+                  
+                  if (!profileResult.success) {
+                    console.error('❌ [Onboarding] Failed to create user profile:', profileResult.error);
+                    authErrorOccurred = true;
+                    authCompleted = true;
+                    setIsLoadingGoogleSignIn(false);
+                    Animated.timing(loadingOpacity, {
+                      toValue: 0,
+                      duration: 200,
+                      useNativeDriver: true,
+                    }).start();
+                    if (subscription) subscription.unsubscribe();
+                    showErrorAlert(
+                      ERROR_TITLES.AUTHENTICATION_FAILED,
+                      `Failed to create user profile: ${profileResult.error || 'Unknown error'}. Please try again.`
+                    );
+                    return;
+                  }
+                  
+                  console.log('✅ [Onboarding] User profile created successfully, verifying...');
+                  
+                  // Double-check that user exists in database before navigating
+                  const userProfile = await getUserProfile(userId);
+                  if (!userProfile) {
+                    console.error('❌ [Onboarding] User profile not found in database after creation');
+                    authErrorOccurred = true;
+                    authCompleted = true;
+                    setIsLoadingGoogleSignIn(false);
+                    Animated.timing(loadingOpacity, {
+                      toValue: 0,
+                      duration: 200,
+                      useNativeDriver: true,
+                    }).start();
+                    if (subscription) subscription.unsubscribe();
+                    showErrorAlert(
+                      ERROR_TITLES.AUTHENTICATION_FAILED,
+                      'User profile was not created successfully. Please try again.'
+                    );
+                    return;
+                  }
+                  
+                  console.log('✅ [Onboarding] User profile verified in database');
+                  
+                  // Check premium status from database after profile creation
+                  if (userProfile.subscription_type) {
+                    const setSubscriptionType = useStore.getState().setSubscriptionType;
+                    setSubscriptionType(userProfile.subscription_type);
+                    console.log('✅ [Onboarding] Updated subscription type from database:', userProfile.subscription_type);
+                  }
+                  
+                  authCompleted = true;
+                  // Only navigate after user profile is confirmed to exist
+                  setIsLoadingGoogleSignIn(false);
+                  Animated.timing(loadingOpacity, {
+                    toValue: 0,
+                    duration: 200,
+                    useNativeDriver: true,
+                  }).start(() => {
+                    if (subscription) subscription.unsubscribe();
+                    onNavigateToPremium();
+                  });
+                } catch (profileError: any) {
+                  console.error('❌ [Onboarding] Error creating user profile:', profileError);
+                  authErrorOccurred = true;
+                  authCompleted = true;
+                  setIsLoadingGoogleSignIn(false);
+                  Animated.timing(loadingOpacity, {
+                    toValue: 0,
+                    duration: 200,
+                    useNativeDriver: true,
+                  }).start();
+                  if (subscription) subscription.unsubscribe();
+                  showErrorAlert(
+                    ERROR_TITLES.AUTHENTICATION_FAILED,
+                    `Error creating user profile: ${profileError?.message || 'Unknown error'}. Please try again.`
+                  );
+                }
+              } else if (event === 'SIGNED_IN' && !session?.user) {
+                console.error('❌ SIGNED_IN event but no user in session');
+                authErrorOccurred = true;
+                authCompleted = true;
+                setIsLoadingGoogleSignIn(false);
+                Animated.timing(loadingOpacity, {
+                  toValue: 0,
+                  duration: 200,
+                  useNativeDriver: true,
+                }).start();
+                if (subscription) subscription.unsubscribe();
+                showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, 'Authentication completed but user data is missing. Please try again.');
+              }
+            } catch (error: any) {
+              console.error('❌ Error in auth state change handler:', error);
+              authErrorOccurred = true;
+              authCompleted = true;
+              setIsLoadingGoogleSignIn(false);
+              Animated.timing(loadingOpacity, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+              }).start();
+              if (subscription) subscription.unsubscribe();
+              showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, error);
+            }
+          }
+        );
+        subscription = authSubscription;
+        
+        // Check session immediately AFTER setting up listener (in case it was already set)
+        setTimeout(async () => {
+          if (!authCompleted && !authErrorOccurred) {
+            const found = await checkSessionImmediately();
+            if (found) {
+              // Already handled in checkSessionImmediately
+            }
+          }
+        }, 500); // Check after 500ms
+        
+        // Poll for session more aggressively at first, then slow down
+        let pollAttempts = 0;
+        const pollInterval = setInterval(async () => {
+          if (authCompleted || authErrorOccurred) {
+            clearInterval(pollInterval);
+            return;
+          }
+          
+          pollAttempts++;
+          const found = await checkSessionImmediately();
+          if (found) {
+            clearInterval(pollInterval);
+          } else if (pollAttempts > 30) {
+            // Stop polling after 30 seconds
+            clearInterval(pollInterval);
+            console.warn('⚠️ [Onboarding] Stopped polling after 30 seconds, session may not be available');
+          }
+        }, 500); // Check every 500ms for faster detection
+        
+        // Timeout after 60 seconds if auth doesn't complete
+        setTimeout(() => {
+          clearInterval(pollInterval);
+          if (subscription) subscription.unsubscribe();
+          if (!authCompleted) {
+            console.error('❌ Google sign in timed out');
+            setIsLoadingGoogleSignIn(false);
+            Animated.timing(loadingOpacity, {
+              toValue: 0,
+              duration: 200,
+              useNativeDriver: true,
+            }).start();
+            showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, 'Sign in timed out. Please try again.');
+          }
+        }, 60000);
+      } else {
+        console.error('❌ Google sign in failed:', result.error);
+        setIsLoadingGoogleSignIn(false);
+        Animated.timing(loadingOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }).start();
+        // Show error for all failures
+        const errorMessage = result.error || 'Failed to sign in with Google';
+        showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, errorMessage);
+      }
+    } catch (error: any) {
+      console.error('❌ Google sign in error:', error);
+      setIsLoadingGoogleSignIn(false);
+      Animated.timing(loadingOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+      showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, error);
     }
   };
 
   const handleAppleSignIn = async () => {
     try {
-      // Open OAuth URL in browser
-      // TODO: Replace with your actual Apple OAuth URL
-      // For demo: using a test URL that will open in browser
-      const authUrl = 'https://appleid.apple.com/sign-in';
+      if (Platform.OS !== 'ios') {
+        showErrorAlert(ERROR_TITLES.NOT_AVAILABLE, 'Apple Sign In is only available on iOS');
+        return;
+      }
       
-      const result = await WebBrowser.openAuthSessionAsync(
-        authUrl,
-        'neurotype://auth/callback'
-      );
-
-      // For testing: Navigate to premium page regardless of how browser closes
-      // (success, dismiss, cancel, etc.)
-      // In production, you'd check result.type === 'success' and verify the auth code
-      onNavigateToPremium();
-    } catch (error) {
+      const result = await signInWithApple();
+      if (result.success && result.userId) {
+        console.log('✅ Apple sign in completed, creating user profile...');
+        
+        // CRITICAL: Wait for user profile creation before navigating
+        try {
+          // Get session to get user email and metadata
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session?.user) {
+            console.error('❌ [Onboarding] No session found after Apple sign in');
+            showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, 'Session not found after sign in. Please try again.');
+            return;
+          }
+          
+          const fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || '';
+          const firstName = fullName?.trim() ? fullName.trim().split(' ')[0] : undefined;
+          
+          // Capture consent timestamps (all three are accepted at the same time when user checks the box)
+          const consentTimestamp = new Date().toISOString();
+          const consentData = {
+            termsAcceptedAt: consentTimestamp,
+            privacyAcceptedAt: consentTimestamp,
+            healthDataPrivacyAcceptedAt: consentTimestamp,
+          };
+          
+          console.log('🔵 [Onboarding] Creating user profile for Apple sign in with:', {
+            userId: result.userId,
+            email: session.user.email || '',
+            firstName,
+            consentData,
+          });
+          
+          // Wait for profile creation to complete (has 15-second timeout)
+          const profileResult = await createUserProfile(
+            result.userId,
+            session.user.email || '',
+            firstName,
+            consentData
+          );
+          
+          if (!profileResult.success) {
+            console.error('❌ [Onboarding] Failed to create user profile:', profileResult.error);
+            showErrorAlert(
+              ERROR_TITLES.AUTHENTICATION_FAILED,
+              `Failed to create user profile: ${profileResult.error || 'Unknown error'}. Please try again.`
+            );
+            return;
+          }
+          
+          console.log('✅ [Onboarding] User profile created successfully for Apple sign in');
+          
+          // Double-check that user exists in database before navigating
+          const userProfile = await getUserProfile(result.userId);
+          if (!userProfile) {
+            console.error('❌ [Onboarding] User profile not found in database after creation');
+            showErrorAlert(
+              ERROR_TITLES.AUTHENTICATION_FAILED,
+              'User profile was not created successfully. Please try again.'
+            );
+            return;
+          }
+          
+          console.log('✅ [Onboarding] User profile verified in database for Apple sign in');
+          
+          // Check premium status from database after profile creation
+          if (userProfile.subscription_type) {
+            const setSubscriptionType = useStore.getState().setSubscriptionType;
+            setSubscriptionType(userProfile.subscription_type);
+            console.log('✅ [Onboarding] Updated subscription type from database:', userProfile.subscription_type);
+          }
+          
+          // Navigate after user profile is confirmed to exist
+          onNavigateToPremium();
+        } catch (profileError: any) {
+          console.error('❌ [Onboarding] Error creating user profile for Apple sign in:', profileError);
+          showErrorAlert(
+            ERROR_TITLES.AUTHENTICATION_FAILED,
+            `Error creating user profile: ${profileError?.message || 'Unknown error'}. Please try again.`
+          );
+        }
+      } else {
+        // Show error for all failures
+        const errorMessage = result.error || 'Failed to sign in with Apple';
+        showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, errorMessage);
+      }
+    } catch (error: any) {
       console.error('Apple sign in error:', error);
-      // Navigate to premium even on error for demo purposes
-      onNavigateToPremium();
+      showErrorAlert(ERROR_TITLES.AUTHENTICATION_FAILED, error);
     }
   };
 
-  const handleSignIn = () => {
-    // TODO: Navigate to sign in screen or show sign in modal
-    // For now, just proceed
-    onLogin();
+  // Calculate responsive font size for "That's everything" text
+  // Find the maximum font size that fits without getting cut off
+  const calculateResponsiveFontSize = () => {
+    const baseFontSize = 46;
+    const referenceWidth = 375; // iPhone standard width
+    const minFontSize = 28; // Minimum readable size
+    const maxFontSize = 46; // Maximum size (current)
+    
+    // Account for horizontal padding: 20px on each side + 8px paddingLeft = 48px total
+    const availableWidth = SCREEN_WIDTH - 38;
+    
+    // Estimate text width: "That's everything." is ~18 characters
+    // Approximate character width ratio: fontSize * 0.50 (balanced ratio for bold text)
+    // Calculate maximum font size that fits: availableWidth >= fontSize * charWidthRatio * textLength
+    const textLength = 18; // "That's everything."
+    const charWidthRatio = 0.48; // Balanced ratio for bold text, slightly larger
+    
+    // Calculate maximum font size that fits exactly (this is the maximum that will fit)
+    const maxFittingSize = availableWidth / (charWidthRatio * textLength);
+    
+    // Also scale based on width ratio for consistency on larger screens
+    const widthRatio = availableWidth / referenceWidth;
+    const ratioBasedSize = baseFontSize * widthRatio;
+    
+    // Use the smaller of the two to ensure it fits, prioritizing maxFittingSize for accuracy
+    const calculatedSize = Math.min(maxFittingSize, ratioBasedSize);
+    
+    // Clamp between min and max, but allow it to be as large as possible
+    return Math.max(minFontSize, Math.min(maxFontSize, calculatedSize));
   };
+
+  const responsiveFontSize = calculateResponsiveFontSize();
+  // Calculate proportional lineHeight (base lineHeight is 56 for fontSize 46, ratio ~1.22)
+  const responsiveLineHeight = responsiveFontSize * 1.22;
 
   return (
     <View style={styles.loginPage}>
@@ -1757,7 +2357,7 @@ const LoginPage: React.FC<{
             },
           ]}
         >
-          <Text style={styles.loginBackgroundTextLarge} numberOfLines={1}>That's everything.</Text>
+          <Text style={[styles.loginBackgroundTextLarge, { fontSize: responsiveFontSize, lineHeight: responsiveLineHeight }]} numberOfLines={1}>That's everything.</Text>
           <Text style={styles.loginBackgroundTextSmall}>
             {typingText}
             {showCursor && (
@@ -1780,11 +2380,53 @@ const LoginPage: React.FC<{
             {/* Subtitle inside box */}
             <Text style={styles.loginBoxSubtitle}>Create an account to save your progress and personalize your experience</Text>
 
+            {/* Terms of Service Checkbox */}
+            <View style={styles.termsContainer}>
+              <TouchableOpacity 
+                style={styles.checkboxWrapper}
+                onPress={() => setTermsAccepted(!termsAccepted)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.checkbox, termsAccepted && styles.checkboxChecked]}>
+                  {termsAccepted && (
+                    <Text style={styles.checkmark}>✓</Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+              <View style={styles.termsTextContainer}>
+                <Text style={styles.termsText}>
+                  By clicking this box, you accept our{' '}
+                </Text>
+                <TouchableOpacity 
+                  onPress={() => Linking.openURL('https://www.neurotypeapp.com/terms-of-service.html')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.termsLink}>Terms of Service</Text>
+                </TouchableOpacity>
+                <Text style={styles.termsText}> and </Text>
+                <TouchableOpacity 
+                  onPress={() => Linking.openURL('https://www.neurotypeapp.com/privacy-policy.html')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.termsLink}>Privacy Policy</Text>
+                </TouchableOpacity>
+                <Text style={styles.termsText}>, and </Text>
+                <TouchableOpacity 
+                  onPress={() => Linking.openURL('https://www.neurotypeapp.com/consumer-health-data-privacy-policy.html')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.termsLink}>Consumer Health Data Privacy</Text>
+                </TouchableOpacity>
+                <Text style={styles.termsText}>.</Text>
+              </View>
+            </View>
+
             {/* Google Sign In Button */}
             <TouchableOpacity 
-              style={styles.socialButton}
+              style={[styles.socialButton, !termsAccepted && styles.socialButtonDisabled]}
               onPress={handleGoogleSignIn}
               activeOpacity={0.7}
+              disabled={!termsAccepted}
             >
               <View style={styles.socialButtonContent}>
                 <View style={styles.googleIconContainer}>
@@ -1811,620 +2453,57 @@ const LoginPage: React.FC<{
               </View>
             </TouchableOpacity>
 
-            {/* Apple Sign In Button */}
-            <TouchableOpacity 
-              style={[styles.socialButton, styles.appleButton]}
-              onPress={handleAppleSignIn}
-              activeOpacity={0.7}
-            >
-              <View style={styles.socialButtonContent}>
-                <View style={styles.appleIconContainer}>
-                  <Svg width={20} height={20} viewBox="0 0 24 24" fill="#ffffff">
-                    <Path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C1.79 15.25 4.23 7.59 9.2 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
-                  </Svg>
+            {/* Apple Sign In Button - iOS only */}
+            {Platform.OS === 'ios' && (
+              <TouchableOpacity 
+                style={[styles.socialButton, styles.appleButton, !termsAccepted && styles.socialButtonDisabled]}
+                onPress={handleAppleSignIn}
+                activeOpacity={0.7}
+                disabled={!termsAccepted}
+              >
+                <View style={styles.socialButtonContent}>
+                  <View style={styles.appleIconContainer}>
+                    <Svg width={20} height={20} viewBox="0 0 24 24" fill="#ffffff">
+                      <Path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C1.79 15.25 4.23 7.59 9.2 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+                    </Svg>
+                  </View>
+                  <Text style={[styles.socialButtonText, styles.appleButtonText]}>Continue with Apple</Text>
                 </View>
-                <Text style={[styles.socialButtonText, styles.appleButtonText]}>Continue with Apple</Text>
-              </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
+            )}
 
           </Animated.View>
         </View>
       </View>
-    </View>
-  );
-};
 
-// Premium Feature Card Component
-const PremiumFeatureCard: React.FC<{
-  icon: string;
-  title: string;
-  description: string;
-  gradient: string[];
-  delay: number;
-  isActive: boolean;
-}> = ({ icon, title, description, gradient, delay, isActive }) => {
-  const cardOpacity = useRef(new Animated.Value(0)).current;
-  const cardScale = useRef(new Animated.Value(0.8)).current;
-  const cardTranslateY = useRef(new Animated.Value(30)).current;
-  const iconScale = useRef(new Animated.Value(1)).current;
-  const [isPressed, setIsPressed] = useState(false);
-  const pressScale = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    if (isActive) {
-      // Staggered entrance animation
-      Animated.parallel([
-        Animated.timing(cardOpacity, {
-          toValue: 1,
-          duration: 600,
-          delay: delay,
-          useNativeDriver: true,
-        }),
-        Animated.spring(cardScale, {
-          toValue: 1,
-          tension: 50,
-          friction: 7,
-          delay: delay,
-          useNativeDriver: true,
-        }),
-        Animated.timing(cardTranslateY, {
-          toValue: 0,
-          duration: 600,
-          delay: delay,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        // Icon pulse animation after card appears
-        Animated.loop(
-          Animated.sequence([
-            Animated.timing(iconScale, {
-              toValue: 1.1,
-              duration: 1500,
-              easing: Easing.inOut(Easing.ease),
-              useNativeDriver: true,
-            }),
-            Animated.timing(iconScale, {
-              toValue: 1,
-              duration: 1500,
-              easing: Easing.inOut(Easing.ease),
-              useNativeDriver: true,
-            }),
-          ])
-        ).start();
-      });
-    }
-  }, [isActive, delay]);
-
-  const handlePressIn = () => {
-    setIsPressed(true);
-    Animated.spring(pressScale, {
-      toValue: 0.95,
-      tension: 300,
-      friction: 10,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    setIsPressed(false);
-    Animated.spring(pressScale, {
-      toValue: 1,
-      tension: 300,
-      friction: 10,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  return (
-    <Animated.View
-      style={[
-        styles.premiumFeatureCard,
-        {
-          opacity: cardOpacity,
-          transform: [
-            { scale: cardScale },
-            { translateY: cardTranslateY },
-          ],
-        },
-      ]}
-    >
-      <TouchableOpacity
-        activeOpacity={1}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        style={styles.premiumFeatureCardTouchable}
+      {/* Loading Modal for Google Sign In */}
+      <Modal
+        visible={isLoadingGoogleSignIn}
+        transparent={true}
+        animationType="none"
+        onRequestClose={() => {}}
       >
         <Animated.View
-          style={{
-            transform: [{ scale: pressScale }],
-          }}
+          style={[
+            styles.loadingOverlay,
+            { opacity: loadingOpacity }
+          ]}
         >
-          <LinearGradient
-            colors={gradient as [string, string]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.premiumFeatureCardGradient}
-          >
-          <View style={styles.premiumFeatureCardContent}>
-            <Animated.View
-              style={[
-                styles.premiumFeatureIconContainer,
-                {
-                  transform: [
-                    { scale: iconScale },
-                  ],
-                },
-              ]}
-            >
-              <Text style={styles.premiumFeatureIcon}>{icon}</Text>
-            </Animated.View>
-            
-            <View style={styles.premiumFeatureTextContainer}>
-              <Text style={styles.premiumFeatureTitle}>{title}</Text>
-              <Text style={styles.premiumFeatureDescription}>{description}</Text>
+          <View style={styles.loadingContent}>
+            <View style={styles.loadingSpinnerContainer}>
+              <Animated.View 
+                style={[
+                  styles.loadingSpinner,
+                  { transform: [{ rotate: spinnerInterpolate }] }
+                ]}
+              />
             </View>
+            <Text style={styles.loadingText}>Signing in with Google...</Text>
+            <Text style={styles.loadingSubtext}>Please wait</Text>
           </View>
-        </LinearGradient>
         </Animated.View>
-      </TouchableOpacity>
-    </Animated.View>
-  );
-};
+      </Modal>
 
-// Mock pricing data
-const pricingPlans = [
-  {
-    id: 'monthly',
-    name: 'Monthly',
-    price: 9.99,
-    period: 'month',
-    originalPrice: null,
-    savings: null,
-    popular: false,
-    features: [
-      'Unlimited meditation sessions',
-      'All modules unlocked',
-      'Progress tracking',
-      'Basic analytics',
-    ],
-  },
-  {
-    id: 'yearly',
-    name: 'Yearly',
-    price: 79.99,
-    period: 'year',
-    originalPrice: 119.88,
-    savings: 'Save 33%',
-    popular: true,
-    features: [
-      'Everything in Monthly',
-      'Advanced analytics',
-      'AI-powered recommendations',
-      'Cloud sync across devices',
-      'Priority support',
-      'Early access to new features',
-    ],
-  },
-  {
-    id: 'lifetime',
-    name: 'Lifetime',
-    price: 199.99,
-    period: 'one-time',
-    originalPrice: null,
-    savings: 'Best Value',
-    popular: false,
-    features: [
-      'Everything in Yearly',
-      'Pay once, use forever',
-      'All future updates included',
-      'Lifetime priority support',
-    ],
-  },
-];
-
-// Premium Features Page
-const PremiumFeaturesPage: React.FC<{ 
-  isActive: boolean;
-  selectedPlan: string | null;
-  onSelectPlan: (planId: string | null) => void;
-  onClose: () => void;
-}> = ({ isActive, selectedPlan, onSelectPlan, onClose }) => {
-  const titleOpacity = useRef(new Animated.Value(0)).current;
-  const titleTranslateY = useRef(new Animated.Value(20)).current;
-  const cardsOpacity = useRef(new Animated.Value(0)).current;
-  const cardsTranslateY = useRef(new Animated.Value(30)).current;
-  const closeButtonOpacity = useRef(new Animated.Value(0)).current;
-  const closeButtonScale = useRef(new Animated.Value(0.8)).current;
-  const hasAnimated = useRef(false);
-  const [currentPricingPage, setCurrentPricingPage] = useState(0);
-  const pricingScrollViewRef = useRef<ScrollView>(null);
-  const mainScrollViewRef = useRef<ScrollView>(null);
-  const scrollProgress = useRef(new Animated.Value(0)).current;
-  const [scrollContentHeight, setScrollContentHeight] = useState(0);
-  const [scrollViewHeight, setScrollViewHeight] = useState(0);
-  const scaleAnimations = useRef(
-    pricingPlans.map(() => new Animated.Value(1))
-  ).current;
-
-  useEffect(() => {
-    if (isActive && !hasAnimated.current) {
-      hasAnimated.current = true;
-      Animated.parallel([
-        Animated.timing(titleOpacity, {
-          toValue: 1,
-          duration: 600,
-          delay: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(titleTranslateY, {
-          toValue: 0,
-          duration: 600,
-          delay: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(cardsOpacity, {
-          toValue: 1,
-          duration: 600,
-          delay: 400,
-          useNativeDriver: true,
-        }),
-        Animated.timing(cardsTranslateY, {
-          toValue: 0,
-          duration: 600,
-          delay: 400,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        // Animate close button after everything else loads
-        Animated.parallel([
-          Animated.timing(closeButtonOpacity, {
-            toValue: 1,
-            duration: 400,
-            delay: 300,
-            useNativeDriver: true,
-          }),
-          Animated.spring(closeButtonScale, {
-            toValue: 1,
-            tension: 50,
-            friction: 7,
-            delay: 300,
-            useNativeDriver: true,
-          }),
-        ]).start();
-      });
-    } else if (!isActive) {
-      hasAnimated.current = false;
-      closeButtonOpacity.setValue(0);
-      closeButtonScale.setValue(0.8);
-    }
-  }, [isActive]);
-
-  const handleSelectPlan = (planId: string) => {
-    // Toggle selection - if clicking the same plan, deselect it
-    const newSelectedPlan = selectedPlan === planId ? null : planId;
-    onSelectPlan(newSelectedPlan);
-    
-    // Animate the selected card
-    const index = pricingPlans.findIndex(p => p.id === planId);
-    if (index !== -1) {
-      Animated.sequence([
-        Animated.spring(scaleAnimations[index], {
-          toValue: 0.95,
-          tension: 300,
-          friction: 10,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnimations[index], {
-          toValue: 1,
-          tension: 300,
-          friction: 10,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  };
-
-  const formatPrice = (price: number) => {
-    return `$${price.toFixed(2)}`;
-  };
-
-  const calculateMonthlyEquivalent = (plan: typeof pricingPlans[0]) => {
-    if (plan.period === 'year') {
-      return (plan.price / 12).toFixed(2);
-    }
-    return plan.price.toFixed(2);
-  };
-
-  const handlePricingScroll = (event: any) => {
-    const offsetX = event.nativeEvent.contentOffset.x;
-    const page = Math.round(offsetX / SCREEN_WIDTH);
-    setCurrentPricingPage(Math.min(page, pricingPlans.length - 1));
-  };
-
-  const handleMainScroll = (event: any) => {
-    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-    const scrollableHeight = contentSize.height - layoutMeasurement.height;
-    if (scrollableHeight > 0) {
-      const progress = contentOffset.y / scrollableHeight;
-      scrollProgress.setValue(Math.min(Math.max(progress, 0), 1));
-    }
-  };
-
-  const handleContentSizeChange = (contentWidth: number, contentHeight: number) => {
-    setScrollContentHeight(contentHeight);
-  };
-
-  const handleScrollViewLayout = (event: any) => {
-    const { height } = event.nativeEvent.layout;
-    setScrollViewHeight(height);
-  };
-
-  const scrollableHeight = scrollContentHeight - scrollViewHeight;
-  const progressBarHeight = scrollProgress.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0%', '100%'],
-  });
-
-  return (
-    <View style={styles.page}>
-      {/* Close Button */}
-      <Animated.View
-        style={[
-          styles.closeButtonContainer,
-          {
-            opacity: closeButtonOpacity,
-            transform: [{ scale: closeButtonScale }],
-          },
-        ]}
-      >
-        <TouchableOpacity
-          onPress={onClose}
-          style={styles.closeButton}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.closeButtonText}>×</Text>
-        </TouchableOpacity>
-      </Animated.View>
-
-      <ScrollView 
-        ref={mainScrollViewRef}
-        style={styles.page} 
-        contentContainerStyle={styles.premiumScrollContent}
-        showsVerticalScrollIndicator={false}
-        onScroll={handleMainScroll}
-        onContentSizeChange={handleContentSizeChange}
-        onLayout={handleScrollViewLayout}
-        scrollEventThrottle={16}
-      >
-        <View style={styles.pageBackground}>
-          <Animated.View
-            style={[
-              styles.titleContainer,
-              {
-                opacity: titleOpacity,
-                transform: [{ translateY: titleTranslateY }],
-              },
-            ]}
-          >
-            <Text style={styles.titleLight}>Choose Your Plan</Text>
-            <Text style={styles.subtitleLight}>Unlock the full potential of Neurotype</Text>
-          </Animated.View>
-
-          <Animated.View
-            style={[
-              styles.pricingContainerWrapper,
-              {
-                opacity: cardsOpacity,
-                transform: [{ translateY: cardsTranslateY }],
-              },
-            ]}
-          >
-            <ScrollView
-              ref={pricingScrollViewRef}
-              horizontal
-              pagingEnabled={true}
-              showsHorizontalScrollIndicator={false}
-              onScroll={handlePricingScroll}
-              scrollEventThrottle={16}
-              decelerationRate="fast"
-              style={styles.pricingScrollView}
-              contentContainerStyle={styles.pricingScrollContent}
-            >
-              {pricingPlans.map((plan, index) => {
-                const isSelected = selectedPlan === plan.id;
-                const monthlyPrice = calculateMonthlyEquivalent(plan);
-                
-                return (
-                  <View key={plan.id} style={styles.pricingCardWrapper}>
-                    <Animated.View
-                      style={[
-                        styles.pricingCard,
-                        isSelected && styles.pricingCardSelected,
-                        {
-                          transform: [{ scale: scaleAnimations[index] }],
-                        },
-                      ]}
-                    >
-                      {plan.popular && (
-                        <View style={styles.popularBadge}>
-                          <Text style={styles.popularBadgeText}>Most Popular</Text>
-                        </View>
-                      )}
-                      
-                      <TouchableOpacity
-                        activeOpacity={0.9}
-                        onPress={() => handleSelectPlan(plan.id)}
-                        style={styles.pricingCardTouchable}
-                      >
-                        <View style={styles.pricingCardHeader}>
-                          <Text style={styles.pricingCardName}>{plan.name}</Text>
-                          {plan.savings && (
-                            <View style={styles.savingsBadge}>
-                              <Text style={styles.savingsBadgeText}>{plan.savings}</Text>
-                            </View>
-                          )}
-                        </View>
-
-                        <View style={styles.pricingCardPriceContainer}>
-                          <View style={styles.pricingCardPriceRow}>
-                            <Text style={styles.pricingCardPrice}>
-                              {formatPrice(plan.price)}
-                            </Text>
-                            {plan.period !== 'one-time' && (
-                              <Text style={styles.pricingCardPeriod}>/{plan.period}</Text>
-                            )}
-                          </View>
-                          {plan.period === 'year' && (
-                            <Text style={styles.pricingCardEquivalent}>
-                              ${monthlyPrice}/month billed annually
-                            </Text>
-                          )}
-                          {plan.originalPrice && (
-                            <Text style={styles.pricingCardOriginal}>
-                              ${plan.originalPrice.toFixed(2)}/year
-                            </Text>
-                          )}
-                        </View>
-
-                        <View style={styles.pricingCardFeatures}>
-                          {plan.features.map((feature, featureIndex) => (
-                            <View key={featureIndex} style={styles.pricingCardFeature}>
-                              <Text style={styles.pricingCardFeatureIcon}>✓</Text>
-                              <Text style={styles.pricingCardFeatureText}>{feature}</Text>
-                            </View>
-                          ))}
-                        </View>
-
-                        <View style={[
-                          styles.pricingCardButton,
-                          isSelected && styles.pricingCardButtonSelected,
-                        ]}>
-                          <Text style={[
-                            styles.pricingCardButtonText,
-                            isSelected && styles.pricingCardButtonTextSelected,
-                          ]}>
-                            {isSelected ? 'Selected' : 'Select Plan'}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    </Animated.View>
-                  </View>
-                );
-              })}
-            </ScrollView>
-            
-            {/* Page Indicators */}
-            <View style={styles.pricingIndicators}>
-              {pricingPlans.map((_, index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.pricingIndicator,
-                    currentPricingPage === index && styles.pricingIndicatorActive,
-                    index < pricingPlans.length - 1 && { marginRight: 8 },
-                  ]}
-                />
-              ))}
-            </View>
-            
-            {/* Cancel Anytime Text */}
-            <View style={styles.pricingFooter}>
-              <Text style={styles.pricingFooterText}>
-                Cancel anytime. All plans include a 7-day free trial.
-              </Text>
-            </View>
-          </Animated.View>
-
-          <Animated.View
-            style={[
-              styles.premiumFeaturesList,
-              {
-                opacity: cardsOpacity,
-              },
-            ]}
-          >
-            <Text style={styles.premiumFeaturesListTitle}>All Premium Features</Text>
-            <Text style={styles.premiumFeaturesListSubtitle}>
-              Everything you need for your meditation journey
-            </Text>
-            
-            <View style={styles.premiumFeaturesGrid}>
-              {[
-                {
-                  icon: '⭐',
-                  title: 'Unlimited Sessions',
-                  description: 'Access all meditation sessions without limits',
-                  gradient: ['#FFD700', '#FFA500'],
-                  delay: 600,
-                },
-                {
-                  icon: '📊',
-                  title: 'Advanced Analytics',
-                  description: 'Track your progress with detailed insights and charts',
-                  gradient: ['#4ECDC4', '#44A08D'],
-                  delay: 700,
-                },
-                {
-                  icon: '🎯',
-                  title: 'AI Recommendations',
-                  description: 'Get personalized suggestions tailored to your unique needs',
-                  gradient: ['#667EEA', '#764BA2'],
-                  delay: 800,
-                },
-                {
-                  icon: '☁️',
-                  title: 'Cloud Sync',
-                  description: 'Sync your progress across all your devices seamlessly',
-                  gradient: ['#89F7FE', '#66A6FF'],
-                  delay: 900,
-                },
-                {
-                  icon: '🔔',
-                  title: 'Smart Reminders',
-                  description: 'Never miss a session with intelligent notification system',
-                  gradient: ['#F093FB', '#F5576C'],
-                  delay: 1000,
-                },
-                {
-                  icon: '🎨',
-                  title: 'Custom Themes',
-                  description: 'Personalize your experience with beautiful themes',
-                  gradient: ['#FA709A', '#FEE140'],
-                  delay: 1100,
-                },
-              ].map((feature, index) => (
-                <PremiumFeatureCard
-                  key={index}
-                  icon={feature.icon}
-                  title={feature.title}
-                  description={feature.description}
-                  gradient={feature.gradient}
-                  delay={feature.delay}
-                  isActive={isActive}
-                />
-              ))}
-            </View>
-          </Animated.View>
-        </View>
-      </ScrollView>
-      
-      {/* Scroll Progress Indicator */}
-      {scrollableHeight > 0 && (
-        <View style={styles.scrollProgressContainer}>
-          <View style={styles.scrollProgressTrack}>
-            <Animated.View
-              style={[
-                styles.scrollProgressBar,
-                {
-                  height: progressBarHeight,
-                },
-              ]}
-            />
-          </View>
-        </View>
-      )}
     </View>
   );
 };
@@ -2437,6 +2516,9 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   const buttonOpacity = useRef(new Animated.Value(0)).current;
   const buttonScale = useRef(new Animated.Value(0.95)).current;
   const setTodayModuleId = useStore(state => state.setTodayModuleId);
+  const userId = useStore(state => state.userId);
+  const subscriptionType = useStore(state => state.subscriptionType);
+  const setSubscriptionType = useStore(state => state.setSubscriptionType);
   const [showModuleModal, setShowModuleModal] = useState(false);
   const [demoModuleId, setDemoModuleId] = useState<string | null>(null);
   const previousDemoModuleId = useRef<string | null>(null);
@@ -2450,8 +2532,33 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   const finishOverlayScale = useRef(new Animated.Value(1)).current;
   const finishContentOpacity = useRef(new Animated.Value(0)).current;
   const finishContentScale = useRef(new Animated.Value(0.8)).current;
+  const hasCheckedSubscription = useRef(false);
 
-  const TOTAL_PAGES = 6;
+  const TOTAL_PAGES = 7;
+
+  // Check subscription type when user signs in
+  useEffect(() => {
+    const checkSubscriptionType = async () => {
+      if (userId && !hasCheckedSubscription.current) {
+        hasCheckedSubscription.current = true;
+        try {
+          const isPremium = await isPremiumUser(userId);
+          const subscriptionType = isPremium ? 'premium' : 'basic';
+          setSubscriptionType(subscriptionType);
+          console.log('✅ [Onboarding] Loaded subscription type:', subscriptionType, '(validated)');
+          
+          // If user has premium, skip payment page
+          if (isPremium) {
+            console.log('✅ [Onboarding] User has premium, will skip payment page');
+          }
+        } catch (error) {
+          console.error('❌ [Onboarding] Error checking subscription type:', error);
+        }
+      }
+    };
+    
+    checkSubscriptionType();
+  }, [userId, setSubscriptionType]);
 
   useEffect(() => {
     if (currentPage === 0) {
@@ -2494,7 +2601,63 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
     if (currentPage !== 3) {
       setHasScrolledOnHowToUse(false);
     }
-  }, [currentPage]);
+    
+    // Auto-skip premium and payment pages if user already has premium (check from database)
+    if (currentPage === 5 && userId) {
+      let skipTimer: NodeJS.Timeout | null = null;
+      let cancelled = false;
+      
+      // Validate premium status directly from database
+      isPremiumUser(userId).then((isPremium) => {
+        if (cancelled) return;
+        
+        if (isPremium) {
+          console.log('✅ [Onboarding] User has premium from database, auto-skipping premium page');
+          // Update store with validated premium status
+          setSubscriptionType('premium');
+          // Small delay to allow page to render, then finish
+          skipTimer = setTimeout(() => {
+            if (cancelled) return;
+            finishOverlayOpacity.setValue(1);
+            setShowFinishAnimation(true);
+            setTimeout(() => {
+              Animated.parallel([
+                Animated.timing(finishContentOpacity, {
+                  toValue: 1,
+                  duration: 400,
+                  easing: Easing.out(Easing.ease),
+                  useNativeDriver: true,
+                }),
+                Animated.spring(finishContentScale, {
+                  toValue: 1,
+                  tension: 40,
+                  friction: 7,
+                  useNativeDriver: true,
+                }),
+              ]).start(() => {
+                setTimeout(() => {
+                  if (!cancelled) {
+                    onFinish();
+                  }
+                }, 2000);
+              });
+            }, 100);
+          }, 100);
+        }
+      }).catch((error) => {
+        if (!cancelled) {
+          console.error('❌ [Onboarding] Error checking premium status from database:', error);
+        }
+      });
+      
+      return () => {
+        cancelled = true;
+        if (skipTimer) {
+          clearTimeout(skipTimer);
+        }
+      };
+    }
+  }, [currentPage, userId, setSubscriptionType, finishOverlayOpacity, finishContentOpacity, finishContentScale, onFinish]);
 
   const handleScroll = (event: any) => {
     const offsetX = event.nativeEvent.contentOffset.x;
@@ -2502,15 +2665,57 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
     setCurrentPage(page);
   };
 
-  const handleNext = () => {
-    if (currentPage < TOTAL_PAGES - 1) {
+  const handleNext = async () => {
+    // If on premium page (page 5)
+    if (currentPage === 5) {
+      // Check premium status directly from database, not from store
+      if (userId) {
+        try {
+          const userProfile = await getUserProfile(userId);
+          if (userProfile?.subscription_type === 'premium') {
+            console.log('✅ [Onboarding] User has premium from database, skipping payment page');
+            // Update store with database value
+            setSubscriptionType('premium');
+            handleFinish();
+            return;
+          } else {
+            // Update store with database value (should be 'basic')
+            if (userProfile?.subscription_type) {
+              setSubscriptionType(userProfile.subscription_type);
+            }
+          }
+        } catch (error) {
+          console.error('❌ [Onboarding] Error checking premium status from database:', error);
+          // On error, continue with normal flow
+        }
+      }
+      
+      // If plan is selected, go to payment page
+      if (selectedPlan) {
+        scrollViewRef.current?.scrollTo({ x: SCREEN_WIDTH * 6, animated: true });
+      } else {
+        // If on premium page with no plan selected, skip to finish
+        handleFinish();
+      }
+    } else if (currentPage < TOTAL_PAGES - 1) {
       scrollViewRef.current?.scrollTo({ x: SCREEN_WIDTH * (currentPage + 1), animated: true });
     } else {
       handleFinish();
     }
   };
 
-  const handleFinish = () => {
+  const handleFinish = (skipped: boolean = false) => {
+    // Set subscription type based on whether a plan was selected
+    const setSubscriptionType = useStore.getState().setSubscriptionType;
+    // If skipped is true, treat as free plan regardless of selectedPlan
+    if (selectedPlan && !skipped) {
+      // User selected a plan and completed payment
+      setSubscriptionType('premium');
+    } else {
+      // User skipped payment or selected free plan
+      setSubscriptionType('basic');
+    }
+    
     // Start smooth exit animation - immediately show overlay to hide content
     finishOverlayOpacity.setValue(1); // Set to fully opaque immediately to hide premium page
     setShowFinishAnimation(true);
@@ -2558,7 +2763,8 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
               isLoggedIn: true 
             });
             // Keep overlay visible and transition directly to app
-            onFinish();
+            // Pass skipped flag to onFinish callback
+            onFinish(skipped);
           });
         }, 800); // Show content for 800ms before fading out
       });
@@ -2566,7 +2772,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   };
 
   const handleSkip = () => {
-    handleFinish();
+    handleFinish(true); // Pass true to indicate skip was pressed
   };
 
   const handleSelectModule = (moduleId: string) => {
@@ -2594,9 +2800,10 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
     if (currentPage === 1) return selectedModule ? 'Continue' : 'Select a module';
     if (currentPage === 2) return hasClickedChangeButton ? 'Continue' : 'Click the change button';
     if (currentPage === 3) return hasScrolledOnHowToUse ? 'Continue' : 'Scroll down';
-    if (currentPage === TOTAL_PAGES - 1) {
+    if (currentPage === 5) {
       return selectedPlan ? 'Continue to payment' : "No thanks! I'll continue with Free Plan.";
     }
+    if (currentPage === 6) return 'Complete Purchase';
     return 'Continue';
   };
 
@@ -2670,7 +2877,27 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
           <LoginPage 
             isActive={currentPage === 4}
             onLogin={handleLogin}
-            onNavigateToPremium={() => {
+            onNavigateToPremium={async () => {
+              // Validate premium status directly from database, not from store
+              if (userId) {
+                try {
+                  const isPremium = await isPremiumUser(userId);
+                  if (isPremium) {
+                    console.log('✅ [Onboarding] User has premium from database, skipping premium and payment pages');
+                    // Update store with validated premium status
+                    setSubscriptionType('premium');
+                    handleFinish();
+                    return;
+                  } else {
+                    // Update store with validated basic status
+                    setSubscriptionType('basic');
+                    console.log('✅ [Onboarding] User subscription from database: basic (validated)');
+                  }
+                } catch (error) {
+                  console.error('❌ [Onboarding] Error checking subscription from database:', error);
+                  // On error, don't skip - let user go through premium flow
+                }
+              }
               // Navigate to premium features page (page 5)
               scrollViewRef.current?.scrollTo({ x: SCREEN_WIDTH * 5, animated: true });
             }}
@@ -2679,12 +2906,26 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
             isActive={currentPage === 5}
             selectedPlan={selectedPlan}
             onSelectPlan={setSelectedPlan}
-            onClose={handleFinish}
+            onClose={() => {
+              // Clear selected plan and finish with basic subscription
+              setSelectedPlan(null);
+              handleFinish(true); // Pass true to indicate skip
+            }}
+            isOnboarding={true}
+          />
+          <PaymentPage
+            isActive={currentPage === 6}
+            selectedPlan={selectedPlan}
+            onBack={() => {
+              scrollViewRef.current?.scrollTo({ x: SCREEN_WIDTH * 5, animated: true });
+            }}
+            onComplete={handleFinish}
+            isOnboarding={true}
           />
           </ScrollView>
         )}
 
-        {!showFinishAnimation && currentPage !== 4 && (
+        {!showFinishAnimation && currentPage !== 4 && currentPage !== 6 && (
           <Animated.View
             style={[
               styles.buttonContainer,
@@ -2929,18 +3170,7 @@ const styles = StyleSheet.create({
     color: '#8e8e93',
     lineHeight: 20,
   },
-  disclaimerContainer: {
-    alignItems: 'center',
-    marginBottom: 24,
-    paddingHorizontal: 0,
-  },
   disclaimerText: {
-    fontSize: 13,
-    color: '#8e8e93',
-    lineHeight: 18,
-    textAlign: 'center',
-  },
-  disclaimerTextLight: {
     fontSize: 13,
     color: '#8e8e93',
     lineHeight: 18,
@@ -3282,6 +3512,54 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     paddingHorizontal: 8,
   },
+  termsContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+    paddingHorizontal: 4,
+  },
+  checkboxWrapper: {
+    marginRight: 12,
+    marginTop: 2,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#8e8e93',
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  checkmark: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  termsTextContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'flex-start',
+  },
+  termsText: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: '#666666',
+    lineHeight: 18,
+  },
+  termsLink: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#007AFF',
+    lineHeight: 18,
+    textDecorationLine: 'underline',
+  },
   socialButton: {
     backgroundColor: '#f2f2f7',
     borderRadius: 12,
@@ -3291,6 +3569,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e5e5ea',
     minHeight: 56,
+  },
+  socialButtonDisabled: {
+    opacity: 0.5,
+    backgroundColor: '#e5e5ea',
   },
   socialButtonContent: {
     flexDirection: 'row',
@@ -3310,6 +3592,53 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  loadingContent: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 280,
+  },
+  loadingSpinnerContainer: {
+    width: 60,
+    height: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  loadingSpinner: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 4,
+    borderColor: '#007AFF',
+    borderTopColor: 'transparent',
+  },
+  loadingText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  loadingSubtext: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#8E8E93',
+    textAlign: 'center',
   },
   socialButtonText: {
     fontSize: 17,
@@ -3345,354 +3674,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 0,
     justifyContent: 'center',
-  },
-  premiumScrollContent: {
-    paddingBottom: 10,
-  },
-  scrollProgressContainer: {
-    position: 'absolute',
-    right: 8,
-    top: 0,
-    bottom: 0,
-    width: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 100,
-  },
-  scrollProgressTrack: {
-    width: 4,
-    height: '80%',
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
-    borderRadius: 2,
-    overflow: 'hidden',
-    justifyContent: 'flex-end',
-  },
-  scrollProgressBar: {
-    width: '100%',
-    backgroundColor: '#007AFF',
-    borderRadius: 2,
-    minHeight: 4,
-  },
-  closeButtonContainer: {
-    position: 'absolute',
-    top: 60,
-    right: 20,
-    zIndex: 1000,
-  },
-  closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
-  },
-  closeButtonText: {
-    fontSize: 28,
-    fontWeight: '300',
-    color: '#000000',
-    lineHeight: 28,
-    marginTop: -2,
-  },
-  premiumPricingContainer: {
-    paddingHorizontal: 0,
-    marginBottom: 32,
-  },
-  pricingContainerWrapper: {
-    marginHorizontal: -20,
-    width: SCREEN_WIDTH,
-  },
-  pricingScrollView: {
-    marginHorizontal: 0,
-    width: SCREEN_WIDTH,
-  },
-  pricingScrollContent: {
-    paddingRight: 0,
-  },
-  pricingCardWrapper: {
-    width: SCREEN_WIDTH,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingHorizontal: 20,
-  },
-  pricingCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 20,
-    paddingTop: 32,
-    borderWidth: 2,
-    borderColor: '#e5e5ea',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-    position: 'relative',
-    overflow: 'visible',
-    minHeight: 480,
-    justifyContent: 'space-between',
-    width: SCREEN_WIDTH - 40,
-    alignSelf: 'center',
-  },
-  pricingCardSelected: {
-    borderColor: '#007AFF',
-    borderWidth: 3,
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 6,
-    backgroundColor: '#f8f9ff',
-  },
-  pricingCardTouchable: {
-    width: '100%',
-  },
-  popularBadge: {
-    position: 'absolute',
-    top: 8,
-    alignSelf: 'center',
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
-    zIndex: 10,
-  },
-  popularBadgeText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  pricingCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-    marginTop: 8,
-  },
-  pricingCardName: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#000000',
-    letterSpacing: -0.5,
-  },
-  savingsBadge: {
-    backgroundColor: '#34C759',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  savingsBadgeText: {
-    color: '#ffffff',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  pricingCardPriceContainer: {
-    marginBottom: 20,
-  },
-  pricingCardPriceRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: 4,
-  },
-  pricingCardPrice: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: '#000000',
-    letterSpacing: -1,
-  },
-  pricingCardPeriod: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: '#8e8e93',
-    marginLeft: 4,
-  },
-  pricingCardEquivalent: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#8e8e93',
-    marginTop: 4,
-  },
-  pricingCardOriginal: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: '#c7c7cc',
-    textDecorationLine: 'line-through',
-    marginTop: 2,
-  },
-  pricingCardFeatures: {
-    marginBottom: 20,
-    flex: 1,
-    justifyContent: 'flex-start',
-  },
-  pricingIndicators: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 16,
-    marginBottom: 12,
-  },
-  pricingFooter: {
-    marginTop: 8,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  pricingFooterText: {
-    fontSize: 13,
-    fontWeight: '400',
-    color: '#8e8e93',
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  pricingIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#c7c7cc',
-  },
-  pricingIndicatorActive: {
-    width: 24,
-    backgroundColor: '#007AFF',
-  },
-  pricingCardFeature: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  pricingCardFeatureIcon: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#34C759',
-    marginRight: 10,
-    marginTop: 2,
-    width: 20,
-  },
-  pricingCardFeatureText: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '400',
-    color: '#000000',
-    lineHeight: 20,
-  },
-  pricingCardButton: {
-    backgroundColor: '#f2f2f7',
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#e5e5ea',
-  },
-  pricingCardButtonSelected: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
-  },
-  pricingCardButtonText: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#000000',
-  },
-  pricingCardButtonTextSelected: {
-    color: '#ffffff',
-  },
-  premiumFeaturesList: {
-    paddingHorizontal: 0,
-    marginTop: 16,
-  },
-  premiumFeaturesListTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#000000',
-    marginBottom: 8,
-    textAlign: 'center',
-    letterSpacing: -0.5,
-  },
-  premiumFeaturesListSubtitle: {
-    fontSize: 16,
-    fontWeight: '400',
-    color: '#8e8e93',
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  premiumFeaturesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginHorizontal: 0,
-  },
-  premiumFeatureCard: {
-    width: '48%',
-    marginBottom: 12,
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 6,
-    height: 180,
-  },
-  premiumFeatureCardTouchable: {
-    width: '100%',
-    height: '100%',
-  },
-  premiumFeatureCardGradient: {
-    borderRadius: 16,
-    padding: 16,
-    height: '100%',
-  },
-  premiumFeatureCardContent: {
-    flex: 1,
-    justifyContent: 'space-between',
-    height: '100%',
-  },
-  premiumFeatureIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  premiumFeatureIcon: {
-    fontSize: 24,
-  },
-  premiumFeatureTextContainer: {
-    flex: 1,
-    marginBottom: 8,
-  },
-  premiumFeatureTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#ffffff',
-    marginBottom: 4,
-    letterSpacing: -0.3,
-  },
-  premiumFeatureDescription: {
-    fontSize: 13,
-    fontWeight: '400',
-    color: 'rgba(255, 255, 255, 0.9)',
-    lineHeight: 18,
-  },
-  premiumFeatureArrow: {
-    alignSelf: 'flex-end',
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  premiumFeatureArrowText: {
-    fontSize: 18,
-    color: '#ffffff',
-    fontWeight: '700',
   },
   pageIndicators: {
     flexDirection: 'row',

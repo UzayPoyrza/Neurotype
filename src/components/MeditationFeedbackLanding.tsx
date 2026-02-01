@@ -268,9 +268,9 @@ export const MeditationFeedbackLanding: React.FC<MeditationFeedbackLandingProps>
               ]}
             >
               <Svg width={120} height={120} viewBox="0 0 120 120">
-                {/* Circle - animated drawing */}
+                {/* Circle - animated drawing (perfect circle using arc path) */}
                 <AnimatedPath
-                  d="M60 10 C85 10 110 35 110 60 C110 85 85 110 60 110 C35 110 10 85 10 60 C10 35 35 10 60 10 Z"
+                  d="M 60 10 A 50 50 0 0 1 60 110 A 50 50 0 0 1 60 10"
                   stroke="#ffffff"
                   strokeWidth="6"
                   fill="none"
@@ -279,9 +279,9 @@ export const MeditationFeedbackLanding: React.FC<MeditationFeedbackLandingProps>
                   strokeDasharray={circlePathLength}
                   strokeDashoffset={circleDashOffset}
                 />
-                {/* Checkmark - animated drawing */}
+                {/* Checkmark - animated drawing (centered in circle) */}
                 <AnimatedPath
-                  d="M35 60 L50 75 L85 40"
+                  d="M 40 60 L 55 75 L 80 45"
                   stroke="#ffffff"
                   strokeWidth="8"
                   fill="none"

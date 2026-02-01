@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, Animated, Dimensions, TouchableOpacity, FlatList, AccessibilityInfo, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Animated, Dimensions, TouchableOpacity, FlatList, AccessibilityInfo, TouchableWithoutFeedback, Alert } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Session } from '../types';
@@ -17,12 +17,18 @@ import { HowToUseModal } from '../components/HowToUseModal';
 import { MeditationDetailModal } from '../components/MeditationDetailModal';
 import { MergedCard } from '../components/MergedCard';
 import { LineGraphIcon } from '../components/icons/LineGraphIcon';
+import { ClockIcon } from '../components/icons/ClockIcon';
+import { MeditationIcon } from '../components/icons/MeditationIcon';
+import { LightbulbIcon } from '../components/icons/LightbulbIcon';
+import { PathIcon } from '../components/icons/PathIcon';
+import { LockIcon } from '../components/icons/LockIcon';
 import { ShimmerSessionCard, ShimmerAlternativeSessionCard, ShimmerProgressPathCard } from '../components/ShimmerSkeleton';
 import { ensureDailyRecommendations, getDailyRecommendations } from '../services/recommendationService';
 import { useUserId } from '../hooks/useUserId';
 import { getSessionById } from '../services/sessionService';
 import { getCompletedSessionsByDateRange, isSessionCompleted, getUserCompletedSessions } from '../services/progressService';
 import { supabase } from '../services/supabase';
+import { getLocalDateString } from '../utils/dateUtils';
 
 type SessionState = 'not_started' | 'in_progress' | 'completed' | 'rating';
 
@@ -41,6 +47,7 @@ export const TodayScreen: React.FC = () => {
   const { setActiveSession, setGlobalBackgroundColor, setCurrentScreen, setTodayModuleId, markSessionCompletedToday, isSessionCompletedToday } = useStore();
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const userProgress = useStore(state => state.userProgress);
+  const completedTodaySessions = useStore(state => state.completedTodaySessions);
   
   // Module and session state management
   const [selectedModuleId, setSelectedModuleId] = useState('anxiety'); // Default to anxiety
@@ -64,6 +71,7 @@ export const TodayScreen: React.FC = () => {
   const [showHowToUseModal, setShowHowToUseModal] = useState(false);
   const [showModuleToast, setShowModuleToast] = useState(false);
   const [toastModuleName, setToastModuleName] = useState('');
+  const [hoursUntilNewRecommendations, setHoursUntilNewRecommendations] = useState(0);
   const prevModuleIdRef = useRef<string | null>(null);
   const recommendationCheckInProgressRef = useRef<Record<string, boolean>>({});
   
@@ -86,6 +94,14 @@ export const TodayScreen: React.FC = () => {
   const moduleButtonFade = useRef(new Animated.Value(1)).current;
   const toastAnim = useRef(new Animated.Value(0)).current;
   const floatingButtonOffset = useRef(new Animated.Value(0)).current;
+  const hoursNumberScale = useRef(new Animated.Value(1)).current;
+  
+  // Alternating text animation refs
+  const text1TranslateY = useRef(new Animated.Value(0)).current;
+  const text1Opacity = useRef(new Animated.Value(1)).current;
+  const text2TranslateY = useRef(new Animated.Value(30)).current;
+  const text2Opacity = useRef(new Animated.Value(0)).current;
+  const currentTextIndexRef = useRef(0);
   
   const selectedModule = mentalHealthModules.find(m => m.id === selectedModuleId) || mentalHealthModules[0];
   
@@ -176,13 +192,13 @@ export const TodayScreen: React.FC = () => {
                     return null;
                   });
                   const sessions = (await Promise.all(sessionPromises)).filter(
-                    (s): s is Session => s !== null
+                    (s): s is Session & { isRecommended: boolean; adaptiveReason: string } => s !== null
                   );
                   
                   // Check which recommended sessions are completed today (from cache)
                   // Note: We don't re-mark sessions here - syncTodayCompletedSessionsFromDatabase already
                   // populated the cache on app open. We just check the cache to show checkmarks.
-                  const today = new Date().toISOString().split('T')[0];
+                  const today = getLocalDateString();
                   console.log('✅ [TodayScreen] Checking completed sessions from cache after module change:', today);
                   
                   for (const session of sessions) {
@@ -261,22 +277,29 @@ export const TodayScreen: React.FC = () => {
   // Immediate pill trigger function for scroll events
   const triggerPillAnimationImmediate = useCallback(() => {
     const currentTime = Date.now();
-    
+
     // Prevent rapid successive triggers (debounce)
     if (currentTime - lastFocusTime < 500) {
       return;
     }
-    
+
     setLastFocusTime(currentTime);
-    setIsPillMode(false);
-    
-    // Trigger pill mode immediately
+    // Directly set to true - no need to reset to false first
     setIsPillMode(true);
   }, [lastFocusTime]);
 
   // Handle drag start - cancel pill animation
   const handleDragStart = useCallback(() => {
     setIsPillMode(false);
+  }, []);
+
+  // Memoized callbacks for AnimatedFloatingButton to prevent re-renders
+  const handleFloatingButtonPress = useCallback(() => {
+    setShowModuleModal(true);
+  }, []);
+
+  const handleFloatingButtonScroll = useCallback((scrollY: number) => {
+    setScrollY(scrollY);
   }, []);
 
   // Pill mode logic - trigger when screen comes into focus
@@ -314,20 +337,63 @@ export const TodayScreen: React.FC = () => {
       }
 
       console.log('📋 [TodayScreen] Fetching daily recommendations...');
-      setIsLoadingRecommendations(true);
       
       // Prevent duplicate checks if one is already in progress
-      // Don't clear loading state here - let the module change handler manage it
       if (recommendationCheckInProgressRef.current[selectedModuleId]) {
         console.log('⏳ [TodayScreen] Recommendation check already in progress, skipping...');
+        // Don't set loading to false - let the existing loading state persist
         return;
       }
       
+      setIsLoadingRecommendations(true);
+      
       recommendationCheckInProgressRef.current[selectedModuleId] = true;
+      
+      // Add timeout to prevent infinite loading
+      const timeoutId = setTimeout(() => {
+        console.error('❌ [TodayScreen] Recommendations fetch timed out after 15 seconds');
+        Alert.alert(
+          'Timeout Error',
+          'Loading recommendations is taking too long.\n\nPlease check your internet connection and try again.',
+          [
+            { text: 'Retry', onPress: () => {
+              recommendationCheckInProgressRef.current[selectedModuleId] = false;
+              fetchRecommendations();
+            }},
+            { text: 'OK', style: 'cancel', onPress: () => {
+              setIsLoadingRecommendations(false);
+              recommendationCheckInProgressRef.current[selectedModuleId] = false;
+            }}
+          ]
+        );
+        setIsLoadingRecommendations(false);
+        recommendationCheckInProgressRef.current[selectedModuleId] = false;
+        setTodaySessions([]);
+      }, 15000); // 15 second timeout
       
       try {
         // Ensure recommendations exist for the current module
         const recResult = await ensureDailyRecommendations(userId, selectedModuleId, false);
+        
+        // ADD: Check if ensureDailyRecommendations failed
+        if (!recResult.success) {
+          console.error('❌ [TodayScreen] Failed to ensure recommendations:', recResult.error);
+          Alert.alert(
+            'Loading Error',
+            `Failed to load recommendations.\n\nError: ${recResult.error || 'Unknown error'}\n\nPlease check your internet connection and try again.`,
+            [
+              { text: 'Retry', onPress: () => {
+                recommendationCheckInProgressRef.current[selectedModuleId] = false;
+                fetchRecommendations();
+              }},
+              { text: 'OK', style: 'cancel' }
+            ]
+          );
+          setTodaySessions([]);
+          setIsLoadingRecommendations(false);
+          recommendationCheckInProgressRef.current[selectedModuleId] = false;
+          return;
+        }
         
         // Fetch recommendations for today and current module
         const recommendations = await getDailyRecommendations(userId, selectedModuleId);
@@ -340,6 +406,12 @@ export const TodayScreen: React.FC = () => {
         
         if (recommendations.length === 0) {
           console.warn('⚠️ [TodayScreen] No recommendations found');
+          // ADD: Show alert if no recommendations (might indicate an error)
+          Alert.alert(
+            'No Recommendations',
+            'No recommendations found for today.\n\nThis might be a temporary issue. Please try again later.',
+            [{ text: 'OK' }]
+          );
           setTodaySessions([]);
           setIsLoadingRecommendations(false);
           return;
@@ -359,17 +431,27 @@ export const TodayScreen: React.FC = () => {
         });
         
         const sessions = (await Promise.all(sessionPromises)).filter(
-          (s): s is Session => s !== null
+          (s): s is Session & { isRecommended: boolean; adaptiveReason: string } => s !== null
         );
         
         console.log('📋 [TodayScreen] Loaded', sessions.length, 'sessions from recommendations');
+        
+        // ADD: Check if we got fewer sessions than recommendations (some failed to load)
+        if (sessions.length < recommendations.length) {
+          console.warn(`⚠️ [TodayScreen] Only loaded ${sessions.length} of ${recommendations.length} recommended sessions`);
+          Alert.alert(
+            'Partial Load',
+            `Only ${sessions.length} of ${recommendations.length} sessions loaded successfully.\n\nSome sessions may be unavailable.`,
+            [{ text: 'OK' }]
+          );
+        }
         
         // Only check completed sessions if recommendations were not regenerated (already existed)
         // This means the recommendations are stable and we should check completion status
         // Note: We don't re-mark sessions here - syncTodayCompletedSessionsFromDatabase already
         // populated the cache on app open. We just check the cache to show checkmarks.
         if (!recResult.generated) {
-          const today = new Date().toISOString().split('T')[0];
+          const today = getLocalDateString();
           console.log('✅ [TodayScreen] Recommendations already exist, checking completion status from cache');
           
           // Check each recommended session if it's completed today (from cache)
@@ -384,10 +466,29 @@ export const TodayScreen: React.FC = () => {
         }
         
         setTodaySessions(sessions);
-      } catch (error) {
+        clearTimeout(timeoutId); // Clear timeout on success
+      } catch (error: any) {
         console.error('❌ [TodayScreen] Error fetching recommendations:', error);
+        clearTimeout(timeoutId); // Clear timeout on error
+        // Show detailed error alert
+        Alert.alert(
+          'Loading Error',
+          `Failed to load recommendations.\n\nError: ${error?.message || 'Unknown error'}\nCode: ${error?.code || 'N/A'}\n\nPlease check your internet connection and try again.`,
+          [
+            { text: 'Retry', onPress: () => {
+              recommendationCheckInProgressRef.current[selectedModuleId] = false;
+              fetchRecommendations();
+            }},
+            { text: 'OK', style: 'cancel', onPress: () => {
+              setIsLoadingRecommendations(false);
+              recommendationCheckInProgressRef.current[selectedModuleId] = false;
+            }}
+          ]
+        );
         setTodaySessions([]);
       } finally {
+        // ALWAYS clear loading state and timeout, even if something goes wrong
+        clearTimeout(timeoutId);
         setIsLoadingRecommendations(false);
         recommendationCheckInProgressRef.current[selectedModuleId] = false;
       }
@@ -407,6 +508,22 @@ export const TodayScreen: React.FC = () => {
       }
 
       setIsLoadingCompletedSessions(true);
+      
+      // Add timeout to prevent infinite loading
+      const timeoutId = setTimeout(() => {
+        console.error('❌ [TodayScreen] Completed sessions fetch timed out after 15 seconds');
+        Alert.alert(
+          'Timeout Error',
+          'Loading completed sessions is taking too long.\n\nPlease check your internet connection.',
+          [{ text: 'OK', onPress: () => {
+            setIsLoadingCompletedSessions(false);
+          }}]
+        );
+        setFetchedCompletedSessions([]);
+        setAllCompletedSessionsForCounting([]);
+        setIsLoadingCompletedSessions(false);
+      }, 15000); // 15 second timeout
+      
       try {
         // 1. Fetch ALL completed sessions (don't filter by context_module yet)
         const completedSessionsData = await getUserCompletedSessions(userId, 50);
@@ -430,8 +547,15 @@ export const TodayScreen: React.FC = () => {
 
         if (modalitiesError) {
           console.error('Error fetching session modalities:', modalitiesError);
+          clearTimeout(timeoutId);
+          Alert.alert(
+            'Loading Error',
+            `Failed to load completed sessions.\n\nError: ${modalitiesError.message || 'Unknown error'}\nCode: ${modalitiesError.code || 'N/A'}`,
+            [{ text: 'OK' }]
+          );
           setFetchedCompletedSessions([]);
           setAllCompletedSessionsForCounting([]);
+          setIsLoadingCompletedSessions(false);
           return;
         }
 
@@ -453,8 +577,15 @@ export const TodayScreen: React.FC = () => {
 
         if (sessionsError) {
           console.error('Error fetching sessions:', sessionsError);
+          clearTimeout(timeoutId);
+          Alert.alert(
+            'Loading Error',
+            `Failed to load session details.\n\nError: ${sessionsError.message || 'Unknown error'}\nCode: ${sessionsError.code || 'N/A'}`,
+            [{ text: 'OK' }]
+          );
           setFetchedCompletedSessions([]);
           setAllCompletedSessionsForCounting([]);
+          setIsLoadingCompletedSessions(false);
           return;
         }
 
@@ -487,7 +618,7 @@ export const TodayScreen: React.FC = () => {
             const session = sessionsMap.get(cs.session_id);
             if (session) {
               // Create a unique key combining session_id and completed_date
-              const completedDate = cs.completed_date || cs.created_at || new Date().toISOString().split('T')[0];
+              const completedDate = cs.completed_date || cs.created_at || getLocalDateString();
               const uniqueKey = `${cs.session_id}-${completedDate}`;
               
               // Skip if we've already added this exact completion
@@ -513,11 +644,20 @@ export const TodayScreen: React.FC = () => {
         setAllCompletedSessionsForCounting(moduleCompletedSessions);
         // Limit to 3 for display only
         setFetchedCompletedSessions(moduleCompletedSessions.slice(0, 3));
-      } catch (error) {
-        console.error('Error fetching completed sessions:', error);
+        clearTimeout(timeoutId); // Clear timeout on success
+      } catch (error: any) {
+        console.error('❌ [TodayScreen] Error fetching completed sessions:', error);
+        clearTimeout(timeoutId); // Clear timeout on error
+        Alert.alert(
+          'Loading Error',
+          `Failed to load completed sessions.\n\nError: ${error?.message || 'Unknown error'}\nCode: ${error?.code || 'N/A'}\n\nPlease check your internet connection.`,
+          [{ text: 'OK' }]
+        );
         setFetchedCompletedSessions([]);
         setAllCompletedSessionsForCounting([]);
       } finally {
+        // ALWAYS clear loading state and timeout, even if something goes wrong
+        clearTimeout(timeoutId);
         setIsLoadingCompletedSessions(false);
       }
     };
@@ -527,25 +667,25 @@ export const TodayScreen: React.FC = () => {
 
   const recommendedSession = todaySessions.find(s => s.isRecommended) || todaySessions[0];
   
-  // Check if recommended session is completed
-  const isRecommendedCompleted = recommendedSession 
-    ? isSessionCompletedToday(selectedModuleId, recommendedSession.id)
-    : false;
+  // Check if recommended session is completed - memoized to avoid recalculation on scroll
+  const isRecommendedCompleted = useMemo(() => {
+    if (!recommendedSession) return false;
+    return isSessionCompletedToday(selectedModuleId, recommendedSession.id);
+  }, [recommendedSession, selectedModuleId, isSessionCompletedToday, completedTodaySessions]);
   
   const moduleSessionsForRoadmap = useMemo(() => {
     const relevantGoals = {
       'anxiety': ['anxiety'],
       'adhd': ['focus'],
       'depression': ['sleep', 'focus'],
-      'bipolar': ['anxiety', 'sleep'],
       'panic': ['anxiety'],
-      'ptsd': ['anxiety', 'sleep'],
       'stress': ['anxiety', 'focus'],
       'sleep': ['sleep'],
       'focus': ['focus'],
-      'emotional-regulation': ['anxiety', 'focus'],
       'mindfulness': ['focus', 'sleep'],
       'self-compassion': ['sleep', 'focus'],
+      'burnout': ['stress', 'sleep'],
+      'addiction': ['anxiety', 'focus'],
     };
 
     const goals = relevantGoals[selectedModule.id as keyof typeof relevantGoals] || ['focus'];
@@ -558,12 +698,14 @@ export const TodayScreen: React.FC = () => {
   }, [fetchedCompletedSessions]);
 
   // Check if today's meditation is completed
+  // Note: completedTodaySessions is included as a dependency to ensure this recalculates
+  // when a session is marked complete (the function reference isSessionCompletedToday doesn't change)
   const isTodayCompleted = useMemo(() => {
     return todaySessions.some(session => {
       const originalSessionId = session.id.replace('-today', '');
       return isSessionCompletedToday(selectedModuleId, originalSessionId);
     });
-  }, [todaySessions, selectedModuleId, isSessionCompletedToday]);
+  }, [todaySessions, selectedModuleId, isSessionCompletedToday, completedTodaySessions]);
 
   // Filter to only count one session per day for neuroadaptation
   const uniqueDailySessionsCount = useMemo(() => {
@@ -838,6 +980,137 @@ export const TodayScreen: React.FC = () => {
     );
   }
 
+  // Calculate hours until midnight (when new recommendations are generated)
+  const calculateHoursUntilMidnight = useCallback(() => {
+    const now = new Date();
+    const midnight = new Date();
+    midnight.setHours(24, 0, 0, 0);
+    const diffMs = midnight.getTime() - now.getTime();
+    const diffHours = diffMs / (1000 * 60 * 60);
+    return Math.max(0, Math.ceil(diffHours));
+  }, []);
+
+  // Update hours until new recommendations
+  useEffect(() => {
+    const updateHours = () => {
+      setHoursUntilNewRecommendations(calculateHoursUntilMidnight());
+    };
+
+    // Update immediately
+    updateHours();
+
+    // Update every minute to keep it accurate
+    const interval = setInterval(updateHours, 60000);
+
+    return () => clearInterval(interval);
+  }, [calculateHoursUntilMidnight]);
+
+  // Animate hours number pop every 6 seconds
+  useEffect(() => {
+    // Only animate if there are hours remaining (not 0)
+    if (hoursUntilNewRecommendations === 0) {
+      hoursNumberScale.setValue(1);
+      return;
+    }
+
+    // Ensure starting value
+    hoursNumberScale.setValue(1);
+
+    const triggerPopAnimation = () => {
+      // Reset to 1 to ensure clean animation
+      hoursNumberScale.setValue(1);
+      
+      Animated.sequence([
+        Animated.spring(hoursNumberScale, {
+          toValue: 1.15,
+          tension: 200,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+        Animated.spring(hoursNumberScale, {
+          toValue: 1,
+          tension: 200,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    };
+
+    // Trigger after a short delay, then every 6 seconds
+    const initialTimeout = setTimeout(() => {
+      triggerPopAnimation();
+    }, 1000);
+    
+    const interval = setInterval(triggerPopAnimation, 6000);
+
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(interval);
+    };
+  }, [hoursUntilNewRecommendations, hoursNumberScale]);
+
+  // Alternating text animation - Instagram style
+  useEffect(() => {
+    // Initialize animation values
+    text1TranslateY.setValue(0);
+    text1Opacity.setValue(1);
+    text2TranslateY.setValue(30);
+    text2Opacity.setValue(0);
+    currentTextIndexRef.current = 0;
+
+    const animateTextTransition = () => {
+      const isText1Visible = currentTextIndexRef.current === 0;
+      
+      // Animate both texts simultaneously for smooth Instagram-style transition
+      Animated.parallel([
+        // Current text out (down)
+        Animated.timing(isText1Visible ? text1TranslateY : text2TranslateY, {
+          toValue: -30,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(isText1Visible ? text1Opacity : text2Opacity, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        // New text in (up)
+        Animated.timing(isText1Visible ? text2TranslateY : text1TranslateY, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(isText1Visible ? text2Opacity : text1Opacity, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        // Reset the hidden text position (below) after animation completes
+        if (isText1Visible) {
+          text1TranslateY.setValue(30);
+        } else {
+          text2TranslateY.setValue(30);
+        }
+      });
+
+      // Switch to the other text
+      currentTextIndexRef.current = isText1Visible ? 1 : 0;
+    };
+
+    // Start animation after 3 seconds, then repeat every 3 seconds
+    const initialTimeout = setTimeout(() => {
+      animateTextTransition();
+    }, 3000);
+    
+    const interval = setInterval(animateTextTransition, 3000);
+
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(interval);
+    };
+  }, [selectedModuleId, text1TranslateY, text1Opacity, text2TranslateY, text2Opacity]); // Re-run when module changes
+
   // Get current date info
   const getCurrentDateInfo = () => {
     const today = new Date();
@@ -928,7 +1201,14 @@ export const TodayScreen: React.FC = () => {
           <MergedCard.Section style={styles.mergedSectionTop}>
             <View style={styles.cardHeader}>
               <View style={styles.cardHeaderTop}>
-                <Text style={styles.cardTitle}>🧘‍♀️ Today's Focus</Text>
+                <View style={styles.cardTitleContainer}>
+                  <View style={styles.cardTitleIconWrapper}>
+                    <MeditationIcon size={24} color="#000000" />
+                  </View>
+                  <View style={styles.cardTitleTextWrapper}>
+                    <Text style={styles.cardTitle}>Today's Focus</Text>
+                  </View>
+                </View>
                 <TouchableOpacity 
                   style={styles.moduleButton}
                   onPress={handleModuleButtonPress}
@@ -940,9 +1220,34 @@ export const TodayScreen: React.FC = () => {
                   </Animated.View>
                 </TouchableOpacity>
               </View>
-              <Text style={styles.focusSubtitle}>
-                Personalized for your {selectedModule.title.toLowerCase()} journey
-              </Text>
+              <View style={styles.focusSubtitleContainer}>
+                <Animated.View
+                  style={[
+                    styles.focusSubtitleAnimated,
+                    {
+                      opacity: text1Opacity,
+                      transform: [{ translateY: text1TranslateY }],
+                    },
+                  ]}
+                >
+                  <Text style={styles.focusSubtitle}>
+                    Personalized for your {selectedModule.title.toLowerCase()} journey
+                  </Text>
+                </Animated.View>
+                <Animated.View
+                  style={[
+                    styles.focusSubtitleAnimated,
+                    {
+                      opacity: text2Opacity,
+                      transform: [{ translateY: text2TranslateY }],
+                    },
+                  ]}
+                >
+                  <Text style={styles.focusSubtitle}>
+                    {isTodayCompleted ? 'You are done for today 🎉' : 'Complete one of the meditations below.'}
+                  </Text>
+                </Animated.View>
+              </View>
             </View>
 
             {/* Recommended Session */}
@@ -961,7 +1266,7 @@ export const TodayScreen: React.FC = () => {
               >
                 <TouchableOpacity
                   style={[styles.recommendedSession, { 
-                    backgroundColor: (todayCompleted || isRecommendedCompleted) ? '#f2f2f7' : '#ffffff'
+                    backgroundColor: (todayCompleted || isRecommendedCompleted) ? 'rgba(0, 0, 0, 0.02)' : '#ffffff'
                   }]}
                   onPress={() => handleSessionSelect(recommendedSession)}
                   onPressIn={handleHeroCardPressIn}
@@ -1007,7 +1312,14 @@ export const TodayScreen: React.FC = () => {
           <MergedCard.Section style={styles.mergedSectionList} hideDividerBefore>
             <View style={styles.cardHeader}>
               <View style={styles.cardHeaderTop}>
-                <Text style={styles.cardTitle}>💡 Other Options</Text>
+                <View style={styles.cardTitleContainer}>
+                  <View style={styles.cardTitleIconWrapper}>
+                    <LightbulbIcon size={24} color="#000000" />
+                  </View>
+                  <View style={styles.cardTitleTextWrapper}>
+                    <Text style={styles.cardTitle}>Other Options</Text>
+                  </View>
+                </View>
               </View>
             </View>
             
@@ -1065,13 +1377,50 @@ export const TodayScreen: React.FC = () => {
               )}
             </View>
           </MergedCard.Section>
+
+          {/* Hours until new recommendations */}
+          <MergedCard.Section style={styles.mergedSectionHours} hideDividerBefore>
+            <View style={styles.hoursRemainingContainer}>
+              <ClockIcon size={14} color="#8e8e93" />
+              {hoursUntilNewRecommendations === 0 ? (
+                <Text style={styles.hoursRemainingText}>
+                  New recommendations available
+                </Text>
+              ) : hoursUntilNewRecommendations === 1 ? (
+                <View style={styles.hoursRemainingTextRow}>
+                  <Animated.View style={{ transform: [{ scale: hoursNumberScale }] }}>
+                    <Text style={[styles.hoursRemainingText, styles.hoursRemainingTextBold]}>1 hour</Text>
+                  </Animated.View>
+                  <Text style={styles.hoursRemainingText}>
+                    {' until new recommendations'}
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.hoursRemainingTextRow}>
+                  <Animated.View style={{ transform: [{ scale: hoursNumberScale }] }}>
+                    <Text style={[styles.hoursRemainingText, styles.hoursRemainingTextBold]}>{hoursUntilNewRecommendations} hours</Text>
+                  </Animated.View>
+                  <Text style={styles.hoursRemainingText}>
+                    {' until new recommendations'}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </MergedCard.Section>
         </MergedCard>
 
         {/* Progress Path Card */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <View style={styles.cardHeaderTop}>
-              <Text style={styles.cardTitle}>🗺️ Progress Path</Text>
+              <View style={styles.cardTitleContainer}>
+                <View style={styles.cardTitleIconWrapper}>
+                  <PathIcon size={24} color="#000000" />
+                </View>
+                <View style={styles.cardTitleTextWrapper}>
+                  <Text style={styles.cardTitle}>Progress Path</Text>
+                </View>
+              </View>
             </View>
           </View>
 
@@ -1146,7 +1495,7 @@ export const TodayScreen: React.FC = () => {
                   {completedPreviewSessions.length === 0 && (
                     <View style={styles.progressPreviewLockedState}>
                       <View style={[styles.progressPreviewItemIcon, styles.progressPreviewItemIconLocked]}>
-                        <Text style={styles.progressPreviewLockIconText}>🔒</Text>
+                        <LockIcon size={20} color="#8e8e93" />
                       </View>
                       <View style={styles.progressPreviewItemBody}>
                         <Text style={styles.progressPreviewLockedText}>
@@ -1163,7 +1512,7 @@ export const TodayScreen: React.FC = () => {
                   <Text style={styles.progressPreviewSectionLabel}>Coming Up</Text>
                   <View style={styles.progressPreviewLockedState}>
                     <View style={[styles.progressPreviewItemIcon, styles.progressPreviewItemIconLocked]}>
-                      <Text style={styles.progressPreviewLockIconText}>🔒</Text>
+                      <LockIcon size={20} color="#8e8e93" />
                     </View>
                     <View style={styles.progressPreviewItemBody}>
                       <Text style={styles.progressPreviewLockedText}>
@@ -1263,9 +1612,9 @@ export const TodayScreen: React.FC = () => {
       >
         <AnimatedFloatingButton
           backgroundColor={selectedModule.color}
-          onPress={() => setShowModuleModal(true)}
+          onPress={handleFloatingButtonPress}
           isPillMode={isPillMode}
-          onScroll={(scrollY) => setScrollY(scrollY)}
+          onScroll={handleFloatingButtonScroll}
           onDragStart={handleDragStart}
         />
       </Animated.View>
@@ -1373,6 +1722,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 4,
   },
+  cardTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cardTitleIconWrapper: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardTitleTextWrapper: {
+    justifyContent: 'center',
+    marginLeft: 6,
+    paddingTop: 1,
+  },
+  focusSubtitleContainer: {
+    position: 'relative',
+    height: 22, // Fixed height to prevent layout shift
+    marginBottom: 0,
+    overflow: 'hidden',
+  },
+  focusSubtitleAnimated: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+  },
   focusSubtitle: {
     fontSize: 15,
     color: '#8e8e93',
@@ -1381,7 +1755,7 @@ const styles = StyleSheet.create({
   },
   recommendedSessionContainer: {
     paddingHorizontal: 16,
-    paddingBottom: 20,
+    paddingBottom: 12,
   },
   recommendedSession: {
     backgroundColor: '#ffffff',
@@ -1421,6 +1795,32 @@ const styles = StyleSheet.create({
     color: '#8e8e93',
     fontWeight: '400',
   },
+  mergedSectionHours: {
+    paddingTop: 0,
+    paddingBottom: 0,
+  },
+  hoursRemainingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 8,
+    paddingBottom: 8,
+    paddingHorizontal: 16,
+  },
+  hoursRemainingText: {
+    fontSize: 12,
+    color: '#8e8e93',
+    fontWeight: '400',
+    letterSpacing: -0.1,
+  },
+  hoursRemainingTextBold: {
+    fontWeight: '700',
+  },
+  hoursRemainingTextRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 6,
+  },
   sessionPlayButton: {
     width: 44,
     height: 44,
@@ -1444,7 +1844,7 @@ const styles = StyleSheet.create({
   },
   alternativeSessionsList: {
     paddingTop: 0,
-    paddingBottom: 20,
+    paddingBottom: 12,
   },
   alternativeSession: {
     flexDirection: 'row',

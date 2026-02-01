@@ -10,6 +10,8 @@ web-build/
 expo-env.d.ts
 
 # Native
+ios/
+android/
 .kotlin/
 *.orig.*
 *.jks
@@ -36,3 +38,8 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+# EAS build config (contains sensitive credentials)
+eas.json
+
+.well-known/

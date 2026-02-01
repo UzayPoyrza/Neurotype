@@ -1,0 +1,23 @@
+import React from 'react';
+import Svg, { Path } from 'react-native-svg';
+
+interface RecentIconProps {
+  size?: number;
+  color?: string;
+}
+
+export const RecentIcon: React.FC<RecentIconProps> = ({ 
+  size = 20, 
+  color = '#141124'
+}) => {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path 
+        d="M9.682,18.75a.75.75,0,0,1,.75-.75,8.25,8.25,0,1,0-6.189-2.795V12.568a.75.75,0,0,1,1.5,0v4.243a.75.75,0,0,1-.751.75H.75a.75.75,0,0,1,0-1.5H3a9.75,9.75,0,1,1,7.433,3.44A.75.75,0,0,1,9.682,18.75Zm2.875-4.814L9.9,11.281a.754.754,0,0,1-.22-.531V5.55a.75.75,0,1,1,1.5,0v4.889l2.436,2.436a.75.75,0,1,1-1.061,1.06Z" 
+        transform="translate(1.568 2.25)" 
+        fill={color}
+      />
+    </Svg>
+  );
+};
+

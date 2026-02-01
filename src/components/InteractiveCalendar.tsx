@@ -11,7 +11,9 @@ import {
 } from 'react-native';
 import { theme } from '../styles/theme';
 import { mentalHealthModules, getCategoryColor, categoryColors } from '../data/modules';
+import { MeditationIcon } from './icons/MeditationIcon';
 import { CompletedSession } from '../services/progressService';
+import { getLocalDateString } from '../utils/dateUtils';
 
 const { width } = Dimensions.get('window');
 
@@ -34,31 +36,30 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
   const rightButtonScale = useRef(new Animated.Value(1)).current;
 
   // Helper function to get category from moduleId
-  const getCategoryFromModuleId = (moduleId: string | undefined): 'disorder' | 'wellness' | 'skill' | 'other' => {
-    if (!moduleId) return 'other';
+  const getCategoryFromModuleId = (moduleId: string | undefined): 'disorder' | 'wellness' | 'skill' | 'winddown' => {
+    if (!moduleId) return 'wellness';
     const module = mentalHealthModules.find(m => m.id === moduleId);
-    return module?.category || 'other';
+    return module?.category || 'wellness';
   };
 
   // Helper function to get category color
-  const getCategoryColorForCalendar = (category: 'disorder' | 'wellness' | 'skill' | 'other'): string => {
-    if (category === 'other') return theme.colors.primary;
+  const getCategoryColorForCalendar = (category: 'disorder' | 'wellness' | 'skill' | 'winddown'): string => {
     return getCategoryColor(category);
   };
 
   // Get all unique categories for completed meditations on a specific date
-  const getCompletedCategoriesForDate = (date: Date): Array<'disorder' | 'wellness' | 'skill' | 'other'> => {
-    const dateStr = date.toISOString().split('T')[0];
+  const getCompletedCategoriesForDate = (date: Date): Array<'disorder' | 'wellness' | 'skill' | 'winddown'> => {
+    const dateStr = getLocalDateString(date);
     // Get all entries for this date
     const entriesForDate = completedSessions.filter(entry => entry.completed_date === dateStr);
-    
+
     // Extract unique categories
     const uniqueCategories = Array.from(
       new Set(
         entriesForDate.map(entry => getCategoryFromModuleId(entry.context_module))
       )
-    ) as Array<'disorder' | 'wellness' | 'skill' | 'other'>;
-    
+    ) as Array<'disorder' | 'wellness' | 'skill' | 'winddown'>;
+
     return uniqueCategories;
   };
 
@@ -74,12 +75,12 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
   };
 
   // Get category display name
-  const getCategoryDisplayName = (category: 'disorder' | 'wellness' | 'skill' | 'other'): string => {
-    const categoryNames = {
+  const getCategoryDisplayName = (category: 'disorder' | 'wellness' | 'skill' | 'winddown'): string => {
+    const categoryNames: Record<string, string> = {
       disorder: 'Disorder',
       wellness: 'Wellness',
       skill: 'Skill',
-      other: 'Other',
+      winddown: 'Wind Down',
     };
     return categoryNames[category];
   };
@@ -182,11 +183,6 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
     return currentDate.toLocaleDateString('en-US', options);
   };
 
-  const handleShareProgress = () => {
-    // TODO: Implement share functionality
-    console.log('Share progress');
-  };
-
   const renderCalendar = () => {
     const dates = getMonthDates();
     const dayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
@@ -257,7 +253,9 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
     return (
       <View style={styles.noMeditationsContainer}>
         <View style={styles.noMeditationsBox}>
-          <Text style={styles.noMeditationsIcon}>🧘‍♀️</Text>
+          <View style={styles.noMeditationsIconContainer}>
+            <MeditationIcon size={48} color="#8e8e93" />
+          </View>
           <Text style={styles.noMeditationsTitle}>No Meditations This Month</Text>
           <Text style={styles.noMeditationsText}>
             Start your mindfulness journey by completing your first meditation session.
@@ -278,7 +276,7 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
         return sessionDate.getFullYear() === year && sessionDate.getMonth() === month;
       })
       .map(entry => getCategoryFromModuleId(entry.context_module))
-      .filter((value, index, self) => self.indexOf(value) === index) as Array<'disorder' | 'wellness' | 'skill' | 'other'>;
+      .filter((value, index, self) => self.indexOf(value) === index) as Array<'disorder' | 'wellness' | 'skill' | 'winddown'>;
     
     if (completedCategories.length === 0) {
       return null;
@@ -348,17 +346,6 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
         
         {/* Meditation Legend */}
         {renderMeditationLegend()}
-        
-        {/* Share Button - only show if there are meditations in current month */}
-        {hasMeditationsInCurrentMonth() && (
-          <TouchableOpacity 
-            style={styles.shareButton}
-            onPress={handleShareProgress}
-          >
-            <Text style={styles.shareIcon}>↗</Text>
-            <Text style={styles.shareText}>Share My Progress</Text>
-          </TouchableOpacity>
-        )}
       </Animated.View>
     </View>
   );
@@ -376,7 +363,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
-    minHeight: 450, // Constant size to match shimmer skeleton
+    height: 536, // Fixed height: header (56px) + calendar (360px) + legend (76px) + padding (32px) + extra space (12px)
   },
   header: {
     flexDirection: 'row',
@@ -412,11 +399,11 @@ const styles = StyleSheet.create({
   contentContainer: {
     overflow: 'hidden',
     width: '100%',
-    flex: 1,
+    height: 436, // Fixed height: calendar (360px) or no meditations (360px) + legend (76px)
   },
   calendarContainer: {
     marginBottom: 12,
-    height: 280, // Fixed height: day headers (32px) + 6 rows (240px) + margins (8px)
+    height: 360, // Height: day headers (32px) + 6 rows of 52px (312px) + margins (16px) to fit 4 dots per cell
   },
   dayHeaders: {
     flexDirection: 'row',
@@ -437,22 +424,23 @@ const styles = StyleSheet.create({
   },
   dateCell: {
     width: '14.28%', // 1/7 of the width
-    height: 40,
+    height: 52,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   emptyCell: {
     width: '14.28%', // 1/7 of the width
-    height: 40,
-    marginBottom: 4,
+    height: 52,
+    marginBottom: 2,
   },
   todayCell: {
     backgroundColor: '#ffffff',
-    borderRadius: 20,
+    borderRadius: 24,
     borderWidth: 1,
     borderColor: theme.colors.primary,
+    width: 48,
   },
   dateText: {
     fontSize: 16,
@@ -465,17 +453,17 @@ const styles = StyleSheet.create({
   },
   dotsContainer: {
     position: 'absolute',
-    bottom: 2,
+    bottom: 4,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    flexWrap: 'wrap',
+    flexWrap: 'nowrap',
     maxWidth: '100%',
   },
   meditationDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
@@ -483,13 +471,14 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   meditationDotSpacing: {
-    marginLeft: 4, // Spacing between multiple dots
+    marginLeft: 1, // Tight spacing between dots
   },
   legendContainer: {
-    marginBottom: 16,
+    marginBottom: 12,
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
+    minHeight: 50,
   },
   legendTitle: {
     fontSize: 16,
@@ -499,66 +488,40 @@ const styles = StyleSheet.create({
   },
   legendItems: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexWrap: 'nowrap',
+    justifyContent: 'center',
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 16,
-    marginBottom: 6,
+    marginRight: 10,
   },
   legendDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 6,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 4,
   },
   legendText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#666666',
-    textTransform: 'capitalize',
-  },
-  shareButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#000000',
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#000000',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  shareIcon: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#ffffff',
-    marginRight: 8,
-  },
-  shareText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#ffffff',
   },
   noMeditationsContainer: {
     marginBottom: 12,
-    height: 280, // Match the full calendar height including day headers
+    height: 360, // Increased height for better vertical centering
+    minHeight: 360, // Ensure consistent height
+    justifyContent: 'flex-start',
+    paddingTop: 40, // Move content lower
   },
   noMeditationsBox: {
     backgroundColor: '#f8f8f8',
     borderRadius: 12,
-    padding: 32,
+    padding: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    height: '100%',
+    flex: 1,
   },
-  noMeditationsIcon: {
-    fontSize: 32,
+  noMeditationsIconContainer: {
     marginBottom: 12,
   },
   noMeditationsTitle: {

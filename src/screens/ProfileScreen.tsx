@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, NativeSyntheticEvent, NativeScrollEvent, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, NativeSyntheticEvent, NativeScrollEvent, Dimensions, Animated } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import Svg, { Path } from 'react-native-svg';
@@ -15,9 +15,13 @@ import { InfoBox } from '../components/InfoBox';
 import { getUserCompletedSessions } from '../services/progressService';
 import { getSessionById } from '../services/sessionService';
 import { useUserId } from '../hooks/useUserId';
-import { getUserEmotionalFeedback, removeEmotionalFeedback as removeEmotionalFeedbackDB } from '../services/feedbackService';
+import { removeEmotionalFeedback as removeEmotionalFeedbackDB } from '../services/feedbackService';
 import type { CompletedSessionCacheEntry } from '../store/useStore';
 import { ShimmerActivityHistory, ShimmerEmotionalFeedbackHistory } from '../components/ShimmerSkeleton';
+import { getSubscriptionDetails } from '../services/userService';
+import { GiftIcon } from '../components/icons/GiftIcon';
+import { ActivityHistoryIcon } from '../components/icons/ActivityHistoryIcon';
+import { ChatWritingIcon } from '../components/icons/ChatWritingIcon';
 
 const MAX_VISIBLE_ACTIVITY_ITEMS = 4;
 const APPROX_ACTIVITY_ROW_HEIGHT = 84;
@@ -79,11 +83,65 @@ const formatTimestamp = (timestampSeconds: number): string => {
 type ProfileStackParamList = {
   ProfileMain: undefined;
   Settings: undefined;
+  Subscription: undefined;
+  Payment: { selectedPlan?: string | null };
 };
 
 type ProfileScreenNavigationProp = StackNavigationProp<ProfileStackParamList, 'ProfileMain'>;
 
 type TouchableOpacityRef = React.ComponentRef<typeof TouchableOpacity>;
+
+// Animated wrapper for emotional feedback item to handle removal animation
+const AnimatedFeedbackItem: React.FC<{
+  children: React.ReactNode;
+  isRemoving: boolean;
+  onAnimationComplete: () => void;
+}> = ({ children, isRemoving, onAnimationComplete }) => {
+  const opacity = React.useRef(new Animated.Value(1)).current;
+  const translateX = React.useRef(new Animated.Value(0)).current;
+  const scale = React.useRef(new Animated.Value(1)).current;
+  
+  React.useEffect(() => {
+    if (isRemoving) {
+      // Animate out: fade, slide to the right, and scale down
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateX, {
+          toValue: 300,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scale, {
+          toValue: 0.8,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        onAnimationComplete();
+      });
+    } else {
+      // Reset for new items
+      opacity.setValue(1);
+      translateX.setValue(0);
+      scale.setValue(1);
+    }
+  }, [isRemoving, opacity, translateX, scale, onAnimationComplete]);
+  
+  return (
+    <Animated.View
+      style={{
+        opacity,
+        transform: [{ translateX }, { scale }],
+      }}
+    >
+      {children}
+    </Animated.View>
+  );
+};
 
 export const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
@@ -109,9 +167,13 @@ export const ProfileScreen: React.FC = () => {
   // Initialize loading state: false if cache has data, true otherwise
   const [isLoadingActivity, setIsLoadingActivity] = React.useState(completedSessionsCache.length === 0);
   const [isLoadingFeedback, setIsLoadingFeedback] = React.useState(emotionalFeedbackHistoryFromStore.length === 0);
+  // Get subscription cancel date from store (loaded during app initialization)
+  const subscriptionCancelAt = useStore(state => state.subscriptionCancelAt);
   
   // Track processed cache entries to avoid reprocessing
   const processedCacheKeysRef = React.useRef<Set<string>>(new Set());
+  // Track last processed feedback to prevent infinite loops
+  const lastProcessedFeedbackRef = React.useRef<string>('');
 
   const modulesById = React.useMemo(() => {
     return mentalHealthModules.reduce<Record<string, MentalHealthModule>>((acc, module) => {
@@ -164,14 +226,25 @@ export const ProfileScreen: React.FC = () => {
       }));
   }, []);
 
-  // Helper function to process store feedback entries
+  // Helper function to process store feedback entries (uses cached sessions first)
   const processStoreFeedback = React.useCallback(async (storeEntries: typeof emotionalFeedbackHistoryFromStore) => {
     if (storeEntries.length === 0) return [];
     
-    // Fetch session details for feedback entries
+    // Fetch session details for feedback entries (try cache first)
     const feedbackWithSessions = await Promise.all(
       storeEntries.map(async (entry) => {
-        const session = await getSessionById(entry.sessionId);
+        // Try to get session from cache first
+        let session = getStoreState().getCachedSession(entry.sessionId);
+        
+        // If not in cache, fetch it
+        if (!session) {
+          session = await getSessionById(entry.sessionId);
+          if (session) {
+            // Cache it for future use
+            getStoreState().cacheSessions([session]);
+          }
+        }
+        
         return {
           feedback: {
             id: entry.id || `feedback-${entry.date}-${entry.sessionId}`,
@@ -204,7 +277,7 @@ export const ProfileScreen: React.FC = () => {
         timestampSeconds: fb.timestamp_seconds,
         date: fb.feedback_date,
       }));
-  }, []);
+  }, [getStoreState]);
 
   // Initialize from cache immediately on mount
   React.useEffect(() => {
@@ -225,6 +298,11 @@ export const ProfileScreen: React.FC = () => {
       
       if (emotionalFeedbackHistoryFromStore.length > 0) {
         console.log('📊 [ProfileScreen] Initializing feedback from store:', emotionalFeedbackHistoryFromStore.length, 'entries');
+        // Set the ref to prevent reprocessing in the other effect
+        const feedbackKey = emotionalFeedbackHistoryFromStore
+          .map(e => `${e.id || e.sessionId}-${e.date}-${e.timestampSeconds}`)
+          .join('|');
+        lastProcessedFeedbackRef.current = feedbackKey;
         const feedback = await processStoreFeedback(emotionalFeedbackHistoryFromStore);
         setEmotionalFeedbackHistory(feedback);
         setIsLoadingFeedback(false);
@@ -233,6 +311,23 @@ export const ProfileScreen: React.FC = () => {
     
     initializeFromCache();
   }, []); // Only run on mount
+
+  // Refresh subscription details when screen comes into focus (to catch any updates)
+  useFocusEffect(
+    React.useCallback(() => {
+      const refreshSubscriptionDetails = async () => {
+        if (userId && subscriptionType === 'premium') {
+          console.log('🔄 [ProfileScreen] Screen focused, refreshing subscription details...');
+          const details = await getSubscriptionDetails(userId);
+          if (details) {
+            useStore.getState().setSubscriptionCancelAt(details.cancelAt);
+            console.log('✅ [ProfileScreen] Subscription details refreshed on focus');
+          }
+        }
+      };
+      refreshSubscriptionDetails();
+    }, [userId, subscriptionType])
+  );
 
   // Update UI immediately when cache changes (e.g., when meditation completes)
   // Merges new cache entries with existing completedSessions and removes overwritten entries
@@ -417,16 +512,34 @@ export const ProfileScreen: React.FC = () => {
   // Update UI immediately when store feedback changes
   React.useEffect(() => {
     const updateFromStore = async () => {
-      if (emotionalFeedbackHistoryFromStore.length > 0) {
-        console.log('📊 [ProfileScreen] Store feedback updated, refreshing from store');
-        const feedback = await processStoreFeedback(emotionalFeedbackHistoryFromStore);
-        setEmotionalFeedbackHistory(feedback);
+      if (emotionalFeedbackHistoryFromStore.length === 0) {
+        // Reset ref when array becomes empty
+        lastProcessedFeedbackRef.current = '';
+        setEmotionalFeedbackHistory([]);
         setIsLoadingFeedback(false);
+        return;
       }
+
+      // Create a stable key from the feedback entries to detect actual changes
+      const feedbackKey = emotionalFeedbackHistoryFromStore
+        .map(e => `${e.id || e.sessionId}-${e.date}-${e.timestampSeconds}`)
+        .join('|');
+      
+      // Skip if we've already processed this exact feedback
+      if (lastProcessedFeedbackRef.current === feedbackKey) {
+        console.log('📊 [ProfileScreen] Feedback already processed, skipping');
+        return;
+      }
+
+      console.log('📊 [ProfileScreen] Store feedback updated, refreshing from store');
+      lastProcessedFeedbackRef.current = feedbackKey;
+      const feedback = await processStoreFeedback(emotionalFeedbackHistoryFromStore);
+      setEmotionalFeedbackHistory(feedback);
+      setIsLoadingFeedback(false);
     };
     
     updateFromStore();
-  }, [emotionalFeedbackHistoryFromStore, processStoreFeedback]);
+  }, [emotionalFeedbackHistoryFromStore]); // Removed processStoreFeedback from deps
 
   // Set screen context when component mounts
   React.useEffect(() => {
@@ -550,144 +663,6 @@ export const ProfileScreen: React.FC = () => {
     }
   }, [userId, fetchActivityHistory]);
 
-  // Fetch emotional feedback from database and merge with cache
-  const fetchEmotionalFeedback = React.useCallback(async () => {
-    if (!userId) {
-      console.log('📊 [ProfileScreen] No user ID, skipping emotional feedback fetch');
-      setIsLoadingFeedback(false);
-      return;
-    }
-
-    console.log('📊 [ProfileScreen] Fetching emotional feedback for user:', userId);
-    // Only show loading if we don't have store data
-    if (emotionalFeedbackHistoryFromStore.length === 0) {
-      setIsLoadingFeedback(true);
-    }
-    
-    try {
-      // Fetch emotional feedback from database (most recent first, limit 20)
-      const feedback = await getUserEmotionalFeedback(userId, 20);
-      console.log('📊 [ProfileScreen] Fetched', feedback.length, 'emotional feedback entries from database');
-      console.log('📊 [ProfileScreen] Store has', emotionalFeedbackHistoryFromStore.length, 'entries');
-      
-      // Merge store cache with database data
-      // Convert store entries to same format as DB entries for easier merging
-      const storeEntries = emotionalFeedbackHistoryFromStore.map(entry => ({
-        id: entry.id || `feedback-${entry.date}-${entry.sessionId}`,
-        session_id: entry.sessionId,
-        label: entry.label,
-        timestamp_seconds: entry.timestampSeconds,
-        feedback_date: entry.date,
-      }));
-      
-      // Combine store and DB, deduplicate by id or session_id + date
-      const allFeedback = [...storeEntries, ...feedback]
-        .filter((entry, index, self) => {
-          const key = entry.id || `${entry.session_id}-${entry.feedback_date}`;
-          return index === self.findIndex(e => (e.id || `${e.session_id}-${e.feedback_date}`) === key);
-        })
-        .sort((a, b) => {
-          const aTime = new Date(a.feedback_date).getTime();
-          const bTime = new Date(b.feedback_date).getTime();
-          return bTime - aTime; // Most recent first
-        })
-        .slice(0, 20); // Keep top 20
-      
-      console.log('📊 [ProfileScreen] Merged to', allFeedback.length, 'total feedback entries');
-      
-      // Fetch session details for each feedback entry
-      const feedbackWithSessions = await Promise.all(
-        allFeedback.map(async (fb) => {
-          const session = await getSessionById(fb.session_id);
-          return {
-            feedback: fb,
-            session,
-          };
-        })
-      );
-      
-      // Build sessionsById map for feedback entries
-      const feedbackSessionsMap: Record<string, Session> = {};
-      feedbackWithSessions.forEach(({ session }) => {
-        if (session) {
-          feedbackSessionsMap[session.id] = session;
-        }
-      });
-      setSessionsById(prev => ({ ...prev, ...feedbackSessionsMap }));
-      
-      // Transform to match the expected format
-      const transformedFeedback = feedbackWithSessions
-        .filter(({ session }) => session !== null)
-        .map(({ feedback: fb }) => ({
-          id: fb.id || `feedback-${fb.feedback_date}-${fb.session_id}`,
-          sessionId: fb.session_id,
-          label: fb.label,
-          timestampSeconds: fb.timestamp_seconds,
-          date: fb.feedback_date,
-        }));
-      
-      console.log('📊 [ProfileScreen] Processed', transformedFeedback.length, 'emotional feedback items');
-      setEmotionalFeedbackHistory(transformedFeedback);
-    } catch (error) {
-      console.error('❌ [ProfileScreen] Error fetching emotional feedback:', error);
-    } finally {
-      setIsLoadingFeedback(false);
-    }
-  }, [userId, emotionalFeedbackHistoryFromStore, processStoreFeedback]);
-
-  // Fetch from database in background (runs after cache initialization)
-  // This merges store with DB to ensure we have the complete picture
-  React.useEffect(() => {
-    if (userId) {
-      // Small delay to let cache initialization complete first
-      const timer = setTimeout(() => {
-        fetchEmotionalFeedback();
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [userId, fetchEmotionalFeedback]);
-
-  // Refresh when screen comes into focus (only emotional feedback, not activity history)
-  useFocusEffect(
-    React.useCallback(() => {
-      console.log('📊 [ProfileScreen] Screen focused, refreshing emotional feedback...');
-      // Only refresh emotional feedback on focus, not activity history
-      // Activity history only loads from DB on app open
-      fetchEmotionalFeedback();
-    }, [fetchEmotionalFeedback])
-  );
-
-  // Handle removing emotional feedback (both from store and database)
-  const handleRemoveEmotionalFeedback = React.useCallback(async (entryId: string) => {
-    if (!userId) {
-      console.warn('⚠️ [ProfileScreen] No user ID, cannot remove feedback');
-      return;
-    }
-
-    // Optimistically remove from UI
-    setEmotionalFeedbackHistory(prev => prev.filter(entry => entry.id !== entryId));
-    
-    // Remove from database
-    console.log('💾 [ProfileScreen] Removing emotional feedback from database:', entryId);
-    const result = await removeEmotionalFeedbackDB(userId, entryId);
-    
-    if (result.success) {
-      console.log('✅ [ProfileScreen] Emotional feedback removed successfully');
-    } else {
-      console.error('❌ [ProfileScreen] Failed to remove emotional feedback:', result.error);
-      // Re-fetch to restore the correct state
-      const feedback = await getUserEmotionalFeedback(userId, 20);
-      const transformedFeedback = feedback.map(fb => ({
-        id: fb.id || `feedback-${fb.feedback_date}-${fb.session_id}`,
-        sessionId: fb.session_id,
-        label: fb.label,
-        timestampSeconds: fb.timestamp_seconds,
-        date: fb.feedback_date,
-      }));
-      setEmotionalFeedbackHistory(transformedFeedback);
-    }
-  }, [userId]);
-
   // Use completed sessions as recent activity (already sorted most recent first)
   const recentActivity = completedSessions;
   // Emotional feedback is already sorted by feedback_date descending from the service
@@ -713,6 +688,72 @@ export const ProfileScreen: React.FC = () => {
     right: 20,
   });
   const feedbackInfoButtonRef = React.useRef<TouchableOpacityRef | null>(null);
+  const [showRemoveFeedbackToast, setShowRemoveFeedbackToast] = React.useState(false);
+  const toastAnim = React.useRef(new Animated.Value(0)).current;
+  const [removingFeedbackIds, setRemovingFeedbackIds] = React.useState<Set<string>>(new Set());
+
+  // Handle removing emotional feedback (both from store and database)
+  const handleRemoveEmotionalFeedback = React.useCallback(async (entryId: string) => {
+    if (!userId) {
+      console.warn('⚠️ [ProfileScreen] No user ID, cannot remove feedback');
+      return;
+    }
+
+    // Mark item as removing to trigger animation
+    setRemovingFeedbackIds(prev => new Set(prev).add(entryId));
+  }, [userId]);
+
+  // Handle animation complete callback - remove from state and database
+  const handleRemoveAnimationComplete = React.useCallback(async (entryId: string) => {
+    if (!userId) {
+      console.warn('⚠️ [ProfileScreen] No user ID, cannot remove feedback');
+      return;
+    }
+
+    // Remove from UI state
+    setEmotionalFeedbackHistory(prev => prev.filter(entry => entry.id !== entryId));
+    setRemovingFeedbackIds(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(entryId);
+      return newSet;
+    });
+    
+    // Remove from database
+    console.log('💾 [ProfileScreen] Removing emotional feedback from database:', entryId);
+    const result = await removeEmotionalFeedbackDB(userId, entryId);
+    
+    if (result.success) {
+      console.log('✅ [ProfileScreen] Emotional feedback removed successfully');
+      
+      // Show toast notification
+      toastAnim.stopAnimation();
+      toastAnim.setValue(0);
+      setShowRemoveFeedbackToast(true);
+      
+      Animated.sequence([
+        Animated.timing(toastAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.delay(2000),
+        Animated.timing(toastAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setShowRemoveFeedbackToast(false);
+      });
+    } else {
+      console.error('❌ [ProfileScreen] Failed to remove emotional feedback:', result.error);
+      // Re-process cache to restore the correct state
+      if (emotionalFeedbackHistoryFromStore.length > 0) {
+        const feedback = await processStoreFeedback(emotionalFeedbackHistoryFromStore);
+        setEmotionalFeedbackHistory(feedback);
+      }
+    }
+  }, [userId, toastAnim]);
 
   React.useEffect(() => {
     if (!hasScrollableOverflow) {
@@ -845,19 +886,34 @@ export const ProfileScreen: React.FC = () => {
             </View>
             
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>Your Profile</Text>
-              <View style={styles.subscriptionContainer}>
+              <Text style={styles.profileName}>Current Plan</Text>
+              <View style={[
+                styles.subscriptionContainer,
+                subscriptionType === 'premium' && styles.subscriptionContainerPremium
+              ]}>
                 <SubscriptionBadge 
                   subscriptionType={subscriptionType}
                   size="medium"
                 />
               </View>
-              <Text style={styles.profileSubtitle}>
-                {subscriptionType === 'premium' 
-                  ? 'Premium member with full access' 
-                  : 'Basic member - upgrade for more features'
-                }
-              </Text>
+              {subscriptionType === 'premium' && subscriptionCancelAt && (
+                <View style={styles.cancelMessageContainer}>
+                  <Text style={styles.cancelMessageText}>
+                    Your subscription ends at {new Date(subscriptionCancelAt).toLocaleDateString()}. Go to settings to manage your subscription.
+                  </Text>
+                </View>
+              )}
+              {subscriptionType === 'basic' && (
+                <TouchableOpacity 
+                  style={styles.upgradeButton}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    navigation.navigate('Subscription');
+                  }}
+                >
+                  <Text style={styles.upgradeButtonText}>Upgrade Now</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </View>
@@ -867,10 +923,17 @@ export const ProfileScreen: React.FC = () => {
           <MergedCard.Section style={[styles.mergedSectionTop, styles.mergedSectionReducedBottomPadding]}>
             <View style={styles.cardHeader}>
               <View style={styles.cardHeaderTop}>
-                <Text style={styles.cardTitle}>🎁 Share & Earn</Text>
+                <View style={styles.cardTitleContainer}>
+                  <View style={styles.cardTitleIconWrapper}>
+                    <GiftIcon size={23} color="#000000" />
+                  </View>
+                  <View style={styles.cardTitleTextWrapper}>
+                    <Text style={styles.cardTitle}>Share & Earn</Text>
+                  </View>
+                </View>
               </View>
               <Text style={styles.shareSubtitle}>
-                Give your friends 30 days of premium meditation
+                Give your friends 30 days of premium
               </Text>
             </View>
             
@@ -902,7 +965,7 @@ export const ProfileScreen: React.FC = () => {
               <View style={styles.referralSection}>
                 <Text style={styles.referralLabel}>Your referral link:</Text>
                 <View style={styles.referralLinkContainer}>
-                  <Text style={styles.referralLink}>neurotype.app/ref/user123</Text>
+                  <Text style={styles.referralLink}>www.neurotypeapp.com/ref/user123</Text>
                   <TouchableOpacity style={styles.copyButton}>
                     <Text style={styles.copyButtonText}>Copy</Text>
                   </TouchableOpacity>
@@ -911,11 +974,11 @@ export const ProfileScreen: React.FC = () => {
 
               <View style={styles.actionButtons}>
                 <TouchableOpacity style={styles.shareButton}>
-                  <Text style={styles.shareButtonText}>📱 Share Link</Text>
+                  <Text style={styles.shareButtonText}>Share Link</Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity style={styles.inviteButton}>
-                  <Text style={styles.inviteButtonText}>✉️ Send Invite</Text>
+                  <Text style={styles.inviteButtonText}>Send Invite</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -940,7 +1003,14 @@ export const ProfileScreen: React.FC = () => {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <View style={styles.cardHeaderTop}>
-              <Text style={styles.cardTitle}>📈 Activity History</Text>
+              <View style={styles.cardTitleContainer}>
+                <View style={styles.cardTitleIconWrapper}>
+                  <ActivityHistoryIcon size={20} color="#000000" />
+                </View>
+                <View style={styles.cardTitleTextWrapper}>
+                  <Text style={styles.cardTitle}>Activity History</Text>
+                </View>
+              </View>
             </View>
             {recentActivity.length > 0 && (
               <Text style={styles.activitySubtitle}>
@@ -1080,7 +1150,14 @@ export const ProfileScreen: React.FC = () => {
         <View style={styles.card}>
         <View style={styles.cardHeader}>
           <View style={styles.cardHeaderTop}>
-            <Text style={styles.cardTitle}>💬 Emotional Feedback History</Text>
+            <View style={styles.cardTitleContainer}>
+              <View style={styles.cardTitleIconWrapper}>
+                <ChatWritingIcon size={22} color="#000000" />
+              </View>
+              <View style={styles.cardTitleTextWrapper}>
+                <Text style={styles.cardTitle}>Emotional Feedback History</Text>
+              </View>
+            </View>
             <TouchableOpacity
               ref={feedbackInfoButtonRef}
               style={[styles.infoButton, isFeedbackInfoActive && styles.infoButtonActive]}
@@ -1139,49 +1216,56 @@ export const ProfileScreen: React.FC = () => {
                       const feedbackBackground = feedbackColor;
                       const formattedDate = formatSessionDate(entry.date) || 'Date unavailable';
                       const formattedTimestamp = formatTimestamp(entry.timestampSeconds);
+                      const isRemoving = removingFeedbackIds.has(entry.id);
 
                       return (
-                        <View key={`${entry.id}-${entry.timestampSeconds}-${index}`} style={styles.activityItem}>
-                          <View
-                            style={[
-                              styles.activityIcon,
-                              { backgroundColor: feedbackBackground, borderWidth: 0 }
-                            ]}
-                          />
-                          <View style={styles.activityInfo}>
-                            <View style={styles.activityHeader}>
-                              <Text
-                                style={styles.activityTitle}
-                                numberOfLines={1}
-                                ellipsizeMode="tail"
-                              >
-                                {truncatedTitle}
-                              </Text>
-                              <Text style={styles.activityDate}>{formattedDate}</Text>
+                        <AnimatedFeedbackItem
+                          key={`${entry.id}-${entry.timestampSeconds}-${index}`}
+                          isRemoving={isRemoving}
+                          onAnimationComplete={() => handleRemoveAnimationComplete(entry.id)}
+                        >
+                          <View style={styles.activityItem}>
+                            <View
+                              style={[
+                                styles.activityIcon,
+                                { backgroundColor: feedbackBackground, borderWidth: 0 }
+                              ]}
+                            />
+                            <View style={styles.activityInfo}>
+                              <View style={styles.activityHeader}>
+                                <Text
+                                  style={styles.activityTitle}
+                                  numberOfLines={1}
+                                  ellipsizeMode="tail"
+                                >
+                                  {truncatedTitle}
+                                </Text>
+                                <Text style={styles.activityDate}>{formattedDate}</Text>
+                              </View>
+                              <View style={styles.feedbackDetailsRow}>
+                                <Text
+                                  style={[
+                                    styles.feedbackLabelTag,
+                                    {
+                                      color: '#ffffff',
+                                      backgroundColor: feedbackColor
+                                    }
+                                  ]}
+                                >
+                                  {feedbackLabel}
+                                </Text>
+                                <Text style={styles.activityMeta}>at {formattedTimestamp}</Text>
+                              </View>
                             </View>
-                            <View style={styles.feedbackDetailsRow}>
-                              <Text
-                                style={[
-                                  styles.feedbackLabelTag,
-                                  {
-                                    color: '#ffffff',
-                                    backgroundColor: feedbackColor
-                                  }
-                                ]}
-                              >
-                                {feedbackLabel}
-                              </Text>
-                              <Text style={styles.activityMeta}>at {formattedTimestamp}</Text>
-                            </View>
+                            <TouchableOpacity
+                              style={styles.deleteFeedbackButton}
+                              onPress={() => handleRemoveEmotionalFeedback(entry.id)}
+                              hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+                            >
+                              <Text style={styles.deleteFeedbackButtonText}>×</Text>
+                            </TouchableOpacity>
                           </View>
-                          <TouchableOpacity
-                            style={styles.deleteFeedbackButton}
-                            onPress={() => handleRemoveEmotionalFeedback(entry.id)}
-                            hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
-                          >
-                            <Text style={styles.deleteFeedbackButtonText}>×</Text>
-                          </TouchableOpacity>
-                        </View>
+                        </AnimatedFeedbackItem>
                       );
                     })}
                   </ScrollView>
@@ -1225,6 +1309,27 @@ export const ProfileScreen: React.FC = () => {
         content="Warning: deleting feedback may change the suggestion algorithm."
         position={feedbackInfoPosition}
       />
+      {/* Remove Feedback Toast */}
+      {showRemoveFeedbackToast && (
+        <Animated.View
+          style={[
+            styles.toastContainer,
+            {
+              opacity: toastAnim,
+              transform: [{
+                translateY: toastAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [20, 0],
+                }),
+              }],
+            },
+          ]}
+        >
+          <Text style={styles.toastText}>
+            Removed emotional feedback
+          </Text>
+        </Animated.View>
+      )}
     </View>
   );
 };
@@ -1268,7 +1373,7 @@ const styles = StyleSheet.create({
   profileHeaderCard: {
     backgroundColor: '#ffffff',
     borderRadius: 20,
-    marginHorizontal: 20,
+    marginHorizontal: 16, // Reduced from 20 to give more space
     marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -1281,10 +1386,13 @@ const styles = StyleSheet.create({
   profileHeaderContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
+    paddingTop: 20,
+    paddingBottom: 20,
+    paddingLeft: 20,
+    paddingRight: 8, // Minimal right padding to give badge maximum room
   },
   profilePictureWrapper: {
-    marginRight: 20,
+    marginRight: 12, // Reduced from 20 to give more space for badge
   },
   profileInitialContainer: {
     width: 110,
@@ -1304,6 +1412,9 @@ const styles = StyleSheet.create({
   },
   profileInfo: {
     flex: 1,
+    minWidth: 0, // Allow flex item to shrink below content size if needed
+    paddingRight: 0, // No right padding to maximize space for badge
+    paddingLeft: 8, // Move content to the right
   },
   statsSection: {
     backgroundColor: '#ffffff',
@@ -1327,7 +1438,45 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   subscriptionContainer: {
-    marginBottom: 8,
+    marginBottom: 5,
+    marginLeft: -16, // Adjusted to account for profileInfo padding
+    marginRight: 0,
+    alignSelf: 'flex-start', // Shrink-wrap to content width
+  },
+  subscriptionContainerPremium: {
+    marginTop: 5, // Push premium badge down without affecting title
+    marginBottom: 5, // Keep original bottom margin
+    marginLeft: -25, // Move premium badge more to the left
+    marginRight: 0,
+  },
+  upgradeButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  upgradeButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  cancelMessageContainer: {
+    marginTop: 8,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+  },
+  cancelMessageText: {
+    fontSize: 13,
+    color: '#8e8e93',
+    lineHeight: 18,
+    fontStyle: 'italic',
   },
   profileSubtitle: {
     fontSize: 15,
@@ -1345,6 +1494,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 4,
+  },
+  cardTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cardTitleIconWrapper: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardTitleTextWrapper: {
+    justifyContent: 'center',
+    marginLeft: 6,
+    paddingTop: 1,
   },
   shareContent: {
     paddingTop: 0,
@@ -1669,5 +1831,28 @@ const styles = StyleSheet.create({
   },
   infoButtonTextActive: {
     color: '#ffffff',
+  },
+  toastContainer: {
+    position: 'absolute',
+    bottom: 90,
+    left: 20,
+    right: 20,
+    backgroundColor: '#000000',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 1000,
+  },
+  toastText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '600',
   },
 }); 

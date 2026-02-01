@@ -14,7 +14,7 @@ import Animated, {
   withTiming,
   Easing,
 } from 'react-native-reanimated';
-import { MentalHealthModule } from '../data/modules';
+import { MentalHealthModule, categoryColors } from '../data/modules';
 import { theme } from '../styles/theme';
 import { useStore } from '../store/useStore';
 
@@ -58,17 +58,13 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
       case 'disorder': return '🧠';
       case 'wellness': return '🌱';
       case 'skill': return '⚡';
+      case 'winddown': return '🌙';
       default: return '🔹';
     }
   };
 
   const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'disorder': return '#FF6B6B'; // Red for disorders
-      case 'wellness': return '#4ECDC4'; // Teal for wellness
-      case 'skill': return '#9B59B6'; // Purple for skills
-      default: return '#8e8e93'; // Gray fallback
-    }
+    return categoryColors[category as keyof typeof categoryColors] || '#8e8e93';
   };
 
   const getCategoryLabel = (category: string) => {
@@ -291,7 +287,7 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
                   
                   <Text 
                     style={styles.moduleDescription} 
-                    numberOfLines={3} 
+                    numberOfLines={2} 
                     ellipsizeMode="tail"
                   >
                     {module.description}

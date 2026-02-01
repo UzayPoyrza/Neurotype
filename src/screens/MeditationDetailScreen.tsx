@@ -12,14 +12,23 @@ import {
   Share,
   ActivityIndicator,
 } from 'react-native';
-import { PanGestureHandler, State } from 'react-native-gesture-handler';
+import Reanimated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  Easing,
+  interpolate,
+  Extrapolation,
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Session } from '../types';
 import { theme } from '../styles/theme';
-import { useStore } from '../store/useStore';
-import { ShareIcon } from '../components/icons';
+import { useStore, prerenderedModuleBackgrounds } from '../store/useStore';
+import { ShareIcon, BookOpenIcon } from '../components/icons';
+import { BarChartIcon } from '../components/icons/BarChartIcon';
 import { DraggableActionBar } from '../components/DraggableActionBar';
 import { meditationAudioData } from '../data/meditationMockData';
 import { getSessionById, getSessionModules } from '../services/sessionService';
@@ -59,13 +68,33 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const [activeTab, setActiveTab] = useState<TabType>('summary');
   const [historySortOrder, setHistorySortOrder] = useState<'latest' | 'earliest'>('latest');
   const [showSortOptions, setShowSortOptions] = useState(false);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const userId = useUserId();
   const scrollX = useRef(new Animated.Value(0)).current;
   const horizontalScrollRef = useRef<ScrollView>(null);
   const draggableActionBarRef = useRef<any>(null);
   const horizontalScrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isShareSheetOpen, setShareSheetOpen] = useState(false);
-  const shareSheetAnim = useRef(new Animated.Value(0)).current;
+  const shareSheetProgress = useSharedValue(0);
+
+  // Animated styles for share sheet using reanimated
+  const shareBackdropAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: shareSheetProgress.value,
+    };
+  });
+
+  const shareSheetAnimatedStyle = useAnimatedStyle(() => {
+    const translateY = interpolate(
+      shareSheetProgress.value,
+      [0, 1],
+      [320, 0],
+      Extrapolation.CLAMP
+    );
+    return {
+      transform: [{ translateY }],
+    };
+  });
   const screenWidth = Dimensions.get('window').width;
   
   // Load session from cache or database
@@ -87,15 +116,25 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           whyItWorks: cachedSession.whyItWorks?.substring(0, 50) + '...',
         });
         console.log('[MeditationDetailScreen] 📄 Full cached session object:', JSON.stringify(cachedSession, null, 2));
-        setSession(cachedSession);
         
-        // Fetch modules for this session even if cached
-        const modules = await getSessionModules(sessionId);
-        console.log('[MeditationDetailScreen] 📦 Fetched modules:', modules);
-        setSessionModules(modules);
+        // Check if cached session is complete (has description and whyItWorks)
+        const isComplete = cachedSession.description && cachedSession.whyItWorks;
         
-        setIsLoading(false);
-        return;
+        if (isComplete) {
+          // Use complete cached session
+          setSession(cachedSession);
+          
+          // Fetch modules for this session even if cached
+          const modules = await getSessionModules(sessionId);
+          console.log('[MeditationDetailScreen] 📦 Fetched modules:', modules);
+          setSessionModules(modules);
+          
+          setIsLoading(false);
+          return;
+        } else {
+          // Cached session is incomplete, fetch full data from database
+          console.log('[MeditationDetailScreen] ⚠️ Cached session is incomplete, fetching full data from database...');
+        }
       }
       
       // If not in cache, fetch from database
@@ -225,7 +264,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   }, [activeTab, sessionId, userId, hasFetchedHistory]);
 
   const hasTutorial = !!(session && (meditationAudioData[session.id as keyof typeof meditationAudioData] as any)?.tutorialBackgroundAudio);
-  const sessionShareLink = session ? `https://neurotype.app/sessions/${session.id}` : '';
+  const sessionShareLink = session ? `https://www.neurotypeapp.com/sessions/${session.id}` : '';
   const formattedGoal = session ? session.goal.charAt(0).toUpperCase() + session.goal.slice(1) : '';
   
   const handleTabChange = (tab: TabType) => {
@@ -327,24 +366,23 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
       return;
     }
     setShareSheetOpen(true);
-    shareSheetAnim.stopAnimation();
-    shareSheetAnim.setValue(0);
-    Animated.timing(shareSheetAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+    shareSheetProgress.value = 0;
+    shareSheetProgress.value = withSpring(1, {
+      damping: 20,
+      stiffness: 300,
+      mass: 0.8,
+    });
   };
 
   const closeShareSheet = () => {
-    shareSheetAnim.stopAnimation();
-    Animated.timing(shareSheetAnim, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      setShareSheetOpen(false);
+    shareSheetProgress.value = withTiming(0, {
+      duration: 200,
+      easing: Easing.out(Easing.cubic),
     });
+    // Delay setting state to allow animation to complete
+    setTimeout(() => {
+      setShareSheetOpen(false);
+    }, 200);
   };
 
   const handleSharePress = () => {
@@ -474,13 +512,25 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   };
 
   const getGoalColor = (goal: string) => {
-    const colors: { [key: string]: string } = {
+    // Map goals to their category colors (matching modules.ts categoryColors)
+    const goalToColor: { [key: string]: string } = {
+      // Disorder (red)
       anxiety: '#FF6B6B',
-      focus: '#4ECDC4', 
-      sleep: '#45B7D1',
-      stress: '#9B59B6',
+      panic: '#FF6B6B',
+      depression: '#FF6B6B',
+      adhd: '#FF6B6B',
+      // Wellness (green)
+      burnout: '#6BCB77',
+      'self-compassion': '#6BCB77',
+      stress: '#6BCB77',
+      // Skill (blue)
+      focus: '#5B8DEE',
+      addiction: '#5B8DEE',
+      mindfulness: '#5B8DEE',
+      // Wind down (purple)
+      sleep: '#B8A9E8',
     };
-    return colors[goal] || theme.colors.primary;
+    return goalToColor[goal] || '#5B8DEE'; // Default to blue
   };
 
   const renderVisualSection = () => (
@@ -498,38 +548,47 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
 
   const renderMeditationInfo = (showTags = true) => {
     // Get unique module objects from module IDs (remove duplicates)
-    // Also filter out the goal if it matches a module ID to avoid duplicates
+    // Also filter out the goal if it matches a module ID to avoid duplicate tags
     const uniqueModuleIds = Array.from(new Set(sessionModules));
     const moduleObjects: MentalHealthModule[] = uniqueModuleIds
       .map(moduleId => mentalHealthModules.find(m => m.id === moduleId))
       .filter((module): module is MentalHealthModule => module !== undefined)
-      // Filter out module if its ID matches the goal to avoid duplicate tags
       .filter(module => module.id !== session.goal);
+
+    const goalColor = getGoalColor(session.goal);
+    const modalityColor = getModalityColor(session.modality);
+
+    // Helper to lighten border colors
+    const getLightBorderColor = (color: string) => {
+      // Add opacity to make border lighter (80 = ~50% opacity)
+      return color + '80';
+    };
 
     return (
       <View style={styles.meditationInfo}>
-        <Text style={styles.meditationTitle}>{session.title}</Text>
-        
         {showTags && (
           <View style={styles.tagsContainer}>
-            <View style={[styles.tag, { backgroundColor: getGoalColor(session.goal) }]}>
-              <Text style={styles.tagText}>{session.goal}</Text>
+            <View style={[styles.tag, styles.tagColored, { borderColor: getLightBorderColor(goalColor) }]}>
+              <Text style={styles.tagTextColored}>{session.goal}</Text>
             </View>
-            {moduleObjects.map((module) => (
-              <View 
-                key={module.id} 
-                style={[styles.tag, { backgroundColor: getCategoryColor(module.category) }]}
-              >
-                <Text style={styles.tagText}>{module.title}</Text>
-              </View>
-            ))}
-            <View style={[styles.tag, { backgroundColor: getModalityColor(session.modality) }]}>
-              <Text style={styles.tagText}>
+            {moduleObjects.map((module) => {
+              const categoryColor = getCategoryColor(module.category);
+              return (
+                <View 
+                  key={module.id} 
+                  style={[styles.tag, styles.tagColored, { borderColor: getLightBorderColor(categoryColor) }]}
+                >
+                  <Text style={styles.tagTextColored}>{module.title}</Text>
+                </View>
+              );
+            })}
+            <View style={[styles.tag, styles.tagColored, { borderColor: getLightBorderColor(modalityColor) }]}>
+              <Text style={styles.tagTextColored}>
                 {getModalityIcon(session.modality)} {session.modality}
               </Text>
             </View>
-            <View style={styles.tag}>
-              <Text style={styles.tagText}>{session.durationMin} min</Text>
+            <View style={[styles.tag, styles.tagNeutral]}>
+              <Text style={styles.tagTextNeutral}>{session.durationMin} min</Text>
             </View>
           </View>
         )}
@@ -542,54 +601,64 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
       return null;
     }
     
+    const MAX_LENGTH = 75;
+    const isLong = session.description.length > MAX_LENGTH;
+    const displayText = isLong && !isDescriptionExpanded 
+      ? session.description.substring(0, MAX_LENGTH) + '...'
+      : session.description;
+    
     return (
       <View style={styles.descriptionSection}>
         <Text style={styles.descriptionTitle}>Description</Text>
-        <Text style={styles.descriptionText}>
-          {session.description}
-        </Text>
+        <View style={styles.descriptionCard}>
+          <Text style={styles.descriptionText}>
+            {displayText}
+          </Text>
+          {isLong && (
+            <TouchableOpacity 
+              onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+              style={styles.readMoreButton}
+            >
+              <Text style={styles.readMoreText}>
+                {isDescriptionExpanded ? 'Read less' : 'Read more'}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     );
   };
 
   const renderBenefitsExplanation = () => {
-    if (!session) {
-      console.log('[MeditationDetailScreen] ⚠️ renderBenefitsExplanation called but session is null!');
+    if (!session || !session.whyItWorks) {
       return null;
     }
-    
-    console.log('[MeditationDetailScreen] 🎨 Rendering benefits explanation:', {
-      hasWhyItWorks: !!session.whyItWorks,
-      hasDescription: !!session.description,
-      whyItWorks: session.whyItWorks,
-      description: session.description,
-    });
-    
+
+    // Use the whyItWorks text directly as 1-2 sentences
+    const whyText = session.whyItWorks.trim();
+
+    if (whyText.length === 0) {
+      return null;
+    }
+
+    // Get the accent color by finding which module matches the current background color
+    let accentColor = getGoalColor(session.goal);
+    const matchingModuleId = Object.entries(prerenderedModuleBackgrounds).find(
+      ([_, bgColor]) => bgColor === globalBackgroundColor
+    )?.[0];
+
+    if (matchingModuleId) {
+      const matchingModule = mentalHealthModules.find(m => m.id === matchingModuleId);
+      if (matchingModule) {
+        accentColor = getCategoryColor(matchingModule.category);
+      }
+    }
+
     return (
       <View style={styles.benefitsSection} testID="benefits-section">
-        {session.whyItWorks && (
-          <>
-            <Text style={styles.benefitsTitle}>Why This Meditation?</Text>
-            <Text style={styles.benefitsDescription}>
-              {session.whyItWorks}
-            </Text>
-          </>
-        )}
-      
-        <View style={styles.uniqueBenefits}>
-          <Text style={styles.uniqueBenefitsTitle}>Unique Benefits</Text>
-          <View style={styles.benefitItem}>
-            <Text style={styles.benefitIcon}>🧠</Text>
-            <Text style={styles.benefitText}>Enhanced {session.goal === 'anxiety' ? 'calm and relaxation' : session.goal === 'focus' ? 'concentration and clarity' : 'sleep quality'}</Text>
-          </View>
-          <View style={styles.benefitItem}>
-            <Text style={styles.benefitIcon}>⚡</Text>
-            <Text style={styles.benefitText}>Optimized for {session.modality} practice</Text>
-          </View>
-          <View style={styles.benefitItem}>
-            <Text style={styles.benefitIcon}>🎯</Text>
-            <Text style={styles.benefitText}>Scientifically proven techniques</Text>
-          </View>
+        <Text style={styles.whyThisMeditationTitle}>Why This Meditation?</Text>
+        <View style={[styles.whyCalloutCard, { borderLeftColor: accentColor, borderRightColor: accentColor }]}>
+          <Text style={styles.whyCalloutText}>{whyText}</Text>
         </View>
       </View>
     );
@@ -711,7 +780,9 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
             </>
           ) : (
             <View style={styles.historyEmptyState}>
-              <Text style={styles.historyEmptyIcon}>📊</Text>
+              <View style={styles.historyEmptyIconContainer}>
+                <BarChartIcon size={48} color="#8e8e93" />
+              </View>
               <Text style={styles.historyEmptyText}>No sessions completed</Text>
               <Text style={styles.historyEmptySubtext}>Start your first meditation to see your progress here</Text>
             </View>
@@ -914,7 +985,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         {...(hasTutorial ? {
           secondaryAction: {
             title: "Tutorial",
-            icon: "📖",
+            icon: <BookOpenIcon size={12} color="#ffffff" />,
             onPress: handleTutorialPress,
           }
         } : {})}
@@ -926,12 +997,10 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
       {/* Share Preview Bottom Sheet */}
       {session && isShareSheetOpen && (
         <View style={styles.shareOverlay} pointerEvents="box-none">
-          <Animated.View
+          <Reanimated.View
             style={[
               styles.shareBackdrop,
-              {
-                opacity: shareSheetAnim,
-              },
+              shareBackdropAnimatedStyle,
             ]}
           >
             <TouchableOpacity
@@ -939,69 +1008,65 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
               onPress={handleCloseShareSheet}
               activeOpacity={1}
             />
-          </Animated.View>
+          </Reanimated.View>
 
-          <Animated.View
+          <Reanimated.View
             style={[
               styles.shareSheet,
               { backgroundColor: globalBackgroundColor },
-              {
-                transform: [
-                  {
-                    translateY: shareSheetAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [320, 0],
-                      extrapolate: 'clamp',
-                    }),
-                  },
-                ],
-              },
+              shareSheetAnimatedStyle,
             ]}
           >
             <View style={styles.shareHandle} />
 
             <View style={styles.shareContent}>
-              <View style={styles.sharePreviewCard}>
-                <View style={styles.sharePreviewHeader}>
-                  <View style={[styles.sharePreviewGlyph, { backgroundColor: getGoalColor(session.goal) }]}>
-                    <Text style={styles.sharePreviewGlyphText}>{getModalityIcon(session.modality)}</Text>
-                  </View>
-                  <View style={styles.sharePreviewHeaderText}>
-                    <Text style={styles.sharePreviewTitle}>{session.title}</Text>
-                    <Text style={styles.sharePreviewSubtitle}>{formattedGoal} · {session.durationMin} min</Text>
-                  </View>
+              {/* Header with icon and title */}
+              <View style={styles.shareHeader}>
+                <View style={[styles.shareIconContainer, { backgroundColor: getGoalColor(session.goal) + '15' }]}>
+                  <Text style={styles.shareIconText}>{getModalityIcon(session.modality)}</Text>
                 </View>
-
-                <Text style={styles.sharePreviewDescription}>
-                  {session.description || 'A guided experience designed to help you feel your best.'}
-                </Text>
-
-                <View style={styles.sharePreviewMetaRow}>
-                  <View style={styles.sharePreviewMetaPill}>
-                    <Text style={styles.sharePreviewMetaLabel}>Duration</Text>
-                    <Text style={styles.sharePreviewMetaValue}>{session.durationMin} min</Text>
-                  </View>
-                  <View style={styles.sharePreviewMetaPill}>
-                    <Text style={styles.sharePreviewMetaLabel}>Focus</Text>
-                    <Text style={styles.sharePreviewMetaValue}>{formattedGoal}</Text>
-                  </View>
-                  <View style={styles.sharePreviewMetaPill}>
-                    <Text style={styles.sharePreviewMetaLabel}>Modality</Text>
-                    <Text style={styles.sharePreviewMetaValue}>{session.modality}</Text>
-                  </View>
+                <View style={styles.shareTitleContainer}>
+                  <Text style={styles.shareTitle} numberOfLines={2}>{session.title}</Text>
+                  <Text style={styles.shareDuration}>{session.durationMin} min</Text>
                 </View>
               </View>
 
+              {/* Tags row */}
+              <View style={styles.shareTagsRow}>
+                <View style={[styles.shareTag, { borderColor: getGoalColor(session.goal) + '40' }]}>
+                  <Text style={styles.shareTagText}>{formattedGoal}</Text>
+                </View>
+                <View style={[styles.shareTag, { borderColor: getModalityColor(session.modality) + '40' }]}>
+                  <Text style={styles.shareTagText}>{session.modality}</Text>
+                </View>
+              </View>
+
+              {/* Description */}
+              {session.description && (
+                <Text style={styles.shareDescription} numberOfLines={3}>
+                  {session.description}
+                </Text>
+              )}
+
+              {/* Actions */}
               <View style={styles.shareActions}>
-                <TouchableOpacity onPress={handleShareSession} style={styles.sharePrimaryButton}>
-                  <Text style={styles.sharePrimaryButtonText}>Share Meditation</Text>
+                <TouchableOpacity
+                  onPress={handleShareSession}
+                  style={[styles.sharePrimaryButton, { backgroundColor: getGoalColor(session.goal) }]}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.sharePrimaryButtonText}>Share</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={handleCloseShareSheet} style={styles.shareSecondaryButton}>
+                <TouchableOpacity
+                  onPress={handleCloseShareSheet}
+                  style={styles.shareSecondaryButton}
+                  activeOpacity={0.6}
+                >
                   <Text style={styles.shareSecondaryButtonText}>Cancel</Text>
                 </TouchableOpacity>
               </View>
             </View>
-          </Animated.View>
+          </Reanimated.View>
         </View>
       )}
     </View>
@@ -1171,101 +1236,191 @@ const styles = StyleSheet.create({
   },
   meditationInfo: {
     paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingTop: 20,
+    paddingBottom: 24,
     backgroundColor: 'transparent',
-  },
-  meditationTitle: {
-    fontSize: 21,
-    fontWeight: '700',
-    color: theme.colors.text.primary,
-    marginBottom: 12,
-    textAlign: 'left',
   },
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+    alignItems: 'center',
   },
   tag: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    backgroundColor: '#E5E5EA',
+    paddingHorizontal: 13,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.18,
+    shadowRadius: 5,
+    elevation: 4,
   },
-  tagText: {
+  tagColored: {
+    backgroundColor: '#FAFAFA',
+  },
+  tagNeutral: {
+    backgroundColor: '#FAFAFA',
+    borderColor: 'rgba(0, 0, 0, 0.08)',
+  },
+  tagTextColored: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#1C1C1E',
+    fontWeight: '600',
     textTransform: 'capitalize',
+    letterSpacing: -0.08,
+    color: '#1C1C1E',
+  },
+  tagTextNeutral: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1C1C1E',
+    letterSpacing: -0.08,
   },
   descriptionSection: {
-    paddingHorizontal: 20,
-    paddingTop: 0,
-    paddingBottom: 20,
-    backgroundColor: 'transparent',
-  },
-  descriptionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: theme.colors.text.primary,
-    marginBottom: 8,
-  },
-  descriptionText: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: theme.colors.text.primary,
-    fontWeight: '400',
-  },
-  benefitsSection: {
     paddingHorizontal: 20,
     paddingTop: 0,
     paddingBottom: 24,
     backgroundColor: 'transparent',
   },
-  benefitsTitle: {
+  descriptionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: theme.colors.text.primary,
-    marginBottom: 8,
+    color: '#000000',
+    marginBottom: 14,
+    letterSpacing: -0.3,
   },
-  benefitsDescription: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: theme.colors.text.secondary,
-    marginBottom: 20,
-    opacity: 1, // Ensure text is visible
+  descriptionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 18,
+    borderWidth: 0.5,
+    borderColor: '#E5E5EA',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  uniqueBenefits: {
-    gap: 16,
-  },
-  uniqueBenefitsTitle: {
+  descriptionText: {
     fontSize: 17,
-    fontWeight: '600',
-    color: theme.colors.text.primary,
-    marginBottom: 12,
+    lineHeight: 25,
+    color: '#1C1C1E',
+    fontWeight: '400',
+    letterSpacing: -0.41,
   },
-  benefitItem: {
+  benefitsSection: {
+    paddingHorizontal: 20,
+    paddingTop: 0,
+    paddingBottom: 32,
+    backgroundColor: 'transparent',
+  },
+  whyThisMeditationTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 14,
+    letterSpacing: -0.3,
+  },
+  whyCalloutCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 18,
+    borderLeftWidth: 4,
+    borderRightWidth: 4,
+    borderTopWidth: 0.5,
+    borderBottomWidth: 0.5,
+    borderTopColor: '#E5E5EA',
+    borderBottomColor: '#E5E5EA',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  whyCalloutText: {
+    flex: 1,
+    fontSize: 16,
+    lineHeight: 24,
+    color: '#3C3C43',
+    fontWeight: '400',
+    letterSpacing: -0.2,
+  },
+  benefitList: {
+    gap: 4,
+  },
+  benefitInstructionItem: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.colors.surface,
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 8,
+    padding: 16,
+    borderRadius: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  benefitIcon: {
-    fontSize: 18,
-    marginRight: 10,
+  benefitInstructionNumber: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#007AFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
   },
-  benefitText: {
-    fontSize: 15,
+  benefitInstructionNumberText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  benefitInstructionText: {
+    fontSize: 16,
+    lineHeight: 22,
     color: theme.colors.text.primary,
     flex: 1,
-    lineHeight: 20,
+  },
+  benefitCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 18,
+    borderWidth: 0.5,
+    borderColor: '#E5E5EA',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  benefitBullet: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#007AFF',
+    marginRight: 14,
+    marginTop: 6,
+  },
+  benefitText: {
+    fontSize: 17,
+    color: '#1C1C1E',
+    flex: 1,
+    lineHeight: 24,
+    letterSpacing: -0.41,
+    fontWeight: '400',
+  },
+  readMoreButton: {
+    marginTop: 4,
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  readMoreText: {
+    fontSize: 17,
+    color: '#007AFF',
+    fontWeight: '400',
+    letterSpacing: -0.41,
   },
   tabsContainer: {
     flexDirection: 'row',
@@ -1398,8 +1553,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 40,
   },
-  historyEmptyIcon: {
-    fontSize: 48,
+  historyEmptyIconContainer: {
     marginBottom: 16,
   },
   historyEmptyText: {
@@ -1627,7 +1781,11 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface,
     padding: 16,
     borderRadius: 12,
-    ...theme.shadows.small,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
   },
   instructionNumber: {
     width: 32,
@@ -1668,120 +1826,109 @@ const styles = StyleSheet.create({
   },
   shareSheet: {
     backgroundColor: theme.health.container.backgroundColor,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 24,
-    paddingHorizontal: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 100,
+    paddingHorizontal: 24,
     paddingTop: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 12,
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 16,
   },
   shareHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(0,0,0,0.2)',
+    width: 36,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: 'rgba(0,0,0,0.12)',
     alignSelf: 'center',
-    marginBottom: 16,
-  },
-  shareContent: {
-    paddingBottom: 8,
-  },
-  sharePreviewCard: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.xl,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
     marginBottom: 20,
   },
-  sharePreviewHeader: {
+  shareContent: {
+    gap: 20,
+  },
+  shareHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    gap: 16,
   },
-  sharePreviewGlyph: {
-    width: 48,
-    height: 48,
+  shareIconContainer: {
+    width: 56,
+    height: 56,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
   },
-  sharePreviewGlyphText: {
-    fontSize: 24,
+  shareIconText: {
+    fontSize: 28,
   },
-  sharePreviewHeaderText: {
+  shareTitleContainer: {
     flex: 1,
+    gap: 4,
   },
-  sharePreviewTitle: {
-    fontSize: 19,
+  shareTitle: {
+    fontSize: 20,
     fontWeight: '700',
     color: theme.colors.text.primary,
-    marginBottom: 2,
+    letterSpacing: -0.4,
   },
-  sharePreviewSubtitle: {
+  shareDuration: {
     fontSize: 15,
     color: '#8e8e93',
     fontWeight: '500',
   },
-  sharePreviewDescription: {
-    fontSize: 16,
-    lineHeight: 22,
-    color: theme.colors.text.secondary,
-    marginBottom: 18,
-  },
-  sharePreviewMetaRow: {
+  shareTagsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 10,
+    gap: 8,
   },
-  sharePreviewMetaPill: {
-    flex: 1,
-    backgroundColor: '#f2f2f7',
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    alignItems: 'center',
+  shareTag: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    backgroundColor: '#FAFAFA',
   },
-  sharePreviewMetaLabel: {
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    color: '#8e8e93',
-    marginBottom: 4,
-  },
-  sharePreviewMetaValue: {
-    fontSize: 15,
+  shareTagText: {
+    fontSize: 14,
     fontWeight: '600',
     color: theme.colors.text.primary,
+    textTransform: 'capitalize',
+  },
+  shareDescription: {
+    fontSize: 16,
+    lineHeight: 23,
+    color: theme.colors.text.secondary,
+    letterSpacing: -0.2,
   },
   shareActions: {
-    marginTop: 4,
+    flexDirection: 'row',
     gap: 12,
+    marginTop: 4,
   },
   sharePrimaryButton: {
-    ...theme.health.button,
-    shadowColor: '#007aff',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.16,
-    shadowRadius: 10,
-    elevation: 5,
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sharePrimaryButtonText: {
-    ...theme.health.buttonText,
-    textTransform: 'none',
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#ffffff',
   },
   shareSecondaryButton: {
-    ...theme.health.secondaryButton,
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.06)',
   },
   shareSecondaryButtonText: {
-    ...theme.health.secondaryButtonText,
+    fontSize: 17,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
   },
 });

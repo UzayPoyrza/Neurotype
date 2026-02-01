@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Image, StyleSheet, ImageSourcePropType } from 'react-native';
 import { theme } from '../styles/theme';
 
 interface SubscriptionBadgeProps {
@@ -13,77 +13,68 @@ export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({
 }) => {
   const isPremium = subscriptionType === 'premium';
   
-  const sizeStyles = {
+  // Image sources - update these paths if your images have different names
+  const premiumImage: ImageSourcePropType = require('../../assets/badge-premium.png');
+  const basicImage: ImageSourcePropType = require('../../assets/badge-basic.png');
+  
+  // Separate size styles for basic and premium badges
+  const basicSizeStyles = {
     small: {
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.xs,
-      fontSize: theme.typography.sizes.xs,
+      height: 30,
+      width: 150,
     },
     medium: {
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
-      fontSize: theme.typography.sizes.sm,
+      height: 40,
+      width: 200,
     },
     large: {
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.md,
-      fontSize: theme.typography.sizes.md,
+      height: 50,
+      width: 250,
     },
   };
 
+  const premiumSizeStyles = {
+    small: {
+      height: 35,
+      width: 175,
+    },
+    medium: {
+      height: 46,
+      width: 230,
+    },
+    large: {
+      height: 58,
+      width: 290,
+    },
+  };
+
+  const currentSizeStyles = isPremium ? premiumSizeStyles : basicSizeStyles;
+
   return (
-    <View style={[
-      styles.container,
-      isPremium ? styles.premiumContainer : styles.basicContainer,
-      {
-        paddingHorizontal: sizeStyles[size].paddingHorizontal,
-        paddingVertical: sizeStyles[size].paddingVertical,
-      }
-    ]}>
-      {isPremium && (
-        <Text style={[styles.crown, { fontSize: sizeStyles[size].fontSize * 0.9 }]}>
-          💎
-        </Text>
-      )}
-      <Text style={[
-        styles.text,
-        isPremium ? styles.premiumText : styles.basicText,
-        { fontSize: sizeStyles[size].fontSize }
-      ]}>
-        {isPremium ? 'Premium' : 'Basic'}
-      </Text>
+    <View style={styles.container}>
+      <Image
+        source={isPremium ? premiumImage : basicImage}
+        style={[
+          styles.badgeImage,
+          { 
+            height: currentSizeStyles[size].height,
+            width: currentSizeStyles[size].width,
+            maxWidth: '100%', // Allow scaling down if container is smaller
+          }
+        ]}
+        resizeMode="contain"
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: theme.borders.radius.xl,
-    borderWidth: theme.borders.width.normal,
-    ...theme.shadows.small,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    flexShrink: 1, // Allow container to shrink if needed
   },
-  basicContainer: {
-    backgroundColor: theme.colors.surface,
-    borderColor: theme.colors.secondary,
-  },
-  premiumContainer: {
-    backgroundColor: '#1f2937', // Dark elegant background
-    borderColor: '#374151',
-  },
-  text: {
-    fontWeight: theme.typography.weights.bold,
-    fontFamily: theme.typography.fontFamily,
-    letterSpacing: 0.5,
-  },
-  basicText: {
-    color: theme.colors.secondary,
-  },
-  premiumText: {
-    color: '#f9fafb', // Light text for dark background
-  },
-  crown: {
-    marginRight: theme.spacing.xs,
+  badgeImage: {
+    flexShrink: 1, // Allow image to shrink if container is too small
   },
 });

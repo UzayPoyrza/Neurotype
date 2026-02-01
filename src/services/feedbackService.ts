@@ -5,6 +5,7 @@
 
 import { supabase } from './supabase';
 import type { EmotionalFeedbackLabel } from '../types';
+import { getLocalDateString } from '../utils/dateUtils';
 
 export interface EmotionalFeedback {
   id?: string;
@@ -28,7 +29,7 @@ export async function addEmotionalFeedback(
   date?: string
 ): Promise<{ success: boolean; error?: string; id?: string }> {
   try {
-    const feedbackDate = date || new Date().toISOString().split('T')[0];
+    const feedbackDate = date || getLocalDateString();
 
     const { data, error } = await supabase
       .from('emotional_feedback')
@@ -96,6 +97,75 @@ export async function getUserEmotionalFeedback(
 }
 
 /**
+ * Get user's emotional feedback history with session details in a single query
+ * This is more efficient than fetching sessions separately
+ */
+export async function getUserEmotionalFeedbackWithSessions(
+  userId: string,
+  limit?: number
+): Promise<Array<{
+  feedback: EmotionalFeedback;
+  session: {
+    id: string;
+    title: string;
+    duration_min: number;
+    modality: string;
+    goal: string;
+    module_id?: string;
+  } | null;
+}>> {
+  try {
+    let query = supabase
+      .from('emotional_feedback')
+      .select(`
+        *,
+        sessions:session_id (
+          id,
+          title,
+          duration_min,
+          technique
+        )
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (limit) {
+      query = query.limit(limit);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching emotional feedback with sessions:', error);
+      return [];
+    }
+
+    return (data || []).map((item: any) => ({
+      feedback: {
+        id: item.id,
+        user_id: item.user_id,
+        session_id: item.session_id,
+        context_module: item.context_module,
+        label: item.label as EmotionalFeedbackLabel,
+        timestamp_seconds: item.timestamp_seconds,
+        feedback_date: item.feedback_date,
+      },
+      session: item.sessions ? {
+        id: item.sessions.id,
+        title: item.sessions.title,
+        duration_min: item.sessions.duration_min,
+        modality: item.sessions.technique, // Map technique to modality
+        goal: 'anxiety' as any, // Default goal (sessions don't have goal column)
+        module_id: item.context_module || undefined, // Use context_module from feedback
+      } : null,
+    }));
+  } catch (error) {
+    console.error('Error in getUserEmotionalFeedbackWithSessions:', error);
+    return [];
+  }
+}
+
+/**
  * Remove emotional feedback entry
  */
 export async function removeEmotionalFeedback(
@@ -120,4 +190,6 @@ export async function removeEmotionalFeedback(
     return { success: false, error: error.message };
   }
 }
+
+
 

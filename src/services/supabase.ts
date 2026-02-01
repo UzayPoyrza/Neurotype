@@ -12,14 +12,32 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 // Custom storage adapter for React Native using Expo SecureStore
 const ExpoSecureStoreAdapter = {
-  getItem: (key: string) => {
-    return SecureStore.getItemAsync(key);
+  getItem: async (key: string) => {
+    try {
+      return await SecureStore.getItemAsync(key);
+    } catch (error) {
+      console.error(`❌ Error getting item from SecureStore (${key}):`, error);
+      return null;
+    }
   },
-  setItem: (key: string, value: string) => {
-    SecureStore.setItemAsync(key, value);
+  setItem: async (key: string, value: string) => {
+    try {
+      // Check size warning but still try to store
+      if (value.length > 2048) {
+        console.warn(`⚠️ Large value (${value.length} bytes) being stored in SecureStore for key: ${key}`);
+      }
+      await SecureStore.setItemAsync(key, value);
+    } catch (error) {
+      console.error(`❌ Error setting item in SecureStore (${key}, ${value.length} bytes):`, error);
+      throw error; // Re-throw so Supabase knows storage failed
+    }
   },
-  removeItem: (key: string) => {
-    SecureStore.deleteItemAsync(key);
+  removeItem: async (key: string) => {
+    try {
+      await SecureStore.deleteItemAsync(key);
+    } catch (error) {
+      console.error(`❌ Error removing item from SecureStore (${key}):`, error);
+    }
   },
 };
 

@@ -5,12 +5,12 @@ A React Native meditation app that adapts to your brain type, using neuroscience
 ## Screenshots
 
 <p align="center">
-  <img src="screenshots/today.png" width="150" alt="Today Screen" />
-  <img src="screenshots/explore.png" width="150" alt="Explore Modules" />
-  <img src="screenshots/modules.png" width="150" alt="Module Selection" />
-  <img src="screenshots/detail.png" width="150" alt="Session Detail" />
-  <img src="screenshots/player.png" width="150" alt="Meditation Player" />
-  <img src="screenshots/profile.png" width="150" alt="Profile & History" />
+  <img src="screenshots/today.PNG" width="150" alt="Today Screen" />
+  <img src="screenshots/explore.PNG" width="150" alt="Explore Modules" />
+  <img src="screenshots/modules.PNG" width="150" alt="Module Selection" />
+  <img src="screenshots/detail.PNG" width="150" alt="Session Detail" />
+  <img src="screenshots/player.PNG" width="150" alt="Meditation Player" />
+  <img src="screenshots/profile.PNG" width="150" alt="Profile & History" />
 </p>
 
 ## Overview

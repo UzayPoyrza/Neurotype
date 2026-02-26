@@ -839,7 +839,7 @@ export const ProfileScreen: React.FC = () => {
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
       {/* Ambient top glow based on selected module color */}
       <LinearGradient
-        colors={[ambientModule.color + '25', ambientModule.color + '08', 'transparent']}
+        colors={[ambientModule.color + '50', ambientModule.color + '18', 'transparent']}
         locations={[0, 0.5, 1]}
         style={styles.ambientGlow}
         pointerEvents="none"

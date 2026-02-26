@@ -1131,7 +1131,7 @@ export const TodayScreen: React.FC = () => {
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
       {/* Ambient top glow based on selected module color */}
       <LinearGradient
-        colors={[selectedModule.color + '25', selectedModule.color + '08', 'transparent']}
+        colors={[selectedModule.color + '50', selectedModule.color + '18', 'transparent']}
         locations={[0, 0.5, 1]}
         style={styles.ambientGlow}
         pointerEvents="none"

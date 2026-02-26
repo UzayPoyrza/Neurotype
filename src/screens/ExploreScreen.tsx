@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, PanResponder } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -101,6 +102,7 @@ export const ExploreScreen: React.FC = () => {
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
   const likedSessionIds = useStore(state => state.likedSessionIds);
   const todayModuleId = useStore(state => state.todayModuleId);
+  const ambientModule = mentalHealthModules.find(m => m.id === todayModuleId) || mentalHealthModules[0];
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [selectedSort, setSelectedSort] = useState<string>('recents');
@@ -321,6 +323,16 @@ export const ExploreScreen: React.FC = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
+      {/* Subtle ambient glow - light mode only */}
+      {!theme.isDark && (
+        <View style={styles.ambientGlow} pointerEvents="none">
+          <LinearGradient
+            colors={[ambientModule.color + '14', ambientModule.color + '0A', ambientModule.color + '04', 'transparent']}
+            locations={[0, 0.3, 0.65, 1]}
+            style={StyleSheet.absoluteFill}
+          />
+        </View>
+      )}
       <ExploreScreenComponent
         titleComponent={titleComponent}
         searchComponent={
@@ -680,6 +692,14 @@ export const ExploreScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  ambientGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 220,
+    zIndex: 1001,
   },
   content: {
     paddingHorizontal: 20,

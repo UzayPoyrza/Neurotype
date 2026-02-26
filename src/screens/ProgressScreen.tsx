@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, TouchableWithoutFeedback } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useStore } from '../store/useStore';
 import { theme as staticTheme } from '../styles/theme';
 import { useTheme } from '../contexts/ThemeContext';
@@ -24,7 +25,9 @@ export const ProgressScreen: React.FC = () => {
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
   const userId = useUserId();
 
-  const bgColor = theme.isDark ? globalBackgroundColor : globalBackgroundColorLight;
+  const todayModuleId = useStore(state => state.todayModuleId);
+  const bgColor = globalBackgroundColor;
+  const ambientModule = mentalHealthModules.find(m => m.id === todayModuleId) || mentalHealthModules[0];
 
   // Get cache from store
   const sessionsCache = useStore(state => state.sessionsCache);
@@ -179,6 +182,16 @@ export const ProgressScreen: React.FC = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
+      {/* Subtle ambient glow - light mode only */}
+      {!theme.isDark && (
+        <View style={styles.ambientGlow} pointerEvents="none">
+          <LinearGradient
+            colors={[ambientModule.color + '14', ambientModule.color + '0A', ambientModule.color + '04', 'transparent']}
+            locations={[0, 0.3, 0.65, 1]}
+            style={StyleSheet.absoluteFill}
+          />
+        </View>
+      )}
       {/* Sticky Header */}
       <View style={[styles.stickyHeader, { backgroundColor: bgColor }]}>
         <Text style={[styles.title, { color: theme.colors.text.primary }]}>Progress</Text>
@@ -282,6 +295,14 @@ export const ProgressScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   ...staticTheme.health, // Use global Apple Health styles
+  ambientGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 220,
+    zIndex: 1001,
+  },
   stickyHeader: {
     paddingHorizontal: 20,
     paddingTop: 60,

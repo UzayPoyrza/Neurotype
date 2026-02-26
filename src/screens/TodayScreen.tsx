@@ -1135,10 +1135,13 @@ export const TodayScreen: React.FC = () => {
   const renderTodayView = () => (
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
       {/* Ambient top glow based on selected module color - fades on scroll */}
-      <Animated.View style={[styles.ambientGlow, { opacity: Math.max(0, 1 - scrollY / 150) }]} pointerEvents="none">
+      <Animated.View style={[styles.ambientGlow, theme.isDark ? {} : { height: 340 }, { opacity: Math.max(0, 1 - scrollY / 150) }]} pointerEvents="none">
         <LinearGradient
-          colors={[selectedModule.color + '50', selectedModule.color + '18', 'transparent']}
-          locations={[0, 0.5, 1]}
+          colors={theme.isDark
+            ? [selectedModule.color + '50', selectedModule.color + '18', 'transparent']
+            : [selectedModule.color + '30', selectedModule.color + '14', selectedModule.color + '08', 'transparent']
+          }
+          locations={theme.isDark ? [0, 0.5, 1] : [0, 0.35, 0.7, 1]}
           style={StyleSheet.absoluteFill}
         />
       </Animated.View>

@@ -844,10 +844,13 @@ export const ProfileScreen: React.FC = () => {
   return (
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
       {/* Ambient top glow based on selected module color - fades on scroll */}
-      <Animated.View style={[styles.ambientGlow, { opacity: Math.max(0, 1 - mainScrollY / 150) }]} pointerEvents="none">
+      <Animated.View style={[styles.ambientGlow, theme.isDark ? {} : { height: 340 }, { opacity: Math.max(0, 1 - mainScrollY / 150) }]} pointerEvents="none">
         <LinearGradient
-          colors={[ambientModule.color + '50', ambientModule.color + '18', 'transparent']}
-          locations={[0, 0.5, 1]}
+          colors={theme.isDark
+            ? [ambientModule.color + '50', ambientModule.color + '18', 'transparent']
+            : [ambientModule.color + '30', ambientModule.color + '14', ambientModule.color + '08', 'transparent']
+          }
+          locations={theme.isDark ? [0, 0.5, 1] : [0, 0.35, 0.7, 1]}
           style={StyleSheet.absoluteFill}
         />
       </Animated.View>

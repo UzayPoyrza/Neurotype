@@ -663,7 +663,14 @@ export const SettingsScreen: React.FC = () => {
               </View>
               <Switch
                 value={darkThemeEnabled}
-                onValueChange={toggleDarkTheme}
+                onValueChange={() => {
+                  toggleDarkTheme();
+                  if (userId) {
+                    updateUserPreferences(userId, {
+                      dark_theme_enabled: !darkThemeEnabled,
+                    });
+                  }
+                }}
                 trackColor={{ false: theme.colors.surfaceTertiary, true: theme.colors.accent }}
                 thumbColor={'#ffffff'}
               />

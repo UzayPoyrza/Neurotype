@@ -524,7 +524,15 @@ export default function App() {
             }
             console.log('📱 [App] Updated reminder preference to:', preferences.reminder_enabled);
           }
-          
+
+          // Update dark theme preference from database
+          const currentDarkTheme = useStore.getState().darkThemeEnabled;
+          const savedDarkTheme = preferences.dark_theme_enabled ?? true;
+          if (savedDarkTheme !== currentDarkTheme) {
+            useStore.getState().toggleDarkTheme();
+            console.log('📱 [App] Updated dark theme preference to:', savedDarkTheme);
+          }
+
           // Restore scheduled notifications if reminder is enabled
           if (preferences.reminder_enabled) {
             console.log('📱 [App] Restoring scheduled notifications...');
@@ -1081,7 +1089,15 @@ export default function App() {
               }
               console.log('📱 [App] Updated reminder preference to:', preferences.reminder_enabled);
             }
-            
+
+            // Update dark theme preference from database
+            const currentDarkTheme = useStore.getState().darkThemeEnabled;
+            const savedDarkTheme = preferences.dark_theme_enabled ?? true;
+            if (savedDarkTheme !== currentDarkTheme) {
+              useStore.getState().toggleDarkTheme();
+              console.log('📱 [App] Updated dark theme preference to:', savedDarkTheme);
+            }
+
             // Restore scheduled notifications if reminder is enabled
             if (preferences.reminder_enabled) {
               console.log('📱 [App] Restoring scheduled notifications...');

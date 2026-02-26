@@ -16,6 +16,7 @@ export interface UserPreferences {
   user_id: string;
   reminder_enabled: boolean;
   reminder_time?: string; // Format: "HH:MM" (24-hour format, e.g., "09:00" or "21:30")
+  dark_theme_enabled?: boolean;
 }
 
 export interface SubscriptionData {
@@ -122,6 +123,7 @@ export async function getUserPreferences(userId: string): Promise<UserPreference
       user_id: data.user_id,
       reminder_enabled: data.reminder_enabled,
       reminder_time: data.reminder_time || undefined,
+      dark_theme_enabled: data.dark_theme_enabled ?? true,
     };
   } catch (error) {
     console.error('Error in getUserPreferences:', error);

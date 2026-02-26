@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#1A1A24',
+    backgroundColor: '#2C2C2E',
   },
   shimmer: {
     position: 'absolute',
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
   cardContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#12121A',
+    backgroundColor: '#1C1C1E',
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginVertical: 4,
     borderRadius: 12,
-    backgroundColor: '#12121A',
+    backgroundColor: '#1C1C1E',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.06)',
     minHeight: 64,
@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   progressPathCardContainer: {
-    backgroundColor: '#12121A',
+    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     paddingHorizontal: 18,
     paddingVertical: 22,
@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.06)',
-    backgroundColor: '#1A1A24',
+    backgroundColor: '#2C2C2E',
     paddingHorizontal: 14,
     paddingVertical: 18,
     marginBottom: 16,
@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
   },
   progressPathDivider: {
     width: 1,
-    backgroundColor: '#2A2A36',
+    backgroundColor: '#38383A',
     marginHorizontal: 12,
     borderRadius: 0.5,
   },
@@ -559,7 +559,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   calendarCardContainer: {
-    backgroundColor: '#12121A',
+    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     marginHorizontal: 20,
     marginBottom: 12,
@@ -647,7 +647,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   sessionsCardContainer: {
-    backgroundColor: '#12121A',
+    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     marginHorizontal: 20,
     marginBottom: 12,
@@ -694,7 +694,7 @@ const styles = StyleSheet.create({
   activityItemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1A1A24',
+    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     padding: 12,
     overflow: 'hidden',
@@ -735,7 +735,7 @@ const styles = StyleSheet.create({
   feedbackItemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1A1A24',
+    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     padding: 12,
     overflow: 'hidden',
@@ -782,7 +782,7 @@ const styles = StyleSheet.create({
   meditationDetailMediaContainer: {
     height: 200,
     width: '100%',
-    backgroundColor: '#1A1A24',
+    backgroundColor: '#2C2C2E',
     borderRadius: 0,
     justifyContent: 'center',
     alignItems: 'center',
@@ -857,7 +857,7 @@ const styles = StyleSheet.create({
   meditationDetailBenefitItemSkeleton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#12121A',
+    backgroundColor: '#1C1C1E',
     padding: 12,
     borderRadius: 10,
     marginBottom: 8,
@@ -874,7 +874,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   neuroadaptationCardContainer: {
-    backgroundColor: '#12121A',
+    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
@@ -936,7 +936,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     borderLeftWidth: 3,
-    backgroundColor: '#1A1A24',
+    backgroundColor: '#2C2C2E',
     marginTop: 12,
   },
   neuroadaptationWhatYouFeelLabelSkeleton: {

@@ -8,11 +8,11 @@ export const theme = {
     primary: '#F2F2F7',
     secondary: '#A0A0B0',
     background: '#0A0A0F',
-    surface: '#12121A',
-    surfaceElevated: '#1A1A24',
-    surfacetertiary: '#222230',
+    surface: '#1C1C1E',
+    surfaceElevated: '#2C2C2E',
+    surfacetertiary: '#3A3A3C',
     success: '#30D158',
-    disabled: '#2A2A36',
+    disabled: '#38383A',
     disabledText: '#6B6B7B',
     accent: '#0A84FF',
     accentSecondary: '#4ECDC4', // Scientific teal for data visualization
@@ -37,7 +37,7 @@ export const theme = {
     // Filter bar specific colors
     filter: {
       active: '#F2F2F7',
-      inactive: '#12121A',
+      inactive: '#1C1C1E',
       border: 'rgba(255, 255, 255, 0.08)',
       badge: '#30D158',
       separator: 'rgba(255, 255, 255, 0.06)',
@@ -190,14 +190,14 @@ export const theme = {
       paddingBottom: 120,
     },
     card: {
-      backgroundColor: '#12121A',
+      backgroundColor: '#1C1C1E',
       borderRadius: 14,
       padding: 16,
       borderWidth: 1,
       borderColor: 'rgba(255, 255, 255, 0.06)',
     },
     inputField: {
-      backgroundColor: '#12121A',
+      backgroundColor: '#1C1C1E',
       borderRadius: 12,
       paddingHorizontal: 16,
       paddingVertical: 12,
@@ -254,7 +254,7 @@ export const theme = {
       paddingBottom: 120,
     },
     card: {
-      backgroundColor: '#12121A',
+      backgroundColor: '#1C1C1E',
       borderRadius: 14,
       marginHorizontal: 20,
       marginBottom: 12,
@@ -276,7 +276,7 @@ export const theme = {
     cardTitle: {
       fontSize: 13,
       fontWeight: '600' as const,
-      color: '#6B6B7B',
+      color: '#8E8E93',
       textTransform: 'uppercase' as const,
       letterSpacing: 0.8,
     },
@@ -321,7 +321,7 @@ export const theme = {
       color: '#ffffff',
     },
     secondaryButton: {
-      backgroundColor: '#1A1A24',
+      backgroundColor: '#2C2C2E',
       borderRadius: 12,
       paddingVertical: 12,
       paddingHorizontal: 24,
@@ -336,7 +336,7 @@ export const theme = {
       color: '#F2F2F7',
     },
     inputField: {
-      backgroundColor: '#12121A',
+      backgroundColor: '#1C1C1E',
       borderRadius: 12,
       paddingHorizontal: 12,
       paddingVertical: 8,

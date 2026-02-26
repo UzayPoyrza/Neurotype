@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   card: {
-    backgroundColor: '#12121A',
+    backgroundColor: '#1C1C1E',
     borderRadius: 14,
     overflow: 'hidden',
     borderWidth: 1,
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
   },
   section: {
     paddingVertical: 16,
-    backgroundColor: '#12121A',
+    backgroundColor: '#1C1C1E',
   },
   divider: {
     height: 0.5,

@@ -1203,7 +1203,7 @@ export const TodayScreen: React.FC = () => {
               <View style={styles.cardHeaderTop}>
                 <View style={styles.cardTitleContainer}>
                   <View style={styles.cardTitleIconWrapper}>
-                    <MeditationIcon size={24} color="#A0A0B0" />
+                    <MeditationIcon size={24} color="#0A84FF" />
                   </View>
                   <View style={styles.cardTitleTextWrapper}>
                     <Text style={styles.cardTitle}>Today's Focus</Text>
@@ -1266,7 +1266,7 @@ export const TodayScreen: React.FC = () => {
               >
                 <TouchableOpacity
                   style={[styles.recommendedSession, {
-                    backgroundColor: (todayCompleted || isRecommendedCompleted) ? '#12121A' : '#1A1A24'
+                    backgroundColor: (todayCompleted || isRecommendedCompleted) ? '#151518' : '#1C1C1E'
                   }]}
                   onPress={() => handleSessionSelect(recommendedSession)}
                   onPressIn={handleHeroCardPressIn}
@@ -1302,7 +1302,7 @@ export const TodayScreen: React.FC = () => {
               </Animated.View>
             ) : (
               <View style={styles.recommendedSessionContainer}>
-                <View style={[styles.recommendedSession, { backgroundColor: '#12121A' }]}>
+                <View style={[styles.recommendedSession, { backgroundColor: '#1C1C1E' }]}>
                   <Text style={styles.sessionTitle}>No recommendations available</Text>
                 </View>
               </View>
@@ -1314,7 +1314,7 @@ export const TodayScreen: React.FC = () => {
               <View style={styles.cardHeaderTop}>
                 <View style={styles.cardTitleContainer}>
                   <View style={styles.cardTitleIconWrapper}>
-                    <LightbulbIcon size={24} color="#A0A0B0" />
+                    <LightbulbIcon size={24} color="#0A84FF" />
                   </View>
                   <View style={styles.cardTitleTextWrapper}>
                     <Text style={styles.cardTitle}>Other Options</Text>
@@ -1341,7 +1341,7 @@ export const TodayScreen: React.FC = () => {
                       styles.alternativeSession,
                       isCompleted && {
                         ...styles.alternativeSessionCompleted,
-                        backgroundColor: '#12121A'
+                        backgroundColor: '#151518'
                       }
                     ]}
                     onPress={() => handleSessionSelect(session)}
@@ -1418,7 +1418,7 @@ export const TodayScreen: React.FC = () => {
             <View style={styles.cardHeaderTop}>
               <View style={styles.cardTitleContainer}>
                 <View style={styles.cardTitleIconWrapper}>
-                  <PathIcon size={24} color="#A0A0B0" />
+                  <PathIcon size={24} color="#0A84FF" />
                 </View>
                 <View style={styles.cardTitleTextWrapper}>
                   <Text style={styles.cardTitle}>Progress Path</Text>
@@ -1684,7 +1684,7 @@ const styles = StyleSheet.create({
   moduleButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1A1A24',
+    backgroundColor: '#1C1C1E',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 10,
@@ -1741,6 +1741,13 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     paddingTop: 1,
   },
+  cardTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#8E8E93',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
   focusSubtitleContainer: {
     position: 'relative',
     height: 22,
@@ -1755,7 +1762,7 @@ const styles = StyleSheet.create({
   },
   focusSubtitle: {
     fontSize: 15,
-    color: '#A0A0B0',
+    color: '#8E8E93',
     fontWeight: '400',
     marginBottom: 0,
   },
@@ -1765,7 +1772,7 @@ const styles = StyleSheet.create({
     height: 116,
   },
   recommendedSession: {
-    backgroundColor: '#1A1A24',
+    backgroundColor: '#1C1C1E',
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
@@ -1798,7 +1805,7 @@ const styles = StyleSheet.create({
   },
   sessionMetaText: {
     fontSize: 13,
-    color: '#6B6B7B',
+    color: '#8E8E93',
     fontWeight: '400',
   },
   mergedSectionHours: {
@@ -1862,12 +1869,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginVertical: 4,
     borderRadius: 10,
-    backgroundColor: '#1A1A24',
+    backgroundColor: '#1C1C1E',
     borderWidth: 0,
     minHeight: 64,
   },
   alternativeSessionCompleted: {
-    backgroundColor: '#12121A',
+    backgroundColor: '#151518',
   },
   alternativeSessionContent: {
     flex: 1,
@@ -1885,14 +1892,14 @@ const styles = StyleSheet.create({
   },
   alternativeSessionMeta: {
     fontSize: 13,
-    color: '#6B6B7B',
+    color: '#8E8E93',
     fontWeight: '400',
   },
   alternativeSessionPlayButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#2A2A36',
+    backgroundColor: '#38383A',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1921,7 +1928,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   progressPreviewCard: {
-    backgroundColor: '#1A1A24',
+    backgroundColor: '#1C1C1E',
     borderRadius: 14,
     paddingHorizontal: 18,
     paddingVertical: 22,
@@ -1958,7 +1965,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderRadius: 10,
     borderWidth: 0,
-    backgroundColor: '#12121A',
+    backgroundColor: '#2C2C2E',
     paddingHorizontal: 14,
     paddingVertical: 18,
     marginBottom: 16,
@@ -2014,7 +2021,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   progressPreviewItemIconLocked: {
-    backgroundColor: '#2A2A36',
+    backgroundColor: '#38383A',
     borderWidth: 0,
     width: 36,
     height: 36,
@@ -2081,7 +2088,7 @@ const styles = StyleSheet.create({
   },
   progressPreviewTimelineBarTrack: {
     height: 4,
-    backgroundColor: '#2A2A36',
+    backgroundColor: '#38383A',
     borderRadius: 2,
     overflow: 'hidden',
   },
@@ -2126,7 +2133,7 @@ const styles = StyleSheet.create({
     bottom: 90,
     left: 20,
     right: 20,
-    backgroundColor: '#1A1A24',
+    backgroundColor: '#2C2C2E',
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 16,

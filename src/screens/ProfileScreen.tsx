@@ -159,6 +159,7 @@ export const ProfileScreen: React.FC = () => {
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
   const userFirstName = useStore(state => state.userFirstName);
   const todayModuleId = useStore(state => state.todayModuleId);
+  const ambientModule = mentalHealthModules.find(m => m.id === todayModuleId) || mentalHealthModules[0];
   const [emotionalFeedbackHistory, setEmotionalFeedbackHistory] = React.useState<any[]>([]);
 
   const userId = useUserId();
@@ -836,6 +837,13 @@ export const ProfileScreen: React.FC = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
+      {/* Ambient top glow based on selected module color */}
+      <LinearGradient
+        colors={[ambientModule.color + '25', ambientModule.color + '08', 'transparent']}
+        locations={[0, 0.5, 1]}
+        style={styles.ambientGlow}
+        pointerEvents="none"
+      />
       {/* Sticky Header */}
       <View style={[styles.stickyHeader, { backgroundColor: globalBackgroundColor }]}>
         <Text style={styles.title}>Profile</Text>
@@ -1340,6 +1348,14 @@ export const ProfileScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   ...theme.health,
+  ambientGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 200,
+    zIndex: 1001,
+  },
   stickyHeader: {
     paddingHorizontal: 20,
     paddingTop: 60,

@@ -23,6 +23,7 @@ import { LightbulbIcon } from '../components/icons/LightbulbIcon';
 import { PathIcon } from '../components/icons/PathIcon';
 import { LockIcon } from '../components/icons/LockIcon';
 import { ShimmerSessionCard, ShimmerAlternativeSessionCard, ShimmerProgressPathCard } from '../components/ShimmerSkeleton';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ensureDailyRecommendations, getDailyRecommendations } from '../services/recommendationService';
 import { useUserId } from '../hooks/useUserId';
 import { getSessionById } from '../services/sessionService';
@@ -1128,6 +1129,13 @@ export const TodayScreen: React.FC = () => {
 
   const renderTodayView = () => (
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
+      {/* Ambient top glow based on selected module color */}
+      <LinearGradient
+        colors={[selectedModule.color + '25', selectedModule.color + '08', 'transparent']}
+        locations={[0, 0.5, 1]}
+        style={styles.ambientGlow}
+        pointerEvents="none"
+      />
       {/* Sticky Header */}
       <View style={[styles.stickyHeader, { backgroundColor: globalBackgroundColor }]}>
         <Text style={styles.title}>Today</Text>
@@ -1666,6 +1674,14 @@ export const TodayScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   ...theme.health,
+  ambientGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 200,
+    zIndex: 1001,
+  },
   stickyHeader: {
     paddingHorizontal: 20,
     paddingTop: 60,

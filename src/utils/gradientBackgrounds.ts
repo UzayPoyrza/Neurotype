@@ -28,7 +28,7 @@ const interpolateColor = (color1: string, color2: string, factor: number): strin
 };
 
 // Create a darker version of a color
-const darkenColor = (color: string, factor: number = 0.3): string => {
+export const darkenColor = (color: string, factor: number = 0.3): string => {
   const rgb = hexToRgb(color);
   return rgbToHex(
     Math.round(rgb.r * (1 - factor)),

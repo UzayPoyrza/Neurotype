@@ -30,6 +30,7 @@ import { getSessionById } from '../services/sessionService';
 import { getCompletedSessionsByDateRange, isSessionCompleted, getUserCompletedSessions } from '../services/progressService';
 import { supabase } from '../services/supabase';
 import { getLocalDateString } from '../utils/dateUtils';
+import { darkenColor } from '../utils/gradientBackgrounds';
 
 type SessionState = 'not_started' | 'in_progress' | 'completed' | 'rating';
 
@@ -1304,7 +1305,7 @@ export const TodayScreen: React.FC = () => {
                       <Text style={styles.sessionCompletedCheckmark}>✓</Text>
                     </View>
                   ) : (
-                    <View style={[styles.sessionPlayButton, { backgroundColor: selectedModule.color }]}>
+                    <View style={[styles.sessionPlayButton, { backgroundColor: darkenColor(selectedModule.color, 0.3) }]}>
                       <Text style={styles.sessionPlayText}>▶</Text>
                     </View>
                   )}
@@ -1458,7 +1459,7 @@ export const TodayScreen: React.FC = () => {
                 activeOpacity={1}
               >
               <View style={styles.progressPreviewHeader}>
-                <View style={[styles.progressPreviewBadge, { backgroundColor: selectedModule.color }]}>
+                <View style={[styles.progressPreviewBadge, { backgroundColor: darkenColor(selectedModule.color, 0.3) }]}>
                   <LineGraphIcon size={24} color="#FFFFFF" accentColor="#FFFFFF" />
                 </View>
                 <View style={styles.progressPreviewHeaderText}>
@@ -1624,7 +1625,7 @@ export const TodayScreen: React.FC = () => {
         }}
       >
         <AnimatedFloatingButton
-          backgroundColor={selectedModule.color}
+          backgroundColor={darkenColor(selectedModule.color, 0.3)}
           onPress={handleFloatingButtonPress}
           isPillMode={isPillMode}
           onScroll={handleFloatingButtonScroll}

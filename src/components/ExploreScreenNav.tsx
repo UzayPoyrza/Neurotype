@@ -46,7 +46,7 @@ export const ExploreScreenNav = forwardRef<ExploreScreenNavRef, ExploreScreenNav
 }, ref) => {
   const navigation = useNavigation();
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
-  const [elevatedBackgroundColor, setElevatedBackgroundColor] = React.useState('#f2f2f7');
+  const [elevatedBackgroundColor, setElevatedBackgroundColor] = React.useState('#0A0A0F');
   const revealTranslateY = useRef(new Animated.Value(0)).current;
   const isAnimating = useRef(false);
   const lastScrollY = useRef(0);
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
   revealBar: {
     // backgroundColor set dynamically via globalBackgroundColor
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.borders.radius.md,
     backgroundColor: theme.colors.background,
     borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.primary,
+    borderColor: 'rgba(255,255,255,0.06)',
     justifyContent: 'center',
     alignItems: 'center',
     ...theme.shadows.small,
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: theme.typography.sizes.lg,
     fontWeight: theme.typography.weights.bold,
-    color: theme.colors.primary,
+    color: '#F2F2F7',
     fontFamily: theme.typography.fontFamily,
   },
   title: {

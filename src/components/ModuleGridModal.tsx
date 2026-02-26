@@ -59,7 +59,7 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
     switch (category) {
       case 'disorder': return <FontAwesome6 name="brain" size={24} color="#ffffff" />;
       case 'wellness': return <MaterialCommunityIcons name="sprout" {...iconProps} />;
-      case 'skill': return <MaterialCommunityIcons name="lightning-bolt" {...iconProps} />;
+      case 'skill': return <MaterialCommunityIcons name="compass-outline" {...iconProps} />;
       case 'winddown': return <MaterialCommunityIcons name="moon-waning-crescent" {...iconProps} />;
       default: return <MaterialCommunityIcons name="diamond-stone" {...iconProps} />;
     }

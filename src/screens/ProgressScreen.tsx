@@ -186,7 +186,7 @@ export const ProgressScreen: React.FC = () => {
       {!theme.isDark && (
         <View style={styles.ambientGlow} pointerEvents="none">
           <LinearGradient
-            colors={[ambientModule.color + '14', ambientModule.color + '0A', ambientModule.color + '04', 'transparent']}
+            colors={[ambientModule.color + '08', ambientModule.color + '04', ambientModule.color + '01', 'transparent']}
             locations={[0, 0.3, 0.65, 1]}
             style={StyleSheet.absoluteFill}
           />

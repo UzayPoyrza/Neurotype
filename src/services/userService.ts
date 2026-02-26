@@ -3,6 +3,7 @@
  * Handles user profile and preferences
  */
 
+import { Appearance } from 'react-native';
 import { supabase } from './supabase';
 
 export interface UserProfile {
@@ -217,6 +218,7 @@ export async function createUserProfile(
       try {
         const { error: prefError } = await supabase.from('user_preferences').insert({
           user_id: userId,
+          dark_theme_enabled: Appearance.getColorScheme() !== 'light',
         });
         
         if (prefError) {

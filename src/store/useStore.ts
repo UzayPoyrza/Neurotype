@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { Appearance } from 'react-native';
 import { UserProgress, FilterState, SessionDelta, Session, EmotionalFeedbackEntry } from '../types';
 import { mentalHealthModules } from '../data/modules';
 import { toggleLikedSession as toggleLikedSessionDB, getLikedSessionIds } from '../services/likedService';
@@ -237,7 +238,7 @@ const buildInitialStoreData = () => {
       goal: 'all',
     } as FilterState,
     reminderEnabled: false,
-    darkThemeEnabled: true,
+    darkThemeEnabled: Appearance.getColorScheme() !== 'light',
     profileIcon: '👤',
     subscriptionType: 'premium' as const,
     subscriptionCancelAt: null as string | null,
@@ -305,6 +306,7 @@ interface AppState {
   setFilters: (filters: FilterState) => void;
   toggleReminder: () => void;
   toggleDarkTheme: () => void;
+  setDarkThemeEnabled: (enabled: boolean) => void;
   setUserFirstName: (name: string) => void;
   setProfileIcon: (icon: string) => void;
   setSubscriptionType: (type: 'basic' | 'premium') => void;
@@ -363,8 +365,11 @@ export const useStore = create<AppState>((set, get) => ({
   toggleReminder: () => 
     set((state) => ({ reminderEnabled: !state.reminderEnabled })),
     
-  toggleDarkTheme: () => 
+  toggleDarkTheme: () =>
     set((state) => ({ darkThemeEnabled: !state.darkThemeEnabled })),
+
+  setDarkThemeEnabled: (enabled: boolean) =>
+    set({ darkThemeEnabled: enabled }),
 
   setUserFirstName: (name: string) =>
     set({ userFirstName: name }),

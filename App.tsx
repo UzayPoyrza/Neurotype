@@ -526,11 +526,8 @@ export default function App() {
           }
 
           // Update dark theme preference from database
-          const currentDarkTheme = useStore.getState().darkThemeEnabled;
-          const savedDarkTheme = preferences.dark_theme_enabled ?? true;
-          if (savedDarkTheme !== currentDarkTheme) {
-            useStore.getState().toggleDarkTheme();
-            console.log('📱 [App] Updated dark theme preference to:', savedDarkTheme);
+          if (preferences.dark_theme_enabled !== undefined) {
+            useStore.getState().setDarkThemeEnabled(preferences.dark_theme_enabled);
           }
 
           // Restore scheduled notifications if reminder is enabled
@@ -810,7 +807,18 @@ export default function App() {
       if (session?.user) {
         const userId = session.user.id;
         console.log('✅ [App] Found existing session for user:', userId);
-        
+
+        // Load theme preference FIRST to avoid flash of wrong theme
+        try {
+          const prefs = await getUserPreferences(userId);
+          if (prefs && prefs.dark_theme_enabled !== undefined) {
+            useStore.getState().setDarkThemeEnabled(prefs.dark_theme_enabled);
+            console.log('🎨 [App] Applied saved theme preference:', prefs.dark_theme_enabled ? 'dark' : 'light');
+          }
+        } catch (themeError) {
+          console.warn('⚠️ [App] Could not load theme preference, using system default');
+        }
+
         // IMPORTANT: Check if user profile exists before assuming onboarding is complete
         // New users who just signed in may have a session but no profile yet
         try {
@@ -1091,11 +1099,8 @@ export default function App() {
             }
 
             // Update dark theme preference from database
-            const currentDarkTheme = useStore.getState().darkThemeEnabled;
-            const savedDarkTheme = preferences.dark_theme_enabled ?? true;
-            if (savedDarkTheme !== currentDarkTheme) {
-              useStore.getState().toggleDarkTheme();
-              console.log('📱 [App] Updated dark theme preference to:', savedDarkTheme);
+            if (preferences.dark_theme_enabled !== undefined) {
+              useStore.getState().setDarkThemeEnabled(preferences.dark_theme_enabled);
             }
 
             // Restore scheduled notifications if reminder is enabled

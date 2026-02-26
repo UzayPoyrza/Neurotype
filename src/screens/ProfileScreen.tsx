@@ -870,52 +870,46 @@ export const ProfileScreen: React.FC = () => {
         {/* Profile Header Card */}
         <View style={styles.profileHeaderCard}>
           <View style={styles.profileHeaderContent}>
-            <View style={styles.profilePictureWrapper}>
-              <View
-                style={[
-                  styles.profileInitialContainer,
-                  {
-                    borderColor: moduleBorderColor,
-                    backgroundColor: avatarBackgroundColor,
-                  }
-                ]}
-              >
-                <Text style={[styles.profileInitialText, { color: moduleBorderColor }]}>
-                  {profileInitial}
+            <View
+              style={[
+                styles.profileInitialContainer,
+                {
+                  borderColor: moduleBorderColor,
+                  backgroundColor: avatarBackgroundColor,
+                }
+              ]}
+            >
+              <Text style={[styles.profileInitialText, { color: moduleBorderColor }]}>
+                {profileInitial}
+              </Text>
+            </View>
+            <View style={[
+              styles.subscriptionContainer,
+              subscriptionType === 'premium' && styles.subscriptionContainerPremium
+            ]}>
+              <SubscriptionBadge
+                subscriptionType={subscriptionType}
+                size="small"
+              />
+            </View>
+            {subscriptionType === 'premium' && subscriptionCancelAt && (
+              <View style={styles.cancelMessageContainer}>
+                <Text style={styles.cancelMessageText}>
+                  Your subscription ends at {new Date(subscriptionCancelAt).toLocaleDateString()}. Go to settings to manage your subscription.
                 </Text>
               </View>
-            </View>
-            
-            <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>Current Plan</Text>
-              <View style={[
-                styles.subscriptionContainer,
-                subscriptionType === 'premium' && styles.subscriptionContainerPremium
-              ]}>
-                <SubscriptionBadge 
-                  subscriptionType={subscriptionType}
-                  size="medium"
-                />
-              </View>
-              {subscriptionType === 'premium' && subscriptionCancelAt && (
-                <View style={styles.cancelMessageContainer}>
-                  <Text style={styles.cancelMessageText}>
-                    Your subscription ends at {new Date(subscriptionCancelAt).toLocaleDateString()}. Go to settings to manage your subscription.
-                  </Text>
-                </View>
-              )}
-              {subscriptionType === 'basic' && (
-                <TouchableOpacity 
-                  style={styles.upgradeButton}
-                  activeOpacity={0.7}
-                  onPress={() => {
-                    navigation.navigate('Subscription');
-                  }}
-                >
-                  <Text style={styles.upgradeButtonText}>Upgrade Now</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+            )}
+            {subscriptionType === 'basic' && (
+              <TouchableOpacity
+                style={styles.upgradeButton}
+                activeOpacity={0.7}
+                onPress={() => {
+                  navigation.navigate('Subscription');
+                }}
+              >
+                <Text style={styles.upgradeButtonText}>Upgrade</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
@@ -1391,18 +1385,15 @@ const styles = StyleSheet.create({
   profileHeaderContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 20,
-    paddingBottom: 20,
-    paddingLeft: 20,
-    paddingRight: 8,
-  },
-  profilePictureWrapper: {
-    marginRight: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    flexWrap: 'wrap',
+    gap: 10,
   },
   profileInitialContainer: {
-    width: 110,
-    height: 110,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     borderWidth: 1.5,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1410,15 +1401,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#2C2C2E',
   },
   profileInitialText: {
-    fontSize: 48,
+    fontSize: 17,
     fontWeight: '700',
     color: '#F2F2F7',
-  },
-  profileInfo: {
-    flex: 1,
-    minWidth: 0,
-    paddingRight: 0,
-    paddingLeft: 8,
   },
   statsSection: {
     backgroundColor: '#1C1C1E',
@@ -1435,42 +1420,27 @@ const styles = StyleSheet.create({
   mergedSectionIncreasedTopPadding: {
     paddingTop: 8,
   },
-  profileName: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#F2F2F7',
-    marginBottom: 8,
-    letterSpacing: -0.3,
-  },
   subscriptionContainer: {
-    marginBottom: 5,
-    marginLeft: -16,
-    marginRight: 0,
-    alignSelf: 'flex-start',
   },
   subscriptionContainerPremium: {
-    marginTop: 5,
-    marginBottom: 5,
-    marginLeft: -25,
-    marginRight: 0,
   },
   upgradeButton: {
     backgroundColor: '#0A84FF',
     borderRadius: 10,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    marginTop: 8,
-    alignSelf: 'flex-start',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    marginLeft: 'auto',
   },
   upgradeButtonText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: '#ffffff',
   },
   cancelMessageContainer: {
-    marginTop: 8,
-    paddingHorizontal: 0,
-    paddingVertical: 0,
+    width: '100%',
+    marginTop: 4,
+    paddingHorizontal: 16,
+    paddingBottom: 4,
   },
   cancelMessageText: {
     fontSize: 13,

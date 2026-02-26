@@ -1390,9 +1390,9 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   profileInitialContainer: {
-    width: 52,
-    height: 52,
-    borderRadius: 15,
+    width: 60,
+    height: 60,
+    borderRadius: 17,
     borderWidth: 1.5,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1400,7 +1400,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2C2C2E',
   },
   profileInitialText: {
-    fontSize: 22,
+    fontSize: 26,
     fontWeight: '700',
     color: '#F2F2F7',
   },

@@ -12,7 +12,7 @@ export const ProgressIcon: React.FC<ProgressIconProps> = ({
   color = '#666666', 
   focused = false 
 }) => {
-  const iconColor = focused ? '#000000' : color;
+  const iconColor = color;
   
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">

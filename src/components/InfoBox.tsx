@@ -85,10 +85,12 @@ const styles = StyleSheet.create({
   },
   infoBox: {
     position: 'absolute',
-    backgroundColor: '#000000',
+    backgroundColor: '#1A1A24',
     borderRadius: 12,
     padding: 16,
     maxWidth: 280,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -103,7 +105,7 @@ const styles = StyleSheet.create({
   },
   infoContent: {
     fontSize: 14,
-    color: '#ffffff',
+    color: '#A0A0B0',
     lineHeight: 20,
   },
   infoContentWithButton: {
@@ -113,13 +115,13 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingVertical: 10,
     paddingHorizontal: 12,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#0A84FF',
     borderRadius: 8,
     alignItems: 'center',
   },
   howToUseButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000000',
+    color: '#ffffff',
   },
 });

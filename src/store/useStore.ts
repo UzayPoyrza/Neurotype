@@ -21,11 +21,11 @@ export const createSubtleBackground = (moduleColor: string): string => {
   const g = parseInt(hex.substr(2, 2), 16);
   const b = parseInt(hex.substr(4, 2), 16);
 
-  // Mix with near-black (95% black, 5% module color) for screen backgrounds
-  // For icon backgrounds, use the raw module color at component level
-  const mixedR = Math.round(0 * 0.95 + r * 0.05);
-  const mixedG = Math.round(0 * 0.95 + g * 0.05);
-  const mixedB = Math.round(0 * 0.95 + b * 0.05);
+  // Mix with deep navy-black base (#0A0A0F) (95% base, 5% module color)
+  const baseR = 10, baseG = 10, baseB = 15;
+  const mixedR = Math.round(baseR * 0.95 + r * 0.05);
+  const mixedG = Math.round(baseG * 0.95 + g * 0.05);
+  const mixedB = Math.round(baseB * 0.95 + b * 0.05);
 
   return `rgb(${mixedR}, ${mixedG}, ${mixedB})`;
 };
@@ -37,8 +37,8 @@ export const createDarkIconBackground = (moduleColor: string): string => {
   const g = parseInt(hex.substr(2, 2), 16);
   const b = parseInt(hex.substr(4, 2), 16);
 
-  // 80% dark base (#3A3A3C) + 20% module color
-  const baseR = 58, baseG = 58, baseB = 60;
+  // 80% dark base (#2A2A36) + 20% module color
+  const baseR = 42, baseG = 42, baseB = 54;
   const mixedR = Math.round(baseR * 0.80 + r * 0.20);
   const mixedG = Math.round(baseG * 0.80 + g * 0.20);
   const mixedB = Math.round(baseB * 0.80 + b * 0.20);
@@ -212,7 +212,7 @@ const buildInitialStoreData = () => {
     activeSession: null,
     activeModuleId: null,
     recentModuleIds: [] as string[],
-    globalBackgroundColor: '#000000',
+    globalBackgroundColor: '#0A0A0F',
     currentScreen: 'today' as const,
     todayModuleId: 'anxiety',
     likedSessionIds: [] as string[],

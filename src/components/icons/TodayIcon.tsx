@@ -12,7 +12,7 @@ export const TodayIcon: React.FC<TodayIconProps> = ({
   color = '#666666', 
   focused = false 
 }) => {
-  const iconColor = focused ? '#000000' : color;
+  const iconColor = color;
   const handsColor = focused ? '#ffffff' : iconColor;
   
   return (

@@ -80,18 +80,19 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   card: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: '#12121A',
     borderRadius: 14,
     overflow: 'hidden',
-    borderWidth: 0,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
   },
   section: {
     paddingVertical: 16,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: '#12121A',
   },
   divider: {
     height: 0.5,
-    backgroundColor: '#38383A',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     marginHorizontal: 16,
   },
 });

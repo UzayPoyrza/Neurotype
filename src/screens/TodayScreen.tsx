@@ -1203,7 +1203,7 @@ export const TodayScreen: React.FC = () => {
               <View style={styles.cardHeaderTop}>
                 <View style={styles.cardTitleContainer}>
                   <View style={styles.cardTitleIconWrapper}>
-                    <MeditationIcon size={24} color="#98989D" />
+                    <MeditationIcon size={24} color="#A0A0B0" />
                   </View>
                   <View style={styles.cardTitleTextWrapper}>
                     <Text style={styles.cardTitle}>Today's Focus</Text>
@@ -1265,8 +1265,8 @@ export const TodayScreen: React.FC = () => {
                 ]}
               >
                 <TouchableOpacity
-                  style={[styles.recommendedSession, { 
-                    backgroundColor: (todayCompleted || isRecommendedCompleted) ? '#1C1C1E' : '#2C2C2E'
+                  style={[styles.recommendedSession, {
+                    backgroundColor: (todayCompleted || isRecommendedCompleted) ? '#12121A' : '#1A1A24'
                   }]}
                   onPress={() => handleSessionSelect(recommendedSession)}
                   onPressIn={handleHeroCardPressIn}
@@ -1302,7 +1302,7 @@ export const TodayScreen: React.FC = () => {
               </Animated.View>
             ) : (
               <View style={styles.recommendedSessionContainer}>
-                <View style={[styles.recommendedSession, { backgroundColor: '#1C1C1E' }]}>
+                <View style={[styles.recommendedSession, { backgroundColor: '#12121A' }]}>
                   <Text style={styles.sessionTitle}>No recommendations available</Text>
                 </View>
               </View>
@@ -1314,7 +1314,7 @@ export const TodayScreen: React.FC = () => {
               <View style={styles.cardHeaderTop}>
                 <View style={styles.cardTitleContainer}>
                   <View style={styles.cardTitleIconWrapper}>
-                    <LightbulbIcon size={24} color="#98989D" />
+                    <LightbulbIcon size={24} color="#A0A0B0" />
                   </View>
                   <View style={styles.cardTitleTextWrapper}>
                     <Text style={styles.cardTitle}>Other Options</Text>
@@ -1341,7 +1341,7 @@ export const TodayScreen: React.FC = () => {
                       styles.alternativeSession,
                       isCompleted && {
                         ...styles.alternativeSessionCompleted,
-                        backgroundColor: '#1C1C1E'
+                        backgroundColor: '#12121A'
                       }
                     ]}
                     onPress={() => handleSessionSelect(session)}
@@ -1384,7 +1384,7 @@ export const TodayScreen: React.FC = () => {
           {/* Hours until new recommendations */}
           <MergedCard.Section style={styles.mergedSectionHours} hideDividerBefore>
             <View style={styles.hoursRemainingContainer}>
-              <ClockIcon size={14} color="#8e8e93" />
+              <ClockIcon size={14} color="#6B6B7B" />
               {hoursUntilNewRecommendations === 0 ? (
                 <Text style={styles.hoursRemainingText}>
                   New recommendations available
@@ -1418,7 +1418,7 @@ export const TodayScreen: React.FC = () => {
             <View style={styles.cardHeaderTop}>
               <View style={styles.cardTitleContainer}>
                 <View style={styles.cardTitleIconWrapper}>
-                  <PathIcon size={24} color="#98989D" />
+                  <PathIcon size={24} color="#A0A0B0" />
                 </View>
                 <View style={styles.cardTitleTextWrapper}>
                   <Text style={styles.cardTitle}>Progress Path</Text>
@@ -1684,10 +1684,12 @@ const styles = StyleSheet.create({
   moduleButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: '#1A1A24',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   moduleIndicator: {
     width: 8,
@@ -1698,7 +1700,7 @@ const styles = StyleSheet.create({
   moduleButtonText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#FFFFFF',
+    color: '#F2F2F7',
   },
   recommendedBadge: {
     backgroundColor: '#0A84FF',
@@ -1753,7 +1755,7 @@ const styles = StyleSheet.create({
   },
   focusSubtitle: {
     fontSize: 15,
-    color: '#636366',
+    color: '#A0A0B0',
     fontWeight: '400',
     marginBottom: 0,
   },
@@ -1763,7 +1765,7 @@ const styles = StyleSheet.create({
     height: 116,
   },
   recommendedSession: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: '#1A1A24',
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
@@ -1779,12 +1781,12 @@ const styles = StyleSheet.create({
   sessionTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#F2F2F7',
     marginBottom: 4,
   },
   sessionSubtitle: {
     fontSize: 14,
-    color: '#98989D',
+    color: '#A0A0B0',
     fontWeight: '400',
     marginBottom: 8,
     fontStyle: 'italic',
@@ -1796,7 +1798,7 @@ const styles = StyleSheet.create({
   },
   sessionMetaText: {
     fontSize: 13,
-    color: '#636366',
+    color: '#6B6B7B',
     fontWeight: '400',
   },
   mergedSectionHours: {
@@ -1813,13 +1815,13 @@ const styles = StyleSheet.create({
   },
   hoursRemainingText: {
     fontSize: 12,
-    color: '#636366',
+    color: '#6B6B7B',
     fontWeight: '400',
     letterSpacing: -0.1,
   },
   hoursRemainingTextBold: {
     fontWeight: '700',
-    color: '#98989D',
+    color: '#A0A0B0',
   },
   hoursRemainingTextRow: {
     flexDirection: 'row',
@@ -1860,12 +1862,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginVertical: 4,
     borderRadius: 10,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: '#1A1A24',
     borderWidth: 0,
     minHeight: 64,
   },
   alternativeSessionCompleted: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: '#12121A',
   },
   alternativeSessionContent: {
     flex: 1,
@@ -1874,23 +1876,23 @@ const styles = StyleSheet.create({
   alternativeSessionTitle: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#FFFFFF',
+    color: '#F2F2F7',
     marginBottom: 2,
   },
   alternativeSessionTitleCompleted: {
-    color: '#98989D',
+    color: '#6B6B7B',
     opacity: 0.8,
   },
   alternativeSessionMeta: {
     fontSize: 13,
-    color: '#636366',
+    color: '#6B6B7B',
     fontWeight: '400',
   },
   alternativeSessionPlayButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#3A3A3C',
+    backgroundColor: '#2A2A36',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1919,11 +1921,12 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   progressPreviewCard: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: '#1A1A24',
     borderRadius: 14,
     paddingHorizontal: 18,
     paddingVertical: 22,
-    borderWidth: 0,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   progressPreviewHeader: {
     flexDirection: 'row',
@@ -1949,13 +1952,13 @@ const styles = StyleSheet.create({
   },
   progressPreviewSubtitle: {
     fontSize: 14,
-    color: '#636366',
+    color: '#A0A0B0',
   },
   progressPreviewTimeline: {
     flexDirection: 'row',
     borderRadius: 10,
     borderWidth: 0,
-    backgroundColor: '#3A3A3C',
+    backgroundColor: '#12121A',
     paddingHorizontal: 14,
     paddingVertical: 18,
     marginBottom: 16,
@@ -1966,7 +1969,7 @@ const styles = StyleSheet.create({
   progressPreviewSectionLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#98989D',
+    color: '#A0A0B0',
     marginBottom: 8,
     textTransform: 'uppercase' as const,
     letterSpacing: 0.6,
@@ -1999,11 +2002,11 @@ const styles = StyleSheet.create({
   progressPreviewItemTitle: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#FFFFFF',
+    color: '#F2F2F7',
   },
   progressPreviewItemMeta: {
     fontSize: 12,
-    color: '#636366',
+    color: '#6B6B7B',
   },
   progressPreviewLockedState: {
     flexDirection: 'row',
@@ -2011,7 +2014,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   progressPreviewItemIconLocked: {
-    backgroundColor: '#3A3A3C',
+    backgroundColor: '#2A2A36',
     borderWidth: 0,
     width: 36,
     height: 36,
@@ -2019,13 +2022,13 @@ const styles = StyleSheet.create({
   },
   progressPreviewLockedText: {
     fontSize: 12,
-    color: '#636366',
+    color: '#6B6B7B',
     lineHeight: 16,
     marginTop: 2,
   },
   progressPreviewDivider: {
     width: 0.5,
-    backgroundColor: '#48484A',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     marginHorizontal: 12,
     borderRadius: 0.5,
   },
@@ -2044,7 +2047,7 @@ const styles = StyleSheet.create({
   },
   progressPreviewFooterText: {
     fontSize: 13,
-    color: '#636366',
+    color: '#6B6B7B',
     fontStyle: 'italic',
   },
   progressPreviewFooterArrow: {
@@ -2078,7 +2081,7 @@ const styles = StyleSheet.create({
   },
   progressPreviewTimelineBarTrack: {
     height: 4,
-    backgroundColor: '#48484A',
+    backgroundColor: '#2A2A36',
     borderRadius: 2,
     overflow: 'hidden',
   },
@@ -2088,7 +2091,7 @@ const styles = StyleSheet.create({
   },
   progressPreviewTimelineText: {
     fontSize: 12,
-    color: '#636366',
+    color: '#6B6B7B',
   },
   bottomSpacing: {
     height: 120,
@@ -2123,7 +2126,7 @@ const styles = StyleSheet.create({
     bottom: 90,
     left: 20,
     right: 20,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: '#1A1A24',
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 16,
@@ -2135,6 +2138,8 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
     zIndex: 1000,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   toastContent: {},
   toastText: {

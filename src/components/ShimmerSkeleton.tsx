@@ -39,7 +39,7 @@ export const ShimmerSkeleton: React.FC<ShimmerSkeletonProps> = ({
     outputRange: [-300, 300],
   });
 
-  // Bright white sweep with smooth fade in/out
+  // Subtle sweep with smooth fade in/out
   const shimmerOpacity = shimmerAnim.interpolate({
     inputRange: [0, 0.4, 0.5, 0.6, 1],
     outputRange: [0, 0.8, 1, 0.8, 0],
@@ -57,10 +57,10 @@ export const ShimmerSkeleton: React.FC<ShimmerSkeletonProps> = ({
         style,
       ]}
     >
-      {/* Grey base */}
+      {/* Dark base */}
       <View style={[styles.base, { borderRadius }]} />
-      
-      {/* Shimmer overlay - bright white sweep */}
+
+      {/* Shimmer overlay - subtle light sweep */}
       <Animated.View
         style={[
           styles.shimmer,
@@ -70,7 +70,6 @@ export const ShimmerSkeleton: React.FC<ShimmerSkeletonProps> = ({
           },
         ]}
       >
-        {/* Gradient-like effect using a bright white rectangle */}
         <View style={styles.shimmerInner} />
       </Animated.View>
     </View>
@@ -87,14 +86,14 @@ export const ShimmerSessionCard: React.FC<ShimmerCardProps> = ({ style }) => {
       <View style={styles.cardContent}>
         {/* Title skeleton */}
         <ShimmerSkeleton width="70%" height={18} borderRadius={6} style={styles.titleSkeleton} />
-        
+
         {/* Subtitle skeleton */}
         <ShimmerSkeleton width="50%" height={14} borderRadius={6} style={styles.subtitleSkeleton} />
-        
+
         {/* Meta skeleton */}
         <ShimmerSkeleton width="40%" height={12} borderRadius={6} style={styles.metaSkeleton} />
       </View>
-      
+
       {/* Play button skeleton */}
       <ShimmerSkeleton width={44} height={44} borderRadius={22} />
     </View>
@@ -107,11 +106,11 @@ export const ShimmerAlternativeSessionCard: React.FC<ShimmerCardProps> = ({ styl
       <View style={styles.alternativeCardContent}>
         {/* Title skeleton */}
         <ShimmerSkeleton width="65%" height={16} borderRadius={6} style={styles.alternativeTitleSkeleton} />
-        
+
         {/* Meta skeleton */}
         <ShimmerSkeleton width="45%" height={12} borderRadius={6} style={styles.alternativeMetaSkeleton} />
       </View>
-      
+
       {/* Play button skeleton */}
       <ShimmerSkeleton width={36} height={36} borderRadius={18} />
     </View>
@@ -236,14 +235,14 @@ export const ShimmerMeditationDetailContent: React.FC<ShimmerCardProps> = ({ sty
     <View style={[styles.meditationDetailContentContainer, style]}>
       {/* Title */}
       <ShimmerSkeleton width="80%" height={21} borderRadius={6} style={styles.meditationDetailTitleSkeleton} />
-      
+
       {/* Tags */}
       <View style={styles.meditationDetailTagsContainer}>
         <ShimmerSkeleton width={80} height={28} borderRadius={12} style={styles.meditationDetailTagSkeleton} />
         <ShimmerSkeleton width={100} height={28} borderRadius={12} style={styles.meditationDetailTagSkeleton} />
         <ShimmerSkeleton width={70} height={28} borderRadius={12} style={styles.meditationDetailTagSkeleton} />
       </View>
-      
+
       {/* Description Section */}
       <View style={{ paddingHorizontal: 0, paddingTop: 0, paddingBottom: 20 }}>
         <ShimmerSkeleton width="40%" height={20} borderRadius={6} style={styles.meditationDetailDescriptionTitleSkeleton} />
@@ -252,7 +251,7 @@ export const ShimmerMeditationDetailContent: React.FC<ShimmerCardProps> = ({ sty
         <ShimmerSkeleton width="90%" height={16} borderRadius={6} style={styles.meditationDetailDescriptionTextSkeleton} />
         <ShimmerSkeleton width="85%" height={16} borderRadius={6} style={styles.meditationDetailDescriptionTextSkeleton} />
       </View>
-      
+
       {/* Benefits Section */}
       <View style={{ paddingHorizontal: 0, paddingTop: 0, paddingBottom: 24 }}>
         <ShimmerSkeleton width="50%" height={20} borderRadius={6} style={styles.meditationDetailBenefitsTitleSkeleton} />
@@ -260,7 +259,7 @@ export const ShimmerMeditationDetailContent: React.FC<ShimmerCardProps> = ({ sty
         <ShimmerSkeleton width="98%" height={15} borderRadius={6} style={styles.meditationDetailBenefitsTextSkeleton} />
         <ShimmerSkeleton width="95%" height={15} borderRadius={6} style={styles.meditationDetailBenefitsTextSkeleton} />
         <ShimmerSkeleton width="92%" height={15} borderRadius={6} style={styles.meditationDetailBenefitsTextSkeleton} />
-        
+
         {/* Unique Benefits */}
         <ShimmerSkeleton width="45%" height={17} borderRadius={6} style={styles.meditationDetailUniqueBenefitsTitleSkeleton} />
         {[...Array(3)].map((_, i) => (
@@ -281,7 +280,6 @@ export const ShimmerNeuroadaptationCard: React.FC<ShimmerCardProps> = ({ style }
       <View style={styles.neuroadaptationCardHeader}>
         <View style={styles.neuroadaptationCardTitleRow}>
           <ShimmerSkeleton width="100%" height={18} borderRadius={6} style={styles.neuroadaptationCardTitleSkeleton} />
-          {/* Optional checkmark - sometimes shown */}
         </View>
         <ShimmerSkeleton width="50%" height={14} borderRadius={6} style={styles.neuroadaptationCardTimeRangeSkeleton} />
       </View>
@@ -316,7 +314,7 @@ export const ShimmerProgressPathCard: React.FC<ShimmerCardProps> = ({ style }) =
       <View style={styles.progressPathHeader}>
         {/* Badge skeleton */}
         <ShimmerSkeleton width={40} height={40} borderRadius={20} style={styles.progressPathBadgeSkeleton} />
-        
+
         {/* Title and subtitle */}
         <View style={styles.progressPathHeaderText}>
           <ShimmerSkeleton width="60%" height={17} borderRadius={6} style={styles.progressPathTitleSkeleton} />
@@ -375,10 +373,10 @@ export const ShimmerProgressPathCard: React.FC<ShimmerCardProps> = ({ style }) =
           <ShimmerSkeleton width="55%" height={13} borderRadius={6} />
           <ShimmerSkeleton width="15%" height={13} borderRadius={6} />
         </View>
-        
+
         {/* Progress bar */}
         <ShimmerSkeleton width="100%" height={6} borderRadius={3} style={styles.progressPathBarSkeleton} />
-        
+
         {/* Progress text */}
         <ShimmerSkeleton width="70%" height={12} borderRadius={6} style={styles.progressPathTextSkeleton} />
       </View>
@@ -403,7 +401,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#e5e5ea', // Grey placeholder
+    backgroundColor: '#1A1A24',
   },
   shimmer: {
     position: 'absolute',
@@ -411,27 +409,26 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: 200,
     left: '50%',
-    marginLeft: -100, // Center the shimmer initially
+    marginLeft: -100,
   },
   shimmerInner: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     width: '100%',
-    // Bright white with slight transparency at edges for smooth sweep
-    shadowColor: '#ffffff',
+    shadowColor: 'rgba(255, 255, 255, 0.08)',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 30,
-    elevation: 15,
+    shadowOpacity: 0.6,
+    shadowRadius: 20,
+    elevation: 8,
   },
   cardContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#12121A',
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: 'rgba(255, 255, 255, 0.06)',
     minHeight: 104,
   },
   cardContent: {
@@ -455,9 +452,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginVertical: 4,
     borderRadius: 12,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#12121A',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: 'rgba(255, 255, 255, 0.06)',
     minHeight: 64,
   },
   alternativeCardContent: {
@@ -471,15 +468,15 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   progressPathCardContainer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#12121A',
     borderRadius: 16,
     paddingHorizontal: 18,
     paddingVertical: 22,
     borderWidth: 1,
-    borderColor: '#e5e5ea',
+    borderColor: 'rgba(255, 255, 255, 0.06)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.3,
     shadowRadius: 10,
     elevation: 3,
   },
@@ -504,8 +501,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#f2f2f7',
-    backgroundColor: '#f9f9fb',
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: '#1A1A24',
     paddingHorizontal: 14,
     paddingVertical: 18,
     marginBottom: 16,
@@ -533,7 +530,7 @@ const styles = StyleSheet.create({
   },
   progressPathDivider: {
     width: 1,
-    backgroundColor: '#e5e5ea',
+    backgroundColor: '#2A2A36',
     marginHorizontal: 12,
     borderRadius: 0.5,
   },
@@ -542,7 +539,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#f2f2f7',
+    borderTopColor: 'rgba(255, 255, 255, 0.06)',
   },
   progressPathTimelineHeader: {
     flexDirection: 'row',
@@ -562,17 +559,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   calendarCardContainer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#12121A',
     borderRadius: 16,
     marginHorizontal: 20,
     marginBottom: 12,
     padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 2,
-    minHeight: 450, // Constant size to match calendar
+    minHeight: 450,
   },
   calendarHeader: {
     flexDirection: 'row',
@@ -601,7 +600,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 2,
   },
   calendarGrid: {
-    height: 280, // Match calendar height
+    height: 280,
     marginBottom: 12,
   },
   calendarRow: {
@@ -618,7 +617,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: 'rgba(255, 255, 255, 0.06)',
   },
   calendarLegendTitle: {
     width: '30%',
@@ -648,17 +647,19 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   sessionsCardContainer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#12121A',
     borderRadius: 16,
     marginHorizontal: 20,
     marginBottom: 12,
     padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 2,
-    minHeight: 100, // Constant size
+    minHeight: 100,
   },
   cardHeaderTop: {
     flexDirection: 'row',
@@ -693,7 +694,7 @@ const styles = StyleSheet.create({
   activityItemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#1A1A24',
     borderRadius: 12,
     padding: 12,
     overflow: 'hidden',
@@ -734,7 +735,7 @@ const styles = StyleSheet.create({
   feedbackItemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#1A1A24',
     borderRadius: 12,
     padding: 12,
     overflow: 'hidden',
@@ -781,7 +782,7 @@ const styles = StyleSheet.create({
   meditationDetailMediaContainer: {
     height: 200,
     width: '100%',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#1A1A24',
     borderRadius: 0,
     justifyContent: 'center',
     alignItems: 'center',
@@ -856,7 +857,7 @@ const styles = StyleSheet.create({
   meditationDetailBenefitItemSkeleton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#12121A',
     padding: 12,
     borderRadius: 10,
     marginBottom: 8,
@@ -873,17 +874,17 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   neuroadaptationCardContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#12121A',
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 2,
     borderLeftWidth: 3,
-    borderLeftColor: '#e5e5ea',
+    borderLeftColor: '#2A2A36',
   },
   neuroadaptationCardHeader: {
     marginBottom: 12,
@@ -935,7 +936,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     borderLeftWidth: 3,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#1A1A24',
     marginTop: 12,
   },
   neuroadaptationWhatYouFeelLabelSkeleton: {
@@ -957,4 +958,3 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
 });
-

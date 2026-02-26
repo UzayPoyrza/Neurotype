@@ -1159,14 +1159,14 @@ export default function App() {
 
   return (
     <>
-      <StatusBar barStyle="light-content" backgroundColor="#000000" translucent={false} />
+      <StatusBar barStyle="light-content" backgroundColor="#0A0A0F" translucent={false} />
       <NavigationContainer linking={linking} theme={{
           ...DarkTheme,
           colors: {
             ...DarkTheme.colors,
-            background: '#000000',
-            card: '#000000',
-            border: '#38383A',
+            background: '#0A0A0F',
+            card: '#0A0A0F',
+            border: 'rgba(255,255,255,0.06)',
             primary: '#0A84FF',
           },
         }}>

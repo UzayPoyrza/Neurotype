@@ -1,32 +1,46 @@
-// Neurotype Design System — Dark Scientific Aesthetic
-// Inspired by Apple Health with clinical/research typography
+// Neurotype Design System -- Dark Scientific Aesthetic
+// Clinical research interface with deep navy-black palette
+// NOT generic dark mode -- distinctive scientific depth
+
 export const theme = {
-  // Colors — Dark Mode
+  // Colors -- Scientific Dark Palette
   colors: {
-    primary: '#FFFFFF',
-    secondary: '#98989D',
-    background: '#000000',
-    surface: '#1C1C1E',
-    surfaceElevated: '#2C2C2E',
+    primary: '#F2F2F7',
+    secondary: '#A0A0B0',
+    background: '#0A0A0F',
+    surface: '#12121A',
+    surfaceElevated: '#1A1A24',
+    surfacetertiary: '#222230',
     success: '#30D158',
-    disabled: '#48484A',
-    disabledText: '#636366',
+    disabled: '#2A2A36',
+    disabledText: '#6B6B7B',
     accent: '#0A84FF',
+    accentSecondary: '#4ECDC4', // Scientific teal for data visualization
+    accentWarm: '#FFB347', // Warm amber for data highlights
     text: {
-      primary: '#FFFFFF',
-      secondary: '#98989D',
-      tertiary: '#636366',
-      onPrimary: '#000000',
+      primary: '#F2F2F7',
+      secondary: '#A0A0B0',
+      tertiary: '#6B6B7B',
+      onPrimary: '#0A0A0F',
     },
-    border: '#38383A',
+    border: 'rgba(255, 255, 255, 0.06)',
+    borderMedium: 'rgba(255, 255, 255, 0.10)',
+    borderLight: 'rgba(255, 255, 255, 0.03)',
     shadow: '#000000',
+    // Glassmorphism tokens
+    glass: {
+      background: 'rgba(255, 255, 255, 0.05)',
+      backgroundElevated: 'rgba(255, 255, 255, 0.08)',
+      border: 'rgba(255, 255, 255, 0.10)',
+      borderSubtle: 'rgba(255, 255, 255, 0.06)',
+    },
     // Filter bar specific colors
     filter: {
-      active: '#FFFFFF',
-      inactive: '#1C1C1E',
-      border: '#38383A',
+      active: '#F2F2F7',
+      inactive: '#12121A',
+      border: 'rgba(255, 255, 255, 0.08)',
       badge: '#30D158',
-      separator: '#38383A',
+      separator: 'rgba(255, 255, 255, 0.06)',
     },
     // Category specific colors for module badges
     category: {
@@ -62,6 +76,51 @@ export const theme = {
       medium: '500' as const,
       semibold: '600' as const,
       bold: '700' as const,
+    },
+  },
+
+  // Scientific Typography -- clinical/research-grade type styles
+  scientific: {
+    // Uppercase, tracked, small -- for data labels like "SESSIONS", "AVG REDUCTION"
+    dataLabel: {
+      fontSize: 11,
+      fontWeight: '600' as const,
+      color: '#6B6B7B',
+      textTransform: 'uppercase' as const,
+      letterSpacing: 1.2,
+      fontFamily: 'System',
+    },
+    // Tabular numbers, bold -- for measurement values like "4.2", "87%"
+    measurementValue: {
+      fontSize: 28,
+      fontWeight: '700' as const,
+      color: '#F2F2F7',
+      fontFamily: 'System',
+      fontVariant: ['tabular-nums' as const],
+    },
+    // Medium weight, slightly tracked -- for section headers like "Technique Effectiveness"
+    sectionHeader: {
+      fontSize: 13,
+      fontWeight: '500' as const,
+      color: '#A0A0B0',
+      letterSpacing: 0.5,
+      fontFamily: 'System',
+    },
+    // Small mono-style for timestamps, IDs
+    mono: {
+      fontSize: 12,
+      fontWeight: '400' as const,
+      color: '#6B6B7B',
+      letterSpacing: 0.3,
+      fontFamily: 'System',
+    },
+    // Inline stat -- smaller bold number used in rows
+    inlineStat: {
+      fontSize: 17,
+      fontWeight: '600' as const,
+      color: '#F2F2F7',
+      fontFamily: 'System',
+      fontVariant: ['tabular-nums' as const],
     },
   },
 
@@ -101,20 +160,20 @@ export const theme = {
     xxl: 22,
   },
 
-  // Shadows — subtle on dark
+  // Shadows -- deeper on scientific dark
   shadows: {
     small: {
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.3,
-      shadowRadius: 2,
+      shadowOpacity: 0.4,
+      shadowRadius: 3,
       elevation: 2,
     },
     medium: {
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 8,
+      shadowOpacity: 0.5,
+      shadowRadius: 12,
       elevation: 4,
     },
   },
@@ -123,7 +182,7 @@ export const theme = {
   common: {
     container: {
       flex: 1,
-      backgroundColor: '#000000',
+      backgroundColor: '#0A0A0F',
     },
     content: {
       paddingHorizontal: 20,
@@ -131,18 +190,19 @@ export const theme = {
       paddingBottom: 120,
     },
     card: {
-      backgroundColor: '#1C1C1E',
+      backgroundColor: '#12121A',
       borderRadius: 14,
       padding: 16,
-      borderWidth: 0,
-      borderColor: 'transparent',
+      borderWidth: 1,
+      borderColor: 'rgba(255, 255, 255, 0.06)',
     },
     inputField: {
-      backgroundColor: '#1C1C1E',
+      backgroundColor: '#12121A',
       borderRadius: 12,
       paddingHorizontal: 16,
       paddingVertical: 12,
-      borderWidth: 0,
+      borderWidth: 1,
+      borderColor: 'rgba(255, 255, 255, 0.06)',
     },
     button: {
       backgroundColor: '#0A84FF',
@@ -162,28 +222,28 @@ export const theme = {
     title: {
       fontSize: 34,
       fontWeight: '700' as const,
-      color: '#FFFFFF',
+      color: '#F2F2F7',
       fontFamily: 'System',
     },
     subtitle: {
       fontSize: 17,
       fontWeight: '400' as const,
-      color: '#98989D',
+      color: '#A0A0B0',
       fontFamily: 'System',
     },
     bodyText: {
       fontSize: 15,
       fontWeight: '400' as const,
-      color: '#FFFFFF',
+      color: '#F2F2F7',
       fontFamily: 'System',
     },
   },
 
-  // Apple Health Dark — Scientific variant
+  // Apple Health Dark -- Scientific variant
   health: {
     container: {
       flex: 1,
-      backgroundColor: '#000000',
+      backgroundColor: '#0A0A0F',
     },
     scrollView: {
       flex: 1,
@@ -194,10 +254,12 @@ export const theme = {
       paddingBottom: 120,
     },
     card: {
-      backgroundColor: '#1C1C1E',
+      backgroundColor: '#12121A',
       borderRadius: 14,
       marginHorizontal: 20,
       marginBottom: 12,
+      borderWidth: 1,
+      borderColor: 'rgba(255, 255, 255, 0.06)',
     },
     cardPadding: {
       padding: 16,
@@ -208,19 +270,19 @@ export const theme = {
       paddingTop: 16,
       paddingBottom: 12,
       borderBottomWidth: 0.5,
-      borderBottomColor: '#38383A',
+      borderBottomColor: 'rgba(255, 255, 255, 0.08)',
       marginBottom: 12,
     },
     cardTitle: {
       fontSize: 13,
       fontWeight: '600' as const,
-      color: '#98989D',
+      color: '#6B6B7B',
       textTransform: 'uppercase' as const,
       letterSpacing: 0.8,
     },
     cardSubtitle: {
       fontSize: 15,
-      color: '#636366',
+      color: '#6B6B7B',
       fontWeight: '400' as const,
       marginBottom: 12,
     },
@@ -232,17 +294,17 @@ export const theme = {
     title: {
       fontSize: 34,
       fontWeight: 'bold' as const,
-      color: '#FFFFFF',
+      color: '#F2F2F7',
       marginBottom: 4,
     },
     dateText: {
       fontSize: 17,
-      color: '#98989D',
+      color: '#A0A0B0',
       fontWeight: '400' as const,
     },
     subtitle: {
       fontSize: 17,
-      color: '#98989D',
+      color: '#A0A0B0',
       fontWeight: '400' as const,
     },
     button: {
@@ -259,24 +321,27 @@ export const theme = {
       color: '#ffffff',
     },
     secondaryButton: {
-      backgroundColor: '#2C2C2E',
+      backgroundColor: '#1A1A24',
       borderRadius: 12,
       paddingVertical: 12,
       paddingHorizontal: 24,
       alignItems: 'center' as const,
       justifyContent: 'center' as const,
+      borderWidth: 1,
+      borderColor: 'rgba(255, 255, 255, 0.06)',
     },
     secondaryButtonText: {
       fontSize: 17,
       fontWeight: '600' as const,
-      color: '#FFFFFF',
+      color: '#F2F2F7',
     },
     inputField: {
-      backgroundColor: '#1C1C1E',
+      backgroundColor: '#12121A',
       borderRadius: 12,
       paddingHorizontal: 12,
       paddingVertical: 8,
-      borderWidth: 0,
+      borderWidth: 1,
+      borderColor: 'rgba(255, 255, 255, 0.06)',
     },
     inputFieldFocused: {
       borderWidth: 1,
@@ -285,13 +350,13 @@ export const theme = {
     bodyText: {
       fontSize: 17,
       fontWeight: '400' as const,
-      color: '#FFFFFF',
+      color: '#F2F2F7',
       lineHeight: 22,
     },
     captionText: {
       fontSize: 13,
       fontWeight: '400' as const,
-      color: '#636366',
+      color: '#6B6B7B',
     },
     bottomSpacing: {
       height: 120,

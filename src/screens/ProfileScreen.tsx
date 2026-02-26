@@ -4,7 +4,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import Svg, { Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useStore, prerenderedModuleBackgrounds, createSubtleBackground } from '../store/useStore';
+import { useStore, prerenderedModuleBackgrounds, createSubtleBackground, createDarkIconBackground } from '../store/useStore';
 import { theme } from '../styles/theme';
 import { SubscriptionBadge } from '../components/SubscriptionBadge';
 import { mentalHealthModules } from '../data/modules';
@@ -848,14 +848,14 @@ export const ProfileScreen: React.FC = () => {
             {/* Outer gear */}
             <Path
               d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
-              stroke="#000000"
+              stroke="#98989D"
               strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
             <Path
               d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z"
-              stroke="#000000"
+              stroke="#98989D"
               strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -925,7 +925,7 @@ export const ProfileScreen: React.FC = () => {
               <View style={styles.cardHeaderTop}>
                 <View style={styles.cardTitleContainer}>
                   <View style={styles.cardTitleIconWrapper}>
-                    <GiftIcon size={23} color="#000000" />
+                    <GiftIcon size={23} color="#98989D" />
                   </View>
                   <View style={styles.cardTitleTextWrapper}>
                     <Text style={styles.cardTitle}>Share & Earn</Text>
@@ -1005,7 +1005,7 @@ export const ProfileScreen: React.FC = () => {
             <View style={styles.cardHeaderTop}>
               <View style={styles.cardTitleContainer}>
                 <View style={styles.cardTitleIconWrapper}>
-                  <ActivityHistoryIcon size={20} color="#000000" />
+                  <ActivityHistoryIcon size={20} color="#98989D" />
                 </View>
                 <View style={styles.cardTitleTextWrapper}>
                   <Text style={styles.cardTitle}>Activity History</Text>
@@ -1026,7 +1026,9 @@ export const ProfileScreen: React.FC = () => {
               </View>
             ) : recentActivity.length === 0 ? (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyStateEmoji}>🧘‍♀️</Text>
+                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#2C2C2E', marginBottom: 16, justifyContent: 'center', alignItems: 'center' }}>
+                  <Text style={{ fontSize: 20, color: '#636366', fontWeight: '300' }}>--</Text>
+                </View>
                 <Text style={styles.emptyStateTitle}>No sessions yet</Text>
                 <Text style={styles.emptyStateSubtitle}>
                   Start your meditation journey today! Your completed sessions will appear here.
@@ -1058,7 +1060,7 @@ export const ProfileScreen: React.FC = () => {
                       const moduleTitle = moduleData?.title;
                       const moduleColor = moduleData?.color || '#007AFF';
                       const moduleInitial = moduleTitle?.trim().charAt(0)?.toUpperCase() || 'M';
-                      const iconBackground = createSubtleBackground(moduleColor);
+                      const iconBackground = createDarkIconBackground(moduleColor);
                       const formattedDate = formatSessionDate(activityItem.date);
                       const sessionTitle = sessionData?.title || 'Meditation Session';
                       const truncatedTitle = truncateText(sessionTitle, 28);
@@ -1120,12 +1122,12 @@ export const ProfileScreen: React.FC = () => {
                     <>
                       <LinearGradient
                         pointerEvents="none"
-                        colors={['rgba(248,249,250,1)', 'rgba(248,249,250,0)']}
+                        colors={['rgba(28,28,30,1)', 'rgba(28,28,30,0)']}
                         style={styles.scrollFadeTop}
                       />
                       <LinearGradient
                         pointerEvents="none"
-                        colors={['rgba(248,249,250,0)', 'rgba(248,249,250,1)']}
+                        colors={['rgba(28,28,30,0)', 'rgba(28,28,30,1)']}
                         style={styles.scrollFadeBottom}
                       />
                       <View pointerEvents="none" style={styles.scrollHintContainer}>
@@ -1152,7 +1154,7 @@ export const ProfileScreen: React.FC = () => {
           <View style={styles.cardHeaderTop}>
             <View style={styles.cardTitleContainer}>
               <View style={styles.cardTitleIconWrapper}>
-                <ChatWritingIcon size={22} color="#000000" />
+                <ChatWritingIcon size={22} color="#98989D" />
               </View>
               <View style={styles.cardTitleTextWrapper}>
                 <Text style={styles.cardTitle}>Emotional Feedback History</Text>
@@ -1183,7 +1185,9 @@ export const ProfileScreen: React.FC = () => {
               </View>
             ) : sortedFeedbackHistory.length === 0 ? (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyStateEmoji}>🎯</Text>
+                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#2C2C2E', marginBottom: 16, justifyContent: 'center', alignItems: 'center' }}>
+                  <Text style={{ fontSize: 20, color: '#636366', fontWeight: '300' }}>--</Text>
+                </View>
                 <Text style={styles.emptyStateTitle}>No feedback yet</Text>
                 <Text style={styles.emptyStateSubtitle}>
                   Share how each meditation makes you feel to see it here.
@@ -1273,12 +1277,12 @@ export const ProfileScreen: React.FC = () => {
                     <>
                       <LinearGradient
                         pointerEvents="none"
-                        colors={['rgba(248,249,250,1)', 'rgba(248,249,250,0)']}
+                        colors={['rgba(28,28,30,1)', 'rgba(28,28,30,0)']}
                         style={styles.scrollFadeTop}
                       />
                       <LinearGradient
                         pointerEvents="none"
-                        colors={['rgba(248,249,250,0)', 'rgba(248,249,250,1)']}
+                        colors={['rgba(28,28,30,0)', 'rgba(28,28,30,1)']}
                         style={styles.scrollFadeBottom}
                       />
                       <View pointerEvents="none" style={styles.scrollHintContainer}>
@@ -1335,7 +1339,7 @@ export const ProfileScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  ...theme.health, // Use global Apple Health styles
+  ...theme.health,
   stickyHeader: {
     paddingHorizontal: 20,
     paddingTop: 60,
@@ -1350,20 +1354,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   scrollContent: {
-    paddingTop: 120, // Account for shorter sticky header height (same as other pages)
+    paddingTop: 120,
   },
   settingsButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
   },
   headerTop: {
     flexDirection: 'row',
@@ -1371,17 +1370,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   profileHeaderCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    marginHorizontal: 16, // Reduced from 20 to give more space
+    backgroundColor: '#1C1C1E',
+    borderRadius: 14,
+    marginHorizontal: 16,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderWidth: 0,
   },
   profileHeaderContent: {
     flexDirection: 'row',
@@ -1389,35 +1382,34 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 20,
     paddingLeft: 20,
-    paddingRight: 8, // Minimal right padding to give badge maximum room
+    paddingRight: 8,
   },
   profilePictureWrapper: {
-    marginRight: 12, // Reduced from 20 to give more space for badge
+    marginRight: 12,
   },
   profileInitialContainer: {
     width: 110,
     height: 110,
     borderRadius: 24,
-    borderWidth: theme.borders.width.thick,
+    borderWidth: 1.5,
     justifyContent: 'center',
     alignItems: 'center',
-    ...theme.shadows.medium,
-    borderColor: theme.colors.primary,
-    backgroundColor: '#f2f2f7',
+    borderColor: '#48484A',
+    backgroundColor: '#2C2C2E',
   },
   profileInitialText: {
     fontSize: 48,
     fontWeight: '700',
-    color: theme.colors.primary,
+    color: '#FFFFFF',
   },
   profileInfo: {
     flex: 1,
-    minWidth: 0, // Allow flex item to shrink below content size if needed
-    paddingRight: 0, // No right padding to maximize space for badge
-    paddingLeft: 8, // Move content to the right
+    minWidth: 0,
+    paddingRight: 0,
+    paddingLeft: 8,
   },
   statsSection: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
   },
   mergedSectionTop: {
     paddingTop: 0,
@@ -1432,35 +1424,31 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   profileName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000000',
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#FFFFFF',
     marginBottom: 8,
+    letterSpacing: -0.3,
   },
   subscriptionContainer: {
     marginBottom: 5,
-    marginLeft: -16, // Adjusted to account for profileInfo padding
+    marginLeft: -16,
     marginRight: 0,
-    alignSelf: 'flex-start', // Shrink-wrap to content width
+    alignSelf: 'flex-start',
   },
   subscriptionContainerPremium: {
-    marginTop: 5, // Push premium badge down without affecting title
-    marginBottom: 5, // Keep original bottom margin
-    marginLeft: -25, // Move premium badge more to the left
+    marginTop: 5,
+    marginBottom: 5,
+    marginLeft: -25,
     marginRight: 0,
   },
   upgradeButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     borderRadius: 10,
     paddingHorizontal: 20,
     paddingVertical: 10,
     marginTop: 8,
     alignSelf: 'flex-start',
-    shadowColor: '#007AFF',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2,
   },
   upgradeButtonText: {
     fontSize: 15,
@@ -1474,13 +1462,13 @@ const styles = StyleSheet.create({
   },
   cancelMessageText: {
     fontSize: 13,
-    color: '#8e8e93',
+    color: '#636366',
     lineHeight: 18,
     fontStyle: 'italic',
   },
   profileSubtitle: {
     fontSize: 15,
-    color: '#8e8e93',
+    color: '#636366',
     fontWeight: '400',
     lineHeight: 20,
   },
@@ -1516,7 +1504,7 @@ const styles = StyleSheet.create({
   },
   shareSubtitle: {
     fontSize: 15,
-    color: '#8e8e93',
+    color: '#636366',
     fontWeight: '400',
     marginBottom: 0,
     textAlign: 'left',
@@ -1533,7 +1521,7 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -1546,34 +1534,37 @@ const styles = StyleSheet.create({
   stepText: {
     flex: 1,
     fontSize: 15,
-    color: '#000000',
+    color: '#FFFFFF',
     fontWeight: '400',
   },
   referralSection: {
     marginBottom: 16,
   },
   referralLabel: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#000000',
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#98989D',
     marginBottom: 8,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.6,
   },
   referralLinkContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#2C2C2E',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
   referralLink: {
     flex: 1,
-    fontSize: 15,
-    color: '#8e8e93',
+    fontSize: 14,
+    color: '#636366',
     fontWeight: '400',
+    fontFamily: 'Courier',
   },
   copyButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -1589,7 +1580,7 @@ const styles = StyleSheet.create({
   },
   shareButton: {
     flex: 1,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     borderRadius: 12,
     paddingVertical: 10,
     alignItems: 'center',
@@ -1602,7 +1593,7 @@ const styles = StyleSheet.create({
   },
   inviteButton: {
     flex: 1,
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     paddingVertical: 10,
     alignItems: 'center',
@@ -1611,7 +1602,7 @@ const styles = StyleSheet.create({
   inviteButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#000000',
+    color: '#FFFFFF',
   },
   statsContent: {
     flexDirection: 'row',
@@ -1627,19 +1618,21 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#000000',
+    color: '#FFFFFF',
     marginBottom: 2,
   },
   statLabel: {
-    fontSize: 13,
-    color: '#8e8e93',
-    fontWeight: '400',
+    fontSize: 11,
+    color: '#636366',
+    fontWeight: '500',
     textAlign: 'center',
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.4,
   },
   statDivider: {
-    width: 1,
+    width: 0.5,
     height: 32,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#48484A',
     marginHorizontal: 20,
   },
   activityContent: {
@@ -1649,7 +1642,7 @@ const styles = StyleSheet.create({
   },
   activitySubtitle: {
     fontSize: 15,
-    color: '#8e8e93',
+    color: '#636366',
     fontWeight: '400',
     marginTop: 0,
     marginBottom: 0,
@@ -1662,22 +1655,23 @@ const styles = StyleSheet.create({
   emptyStateEmoji: {
     fontSize: 48,
     marginBottom: 16,
+    opacity: 0,
   },
   emptyStateTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#000000',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   emptyStateSubtitle: {
     fontSize: 15,
-    color: '#8e8e93',
+    color: '#636366',
     fontWeight: '400',
     textAlign: 'center',
     lineHeight: 20,
   },
   activityList: {
-    gap: 12,
+    gap: 8,
   },
   activityListScrollableContent: {
     paddingBottom: 36,
@@ -1696,20 +1690,19 @@ const styles = StyleSheet.create({
   activityItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
+    backgroundColor: '#2C2C2E',
+    borderRadius: 10,
     padding: 12,
     overflow: 'hidden',
   },
   activityIcon: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
-    borderWidth: 1,
-    borderColor: '#ffffff',
+    borderWidth: 0,
   },
   activityIconText: {
     fontSize: 16,
@@ -1727,11 +1720,11 @@ const styles = StyleSheet.create({
   activityTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#000000',
+    color: '#FFFFFF',
   },
   activityDate: {
     fontSize: 13,
-    color: '#8e8e93',
+    color: '#636366',
     fontWeight: '400',
     marginTop: 2,
   },
@@ -1742,7 +1735,7 @@ const styles = StyleSheet.create({
   },
   activityMeta: {
     fontSize: 13,
-    color: '#8e8e93',
+    color: '#636366',
     fontWeight: '400',
   },
   durationBadge: {
@@ -1776,7 +1769,7 @@ const styles = StyleSheet.create({
   },
   deleteFeedbackButtonText: {
     fontSize: 18,
-    color: '#8e8e93',
+    color: '#48484A',
     fontWeight: '600',
   },
   scrollFadeTop: {
@@ -1802,11 +1795,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
   },
   scrollHintText: {
     fontSize: 11,
-    color: '#8e8e93',
+    color: '#636366',
     fontWeight: '500',
   },
   scrollHintTextHidden: {
@@ -1816,7 +1809,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#2C2C2E',
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,
@@ -1824,10 +1817,10 @@ const styles = StyleSheet.create({
   infoButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666666',
+    color: '#636366',
   },
   infoButtonActive: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
   },
   infoButtonTextActive: {
     color: '#ffffff',
@@ -1837,21 +1830,21 @@ const styles = StyleSheet.create({
     bottom: 90,
     left: 20,
     right: 20,
-    backgroundColor: '#000000',
-    borderRadius: 12,
+    backgroundColor: '#2C2C2E',
+    borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 16,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
     elevation: 8,
     zIndex: 1000,
   },
   toastText: {
-    color: '#ffffff',
+    color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '600',
   },

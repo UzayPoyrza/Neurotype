@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
 import { Easing } from 'react-native-reanimated';
@@ -1159,8 +1159,17 @@ export default function App() {
 
   return (
     <>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" translucent={false} />
-      <NavigationContainer linking={linking}>
+      <StatusBar barStyle="light-content" backgroundColor="#000000" translucent={false} />
+      <NavigationContainer linking={linking} theme={{
+          ...DarkTheme,
+          colors: {
+            ...DarkTheme.colors,
+            background: '#000000',
+            card: '#000000',
+            border: '#38383A',
+            primary: '#0A84FF',
+          },
+        }}>
         <Tab.Navigator
           tabBar={props => <AnimatedTabBar {...props} />}
           screenOptions={{

@@ -105,8 +105,8 @@ export const AnimatedTabBar: React.FC<BottomTabBarProps> = ({
           });
         };
 
-        const iconColor = isFocused ? '#007AFF' : '#5a5a5a';
-        const textColor = isFocused ? '#000000' : '#5a5a5a';
+        const iconColor = isFocused ? '#0A84FF' : '#636366';
+        const textColor = isFocused ? '#0A84FF' : '#636366';
 
         return (
           <TouchableOpacity
@@ -140,17 +140,16 @@ export const AnimatedTabBar: React.FC<BottomTabBarProps> = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    //borderTopWidth: 1,
-    //borderTopColor: '#e0e0e0', // Subtle border
-    paddingBottom: 20, // Increased for better spacing
+    borderTopWidth: 0.5,
+    borderTopColor: '#38383A',
+    paddingBottom: 20,
     paddingTop: 8,
-    height: 85, // Slightly taller for better proportions
+    height: 85,
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
     elevation: 0,
-    shadowOpacity: 0,
     zIndex: 1000,
   },
   tab: {
@@ -163,7 +162,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   label: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '500',
     textAlign: 'center',
   },

@@ -15,18 +15,34 @@ const getCategoryFromModuleId = (moduleId: string | undefined): 'disorder' | 'we
 
 // Helper function to create subtle background colors from module colors
 export const createSubtleBackground = (moduleColor: string): string => {
-  // Convert hex to RGB
+  // Dark mode: create a very subtle dark tint from the module color
   const hex = moduleColor.replace('#', '');
   const r = parseInt(hex.substr(0, 2), 16);
   const g = parseInt(hex.substr(2, 2), 16);
   const b = parseInt(hex.substr(4, 2), 16);
-  
-  // Create a more noticeable tint by mixing with white (90% white, 10% module color)
-  // This makes blues and purples more visible while keeping it subtle
-  const mixedR = Math.round(255 * 0.90 + r * 0.10);
-  const mixedG = Math.round(255 * 0.90 + g * 0.10);
-  const mixedB = Math.round(255 * 0.90 + b * 0.10);
-  
+
+  // Mix with near-black (95% black, 5% module color) for screen backgrounds
+  // For icon backgrounds, use the raw module color at component level
+  const mixedR = Math.round(0 * 0.95 + r * 0.05);
+  const mixedG = Math.round(0 * 0.95 + g * 0.05);
+  const mixedB = Math.round(0 * 0.95 + b * 0.05);
+
+  return `rgb(${mixedR}, ${mixedG}, ${mixedB})`;
+};
+
+// Create a muted dark tint for icon backgrounds on dark cards
+export const createDarkIconBackground = (moduleColor: string): string => {
+  const hex = moduleColor.replace('#', '');
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+
+  // 80% dark base (#3A3A3C) + 20% module color
+  const baseR = 58, baseG = 58, baseB = 60;
+  const mixedR = Math.round(baseR * 0.80 + r * 0.20);
+  const mixedG = Math.round(baseG * 0.80 + g * 0.20);
+  const mixedB = Math.round(baseB * 0.80 + b * 0.20);
+
   return `rgb(${mixedR}, ${mixedG}, ${mixedB})`;
 };
 
@@ -196,7 +212,7 @@ const buildInitialStoreData = () => {
     activeSession: null,
     activeModuleId: null,
     recentModuleIds: [] as string[],
-    globalBackgroundColor: '#f2f2f7',
+    globalBackgroundColor: '#000000',
     currentScreen: 'today' as const,
     todayModuleId: 'anxiety',
     likedSessionIds: [] as string[],

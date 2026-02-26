@@ -1203,7 +1203,7 @@ export const TodayScreen: React.FC = () => {
               <View style={styles.cardHeaderTop}>
                 <View style={styles.cardTitleContainer}>
                   <View style={styles.cardTitleIconWrapper}>
-                    <MeditationIcon size={24} color="#000000" />
+                    <MeditationIcon size={24} color="#98989D" />
                   </View>
                   <View style={styles.cardTitleTextWrapper}>
                     <Text style={styles.cardTitle}>Today's Focus</Text>
@@ -1244,7 +1244,7 @@ export const TodayScreen: React.FC = () => {
                   ]}
                 >
                   <Text style={styles.focusSubtitle}>
-                    {isTodayCompleted ? 'You are done for today 🎉' : 'Complete one of the meditations below.'}
+                    {isTodayCompleted ? 'Session complete for today.' : 'Complete one of the meditations below.'}
                   </Text>
                 </Animated.View>
               </View>
@@ -1266,7 +1266,7 @@ export const TodayScreen: React.FC = () => {
               >
                 <TouchableOpacity
                   style={[styles.recommendedSession, { 
-                    backgroundColor: (todayCompleted || isRecommendedCompleted) ? 'rgba(0, 0, 0, 0.02)' : '#ffffff'
+                    backgroundColor: (todayCompleted || isRecommendedCompleted) ? '#1C1C1E' : '#2C2C2E'
                   }]}
                   onPress={() => handleSessionSelect(recommendedSession)}
                   onPressIn={handleHeroCardPressIn}
@@ -1302,7 +1302,7 @@ export const TodayScreen: React.FC = () => {
               </Animated.View>
             ) : (
               <View style={styles.recommendedSessionContainer}>
-                <View style={[styles.recommendedSession, { backgroundColor: '#f2f2f7' }]}>
+                <View style={[styles.recommendedSession, { backgroundColor: '#1C1C1E' }]}>
                   <Text style={styles.sessionTitle}>No recommendations available</Text>
                 </View>
               </View>
@@ -1314,7 +1314,7 @@ export const TodayScreen: React.FC = () => {
               <View style={styles.cardHeaderTop}>
                 <View style={styles.cardTitleContainer}>
                   <View style={styles.cardTitleIconWrapper}>
-                    <LightbulbIcon size={24} color="#000000" />
+                    <LightbulbIcon size={24} color="#98989D" />
                   </View>
                   <View style={styles.cardTitleTextWrapper}>
                     <Text style={styles.cardTitle}>Other Options</Text>
@@ -1341,7 +1341,7 @@ export const TodayScreen: React.FC = () => {
                       styles.alternativeSession,
                       isCompleted && {
                         ...styles.alternativeSessionCompleted,
-                        backgroundColor: '#f2f2f7'
+                        backgroundColor: '#1C1C1E'
                       }
                     ]}
                     onPress={() => handleSessionSelect(session)}
@@ -1418,7 +1418,7 @@ export const TodayScreen: React.FC = () => {
             <View style={styles.cardHeaderTop}>
               <View style={styles.cardTitleContainer}>
                 <View style={styles.cardTitleIconWrapper}>
-                  <PathIcon size={24} color="#000000" />
+                  <PathIcon size={24} color="#98989D" />
                 </View>
                 <View style={styles.cardTitleTextWrapper}>
                   <Text style={styles.cardTitle}>Progress Path</Text>
@@ -1664,7 +1664,7 @@ export const TodayScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  ...theme.health, // Use global Apple Health styles
+  ...theme.health,
   stickyHeader: {
     paddingHorizontal: 20,
     paddingTop: 60,
@@ -1679,15 +1679,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   scrollContent: {
-    paddingTop: 120, // Account for shorter sticky header height
+    paddingTop: 120,
   },
   moduleButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#2C2C2E',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: 10,
   },
   moduleIndicator: {
     width: 8,
@@ -1698,19 +1698,20 @@ const styles = StyleSheet.create({
   moduleButtonText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#000000',
+    color: '#FFFFFF',
   },
   recommendedBadge: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
     marginLeft: 8,
   },
   recommendedBadgeText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: '#ffffff',
+    letterSpacing: 0.3,
   },
   mergedSectionTop: {
     paddingTop: 0,
@@ -1740,7 +1741,7 @@ const styles = StyleSheet.create({
   },
   focusSubtitleContainer: {
     position: 'relative',
-    height: 22, // Fixed height to prevent layout shift
+    height: 22,
     marginBottom: 0,
     overflow: 'hidden',
   },
@@ -1752,25 +1753,24 @@ const styles = StyleSheet.create({
   },
   focusSubtitle: {
     fontSize: 15,
-    color: '#8e8e93',
+    color: '#636366',
     fontWeight: '400',
     marginBottom: 0,
   },
   recommendedSessionContainer: {
     paddingHorizontal: 16,
     paddingBottom: 12,
-    height: 116, // Fixed height to prevent layout shift during loading
+    height: 116,
   },
   recommendedSession: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderWidth: 0,
     position: 'relative',
-    minHeight: 104, // Standardized height to match skeleton
+    minHeight: 104,
   },
   sessionContent: {
     flex: 1,
@@ -1779,12 +1779,12 @@ const styles = StyleSheet.create({
   sessionTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#000000',
+    color: '#FFFFFF',
     marginBottom: 4,
   },
   sessionSubtitle: {
-    fontSize: 15,
-    color: '#8e8e93',
+    fontSize: 14,
+    color: '#98989D',
     fontWeight: '400',
     marginBottom: 8,
     fontStyle: 'italic',
@@ -1796,7 +1796,7 @@ const styles = StyleSheet.create({
   },
   sessionMetaText: {
     fontSize: 13,
-    color: '#8e8e93',
+    color: '#636366',
     fontWeight: '400',
   },
   mergedSectionHours: {
@@ -1813,12 +1813,13 @@ const styles = StyleSheet.create({
   },
   hoursRemainingText: {
     fontSize: 12,
-    color: '#8e8e93',
+    color: '#636366',
     fontWeight: '400',
     letterSpacing: -0.1,
   },
   hoursRemainingTextBold: {
     fontWeight: '700',
+    color: '#98989D',
   },
   hoursRemainingTextRow: {
     flexDirection: 'row',
@@ -1839,7 +1840,7 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
   sessionCompletedButton: {
-    backgroundColor: '#34c759',
+    backgroundColor: '#30D158',
   },
   sessionCompletedCheckmark: {
     fontSize: 18,
@@ -1849,7 +1850,7 @@ const styles = StyleSheet.create({
   alternativeSessionsList: {
     paddingTop: 0,
     paddingBottom: 12,
-    height: 228, // Fixed height for 3 cards to prevent layout shift during loading
+    height: 228,
   },
   alternativeSession: {
     flexDirection: 'row',
@@ -1858,14 +1859,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginHorizontal: 16,
     marginVertical: 4,
-    borderRadius: 12,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    minHeight: 64, // Standardized height to match recommendedSession proportions
+    borderRadius: 10,
+    backgroundColor: '#2C2C2E',
+    borderWidth: 0,
+    minHeight: 64,
   },
   alternativeSessionCompleted: {
-    borderColor: 'transparent',
+    backgroundColor: '#1C1C1E',
   },
   alternativeSessionContent: {
     flex: 1,
@@ -1874,23 +1874,23 @@ const styles = StyleSheet.create({
   alternativeSessionTitle: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#000000',
+    color: '#FFFFFF',
     marginBottom: 2,
   },
   alternativeSessionTitleCompleted: {
-    color: '#1d1d1f',
+    color: '#98989D',
     opacity: 0.8,
   },
   alternativeSessionMeta: {
     fontSize: 13,
-    color: '#8e8e93',
+    color: '#636366',
     fontWeight: '400',
   },
   alternativeSessionPlayButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#3A3A3C',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1900,7 +1900,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   alternativeSessionCompletedButton: {
-    backgroundColor: '#34c759',
+    backgroundColor: '#30D158',
   },
   alternativeSessionCompletedCheckmark: {
     fontSize: 16,
@@ -1909,7 +1909,7 @@ const styles = StyleSheet.create({
   },
   alternativeSessionPlayTextUncompleted: {
     fontSize: 12,
-    color: '#000000',
+    color: '#FFFFFF',
     fontWeight: 'bold',
     marginLeft: 1,
   },
@@ -1919,17 +1919,11 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   progressPreviewCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
+    backgroundColor: '#2C2C2E',
+    borderRadius: 14,
     paddingHorizontal: 18,
     paddingVertical: 22,
-    borderWidth: 1,
-    borderColor: '#e5e5ea',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 3,
+    borderWidth: 0,
   },
   progressPreviewHeader: {
     flexDirection: 'row',
@@ -1939,15 +1933,10 @@ const styles = StyleSheet.create({
   progressPreviewBadge: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 3,
   },
   progressPreviewHeaderText: {
     flex: 1,
@@ -1955,19 +1944,18 @@ const styles = StyleSheet.create({
   progressPreviewTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#000000',
+    color: '#FFFFFF',
     marginBottom: 4,
   },
   progressPreviewSubtitle: {
     fontSize: 14,
-    color: '#8e8e93',
+    color: '#636366',
   },
   progressPreviewTimeline: {
     flexDirection: 'row',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#f2f2f7',
-    backgroundColor: '#f9f9fb',
+    borderRadius: 10,
+    borderWidth: 0,
+    backgroundColor: '#3A3A3C',
     paddingHorizontal: 14,
     paddingVertical: 18,
     marginBottom: 16,
@@ -1976,10 +1964,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   progressPreviewSectionLabel: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '600',
-    color: '#1d1d1f',
+    color: '#98989D',
     marginBottom: 8,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.6,
   },
   progressPreviewItem: {
     flexDirection: 'row',
@@ -1990,7 +1980,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#34c759',
+    backgroundColor: '#30D158',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
@@ -2009,11 +1999,11 @@ const styles = StyleSheet.create({
   progressPreviewItemTitle: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#1d1d1f',
+    color: '#FFFFFF',
   },
   progressPreviewItemMeta: {
     fontSize: 12,
-    color: '#8e8e93',
+    color: '#636366',
   },
   progressPreviewLockedState: {
     flexDirection: 'row',
@@ -2021,7 +2011,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   progressPreviewItemIconLocked: {
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#3A3A3C',
     borderWidth: 0,
     width: 36,
     height: 36,
@@ -2029,23 +2019,23 @@ const styles = StyleSheet.create({
   },
   progressPreviewLockedText: {
     fontSize: 12,
-    color: '#8e8e93',
+    color: '#636366',
     lineHeight: 16,
     marginTop: 2,
   },
   progressPreviewDivider: {
-    width: 1,
-    backgroundColor: '#e5e5ea',
+    width: 0.5,
+    backgroundColor: '#48484A',
     marginHorizontal: 12,
     borderRadius: 0.5,
   },
   progressPreviewItemIconUpcoming: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#3A3A3C',
     borderWidth: 1,
-    borderColor: '#d1d1d6',
+    borderColor: '#48484A',
   },
   progressPreviewItemIconUpcomingText: {
-    color: '#1d1d1f',
+    color: '#98989D',
   },
   progressPreviewFooter: {
     flexDirection: 'row',
@@ -2054,7 +2044,7 @@ const styles = StyleSheet.create({
   },
   progressPreviewFooterText: {
     fontSize: 13,
-    color: '#8e8e93',
+    color: '#636366',
     fontStyle: 'italic',
   },
   progressPreviewFooterArrow: {
@@ -2065,8 +2055,8 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 20,
     paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#f2f2f7',
+    borderTopWidth: 0.5,
+    borderTopColor: '#48484A',
   },
   progressPreviewTimelineHeader: {
     flexDirection: 'row',
@@ -2077,7 +2067,7 @@ const styles = StyleSheet.create({
   progressPreviewTimelineLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#1d1d1f',
+    color: '#FFFFFF',
   },
   progressPreviewTimelineProgress: {
     fontSize: 13,
@@ -2087,23 +2077,23 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   progressPreviewTimelineBarTrack: {
-    height: 6,
-    backgroundColor: '#e5e5ea',
-    borderRadius: 3,
+    height: 4,
+    backgroundColor: '#48484A',
+    borderRadius: 2,
     overflow: 'hidden',
   },
   progressPreviewTimelineBarFill: {
     height: '100%',
-    borderRadius: 3,
+    borderRadius: 2,
   },
   progressPreviewTimelineText: {
     fontSize: 12,
-    color: '#8e8e93',
+    color: '#636366',
   },
   bottomSpacing: {
     height: 120,
   },
-  
+
   // Info Button & Box
   infoWrapper: {
     position: 'relative',
@@ -2112,55 +2102,48 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
   },
   infoButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000000',
+    color: '#98989D',
     fontFamily: 'System',
   },
   infoButtonActive: {
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: 'rgba(10, 132, 255, 0.15)',
   },
   infoButtonTextActive: {
-    color: '#007AFF',
+    color: '#0A84FF',
   },
   toastContainer: {
     position: 'absolute',
     bottom: 90,
     left: 20,
     right: 20,
-    backgroundColor: '#000000',
-    borderRadius: 12,
+    backgroundColor: '#2C2C2E',
+    borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 16,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
     elevation: 8,
     zIndex: 1000,
   },
-  toastContent: {
-    // Not needed - styles are on container
-  },
+  toastContent: {},
   toastText: {
-    color: '#ffffff',
+    color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '600',
   },
   toastModuleName: {
     fontWeight: '600',
-    color: '#ffffff',
+    color: '#FFFFFF',
   },
 }); 

@@ -322,7 +322,7 @@ export const ExploreScreen: React.FC = () => {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
+    <View style={[styles.container, { backgroundColor: theme.isDark ? theme.colors.background : globalBackgroundColor }]}>
       {/* Subtle ambient glow - light mode only */}
       {!theme.isDark && (
         <View style={styles.ambientGlow} pointerEvents="none">

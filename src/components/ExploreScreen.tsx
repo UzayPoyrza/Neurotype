@@ -72,7 +72,7 @@ export const ExploreScreen: React.FC<ExploreScreenProps> = ({
   }, []);
 
   return (
-    <View style={[styles.container, { backgroundColor: globalBackgroundColor || theme.colors.background }, style]}>
+    <View style={[styles.container, { backgroundColor: theme.isDark ? theme.colors.background : (globalBackgroundColor || theme.colors.background) }, style]}>
       <ExploreScreenNav
         ref={navRef}
         title={title}

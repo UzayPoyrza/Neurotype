@@ -26,7 +26,7 @@ export const ProgressScreen: React.FC = () => {
   const userId = useUserId();
 
   const todayModuleId = useStore(state => state.todayModuleId);
-  const bgColor = globalBackgroundColor;
+  const bgColor = theme.isDark ? theme.colors.background : globalBackgroundColor;
   const ambientModule = mentalHealthModules.find(m => m.id === todayModuleId) || mentalHealthModules[0];
 
   // Get cache from store

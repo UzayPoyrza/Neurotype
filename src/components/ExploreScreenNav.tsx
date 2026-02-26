@@ -49,7 +49,7 @@ export const ExploreScreenNav = forwardRef<ExploreScreenNavRef, ExploreScreenNav
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const globalBackgroundColorLight = useStore(state => state.globalBackgroundColorLight);
   const darkThemeEnabled = useStore(state => state.darkThemeEnabled);
-  const elevatedBackgroundColor = darkThemeEnabled ? globalBackgroundColor : globalBackgroundColorLight;
+  const elevatedBackgroundColor = darkThemeEnabled ? theme.colors.background : globalBackgroundColorLight;
   const revealTranslateY = useRef(new Animated.Value(0)).current;
   const isAnimating = useRef(false);
   const lastScrollY = useRef(0);

@@ -1,12 +1,13 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Image, Animated, StatusBar } from 'react-native';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface SplashScreenProps {
   onFinish: () => void;
 }
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
+  const theme = useTheme();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -34,8 +35,8 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   return (
     <>
       <StatusBar hidden={true} />
-      <View style={styles.container}>
-        <Animated.View 
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <Animated.View
           style={[
             styles.content,
             {
@@ -45,7 +46,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
         >
           {/* App Icon */}
           <View style={styles.iconContainer}>
-            <Image 
+            <Image
               source={require('../../assets/icon_no_background.png')}
               style={styles.icon}
               resizeMode="contain"
@@ -54,7 +55,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
 
           {/* Text */}
           <View style={styles.textContainer}>
-            <Text style={styles.handwritingText}>
+            <Text style={[styles.handwritingText, { color: theme.colors.text.primary }]}>
               Neurotype
             </Text>
           </View>
@@ -67,7 +68,6 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0A0F',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -94,7 +94,6 @@ const styles = StyleSheet.create({
   handwritingText: {
     fontSize: 48,
     fontWeight: 'bold',
-    color: '#F2F2F7',
     fontFamily: 'System',
     fontStyle: 'normal',
     textAlign: 'center',

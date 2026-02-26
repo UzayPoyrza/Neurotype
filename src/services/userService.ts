@@ -3,7 +3,6 @@
  * Handles user profile and preferences
  */
 
-import { Appearance } from 'react-native';
 import { supabase } from './supabase';
 
 export interface UserProfile {
@@ -124,7 +123,7 @@ export async function getUserPreferences(userId: string): Promise<UserPreference
       user_id: data.user_id,
       reminder_enabled: data.reminder_enabled,
       reminder_time: data.reminder_time || undefined,
-      dark_theme_enabled: data.dark_theme_enabled ?? true,
+      dark_theme_enabled: data.dark_theme_enabled ?? undefined,
     };
   } catch (error) {
     console.error('Error in getUserPreferences:', error);
@@ -218,7 +217,7 @@ export async function createUserProfile(
       try {
         const { error: prefError } = await supabase.from('user_preferences').insert({
           user_id: userId,
-          dark_theme_enabled: Appearance.getColorScheme() !== 'light',
+          // dark_theme_enabled left as NULL — use system preference until user explicitly toggles
         });
         
         if (prefError) {

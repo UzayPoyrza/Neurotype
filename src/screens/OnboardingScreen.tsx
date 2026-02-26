@@ -3,9 +3,9 @@ import { View, Text, StyleSheet, Image, Animated, StatusBar, TouchableOpacity, S
 import { LinearGradient } from 'expo-linear-gradient';
 import * as WebBrowser from 'expo-web-browser';
 import Svg, { Path } from 'react-native-svg';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
+import type { Theme } from '../styles/theme';
 import { mentalHealthModules, MentalHealthModule } from '../data/modules';
-import { prerenderedModuleBackgrounds } from '../store/useStore';
 import { useStore } from '../store/useStore';
 import { AnimatedFloatingButton } from '../components/AnimatedFloatingButton';
 import { ModuleGridModal } from '../components/ModuleGridModal';
@@ -24,11 +24,15 @@ interface OnboardingScreenProps {
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Feature Icon Component with Apple style
-const FeatureIcon: React.FC<{ icon: string }> = ({ icon }) => (
-  <View style={styles.featureIconContainer}>
-    <Text style={styles.iconText}>{icon}</Text>
-  </View>
-);
+const FeatureIcon: React.FC<{ icon: string }> = ({ icon }) => {
+  const theme = useTheme();
+  const styles = createStyles(theme);
+  return (
+    <View style={styles.featureIconContainer}>
+      <Text style={styles.iconText}>{icon}</Text>
+    </View>
+  );
+};
 
 const FeaturePoint: React.FC<{
   icon: string;
@@ -37,6 +41,8 @@ const FeaturePoint: React.FC<{
   delay: number;
   isActive?: boolean;
 }> = ({ icon, title, description, delay, isActive = true }) => {
+  const theme = useTheme();
+  const styles = createStyles(theme);
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(20)).current;
 
@@ -80,6 +86,8 @@ const FeaturePoint: React.FC<{
 
 // Welcome Page Component
 const WelcomePage: React.FC = () => {
+  const theme = useTheme();
+  const styles = createStyles(theme);
   const iconOpacity = useRef(new Animated.Value(0)).current;
   const iconScale = useRef(new Animated.Value(0.8)).current;
   const titleOpacity = useRef(new Animated.Value(0)).current;
@@ -177,11 +185,13 @@ const WelcomePage: React.FC = () => {
 };
 
 // Select Module Page Component
-const SelectModulePage: React.FC<{ 
+const SelectModulePage: React.FC<{
   selectedModule: string | null;
   onSelectModule: (moduleId: string) => void;
   isActive: boolean;
 }> = ({ selectedModule, onSelectModule, isActive }) => {
+  const theme = useTheme();
+  const styles = createStyles(theme);
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleTranslateY = useRef(new Animated.Value(20)).current;
   const hasAnimated = useRef(false);
@@ -337,7 +347,9 @@ const SelectModulePage: React.FC<{
             pointerEvents="none"
           >
             <LinearGradient
-              colors={['rgba(10, 10, 15, 0)', 'rgba(10, 10, 15, 0.4)', 'rgba(10, 10, 15, 0.8)', 'rgba(10, 10, 15, 1)']}
+              colors={theme.isDark
+                ? ['rgba(10, 10, 15, 0)', 'rgba(10, 10, 15, 0.4)', 'rgba(10, 10, 15, 0.8)', 'rgba(10, 10, 15, 1)']
+                : ['rgba(242, 241, 246, 0)', 'rgba(242, 241, 246, 0.4)', 'rgba(242, 241, 246, 0.8)', 'rgba(242, 241, 246, 1)']}
               locations={[0, 0.3, 0.7, 1]}
               style={styles.scrollArrowGradient}
             >
@@ -435,6 +447,8 @@ export const CongratulationsOverlay: React.FC<{
   moduleColor: string;
   onComplete: () => void;
 }> = ({ visible, moduleTitle, moduleColor, onComplete }) => {
+  const theme = useTheme();
+  const styles = createStyles(theme);
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const checkmarkScale = useRef(new Animated.Value(0)).current;
   const checkmarkRotation = useRef(new Animated.Value(0)).current;
@@ -619,7 +633,7 @@ export const CongratulationsOverlay: React.FC<{
 };
 
 // Change Button Demo Page
-export const ChangeButtonDemoPage: React.FC<{ 
+export const ChangeButtonDemoPage: React.FC<{
   selectedModule: string | null;
   isActive: boolean;
   onModuleChange?: (moduleId: string) => void;
@@ -628,6 +642,8 @@ export const ChangeButtonDemoPage: React.FC<{
   onShowCongratulations?: (show: boolean) => void;
   onCongratulationsComplete?: (handler: () => void) => void;
 }> = ({ selectedModule, isActive, onModuleChange, onShowModal, previousModuleId, onShowCongratulations, onCongratulationsComplete }) => {
+  const theme = useTheme();
+  const styles = createStyles(theme);
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const hasAnimated = useRef(false);
   const [isPillMode, setIsPillMode] = useState(false);
@@ -1023,6 +1039,8 @@ const StickerBadge: React.FC<{
   isActive?: boolean;
   bottomOffset?: number;
 }> = ({ text, delay = 0, isActive = true, bottomOffset = -16 }) => {
+  const theme = useTheme();
+  const styles = createStyles(theme);
   const opacity = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(0)).current;
   const rotate = useRef(new Animated.Value(-8)).current; // Slight rotation like a sticker
@@ -1130,11 +1148,13 @@ const StickerBadge: React.FC<{
 };
 
 // How to Use App Page
-export const HowToUsePage: React.FC<{ 
+export const HowToUsePage: React.FC<{
   isActive: boolean;
   onScrollStateChange?: (hasScrolled: boolean) => void;
   isModal?: boolean;
 }> = ({ isActive, onScrollStateChange, isModal = false }) => {
+  const theme = useTheme();
+  const styles = createStyles(theme);
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleTranslateY = useRef(new Animated.Value(20)).current;
   const demoOpacity = useRef(new Animated.Value(0)).current;
@@ -1532,7 +1552,9 @@ export const HowToUsePage: React.FC<{
           pointerEvents="none"
         >
           <LinearGradient
-            colors={['rgba(10, 10, 15, 0)', 'rgba(10, 10, 15, 0.4)', 'rgba(10, 10, 15, 0.8)', 'rgba(10, 10, 15, 1)']}
+            colors={theme.isDark
+              ? ['rgba(10, 10, 15, 0)', 'rgba(10, 10, 15, 0.4)', 'rgba(10, 10, 15, 0.8)', 'rgba(10, 10, 15, 1)']
+              : ['rgba(242, 241, 246, 0)', 'rgba(242, 241, 246, 0.4)', 'rgba(242, 241, 246, 0.8)', 'rgba(242, 241, 246, 1)']}
             locations={[0, 0.3, 0.7, 1]}
             style={styles.scrollArrowGradient}
           >
@@ -1547,11 +1569,13 @@ export const HowToUsePage: React.FC<{
 };
 
 // Login Page Component
-const LoginPage: React.FC<{ 
+const LoginPage: React.FC<{
   isActive: boolean;
   onLogin: () => void;
   onNavigateToPremium: () => void;
 }> = ({ isActive, onLogin, onNavigateToPremium }) => {
+  const theme = useTheme();
+  const styles = createStyles(theme);
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleTranslateY = useRef(new Animated.Value(20)).current;
   const buttonsOpacity = useRef(new Animated.Value(0)).current;
@@ -2509,6 +2533,8 @@ const LoginPage: React.FC<{
 };
 
 export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) => {
+  const theme = useTheme();
+  const styles = createStyles(theme);
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
@@ -2816,7 +2842,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
 
   return (
     <>
-      <StatusBar barStyle="light-content" backgroundColor="#0A0A0F" />
+      <StatusBar barStyle={theme.isDark ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
       <View style={styles.container}>
         {!showFinishAnimation && currentPage === 0 && (
           <TouchableOpacity style={styles.skipButton} onPress={handleSkip} activeOpacity={0.7}>
@@ -3012,7 +3038,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: Theme) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.health.container.backgroundColor,
@@ -3061,7 +3087,7 @@ const styles = StyleSheet.create({
   skipButtonText: {
     fontSize: 17,
     fontWeight: '400',
-    color: '#A0A0B0',
+    color: theme.colors.text.secondary,
   },
   iconWrapper: {
     alignItems: 'center',
@@ -3072,11 +3098,11 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 26,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: theme.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
@@ -3097,7 +3123,7 @@ const styles = StyleSheet.create({
   titleLight: {
     fontSize: 34,
     fontWeight: '700',
-    color: '#F2F2F7',
+    color: theme.colors.text.primary,
     textAlign: 'center',
     lineHeight: 40,
   },
@@ -3109,7 +3135,7 @@ const styles = StyleSheet.create({
   subtitleLight: {
     fontSize: 20,
     fontWeight: '400',
-    color: '#A0A0B0',
+    color: theme.colors.text.secondary,
     textAlign: 'center',
     marginTop: 4,
     lineHeight: 28,
@@ -3122,17 +3148,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginBottom: 24,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     padding: 16,
     marginHorizontal: 0,
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: theme.colors.border,
   },
   featureIconContainer: {
     width: 44,
@@ -3151,28 +3177,28 @@ const styles = StyleSheet.create({
   featureTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#F2F2F7',
+    color: theme.colors.text.primary,
     marginBottom: 4,
   },
   featureTitleLight: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#F2F2F7',
+    color: theme.colors.text.primary,
     marginBottom: 4,
   },
   featureDescription: {
     fontSize: 15,
-    color: '#A0A0B0',
+    color: theme.colors.text.secondary,
     lineHeight: 20,
   },
   featureDescriptionLight: {
     fontSize: 15,
-    color: '#A0A0B0',
+    color: theme.colors.text.secondary,
     lineHeight: 20,
   },
   disclaimerText: {
     fontSize: 13,
-    color: '#A0A0B0',
+    color: theme.colors.text.secondary,
     lineHeight: 18,
     textAlign: 'center',
   },
@@ -3214,20 +3240,20 @@ const styles = StyleSheet.create({
   },
   scrollArrowText: {
     fontSize: 24,
-    color: 'rgba(255, 255, 255, 0.4)',
+    color: theme.colors.text.tertiary,
     fontWeight: '300',
   },
   moduleCard: {
     borderRadius: 16,
     marginBottom: 12,
-    backgroundColor: '#1C1C1E',
-    shadowColor: '#000',
+    backgroundColor: theme.colors.surface,
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: theme.colors.border,
   },
   moduleCardSelected: {
     shadowOpacity: 0.15,
@@ -3253,7 +3279,7 @@ const styles = StyleSheet.create({
   moduleTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#F2F2F7',
+    color: theme.colors.text.primary,
     marginRight: 8,
   },
   moduleCategoryBadge: {
@@ -3269,7 +3295,7 @@ const styles = StyleSheet.create({
   },
   moduleDescription: {
     fontSize: 15,
-    color: '#A0A0B0',
+    color: theme.colors.text.secondary,
     lineHeight: 20,
   },
   checkmarkContainer: {
@@ -3279,7 +3305,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#0A84FF',
+    backgroundColor: theme.colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
     transform: [{ translateY: -14 }], // Half of height to center vertically
@@ -3299,16 +3325,16 @@ const styles = StyleSheet.create({
   demoModuleCard: {
     padding: 20,
     borderRadius: 16,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: theme.colors.surface,
     width: '100%',
     marginBottom: 30,
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: theme.colors.border,
   },
   demoModuleHeader: {
     flexDirection: 'row',
@@ -3319,7 +3345,7 @@ const styles = StyleSheet.create({
   demoModuleTitle: {
     fontSize: 22,
     fontWeight: '600',
-    color: '#F2F2F7',
+    color: theme.colors.text.primary,
     marginRight: 8,
   },
   demoModuleCategoryBadge: {
@@ -3335,7 +3361,7 @@ const styles = StyleSheet.create({
   },
   demoModuleDescription: {
     fontSize: 17,
-    color: '#A0A0B0',
+    color: theme.colors.text.secondary,
     lineHeight: 22,
   },
   arrowPointer: {
@@ -3345,7 +3371,7 @@ const styles = StyleSheet.create({
   },
   arrowPointerText: {
     fontSize: 32,
-    color: '#0A84FF',
+    color: theme.colors.accent,
     fontWeight: '300',
   },
   demoChangeButtonContainer: {
@@ -3357,7 +3383,7 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 6,
@@ -3407,7 +3433,7 @@ const styles = StyleSheet.create({
   },
   arrow: {
     fontSize: 20,
-    color: '#A0A0B0',
+    color: theme.colors.text.secondary,
   },
   loginPage: {
     width: SCREEN_WIDTH,
@@ -3419,7 +3445,7 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 50,
     paddingHorizontal: 20,
-    backgroundColor: '#0A0A0F',
+    backgroundColor: theme.colors.background,
   },
   loginBackgroundTextContainer: {
     position: 'absolute',
@@ -3432,7 +3458,7 @@ const styles = StyleSheet.create({
   loginBackgroundTextLarge: {
     fontSize: 46,
     fontWeight: '700',
-    color: '#F2F2F7',
+    color: theme.colors.text.primary,
     textAlign: 'left',
     lineHeight: 56,
     marginBottom: 16,
@@ -3442,7 +3468,7 @@ const styles = StyleSheet.create({
   loginBackgroundTextSmall: {
     fontSize: 30,
     fontWeight: '700',
-    color: '#F2F2F7',
+    color: theme.colors.text.primary,
     textAlign: 'left',
     lineHeight: 48,
     paddingLeft: 8,
@@ -3450,7 +3476,7 @@ const styles = StyleSheet.create({
   typingCursor: {
     fontSize: 30,
     fontWeight: '700',
-    color: '#F2F2F7',
+    color: theme.colors.text.primary,
     opacity: 1,
   },
   loginTitleContainer: {
@@ -3461,14 +3487,14 @@ const styles = StyleSheet.create({
   loginTitle: {
     fontSize: 34,
     fontWeight: '700',
-    color: '#F2F2F7',
+    color: theme.colors.text.primary,
     textAlign: 'center',
     lineHeight: 40,
   },
   loginSubtitle: {
     fontSize: 20,
     fontWeight: '400',
-    color: '#A0A0B0',
+    color: theme.colors.text.secondary,
     textAlign: 'center',
     marginTop: 4,
     lineHeight: 28,
@@ -3483,7 +3509,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   loginButtonsBox: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: theme.colors.surface,
     borderRadius: 24,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
@@ -3492,21 +3518,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 24,
     paddingBottom: 50,
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 8,
     borderWidth: 0,
     borderTopWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: theme.colors.border,
     width: '100%',
     minHeight: '50%',
   },
   loginBoxSubtitle: {
     fontSize: 16,
     fontWeight: '400',
-    color: '#A0A0B0',
+    color: theme.colors.text.secondary,
     textAlign: 'center',
     marginBottom: 20,
     lineHeight: 22,
@@ -3527,14 +3553,14 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: '#A0A0B0',
-    backgroundColor: '#1C1C1E',
+    borderColor: theme.colors.text.secondary,
+    backgroundColor: theme.colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkboxChecked: {
-    backgroundColor: '#0A84FF',
-    borderColor: '#0A84FF',
+    backgroundColor: theme.colors.accent,
+    borderColor: theme.colors.accent,
   },
   checkmark: {
     fontSize: 14,
@@ -3550,29 +3576,29 @@ const styles = StyleSheet.create({
   termsText: {
     fontSize: 13,
     fontWeight: '400',
-    color: '#A0A0B0',
+    color: theme.colors.text.secondary,
     lineHeight: 18,
   },
   termsLink: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#0A84FF',
+    color: theme.colors.accent,
     lineHeight: 18,
     textDecorationLine: 'underline',
   },
   socialButton: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: theme.colors.surfaceElevated,
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 24,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: theme.colors.border,
     minHeight: 56,
   },
   socialButtonDisabled: {
     opacity: 0.5,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: theme.colors.surfaceElevated,
   },
   socialButtonContent: {
     flexDirection: 'row',
@@ -3605,7 +3631,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   loadingContent: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
     padding: 40,
     alignItems: 'center',
@@ -3624,26 +3650,26 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
     borderWidth: 4,
-    borderColor: '#0A84FF',
+    borderColor: theme.colors.accent,
     borderTopColor: 'transparent',
   },
   loadingText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#F2F2F7',
+    color: theme.colors.text.primary,
     marginBottom: 8,
     textAlign: 'center',
   },
   loadingSubtext: {
     fontSize: 14,
     fontWeight: '400',
-    color: '#A0A0B0',
+    color: theme.colors.text.secondary,
     textAlign: 'center',
   },
   socialButtonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#F2F2F7',
+    color: theme.colors.text.primary,
     letterSpacing: -0.2,
   },
   appleButton: {
@@ -3662,11 +3688,11 @@ const styles = StyleSheet.create({
   },
   signInLinkText: {
     fontSize: 15,
-    color: '#A0A0B0',
+    color: theme.colors.text.secondary,
   },
   signInLink: {
     fontSize: 15,
-    color: '#F2F2F7',
+    color: theme.colors.text.primary,
     fontWeight: '600',
     textDecorationLine: 'underline',
   },
@@ -3685,10 +3711,10 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#3A3A3C',
+    backgroundColor: theme.colors.surfaceTertiary,
   },
   indicatorActive: {
-    backgroundColor: '#0A84FF',
+    backgroundColor: theme.colors.accent,
     width: 24,
   },
   buttonContainer: {
@@ -3699,7 +3725,7 @@ const styles = StyleSheet.create({
     ...theme.health.button,
   },
   buttonDisabled: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: theme.colors.surfaceElevated,
   },
   buttonText: {
     ...theme.health.buttonText,
@@ -3735,7 +3761,7 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -3749,11 +3775,11 @@ const styles = StyleSheet.create({
   congratulationsMessage: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
     paddingHorizontal: 32,
     paddingVertical: 24,
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -3762,12 +3788,12 @@ const styles = StyleSheet.create({
   congratulationsTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#F2F2F7',
+    color: theme.colors.text.primary,
     marginBottom: 8,
   },
   congratulationsSubtitle: {
     fontSize: 17,
-    color: '#A0A0B0',
+    color: theme.colors.text.secondary,
     textAlign: 'center',
   },
   instructionTextContainer: {
@@ -3778,7 +3804,7 @@ const styles = StyleSheet.create({
   },
   instructionText: {
     fontSize: 15,
-    color: '#A0A0B0',
+    color: theme.colors.text.secondary,
     textAlign: 'center',
     lineHeight: 22,
     fontWeight: '400',
@@ -3824,11 +3850,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   demoCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -3843,7 +3869,7 @@ const styles = StyleSheet.create({
   demoCardTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#F2F2F7',
+    color: theme.colors.text.primary,
   },
   demoModuleBadge: {
     paddingHorizontal: 10,
@@ -3857,7 +3883,7 @@ const styles = StyleSheet.create({
   },
   demoFocusSubtitle: {
     fontSize: 15,
-    color: '#A0A0B0',
+    color: theme.colors.text.secondary,
     fontWeight: '400',
     marginBottom: 16,
   },
@@ -3866,7 +3892,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   demoRecommendedSession: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: theme.colors.surfaceElevated,
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
@@ -3882,12 +3908,12 @@ const styles = StyleSheet.create({
   demoSessionTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#F2F2F7',
+    color: theme.colors.text.primary,
     marginBottom: 4,
   },
   demoSessionSubtitle: {
     fontSize: 15,
-    color: '#A0A0B0',
+    color: theme.colors.text.secondary,
     fontWeight: '400',
     marginBottom: 8,
     fontStyle: 'italic',
@@ -3899,7 +3925,7 @@ const styles = StyleSheet.create({
   },
   demoSessionMeta: {
     fontSize: 13,
-    color: '#A0A0B0',
+    color: theme.colors.text.secondary,
     fontWeight: '400',
   },
   demoSessionPlayButton: {
@@ -3916,7 +3942,7 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
   demoRecommendedBadge: {
-    backgroundColor: '#0A84FF',
+    backgroundColor: theme.colors.accent,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -3940,9 +3966,9 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 12,
     borderRadius: 12,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: theme.colors.surfaceElevated,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: theme.colors.border,
     position: 'relative',
     overflow: 'visible',
   },
@@ -3953,25 +3979,25 @@ const styles = StyleSheet.create({
   demoAlternativeTitle: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#F2F2F7',
+    color: theme.colors.text.primary,
     marginBottom: 2,
   },
   demoAlternativeMeta: {
     fontSize: 13,
-    color: '#A0A0B0',
+    color: theme.colors.text.secondary,
     fontWeight: '400',
   },
   demoAlternativePlayButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#3A3A3C',
+    backgroundColor: theme.colors.surfaceTertiary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   demoAlternativePlayText: {
     fontSize: 12,
-    color: '#F2F2F7',
+    color: theme.colors.text.primary,
     fontWeight: 'bold',
     marginLeft: 1,
   },
@@ -3992,7 +4018,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#0A84FF',
+    backgroundColor: theme.colors.accent,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -4005,18 +4031,18 @@ const styles = StyleSheet.create({
   stepTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#F2F2F7',
+    color: theme.colors.text.primary,
     flex: 1,
   },
   stepDescription: {
     fontSize: 15,
-    color: '#A0A0B0',
+    color: theme.colors.text.secondary,
     lineHeight: 22,
     marginLeft: 44,
   },
   stepHighlight: {
     fontWeight: '600',
-    color: '#0A84FF',
+    color: theme.colors.accent,
   },
   stickerBadge: {
     position: 'absolute',
@@ -4025,13 +4051,13 @@ const styles = StyleSheet.create({
     marginBottom: -15,
   },
   stickerBadgeInner: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: theme.colors.surface,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderWidth: 2,
-    borderColor: '#0A84FF',
-    shadowColor: '#000',
+    borderColor: theme.colors.accent,
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 2, height: 3 },
     shadowOpacity: 0.15,
     shadowRadius: 6,
@@ -4042,7 +4068,7 @@ const styles = StyleSheet.create({
   stickerBadgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#0A84FF',
+    color: theme.colors.accent,
     lineHeight: 13,
     letterSpacing: 0.3,
     textTransform: 'uppercase',
@@ -4057,13 +4083,13 @@ const styles = StyleSheet.create({
     transform: [{ skewX: '-20deg' }],
   },
   feedbackCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
     paddingVertical: 24,
     paddingHorizontal: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-    shadowColor: '#000',
+    borderColor: theme.colors.border,
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -4072,19 +4098,19 @@ const styles = StyleSheet.create({
   feedbackCardTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#F2F2F7',
+    color: theme.colors.text.primary,
     textAlign: 'center',
     marginBottom: 8,
   },
   feedbackCardSubtitle: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#A0A0B0',
+    color: theme.colors.text.secondary,
     textAlign: 'center',
     marginBottom: 24,
   },
   feedbackSliderWrapper: {
-    backgroundColor: '#0A84FF',
+    backgroundColor: theme.colors.accent,
     borderRadius: 16,
     paddingVertical: 20,
     paddingHorizontal: 16,
@@ -4132,7 +4158,7 @@ const styles = StyleSheet.create({
   },
   finishOverlayBackground: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#0A0A0F',
+    backgroundColor: theme.colors.background,
   },
   finishContent: {
     alignItems: 'center',
@@ -4142,11 +4168,11 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 30,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: theme.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 32,
-    shadowColor: '#000',
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 12,
@@ -4159,7 +4185,7 @@ const styles = StyleSheet.create({
   finishText: {
     fontSize: 36,
     fontWeight: '700',
-    color: '#F2F2F7',
+    color: theme.colors.text.primary,
     textAlign: 'center',
     marginBottom: 8,
     letterSpacing: -0.5,
@@ -4167,7 +4193,7 @@ const styles = StyleSheet.create({
   finishSubtext: {
     fontSize: 20,
     fontWeight: '400',
-    color: '#A0A0B0',
+    color: theme.colors.text.secondary,
     textAlign: 'center',
   },
 });

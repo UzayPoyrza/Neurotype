@@ -526,7 +526,7 @@ export default function App() {
           }
 
           // Update dark theme preference from database
-          if (preferences.dark_theme_enabled !== undefined) {
+          if (preferences.dark_theme_enabled != null) {
             useStore.getState().setDarkThemeEnabled(preferences.dark_theme_enabled);
           }
 
@@ -811,7 +811,7 @@ export default function App() {
         // Load theme preference FIRST to avoid flash of wrong theme
         try {
           const prefs = await getUserPreferences(userId);
-          if (prefs && prefs.dark_theme_enabled !== undefined) {
+          if (prefs && prefs.dark_theme_enabled != null) {
             useStore.getState().setDarkThemeEnabled(prefs.dark_theme_enabled);
             console.log('🎨 [App] Applied saved theme preference:', prefs.dark_theme_enabled ? 'dark' : 'light');
           }
@@ -1099,7 +1099,7 @@ export default function App() {
             }
 
             // Update dark theme preference from database
-            if (preferences.dark_theme_enabled !== undefined) {
+            if (preferences.dark_theme_enabled != null) {
               useStore.getState().setDarkThemeEnabled(preferences.dark_theme_enabled);
             }
 
@@ -1173,11 +1173,19 @@ export default function App() {
   };
 
   if (showSplash) {
-    return <SplashScreen onFinish={handleSplashFinish} />;
+    return (
+      <ThemeProvider>
+        <SplashScreen onFinish={handleSplashFinish} />
+      </ThemeProvider>
+    );
   }
 
   if (!hasCompletedOnboarding) {
-    return <OnboardingScreen onFinish={handleOnboardingFinish} />;
+    return (
+      <ThemeProvider>
+        <OnboardingScreen onFinish={handleOnboardingFinish} />
+      </ThemeProvider>
+    );
   }
 
   const navTheme = darkThemeEnabled

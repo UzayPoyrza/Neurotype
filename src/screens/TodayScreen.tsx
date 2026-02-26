@@ -2130,7 +2130,7 @@ const styles = StyleSheet.create({
   infoButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#98989D',
+    color: '#0A84FF',
     fontFamily: 'System',
   },
   infoButtonActive: {

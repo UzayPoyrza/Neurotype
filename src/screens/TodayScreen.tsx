@@ -1129,13 +1129,14 @@ export const TodayScreen: React.FC = () => {
 
   const renderTodayView = () => (
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
-      {/* Ambient top glow based on selected module color */}
-      <LinearGradient
-        colors={[selectedModule.color + '50', selectedModule.color + '18', 'transparent']}
-        locations={[0, 0.5, 1]}
-        style={styles.ambientGlow}
-        pointerEvents="none"
-      />
+      {/* Ambient top glow based on selected module color - fades on scroll */}
+      <Animated.View style={[styles.ambientGlow, { opacity: Math.max(0, 1 - scrollY / 150) }]} pointerEvents="none">
+        <LinearGradient
+          colors={[selectedModule.color + '50', selectedModule.color + '18', 'transparent']}
+          locations={[0, 0.5, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
       {/* Sticky Header */}
       <View style={[styles.stickyHeader, { backgroundColor: globalBackgroundColor }]}>
         <Text style={styles.title}>Today</Text>

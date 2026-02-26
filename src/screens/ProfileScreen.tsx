@@ -160,6 +160,7 @@ export const ProfileScreen: React.FC = () => {
   const userFirstName = useStore(state => state.userFirstName);
   const todayModuleId = useStore(state => state.todayModuleId);
   const ambientModule = mentalHealthModules.find(m => m.id === todayModuleId) || mentalHealthModules[0];
+  const [mainScrollY, setMainScrollY] = React.useState(0);
   const [emotionalFeedbackHistory, setEmotionalFeedbackHistory] = React.useState<any[]>([]);
 
   const userId = useUserId();
@@ -837,13 +838,14 @@ export const ProfileScreen: React.FC = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
-      {/* Ambient top glow based on selected module color */}
-      <LinearGradient
-        colors={[ambientModule.color + '50', ambientModule.color + '18', 'transparent']}
-        locations={[0, 0.5, 1]}
-        style={styles.ambientGlow}
-        pointerEvents="none"
-      />
+      {/* Ambient top glow based on selected module color - fades on scroll */}
+      <Animated.View style={[styles.ambientGlow, { opacity: Math.max(0, 1 - mainScrollY / 150) }]} pointerEvents="none">
+        <LinearGradient
+          colors={[ambientModule.color + '50', ambientModule.color + '18', 'transparent']}
+          locations={[0, 0.5, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
       {/* Sticky Header */}
       <View style={[styles.stickyHeader, { backgroundColor: globalBackgroundColor }]}>
         <Text style={styles.title}>Profile</Text>
@@ -872,7 +874,13 @@ export const ProfileScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
       
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        onScroll={(e) => setMainScrollY(e.nativeEvent.contentOffset.y)}
+        scrollEventThrottle={16}
+      >
 
         {/* Profile Header Card */}
         <View style={styles.profileHeaderCard}>

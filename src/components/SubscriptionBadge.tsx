@@ -64,11 +64,11 @@ export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({
         },
       ]}
     >
-      <Ionicons name="leaf-outline" size={config.iconSize} color={theme.colors.text.secondary} />
+      <Ionicons name="leaf-outline" size={config.iconSize} color={theme.isDark ? theme.colors.text.secondary : theme.colors.text.primary} />
       <Text
         style={[
           styles.basicText,
-          { fontSize: config.fontSize, marginLeft: config.gap, color: theme.colors.text.secondary },
+          { fontSize: config.fontSize, marginLeft: config.gap, color: theme.isDark ? theme.colors.text.secondary : theme.colors.text.primary },
         ]}
       >
         Neurotype Basic

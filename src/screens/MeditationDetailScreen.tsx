@@ -34,6 +34,7 @@ import { meditationAudioData } from '../data/meditationMockData';
 import { getSessionById, getSessionModules } from '../services/sessionService';
 import { ShimmerMeditationDetailMedia, ShimmerMeditationDetailContent, ShimmerSkeleton } from '../components/ShimmerSkeleton';
 import { mentalHealthModules, getCategoryColor, MentalHealthModule } from '../data/modules';
+import { darkenColor } from '../utils/gradientBackgrounds';
 import { useUserId } from '../hooks/useUserId';
 import { supabase } from '../services/supabase';
 
@@ -989,8 +990,8 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
             onPress: handleTutorialPress,
           }
         } : {})}
-        themeColor={getGoalColor(session.goal)}
-        secondaryColor="#0A84FF"
+        themeColor={darkenColor(getGoalColor(session.goal), 0.3)}
+        secondaryColor={darkenColor('#0A84FF', 0.3)}
         tabTransitionProgress={scrollX}
       />
 

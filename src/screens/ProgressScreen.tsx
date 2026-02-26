@@ -11,6 +11,7 @@ import { getUserCompletedSessions, CompletedSession } from '../services/progress
 import { useUserId } from '../hooks/useUserId';
 import { BarChartIcon } from '../components/icons/BarChartIcon';
 import { getLocalDateString, parseLocalDate } from '../utils/dateUtils';
+import { darkenColor } from '../utils/gradientBackgrounds';
 
 
 
@@ -290,11 +291,11 @@ const styles = StyleSheet.create({
   streakContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FF6B35',
+    backgroundColor: darkenColor('#FF6B35', 0.3),
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    shadowColor: '#FF6B35',
+    shadowColor: darkenColor('#FF6B35', 0.3),
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -311,7 +312,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   streakContainerActive: {
-    backgroundColor: '#FF8A65',
+    backgroundColor: darkenColor('#FF8A65', 0.3),
   },
   streakNumberActive: {
     color: '#FFFFFF',

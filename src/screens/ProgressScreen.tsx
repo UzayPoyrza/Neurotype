@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, TouchableWithoutFeedback } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useStore } from '../store/useStore';
-import { theme as staticTheme } from '../styles/theme';
 import { useTheme } from '../contexts/ThemeContext';
 import { mentalHealthModules } from '../data/modules';
 import { InteractiveCalendar } from '../components/InteractiveCalendar';
@@ -19,6 +18,7 @@ import { darkenColor } from '../utils/gradientBackgrounds';
 
 export const ProgressScreen: React.FC = () => {
   const theme = useTheme();
+  const styles = createStyles(theme);
   const userProgress = useStore(state => state.userProgress);
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const globalBackgroundColorLight = useStore(state => state.globalBackgroundColorLight);
@@ -293,8 +293,8 @@ export const ProgressScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  ...staticTheme.health, // Use global Apple Health styles
+const createStyles = (theme: ReturnType<typeof useTheme>) => StyleSheet.create({
+  ...theme.health,
   ambientGlow: {
     position: 'absolute',
     top: 0,

@@ -416,7 +416,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   if (isLoading) {
     return (
       <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
-        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        <StatusBar barStyle={theme.isDark ? "light-content" : "dark-content"} backgroundColor="transparent" translucent />
         <SafeAreaView style={styles.safeArea} edges={['bottom']}>
           {/* Sticky Header */}
           <View style={[styles.stickyHeader, {
@@ -871,7 +871,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
 
   return (
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <StatusBar barStyle={theme.isDark ? "light-content" : "dark-content"} backgroundColor="transparent" translucent />
 
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         {/* Sticky Header */}

@@ -889,7 +889,7 @@ export const ProfileScreen: React.FC = () => {
             ]}>
               <SubscriptionBadge
                 subscriptionType={subscriptionType}
-                size="small"
+                size="medium"
               />
             </View>
             {subscriptionType === 'premium' && subscriptionCancelAt && (
@@ -1385,15 +1385,14 @@ const styles = StyleSheet.create({
   profileHeaderContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    flexWrap: 'wrap',
-    gap: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 14,
   },
   profileInitialContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 52,
+    height: 52,
+    borderRadius: 15,
     borderWidth: 1.5,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1401,7 +1400,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2C2C2E',
   },
   profileInitialText: {
-    fontSize: 17,
+    fontSize: 22,
     fontWeight: '700',
     color: '#F2F2F7',
   },
@@ -1421,15 +1420,15 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   subscriptionContainer: {
+    flex: 1,
   },
   subscriptionContainerPremium: {
   },
   upgradeButton: {
     backgroundColor: '#0A84FF',
     borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    marginLeft: 'auto',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   upgradeButtonText: {
     fontSize: 14,

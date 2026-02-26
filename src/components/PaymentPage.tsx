@@ -317,7 +317,7 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
         ]}>
           {/* Back Button */}
           <TouchableOpacity
-            style={styles.backButton}
+            style={[styles.backButton, { backgroundColor: theme.colors.surfaceElevated }]}
             onPress={onBack}
             activeOpacity={0.7}
           >
@@ -467,7 +467,7 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
               style={[
                 styles.completePurchaseButton,
                 {
-                  backgroundColor: (!isFormValid() || isProcessing) ? theme.colors.surfaceElevated : theme.colors.accent,
+                  backgroundColor: (!isFormValid() || isProcessing) ? theme.colors.disabled : theme.colors.accent,
                   shadowColor: theme.colors.accent,
                   shadowOpacity: (!isFormValid() || isProcessing) ? 0 : (theme.isDark ? 0.3 : 0.06),
                 },
@@ -492,7 +492,7 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
               ) : (
                 <Text style={[
                   styles.completePurchaseButtonText,
-                  !isFormValid() && { color: theme.colors.text.secondary },
+                  !isFormValid() && { color: theme.colors.disabledText },
                 ]}>
                   Complete Purchase
                 </Text>
@@ -605,11 +605,12 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? 60 : 40, // More space for standalone (from Profile/Settings)
   },
   backButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 0,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
     marginTop: 0,
-    marginBottom: 8, // Reduced spacing to align with title
+    marginBottom: 8,
     alignSelf: 'flex-start',
+    borderRadius: 12,
   },
   backButtonText: {
     fontSize: 17,

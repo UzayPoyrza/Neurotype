@@ -1372,7 +1372,7 @@ const createStyles = (theme: ReturnType<typeof useTheme>) => StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: theme.colors.borderMedium,
+    backgroundColor: theme.colors.glass.background,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,

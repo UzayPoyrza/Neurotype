@@ -52,7 +52,7 @@ const lightColors = {
   secondary: '#8e8e93',
   background: '#f2f1f6',
   surface: '#ffffff',
-  surfaceElevated: '#ffffff',
+  surfaceElevated: '#f0f0f5',
   surfaceTertiary: '#e5e5ea',
   success: '#34C759',
   disabled: '#d1d1d6',

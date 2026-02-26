@@ -7,7 +7,7 @@ import {
   Animated,
   Dimensions,
 } from 'react-native';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface DraggableActionBarProps {
   primaryAction: {
@@ -27,7 +27,7 @@ interface DraggableActionBarProps {
   tabTransitionProgress?: Animated.Value;
 }
 
-export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({ 
+export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
   primaryAction,
   secondaryAction,
   primaryColor = '#FF6B6B',
@@ -36,18 +36,19 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
   onScroll,
   tabTransitionProgress,
 }, ref) => {
+  const theme = useTheme();
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
   const buttonSize = 56;
   const pillWidth = 120;
   const margin = 16;
-  
+
   // Position buttons at bottom corners
   const leftButtonPos = { x: margin, y: screenHeight - buttonSize - margin - 80 };
   const rightButtonPos = { x: screenWidth - buttonSize - margin, y: screenHeight - buttonSize - margin - 80 };
 
   // Button state - start in circle mode, then animate to pill mode
   const [isCircleMode, setIsCircleMode] = useState(true);
-  
+
   // Left button animations - start in circle mode
   const leftButtonWidth = useRef(new Animated.Value(buttonSize)).current;
   const leftTextOpacity = useRef(new Animated.Value(0)).current;
@@ -65,9 +66,9 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
       // Already in circle mode, but ensure the animation is at the correct state
       return;
     }
-    
+
     setIsCircleMode(true);
-    
+
     Animated.parallel([
       // Left button
       Animated.timing(leftButtonWidth, {
@@ -112,9 +113,9 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
   // Animate back to pill mode when scroll stops
   const animateToPillMode = () => {
     if (!isCircleMode) return; // Already in pill mode
-    
+
     setIsCircleMode(false);
-    
+
     Animated.parallel([
       // Left button
       Animated.timing(leftButtonWidth, {
@@ -160,21 +161,21 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
 
   // Scroll detection with debouncing
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   const handleScroll = (scrollY: number) => {
     // Notify parent component
     if (onScroll) {
       onScroll(scrollY);
     }
-    
+
     // Transform to circle mode when scrolling
     animateToCircleMode();
-    
+
     // Clear existing timeout
     if (scrollTimeoutRef.current) {
       clearTimeout(scrollTimeoutRef.current);
     }
-    
+
     // Set timeout to return to pill mode after scroll stops
     scrollTimeoutRef.current = setTimeout(() => {
       animateToPillMode();
@@ -215,6 +216,8 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
     primaryAction.onPress();
   };
 
+  const shadowOpacity = theme.isDark ? 0.3 : 0.06;
+
   return (
     <View style={styles.container}>
       {/* Left Button (Secondary Action) */}
@@ -231,6 +234,7 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
           <Animated.View
             style={[
               styles.floatingButton,
+              { shadowOpacity },
             ]}
           >
             <Animated.View
@@ -264,11 +268,11 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
                       secondaryAction.icon
                     )}
                   </Animated.View>
-                  
+
                   <Animated.View
                     style={[
                       styles.textContainer,
-                      { 
+                      {
                         opacity: leftTextOpacity,
                         alignItems: 'flex-start',
                       }
@@ -299,6 +303,7 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
           style={[
             styles.floatingButtonRight,
             {
+              shadowOpacity,
               transform: [{ translateX: rightButtonTranslateX }],
             }
           ]}
@@ -334,11 +339,11 @@ export const DraggableActionBar = forwardRef<any, DraggableActionBarProps>(({
                     primaryAction.icon
                   )}
                 </Animated.View>
-                
+
                 <Animated.View
                   style={[
                     styles.textContainerRight,
-                    { 
+                    {
                       opacity: rightTextOpacity,
                       alignItems: 'flex-end',
                     }

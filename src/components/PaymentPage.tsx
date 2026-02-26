@@ -4,6 +4,7 @@ import { CardField, useConfirmPayment } from '@stripe/stripe-react-native';
 import { useStore } from '../store/useStore';
 import { createSubscription, updateUserSubscription } from '../services/paymentService';
 import { useUserId } from '../hooks/useUserId';
+import { useTheme } from '../contexts/ThemeContext';
 
 const pricingPlans = [
   {
@@ -43,19 +44,20 @@ interface PaymentPageProps {
   isOnboarding?: boolean; // True when used in onboarding horizontal scroll
 }
 
-export const PaymentPage: React.FC<PaymentPageProps> = ({ 
-  isActive = true, 
-  selectedPlan, 
-  onBack, 
+export const PaymentPage: React.FC<PaymentPageProps> = ({
+  isActive = true,
+  selectedPlan,
+  onBack,
   onComplete,
   isOnboarding = false
 }) => {
+  const theme = useTheme();
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleTranslateY = useRef(new Animated.Value(20)).current;
   const formOpacity = useRef(new Animated.Value(0)).current;
   const formTranslateY = useRef(new Animated.Value(30)).current;
   const hasAnimated = useRef(false);
-  
+
   const [cardholderName, setCardholderName] = useState('');
   const [email, setEmail] = useState('');
   const { confirmPayment } = useConfirmPayment();
@@ -64,7 +66,7 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
     complete: boolean;
     brand?: string;
   } | null>(null);
-  
+
   const [errors, setErrors] = useState<{
     cardholderName: boolean;
     email: boolean;
@@ -72,14 +74,14 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
     cardholderName: false,
     email: false,
   });
-  
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const processingOpacity = useRef(new Animated.Value(0)).current;
   const successOpacity = useRef(new Animated.Value(0)).current;
   const successScale = useRef(new Animated.Value(0.8)).current;
   const spinnerRotation = useRef(new Animated.Value(0)).current;
-  
+
   // Spinner rotation animation
   useEffect(() => {
     if (isProcessing) {
@@ -96,14 +98,14 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
       spinnerRotation.setValue(0);
     }
   }, [isProcessing]);
-  
+
   const spinnerInterpolate = spinnerRotation.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg'],
   });
 
   const selectedPlanData = pricingPlans.find(p => p.id === selectedPlan);
-  
+
   // Validate all fields
   const validateField = (field: string, value: string) => {
     switch (field) {
@@ -115,7 +117,7 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
         return false;
     }
   };
-  
+
   const isFormValid = () => {
     return (
       cardDetails?.complete === true &&
@@ -164,7 +166,7 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
     const isValid = validateField('cardholderName', text);
     setErrors(prev => ({ ...prev, cardholderName: text.length > 0 && !isValid }));
   };
-  
+
   const handleEmailChange = (text: string) => {
     setEmail(text);
     const isValid = validateField('email', text);
@@ -185,7 +187,7 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
 
     setIsProcessing(true);
     setIsSuccess(false);
-    
+
     // Show processing animation
     Animated.timing(processingOpacity, {
       toValue: 1,
@@ -276,10 +278,10 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
         // Reset success animation values
         successOpacity.setValue(0);
         successScale.setValue(0.8);
-        
+
         // Show user-friendly error message
         const errorMessage = error.message || 'Unable to process your payment. Please try again.';
-        
+
         Alert.alert(
           'Payment Failed',
           errorMessage,
@@ -299,12 +301,12 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
 
   return (
     <KeyboardAvoidingView
-      style={[styles.page, isOnboarding && styles.pageOnboarding]}
+      style={[styles.page, { backgroundColor: theme.colors.background }, isOnboarding && styles.pageOnboarding]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
       <ScrollView
-        style={styles.page}
+        style={[styles.page, { backgroundColor: theme.colors.background }]}
         contentContainerStyle={styles.paymentScrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -319,7 +321,7 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
             onPress={onBack}
             activeOpacity={0.7}
           >
-            <Text style={styles.backButtonText}>← Back</Text>
+            <Text style={[styles.backButtonText, { color: theme.colors.accent }]}>← Back</Text>
           </TouchableOpacity>
 
           <Animated.View
@@ -332,8 +334,8 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
               },
             ]}
           >
-            <Text style={styles.titleLight}>Complete Your Purchase</Text>
-            <Text style={styles.subtitleLight}>
+            <Text style={[styles.titleLight, { color: theme.colors.text.primary }]}>Complete Your Purchase</Text>
+            <Text style={[styles.subtitleLight, { color: theme.colors.text.secondary }]}>
               {selectedPlanData ? `You're subscribing to ${selectedPlanData.name} Plan` : 'Select a plan to continue'}
             </Text>
           </Animated.View>
@@ -345,31 +347,32 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
                 styles.planSummary,
                 isOnboarding ? styles.planSummaryOnboarding : styles.planSummaryStandalone,
                 {
+                  backgroundColor: theme.colors.surface,
                   opacity: formOpacity,
                   transform: [{ translateY: formTranslateY }],
                 },
               ]}
             >
               <View style={styles.planSummaryHeader}>
-                <Text style={styles.planSummaryTitle}>{selectedPlanData.name} Plan</Text>
+                <Text style={[styles.planSummaryTitle, { color: theme.colors.text.primary }]}>{selectedPlanData.name} Plan</Text>
                 {selectedPlanData.savings && (
-                  <View style={styles.paymentSavingsBadge}>
+                  <View style={[styles.paymentSavingsBadge, { backgroundColor: theme.colors.success }]}>
                     <Text style={styles.paymentSavingsBadgeText}>{selectedPlanData.savings}</Text>
                   </View>
                 )}
               </View>
               <View style={styles.planSummaryPrice}>
-                <Text style={styles.planPrice}>${selectedPlanData.price.toFixed(2)}</Text>
-                <Text style={styles.planPeriod}>
+                <Text style={[styles.planPrice, { color: theme.colors.text.primary }]}>${selectedPlanData.price.toFixed(2)}</Text>
+                <Text style={[styles.planPeriod, { color: theme.colors.text.secondary }]}>
                   {selectedPlanData.period === 'month' ? '/month' : selectedPlanData.period === 'year' ? '/year' : ' one-time'}
                 </Text>
               </View>
               {selectedPlanData.originalPrice && (
-                <Text style={styles.originalPrice}>
+                <Text style={[styles.originalPrice, { color: theme.colors.text.secondary }]}>
                   ${selectedPlanData.originalPrice.toFixed(2)} before discount
                 </Text>
               )}
-              <Text style={styles.freeTrialText}>7-day free trial • Cancel anytime</Text>
+              <Text style={[styles.freeTrialText, { color: theme.colors.text.secondary }]}>7-day free trial • Cancel anytime</Text>
             </Animated.View>
           )}
 
@@ -383,22 +386,22 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
               },
             ]}
           >
-            <Text style={styles.formSectionTitle}>Payment Information</Text>
+            <Text style={[styles.formSectionTitle, { color: theme.colors.text.primary }]}>Payment Information</Text>
 
             {/* Card Details - Using Stripe CardField */}
             <View style={styles.paymentInputContainer}>
-              <Text style={styles.paymentInputLabel}>Card Details</Text>
+              <Text style={[styles.paymentInputLabel, { color: theme.colors.text.primary }]}>Card Details</Text>
               <CardField
                 postalCodeEnabled={false}
                 placeholders={{
                   number: '4242 4242 4242 4242',
                 }}
                 cardStyle={{
-                  backgroundColor: '#1C1C1E',
-                  textColor: '#F2F2F7',
-                  placeholderColor: '#6B6B7B',
+                  backgroundColor: theme.colors.surface,
+                  textColor: theme.colors.text.primary,
+                  placeholderColor: theme.colors.text.tertiary,
                   borderWidth: 1,
-                  borderColor: cardDetails?.complete === false ? '#FF3B30' : 'rgba(255, 255, 255, 0.06)',
+                  borderColor: cardDetails?.complete === false ? '#FF3B30' : theme.colors.border,
                   borderRadius: 12,
                   fontSize: 17,
                 }}
@@ -411,40 +414,50 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
 
             {/* Cardholder Name */}
             <View style={styles.paymentInputContainer}>
-              <Text style={styles.paymentInputLabel}>Cardholder Name</Text>
+              <Text style={[styles.paymentInputLabel, { color: theme.colors.text.primary }]}>Cardholder Name</Text>
               <TextInput
                 style={[
                   styles.paymentInput,
-                  errors.cardholderName && styles.paymentInputError
+                  {
+                    backgroundColor: theme.colors.surface,
+                    color: theme.colors.text.primary,
+                    borderColor: errors.cardholderName ? '#FF3B30' : theme.colors.border,
+                    borderWidth: errors.cardholderName ? 2 : 1,
+                  },
                 ]}
                 placeholder="John Doe"
                 value={cardholderName}
                 onChangeText={handleCardholderNameChange}
-                placeholderTextColor="#6B6B7B"
+                placeholderTextColor={theme.colors.text.tertiary}
               />
             </View>
 
             {/* Email */}
             <View style={styles.paymentInputContainer}>
-              <Text style={styles.paymentInputLabel}>Email</Text>
+              <Text style={[styles.paymentInputLabel, { color: theme.colors.text.primary }]}>Email</Text>
               <TextInput
                 style={[
                   styles.paymentInput,
-                  errors.email && styles.paymentInputError
+                  {
+                    backgroundColor: theme.colors.surface,
+                    color: theme.colors.text.primary,
+                    borderColor: errors.email ? '#FF3B30' : theme.colors.border,
+                    borderWidth: errors.email ? 2 : 1,
+                  },
                 ]}
                 placeholder="your.email@example.com"
                 value={email}
                 onChangeText={handleEmailChange}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                placeholderTextColor="#6B6B7B"
+                placeholderTextColor={theme.colors.text.tertiary}
               />
             </View>
 
             {/* Security Notice */}
-            <View style={styles.securityNotice}>
+            <View style={[styles.securityNotice, { backgroundColor: theme.colors.surfaceElevated }]}>
               <Text style={styles.securityIcon}>🔒</Text>
-              <Text style={styles.securityText}>
+              <Text style={[styles.securityText, { color: theme.colors.text.secondary }]}>
                 Your payment information is encrypted and secure. We never store your full card details.
               </Text>
             </View>
@@ -453,7 +466,11 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
             <TouchableOpacity
               style={[
                 styles.completePurchaseButton,
-                (!isFormValid() || isProcessing) && styles.completePurchaseButtonDisabled
+                {
+                  backgroundColor: (!isFormValid() || isProcessing) ? theme.colors.surfaceElevated : theme.colors.accent,
+                  shadowColor: theme.colors.accent,
+                  shadowOpacity: (!isFormValid() || isProcessing) ? 0 : (theme.isDark ? 0.3 : 0.06),
+                },
               ]}
               onPress={handlePayment}
               activeOpacity={0.7}
@@ -461,21 +478,21 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
             >
               {isProcessing ? (
                 <View style={styles.processingContainer}>
-                  <Animated.View 
+                  <Animated.View
                     style={[
-                      styles.spinner, 
-                      { 
+                      styles.spinner,
+                      {
                         transform: [{ rotate: spinnerInterpolate }],
-                        opacity: processingOpacity 
+                        opacity: processingOpacity
                       }
-                    ]} 
+                    ]}
                   />
                   <Text style={styles.completePurchaseButtonText}>Processing...</Text>
                 </View>
               ) : (
                 <Text style={[
                   styles.completePurchaseButtonText,
-                  !isFormValid() && styles.completePurchaseButtonTextDisabled
+                  !isFormValid() && { color: theme.colors.text.secondary },
                 ]}>
                   Complete Purchase
                 </Text>
@@ -493,17 +510,20 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
             { opacity: processingOpacity }
           ]}
         >
-          <View style={styles.processingContent}>
+          <View style={[styles.processingContent, { backgroundColor: theme.colors.surface }]}>
             <View style={styles.processingSpinnerContainer}>
-              <Animated.View 
+              <Animated.View
                 style={[
                   styles.processingSpinner,
-                  { transform: [{ rotate: spinnerInterpolate }] }
+                  {
+                    borderColor: theme.colors.accent,
+                    transform: [{ rotate: spinnerInterpolate }],
+                  }
                 ]}
               />
             </View>
-            <Text style={styles.processingText}>Processing your payment...</Text>
-            <Text style={styles.processingSubtext}>Please wait</Text>
+            <Text style={[styles.processingText, { color: theme.colors.text.primary }]}>Processing your payment...</Text>
+            <Text style={[styles.processingSubtext, { color: theme.colors.text.secondary }]}>Please wait</Text>
           </View>
         </Animated.View>
       )}
@@ -522,15 +542,16 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
             style={[
               styles.successContent,
               {
+                backgroundColor: theme.colors.surface,
                 transform: [{ scale: successScale }],
               }
             ]}
           >
-            <View style={styles.successIconContainer}>
+            <View style={[styles.successIconContainer, { backgroundColor: theme.colors.success }]}>
               <Text style={styles.successIcon}>✓</Text>
             </View>
-            <Text style={styles.successTitle}>Payment Successful!</Text>
-            <Text style={styles.successSubtext}>Your subscription is now active</Text>
+            <Text style={[styles.successTitle, { color: theme.colors.text.primary }]}>Payment Successful!</Text>
+            <Text style={[styles.successSubtext, { color: theme.colors.text.secondary }]}>Your subscription is now active</Text>
           </Animated.View>
         </Animated.View>
       )}
@@ -541,7 +562,6 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
 const styles = StyleSheet.create({
   page: {
     flex: 1,
-    backgroundColor: '#0A0A0F',
   },
   pageOnboarding: {
     width: Dimensions.get('window').width,
@@ -560,7 +580,6 @@ const styles = StyleSheet.create({
   titleLight: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#F2F2F7',
     textAlign: 'center',
     marginBottom: 12,
     letterSpacing: -0.5,
@@ -568,7 +587,6 @@ const styles = StyleSheet.create({
   subtitleLight: {
     fontSize: 17,
     fontWeight: '400',
-    color: '#A0A0B0',
     textAlign: 'center',
   },
   paymentScrollContent: {
@@ -596,10 +614,8 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#0A84FF',
   },
   planSummary: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 20,
     marginBottom: 30,
@@ -624,10 +640,8 @@ const styles = StyleSheet.create({
   planSummaryTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#F2F2F7',
   },
   paymentSavingsBadge: {
-    backgroundColor: '#34C759',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
@@ -645,25 +659,21 @@ const styles = StyleSheet.create({
   planPrice: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#F2F2F7',
     marginRight: 8,
   },
   planPeriod: {
     fontSize: 18,
     fontWeight: '400',
-    color: '#A0A0B0',
   },
   originalPrice: {
     fontSize: 14,
     fontWeight: '400',
-    color: '#A0A0B0',
     textDecorationLine: 'line-through',
     marginBottom: 8,
   },
   freeTrialText: {
     fontSize: 14,
     fontWeight: '400',
-    color: '#A0A0B0',
     marginTop: 8,
   },
   paymentForm: {
@@ -672,7 +682,6 @@ const styles = StyleSheet.create({
   formSectionTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#F2F2F7',
     marginBottom: 20,
   },
   paymentInputContainer: {
@@ -685,26 +694,16 @@ const styles = StyleSheet.create({
   paymentInputLabel: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#F2F2F7',
     marginBottom: 8,
   },
   paymentInput: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 17,
-    color: '#F2F2F7',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  paymentInputError: {
-    borderColor: '#FF3B30',
-    borderWidth: 2,
   },
   securityNotice: {
     flexDirection: 'row',
-    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     padding: 16,
     marginTop: 20,
@@ -718,35 +717,23 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: '400',
-    color: '#A0A0B0',
     lineHeight: 20,
   },
   completePurchaseButton: {
-    backgroundColor: '#0A84FF',
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 32,
     alignItems: 'center',
     marginTop: 30,
     marginBottom: 20,
-    shadowColor: '#0A84FF',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
-  },
-  completePurchaseButtonDisabled: {
-    backgroundColor: '#2C2C2E',
-    shadowOpacity: 0,
-    elevation: 0,
   },
   completePurchaseButtonText: {
     fontSize: 17,
     fontWeight: '600',
     color: '#ffffff',
-  },
-  completePurchaseButtonTextDisabled: {
-    color: '#A0A0B0',
   },
   processingContainer: {
     flexDirection: 'row',
@@ -774,7 +761,6 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   processingContent: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 20,
     padding: 40,
     alignItems: 'center',
@@ -793,20 +779,17 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
     borderWidth: 4,
-    borderColor: '#0A84FF',
     borderTopColor: 'transparent',
   },
   processingText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#F2F2F7',
     marginBottom: 8,
     textAlign: 'center',
   },
   processingSubtext: {
     fontSize: 14,
     fontWeight: '400',
-    color: '#A0A0B0',
     textAlign: 'center',
   },
   successOverlay: {
@@ -821,7 +804,6 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   successContent: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 20,
     padding: 40,
     alignItems: 'center',
@@ -832,7 +814,6 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#34C759',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
@@ -845,14 +826,12 @@ const styles = StyleSheet.create({
   successTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#F2F2F7',
     marginBottom: 8,
     textAlign: 'center',
   },
   successSubtext: {
     fontSize: 16,
     fontWeight: '400',
-    color: '#A0A0B0',
     textAlign: 'center',
   },
   cardField: {
@@ -861,4 +840,3 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
 });
-

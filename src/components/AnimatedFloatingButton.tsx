@@ -8,7 +8,7 @@ import {
   PanResponder,
   Dimensions,
 } from 'react-native';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 import Svg, { Path } from 'react-native-svg';
 
 // Classic circular refresh icon using SVG
@@ -38,11 +38,12 @@ const AnimatedFloatingButtonComponent: React.FC<AnimatedFloatingButtonProps> = (
   onScroll,
   onDragStart,
 }) => {
+  const theme = useTheme();
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
   const buttonSize = 56;
   const pillWidth = 120;
   const margin = 16;
-  
+
   // Corner positions - top positions account for navigation height (120px) + margin
   const corners = {
     'top-left': { x: margin, y: 140 },
@@ -54,21 +55,20 @@ const AnimatedFloatingButtonComponent: React.FC<AnimatedFloatingButtonProps> = (
   const [currentCorner, setCurrentCorner] = useState<Corner>('bottom-right');
   const [position, setPosition] = useState(corners[currentCorner]);
   const [isDragging, setIsDragging] = useState(false);
-  
+
   // Determine if button is on left or right side for proper expansion direction
   const isLeftSide = currentCorner === 'top-left' || currentCorner === 'bottom-left';
-  
+
   const pan = useRef(new Animated.ValueXY()).current;
   const scale = useRef(new Animated.Value(1)).current;
   const buttonWidth = useRef(new Animated.Value(buttonSize)).current;
   const textOpacity = useRef(new Animated.Value(0)).current;
   const iconScale = useRef(new Animated.Value(1)).current;
   const buttonTranslateX = useRef(new Animated.Value(0)).current;
-//  const buttonTranslateXJS = useRef(new Animated.Value(0)).current; // JS-only version for pill animation
 
   // Initialize position only on first mount
   const [isInitialized, setIsInitialized] = useState(false);
-  
+
   useEffect(() => {
     if (!isInitialized) {
       pan.setValue(corners[currentCorner]);
@@ -83,11 +83,11 @@ const AnimatedFloatingButtonComponent: React.FC<AnimatedFloatingButtonProps> = (
     buttonTranslateX.stopAnimation();
     textOpacity.stopAnimation();
     iconScale.stopAnimation();
-    
+
     if (isPillMode) {
       // Calculate how much to translate left for right-side buttons
       const translateAmount = isLeftSide ? 0 : -(pillWidth - buttonSize);
-      
+
       Animated.parallel([
         Animated.timing(buttonWidth, {
           toValue: pillWidth,
@@ -145,15 +145,15 @@ const AnimatedFloatingButtonComponent: React.FC<AnimatedFloatingButtonProps> = (
       corner: corner as Corner,
       distance: Math.sqrt(Math.pow(x - pos.x, 2) + Math.pow(y - pos.y, 2)),
     }));
-    
-    return distances.reduce((nearest, current) => 
+
+    return distances.reduce((nearest, current) =>
       current.distance < nearest.distance ? current : nearest
     ).corner;
   };
 
   const snapToCorner = (corner: Corner) => {
     const targetPos = corners[corner];
-    
+
     Animated.parallel([
       Animated.spring(pan, {
         toValue: targetPos,
@@ -168,7 +168,7 @@ const AnimatedFloatingButtonComponent: React.FC<AnimatedFloatingButtonProps> = (
         friction: 8,
       }),
     ]).start();
-    
+
     setCurrentCorner(corner);
     setPosition(targetPos);
   };
@@ -184,21 +184,21 @@ const AnimatedFloatingButtonComponent: React.FC<AnimatedFloatingButtonProps> = (
       },
       onPanResponderGrant: () => {
         setIsDragging(true);
-        
+
         // Notify parent component that dragging has started
         if (onDragStart) {
           onDragStart();
         }
-        
+
         const currentPos = {
           x: (pan.x as any)._value,
           y: (pan.y as any)._value,
         };
         setPosition(currentPos);
-        
+
         pan.setOffset(currentPos);
         pan.setValue({ x: 0, y: 0 });
-        
+
         Animated.spring(scale, {
           toValue: 1.15,
           useNativeDriver: false,
@@ -212,15 +212,15 @@ const AnimatedFloatingButtonComponent: React.FC<AnimatedFloatingButtonProps> = (
       ),
       onPanResponderRelease: (evt, gestureState) => {
         setIsDragging(false);
-        
+
         pan.flattenOffset();
-        
+
         const finalX = (pan.x as any)._value;
         const finalY = (pan.y as any)._value;
-        
+
         const boundedX = Math.max(margin, Math.min(screenWidth - buttonSize - margin, finalX));
         const boundedY = Math.max(140, Math.min(screenHeight - buttonSize - 100, finalY));
-        
+
         const nearestCorner = findNearestCorner(boundedX, boundedY);
         snapToCorner(nearestCorner);
       },
@@ -248,6 +248,7 @@ const AnimatedFloatingButtonComponent: React.FC<AnimatedFloatingButtonProps> = (
         style={[
           styles.floatingButton,
           {
+            shadowOpacity: theme.isDark ? 0.3 : 0.06,
             transform: [{ translateX: buttonTranslateX }],
           }
         ]}
@@ -274,7 +275,7 @@ const AnimatedFloatingButtonComponent: React.FC<AnimatedFloatingButtonProps> = (
           <Animated.View
             style={[
               styles.iconContainer,
-              { 
+              {
                 transform: [{ scale: iconScale }],
                 left: isLeftSide ? 12 : undefined,
                 right: isLeftSide ? undefined : 12,
@@ -283,11 +284,11 @@ const AnimatedFloatingButtonComponent: React.FC<AnimatedFloatingButtonProps> = (
           >
             <ChangeIcon size={20} color="#ffffff" />
           </Animated.View>
-          
+
           <Animated.View
             style={[
               styles.textContainer,
-              { 
+              {
                 opacity: textOpacity,
                 left: isLeftSide ? 44 : 12,
                 right: isLeftSide ? 12 : 44,

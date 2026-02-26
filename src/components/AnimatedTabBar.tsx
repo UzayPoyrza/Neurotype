@@ -3,12 +3,16 @@ import { View, TouchableOpacity, StyleSheet, Animated, Text } from 'react-native
 import { BlurView } from 'expo-blur';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { TodayIcon, ProgressIcon, ExploreIcon, ProfileIcon } from './icons';
+import { useTheme } from '../contexts/ThemeContext';
 
 export const AnimatedTabBar: React.FC<BottomTabBarProps> = ({
   state,
   descriptors,
   navigation
 }) => {
+  const theme = useTheme();
+  const isDark = theme.isDark;
+
   const scaleAnimations = useRef<Animated.Value[]>(
     state.routes.map(() => new Animated.Value(1))
   ).current;
@@ -68,12 +72,18 @@ export const AnimatedTabBar: React.FC<BottomTabBarProps> = ({
     }
   };
 
+  const accentColor = theme.colors.accent;
+  const inactiveColor = '#8E8E93';
+
   return (
     <View style={styles.container}>
       <BlurView
-        tint="systemChromeMaterialDark"
+        tint={isDark ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'}
         intensity={80}
-        style={styles.blurContainer}
+        style={[
+          styles.blurContainer,
+          { borderTopColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)' },
+        ]}
       >
         <View style={styles.tabRow}>
           {state.routes.map((route, index) => {
@@ -105,8 +115,8 @@ export const AnimatedTabBar: React.FC<BottomTabBarProps> = ({
               });
             };
 
-            const iconColor = isFocused ? '#0A84FF' : '#8E8E93';
-            const textColor = isFocused ? '#0A84FF' : '#8E8E93';
+            const iconColor = isFocused ? accentColor : inactiveColor;
+            const textColor = isFocused ? accentColor : inactiveColor;
 
             return (
               <TouchableOpacity
@@ -114,7 +124,6 @@ export const AnimatedTabBar: React.FC<BottomTabBarProps> = ({
                 accessibilityRole="button"
                 accessibilityState={isFocused ? { selected: true } : {}}
                 accessibilityLabel={options.tabBarAccessibilityLabel}
-                testID={options.tabBarTestID}
                 onPress={onPress}
                 onLongPress={onLongPress}
                 style={styles.tab}
@@ -152,7 +161,6 @@ const styles = StyleSheet.create({
   blurContainer: {
     flex: 1,
     borderTopWidth: 0.5,
-    borderTopColor: 'rgba(255, 255, 255, 0.08)',
   },
   tabRow: {
     flex: 1,

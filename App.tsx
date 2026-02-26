@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { NavigationContainer, DarkTheme } from '@react-navigation/native';
+import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
 import { Easing } from 'react-native-reanimated';
@@ -35,6 +35,7 @@ import { initializeStripe } from './src/services/stripe';
 import { scheduleDailyNotification, requestNotificationPermissions } from './src/services/notificationService';
 import * as Notifications from 'expo-notifications';
 import type { EmotionalFeedbackEntry } from './src/types';
+import { ThemeProvider } from './src/contexts/ThemeContext';
 
 const Tab = createBottomTabNavigator();
 const TodayStack = createStackNavigator();
@@ -258,6 +259,7 @@ export default function App() {
   const [showSplash, setShowSplash] = useState(true);
   const activeSession = useStore(state => state.activeSession);
   const hasCompletedOnboarding = useStore(state => state.hasCompletedOnboarding);
+  const darkThemeEnabled = useStore(state => state.darkThemeEnabled);
   const [isInitialDataLoaded, setIsInitialDataLoaded] = useState(false);
 
   // Set up notification handlers
@@ -1157,19 +1159,36 @@ export default function App() {
     return <OnboardingScreen onFinish={handleOnboardingFinish} />;
   }
 
+  const navTheme = darkThemeEnabled
+    ? {
+        ...DarkTheme,
+        colors: {
+          ...DarkTheme.colors,
+          background: '#0A0A0F',
+          card: '#0A0A0F',
+          border: 'rgba(255,255,255,0.06)',
+          primary: '#0A84FF',
+        },
+      }
+    : {
+        ...DefaultTheme,
+        colors: {
+          ...DefaultTheme.colors,
+          background: '#f2f1f6',
+          card: '#ffffff',
+          border: 'rgba(0,0,0,0.04)',
+          primary: '#007AFF',
+        },
+      };
+
   return (
-    <>
-      <StatusBar barStyle="light-content" backgroundColor="#0A0A0F" translucent={false} />
-      <NavigationContainer linking={linking} theme={{
-          ...DarkTheme,
-          colors: {
-            ...DarkTheme.colors,
-            background: '#0A0A0F',
-            card: '#0A0A0F',
-            border: 'rgba(255,255,255,0.06)',
-            primary: '#0A84FF',
-          },
-        }}>
+    <ThemeProvider>
+      <StatusBar
+        barStyle={darkThemeEnabled ? 'light-content' : 'dark-content'}
+        backgroundColor={darkThemeEnabled ? '#0A0A0F' : '#f2f1f6'}
+        translucent={false}
+      />
+      <NavigationContainer linking={linking} theme={navTheme}>
         <Tab.Navigator
           tabBar={props => <AnimatedTabBar {...props} />}
           screenOptions={{
@@ -1196,6 +1215,6 @@ export default function App() {
         )}
       </Modal>
     </NavigationContainer>
-    </>
+    </ThemeProvider>
   );
 }

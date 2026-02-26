@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Switch, ScrollView, TouchableOpacity, Alert, Li
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { useStore } from '../store/useStore';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 import { updateUserPreferences, getSubscriptionDetails, getUserProfile, getUserPreferences, isPremiumUser, createDeleteOrResetRequest } from '../services/userService';
 import { useUserId } from '../hooks/useUserId';
 import { HowToUseModal } from '../components/HowToUseModal';
@@ -26,6 +26,7 @@ type ProfileStackParamList = {
 type SettingsScreenNavigationProp = StackNavigationProp<ProfileStackParamList, 'Settings'>;
 
 export const SettingsScreen: React.FC = () => {
+  const theme = useTheme();
   const navigation = useNavigation<SettingsScreenNavigationProp>();
   const userId = useUserId();
   const {
@@ -50,7 +51,7 @@ export const SettingsScreen: React.FC = () => {
   const subscriptionCancelAt = useStore(state => state.subscriptionCancelAt);
   const subscriptionEndDate = useStore(state => state.subscriptionEndDate);
   const subscriptionIsLifetime = useStore(state => state.subscriptionIsLifetime);
-  
+
   // Track if portal was opened to trigger reload on return
   const portalOpenedRef = useRef(false);
   const appStateRef = useRef(AppState.currentState);
@@ -75,7 +76,7 @@ export const SettingsScreen: React.FC = () => {
             try {
               console.log('🔄 [Settings] Creating reset account request...');
               const result = await createDeleteOrResetRequest(userId, 'reset');
-              
+
               if (result.success) {
                 Alert.alert(
                   'Request Submitted',
@@ -117,7 +118,7 @@ export const SettingsScreen: React.FC = () => {
             try {
               console.log('🔄 [Settings] Creating delete account request...');
               const result = await createDeleteOrResetRequest(userId, 'delete');
-              
+
               if (result.success) {
                 Alert.alert(
                   '24 Hours',
@@ -130,7 +131,7 @@ export const SettingsScreen: React.FC = () => {
                         try {
                           console.log('🔄 [Settings] Logging out after delete request...');
                           const signOutResult = await signOut();
-                          
+
                           if (signOutResult.success) {
                             console.log('✅ [Settings] Logged out successfully after delete request');
                           } else {
@@ -166,13 +167,13 @@ export const SettingsScreen: React.FC = () => {
   const checkNotificationPermissions = React.useCallback(async () => {
     const hasPermission = await hasNotificationPermissions();
     setHasNotificationPermission(hasPermission);
-    
+
     // If permissions are denied and reminder is enabled, turn it off
     if (!hasPermission && reminderEnabled) {
       console.log('⚠️ [Settings] Notifications denied, disabling reminder');
       toggleReminder();
       await cancelDailyNotification();
-      
+
       // Update database if user ID exists
       if (userId) {
         await updateUserPreferences(userId, {
@@ -236,17 +237,17 @@ export const SettingsScreen: React.FC = () => {
   // Function to reload all user data (fallback for dev mode)
   const reloadUserData = React.useCallback(async () => {
     if (!userId) return;
-    
+
     try {
       console.log('🔄 [Settings] Reloading all user data after returning from Stripe portal...');
-      
+
       // Reload user profile and subscription
       const userProfile = await getUserProfile(userId);
       if (userProfile) {
         const isPremium = await isPremiumUser(userId);
         const subscriptionType = isPremium ? 'premium' : 'basic';
         useStore.getState().setSubscriptionType(subscriptionType);
-        
+
         if (subscriptionType === 'premium') {
           const details = await getSubscriptionDetails(userId);
           if (details) {
@@ -259,12 +260,12 @@ export const SettingsScreen: React.FC = () => {
           useStore.getState().setSubscriptionEndDate(null);
           useStore.getState().setSubscriptionIsLifetime(false);
         }
-        
+
         if (userProfile.first_name) {
           useStore.getState().setUserFirstName(userProfile.first_name);
         }
       }
-      
+
       // Reload preferences
       const preferences = await getUserPreferences(userId);
       if (preferences) {
@@ -277,15 +278,15 @@ export const SettingsScreen: React.FC = () => {
           }
         }
       }
-      
+
       // Clear and reload caches
       useStore.getState().clearSessionsCache();
       useStore.getState().clearCalendarCache();
       useStore.getState().clearEmotionalFeedbackCache();
-      
+
       // Sync completed sessions
       await useStore.getState().syncTodayCompletedSessionsFromDatabase(userId);
-      
+
       // Recalculate streak
       const streak = await calculateUserStreak(userId);
       useStore.setState((state) => ({
@@ -294,7 +295,7 @@ export const SettingsScreen: React.FC = () => {
           streak: streak,
         },
       }));
-      
+
       // Reload emotional feedback
       const feedbackWithSessions = await getUserEmotionalFeedbackWithSessions(userId, 20);
       // Transform to EmotionalFeedbackEntry format and filter out entries without sessions
@@ -308,11 +309,11 @@ export const SettingsScreen: React.FC = () => {
           date: feedback.feedback_date,
         }));
       useStore.setState({ emotionalFeedbackHistory: emotionalFeedbackEntries });
-      
+
       // Ensure daily recommendations
       const defaultModuleId = useStore.getState().todayModuleId || 'anxiety';
       await ensureDailyRecommendations(userId, defaultModuleId);
-      
+
       console.log('✅ [Settings] User data reloaded successfully');
     } catch (error: any) {
       console.error('❌ [Settings] Error reloading user data:', error);
@@ -323,7 +324,7 @@ export const SettingsScreen: React.FC = () => {
   const reloadApp = React.useCallback(async () => {
     try {
       console.log('🔄 [Settings] Reloading entire app after returning from Stripe portal...');
-      
+
       // Try to use Updates.reloadAsync() if available (production builds)
       try {
         const Updates = require('expo-updates');
@@ -336,14 +337,14 @@ export const SettingsScreen: React.FC = () => {
         // Updates module not available, continue to fallback
         console.log('⚠️ [Settings] Updates module not available');
       }
-      
+
       // Fallback 1: Use DevSettings.reload() for development mode
       if (__DEV__ && DevSettings && DevSettings.reload) {
         console.log('🔄 [Settings] Using DevSettings.reload() for dev mode...');
         DevSettings.reload();
         return;
       }
-      
+
       // Fallback 2: Reload all data if native reload isn't available
       console.log('⚠️ [Settings] Native reload not available, reloading data instead...');
       await reloadUserData();
@@ -359,7 +360,7 @@ export const SettingsScreen: React.FC = () => {
     const subscription = AppState.addEventListener('change', async (nextAppState: AppStateStatus) => {
       const previousAppState = appStateRef.current;
       appStateRef.current = nextAppState;
-      
+
       // If app came back to foreground, check notification permissions
       if (
         (previousAppState === 'background' || previousAppState === 'inactive') &&
@@ -368,7 +369,7 @@ export const SettingsScreen: React.FC = () => {
         // Check notification permissions when app returns to foreground
         // (user might have enabled them in device settings)
         await checkNotificationPermissions();
-        
+
         // If we had opened the portal, reload everything
         if (portalOpenedRef.current) {
           console.log('🔄 [Settings] App returned to foreground after Stripe portal, reloading app...');
@@ -389,10 +390,10 @@ export const SettingsScreen: React.FC = () => {
     try {
       console.log('🔐 Opening subscription management portal...');
       const { url } = await createPortalSession();
-      
+
       // Mark that portal was opened
       portalOpenedRef.current = true;
-      
+
       // Open the portal URL immediately (don't await - fire and forget)
       Linking.openURL(url).catch((openError) => {
         portalOpenedRef.current = false; // Reset if failed to open
@@ -403,7 +404,7 @@ export const SettingsScreen: React.FC = () => {
           [{ text: 'OK' }]
         );
       });
-      
+
       console.log('✅ Portal opened successfully');
       // Reset loading state immediately after opening browser
       setIsLoadingPortal(false);
@@ -422,15 +423,15 @@ export const SettingsScreen: React.FC = () => {
   // Handle reminder toggle with database save and notification scheduling
   const handleToggleReminder = React.useCallback(async (value: boolean) => {
     console.log('📱 [SettingsScreen] Toggling reminder to:', value);
-    
+
     const currentValue = reminderEnabled;
-    
+
     // If trying to enable, check permissions first
     if (value) {
       // Check current permission status
       const hasPermission = await hasNotificationPermissions();
       setHasNotificationPermission(hasPermission);
-      
+
       if (!hasPermission) {
         // Permissions denied - show alert with option to open settings
         Alert.alert(
@@ -452,12 +453,12 @@ export const SettingsScreen: React.FC = () => {
         return; // Don't toggle if permissions are denied
       }
     }
-    
+
     // Update local state immediately for responsive UI
     if (currentValue !== value) {
       toggleReminder(); // This will toggle to the new value
     }
-    
+
     // Handle notifications
     if (value) {
       // Request permissions and schedule notification
@@ -515,14 +516,14 @@ export const SettingsScreen: React.FC = () => {
       // Cancel notification
       await cancelDailyNotification();
     }
-    
+
     // Save to database
     if (userId) {
       console.log('💾 [SettingsScreen] Saving reminder preference to database...');
       const result = await updateUserPreferences(userId, {
         reminder_enabled: value,
       });
-      
+
       if (result.success) {
         console.log('✅ [SettingsScreen] Reminder preference saved successfully');
       } else {
@@ -559,17 +560,17 @@ export const SettingsScreen: React.FC = () => {
   const handleTimeConfirm = React.useCallback(async (hour: number, minute: number) => {
     setReminderHour(hour);
     setReminderMinute(minute);
-    
+
     // Format time as "HH:MM" for database storage
     const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-    
+
     // Save time to database
     if (userId) {
       console.log('💾 [Settings] Saving reminder time to database...');
       const result = await updateUserPreferences(userId, {
         reminder_time: timeString,
       });
-      
+
       if (!result.success) {
         console.error('❌ [Settings] Failed to save reminder time:', result.error);
         Alert.alert('Error', 'Failed to save reminder time. Please try again.');
@@ -577,7 +578,7 @@ export const SettingsScreen: React.FC = () => {
       }
       console.log('✅ [Settings] Reminder time saved successfully');
     }
-    
+
     // If reminder is enabled, reschedule with new time
     if (reminderEnabled) {
       const scheduled = await scheduleDailyNotification({ hour, minute });
@@ -592,45 +593,46 @@ export const SettingsScreen: React.FC = () => {
   return (
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border }]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={styles.backButton}
+          style={[styles.backButton, { backgroundColor: theme.colors.surfaceElevated }]}
           onLayout={event => {
             const { width } = event.nativeEvent.layout;
             setBackButtonWidth(width);
           }}
         >
-          <Text style={styles.backButtonText}>← Back</Text>
+          <Text style={[styles.backButtonText, { color: theme.colors.accent }]}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Settings</Text>
+        <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>Settings</Text>
         <View style={[styles.headerSpacer, { width: backButtonWidth }]} />
       </View>
 
       <ScrollView style={[styles.scrollView, { backgroundColor: globalBackgroundColor }]} contentContainerStyle={styles.content}>
         {/* Notifications */}
         <View style={styles.settingSection}>
-          <Text style={styles.sectionTitle}>Notifications</Text>
-          
-          <View style={styles.reminderCard}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Notifications</Text>
+
+          <View style={[styles.reminderCard, { backgroundColor: theme.colors.surface, shadowOpacity: theme.isDark ? 0.3 : 0.06 }]}>
             <View style={styles.reminderHeader}>
               <View style={styles.reminderHeaderContent}>
-                <Text style={styles.reminderTitle}>Daily Reminders</Text>
-                <Text style={styles.reminderDescription}>Get notified for your meditation sessions</Text>
+                <Text style={[styles.reminderTitle, { color: theme.colors.text.primary }]}>Daily Reminders</Text>
+                <Text style={[styles.reminderDescription, { color: theme.colors.text.secondary }]}>Get notified for your meditation sessions</Text>
               </View>
               <Switch
                 value={reminderEnabled}
                 onValueChange={handleToggleReminder}
-                trackColor={{ false: '#38383A', true: '#0A84FF' }}
-                thumbColor={reminderEnabled ? '#ffffff' : '#ffffff'}
+                trackColor={{ false: theme.colors.surfaceTertiary, true: theme.colors.accent }}
+                thumbColor={'#ffffff'}
               />
             </View>
-            
+
             {/* Customise Button */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.customiseButton,
-                !reminderEnabled && styles.customiseButtonDisabled
+                { backgroundColor: theme.colors.accent },
+                !reminderEnabled && { backgroundColor: theme.colors.disabled, opacity: 0.6 },
               ]}
               onPress={() => {
                 if (reminderEnabled) {
@@ -641,7 +643,7 @@ export const SettingsScreen: React.FC = () => {
             >
               <Text style={[
                 styles.customiseButtonText,
-                !reminderEnabled && styles.customiseButtonTextDisabled
+                !reminderEnabled && { color: theme.colors.text.tertiary },
               ]}>
                 Customise
               </Text>
@@ -649,22 +651,42 @@ export const SettingsScreen: React.FC = () => {
           </View>
         </View>
 
+        {/* Appearance */}
+        <View style={styles.settingSection}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Appearance</Text>
+
+          <View style={[styles.reminderCard, { backgroundColor: theme.colors.surface, shadowOpacity: theme.isDark ? 0.3 : 0.06 }]}>
+            <View style={styles.reminderHeader}>
+              <View style={styles.reminderHeaderContent}>
+                <Text style={[styles.reminderTitle, { color: theme.colors.text.primary }]}>Dark Mode</Text>
+                <Text style={[styles.reminderDescription, { color: theme.colors.text.secondary }]}>Switch between light and dark appearance</Text>
+              </View>
+              <Switch
+                value={darkThemeEnabled}
+                onValueChange={toggleDarkTheme}
+                trackColor={{ false: theme.colors.surfaceTertiary, true: theme.colors.accent }}
+                thumbColor={'#ffffff'}
+              />
+            </View>
+          </View>
+        </View>
+
         {/* Subscription */}
         <View style={styles.settingSection}>
-          <Text style={styles.sectionTitle}>Subscription</Text>
-          
-          <View style={styles.subscriptionCard}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Subscription</Text>
+
+          <View style={[styles.subscriptionCard, { backgroundColor: theme.colors.surface, shadowOpacity: theme.isDark ? 0.3 : 0.06 }]}>
             <View style={styles.subscriptionHeader}>
-              <Text style={styles.subscriptionTitle}>
+              <Text style={[styles.subscriptionTitle, { color: theme.colors.text.primary }]}>
                 {subscriptionType === 'premium' ? 'Premium Plan' : 'Basic Plan'}
               </Text>
-              <Text style={styles.subscriptionStatus}>
+              <Text style={[styles.subscriptionStatus, { backgroundColor: theme.colors.surfaceElevated }]}>
                 {subscriptionType === 'premium' ? 'Premium' : 'Basic'}
               </Text>
             </View>
-            
-            <Text style={styles.subscriptionDescription}>
-              {subscriptionType === 'premium' 
+
+            <Text style={[styles.subscriptionDescription, { color: theme.colors.text.secondary }]}>
+              {subscriptionType === 'premium'
                 ? 'Enjoy unlimited access to all meditation modules and premium features.'
                 : 'Upgrade to Premium for unlimited access to all meditation modules.'
               }
@@ -674,7 +696,7 @@ export const SettingsScreen: React.FC = () => {
               <>
                 {subscriptionIsLifetime ? (
                   <View style={styles.lifetimeMessageContainer}>
-                    <Text style={styles.lifetimeMessageText}>
+                    <Text style={[styles.lifetimeMessageText, { color: theme.colors.success }]}>
                       Thank you for Lifetime subscription
                     </Text>
                   </View>
@@ -686,17 +708,17 @@ export const SettingsScreen: React.FC = () => {
                   </View>
                 ) : subscriptionEndDate ? (
                   <View style={styles.renewalMessageContainer}>
-                    <Text style={styles.renewalMessageText}>
+                    <Text style={[styles.renewalMessageText, { color: theme.colors.accent }]}>
                       Your plan will be auto-renewed on {new Date(subscriptionEndDate).toLocaleDateString()}.
                     </Text>
                   </View>
                 ) : null}
               </>
             )}
-            
+
             {subscriptionType === 'basic' && (
-              <TouchableOpacity 
-                style={styles.upgradeButton}
+              <TouchableOpacity
+                style={[styles.upgradeButton, { backgroundColor: theme.colors.accent }]}
                 onPress={() => navigation.navigate('Subscription')}
               >
                 <Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
@@ -704,8 +726,8 @@ export const SettingsScreen: React.FC = () => {
             )}
 
             {subscriptionType === 'premium' && !subscriptionIsLifetime && (
-              <TouchableOpacity 
-                style={styles.manageButton}
+              <TouchableOpacity
+                style={[styles.manageButton, { backgroundColor: theme.colors.accent }]}
                 onPress={handleManageSubscription}
                 disabled={isLoadingPortal}
               >
@@ -721,11 +743,11 @@ export const SettingsScreen: React.FC = () => {
 
         {/* About */}
         <View style={styles.settingSection}>
-          <Text style={styles.sectionTitle}>About</Text>
-          
-          <View style={styles.aboutCard}>
-            <Text style={styles.aboutTitle}>Neurotype v1.0.0</Text>
-            <Text style={styles.aboutDescription}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>About</Text>
+
+          <View style={[styles.aboutCard, { backgroundColor: theme.colors.surface, shadowOpacity: theme.isDark ? 0.3 : 0.06 }]}>
+            <Text style={[styles.aboutTitle, { color: theme.colors.text.primary }]}>Neurotype v1.0.0</Text>
+            <Text style={[styles.aboutDescription, { color: theme.colors.text.secondary }]}>
               The first meditation app that adapts to your brain type, using neuroscience to match you with proven meditation methods.
             </Text>
           </View>
@@ -733,10 +755,10 @@ export const SettingsScreen: React.FC = () => {
 
         {/* Information */}
         <View style={styles.settingSection}>
-          <Text style={styles.sectionTitle}>Information</Text>
-          
-          <TouchableOpacity 
-            style={styles.howToUseButton}
+          <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Information</Text>
+
+          <TouchableOpacity
+            style={[styles.howToUseButton, { backgroundColor: theme.colors.accent }]}
             onPress={() => setShowHowToUseModal(true)}
           >
             <Text style={styles.howToUseButtonText}>How to Use the App</Text>
@@ -745,11 +767,11 @@ export const SettingsScreen: React.FC = () => {
 
         {/* Danger Zone */}
         <View style={styles.settingSection}>
-          <Text style={styles.sectionTitle}>Clear Data</Text>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Clear Data</Text>
 
-          <View style={styles.resetCard}>
+          <View style={[styles.resetCard, { backgroundColor: theme.colors.surface, shadowOpacity: theme.isDark ? 0.3 : 0.06 }]}>
             <Text style={styles.resetTitle}>Reset or Delete Account</Text>
-            <Text style={styles.resetDescription}>
+            <Text style={[styles.resetDescription, { color: theme.colors.text.secondary }]}>
               Reset your account to start fresh, or permanently delete your account and all data.
             </Text>
 
@@ -760,7 +782,10 @@ export const SettingsScreen: React.FC = () => {
               </Text>
             </View>
 
-            <TouchableOpacity style={styles.resetButton} onPress={handleResetAccount}>
+            <TouchableOpacity
+              style={[styles.resetButton, { backgroundColor: theme.colors.surfaceElevated }]}
+              onPress={handleResetAccount}
+            >
               <Text style={styles.resetButtonText}>Reset Account</Text>
             </TouchableOpacity>
 
@@ -772,8 +797,8 @@ export const SettingsScreen: React.FC = () => {
 
         {/* Logout */}
         <View style={styles.settingSection}>
-          <TouchableOpacity 
-            style={styles.logoutButton} 
+          <TouchableOpacity
+            style={[styles.logoutButton, { backgroundColor: theme.colors.accent, shadowOpacity: theme.isDark ? 0.3 : 0.06 }]}
             onPress={() => {
               Alert.alert(
                 'Logout',
@@ -789,7 +814,7 @@ export const SettingsScreen: React.FC = () => {
                       onPress: async () => {
                         try {
                           console.log('🔄 [Settings] Starting logout process...');
-                          
+
                           // ALWAYS clear local state FIRST, even if Supabase logout fails
                           // This ensures logout works even with connection issues
                           useStore.setState({
@@ -798,14 +823,14 @@ export const SettingsScreen: React.FC = () => {
                             hasCompletedOnboarding: false,
                             emotionalFeedbackHistory: [],
                           });
-                          
+
                           // Clear all caches
                           useStore.getState().clearSessionsCache();
                           useStore.getState().clearCalendarCache();
                           useStore.setState({ completedTodaySessions: {} });
-                          
+
                           console.log('✅ [Settings] Local state cleared');
-                          
+
                           // Try to sign out from Supabase (but don't fail if this doesn't work)
                           try {
                             const result = await signOut();
@@ -829,7 +854,7 @@ export const SettingsScreen: React.FC = () => {
                               [{ text: 'OK' }]
                             );
                           }
-                          
+
                           console.log('✅ [Settings] Logout process completed');
                         } catch (error: any) {
                           console.error('❌ [Settings] Logout exception:', error);
@@ -837,7 +862,7 @@ export const SettingsScreen: React.FC = () => {
                           console.error('❌ [Settings] Exception message:', error?.message);
                           console.error('❌ [Settings] Exception code:', error?.code);
                           console.error('❌ [Settings] Exception stack:', error?.stack);
-                          
+
                           // Even if there's an error, try to clear local state
                           try {
                             useStore.setState({
@@ -888,18 +913,14 @@ export const SettingsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0A0F',
   },
   header: {
-    backgroundColor: '#1C1C1E',
     paddingTop: 60,
     paddingBottom: 20,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 2,
     flexDirection: 'row',
@@ -907,7 +928,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   backButton: {
-    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -916,12 +936,10 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0A84FF',
   },
   headerTitle: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#F2F2F7',
     textAlign: 'center',
     flex: 1,
   },
@@ -931,7 +949,6 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    backgroundColor: '#0A0A0F',
   },
   content: {
     padding: 20,
@@ -943,18 +960,15 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#F2F2F7',
     marginBottom: 8,
   },
   settingItem: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 16,
     marginHorizontal: 12,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
     flexDirection: 'row',
@@ -968,21 +982,17 @@ const styles = StyleSheet.create({
   settingLabel: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#F2F2F7',
     marginBottom: 4,
   },
   settingDescription: {
     fontSize: 15,
-    color: '#A0A0B0',
   },
   reminderCard: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 20,
     marginHorizontal: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
   },
@@ -999,21 +1009,17 @@ const styles = StyleSheet.create({
   reminderTitle: {
     fontSize: 19,
     fontWeight: '700',
-    color: '#F2F2F7',
     marginBottom: 4,
   },
   reminderDescription: {
     fontSize: 15,
-    color: '#A0A0B0',
   },
   subscriptionCard: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 20,
     marginHorizontal: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
   },
@@ -1026,13 +1032,11 @@ const styles = StyleSheet.create({
   subscriptionTitle: {
     fontSize: 19,
     fontWeight: '700',
-    color: '#F2F2F7',
   },
   subscriptionStatus: {
     fontSize: 13,
     fontWeight: '600',
     color: '#34c759',
-    backgroundColor: '#2C2C2E',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 8,
@@ -1041,12 +1045,10 @@ const styles = StyleSheet.create({
   },
   subscriptionDescription: {
     fontSize: 15,
-    color: '#A0A0B0',
     lineHeight: 20,
     marginBottom: 16,
   },
   upgradeButton: {
-    backgroundColor: '#0A84FF',
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 20,
@@ -1058,7 +1060,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   manageButton: {
-    backgroundColor: '#0A84FF',
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 20,
@@ -1096,7 +1097,6 @@ const styles = StyleSheet.create({
   },
   renewalMessageText: {
     fontSize: 14,
-    color: '#0A84FF',
     lineHeight: 20,
   },
   lifetimeMessageContainer: {
@@ -1111,52 +1111,44 @@ const styles = StyleSheet.create({
   },
   lifetimeMessageText: {
     fontSize: 14,
-    color: '#30D158',
     lineHeight: 20,
     fontWeight: '600',
   },
   aboutCard: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 16,
     marginHorizontal: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
   },
   aboutTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#F2F2F7',
     marginBottom: 8,
   },
   aboutDescription: {
     fontSize: 15,
-    color: '#A0A0B0',
     lineHeight: 20,
   },
   resetCard: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 20,
     marginHorizontal: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
   },
   resetTitle: {
     fontSize: 19,
     fontWeight: '700',
-    color: '#ff3b30',
+    color: '#FF453A',
     marginBottom: 8,
   },
   resetDescription: {
     fontSize: 15,
-    color: '#A0A0B0',
     lineHeight: 20,
     marginBottom: 16,
   },
@@ -1171,7 +1163,7 @@ const styles = StyleSheet.create({
   resetWarningTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#ff3b30',
+    color: '#FF453A',
     textTransform: 'uppercase',
     marginBottom: 4,
   },
@@ -1181,21 +1173,20 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   resetButton: {
-    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: '#ff3b30',
+    borderColor: '#FF453A',
     marginBottom: 12,
   },
   resetButtonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#ff3b30',
+    color: '#FF453A',
   },
   deleteButton: {
-    backgroundColor: '#ff3b30',
+    backgroundColor: '#FF453A',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
@@ -1206,7 +1197,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   logoutButton: {
-    backgroundColor: '#0A84FF',
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 20,
@@ -1214,7 +1204,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
   },
@@ -1224,14 +1213,12 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   howToUseButton: {
-    backgroundColor: '#0A84FF',
     borderRadius: 16,
     padding: 16,
     marginHorizontal: 12,
     marginTop: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
     alignItems: 'center',
@@ -1242,22 +1229,14 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   customiseButton: {
-    backgroundColor: '#0A84FF',
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 20,
     alignItems: 'center',
   },
-  customiseButtonDisabled: {
-    backgroundColor: '#38383A',
-    opacity: 0.6,
-  },
   customiseButtonText: {
     fontSize: 17,
     fontWeight: '600',
     color: '#ffffff',
-  },
-  customiseButtonTextDisabled: {
-    color: '#636366',
   },
 });

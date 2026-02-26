@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Modal, View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingView, Platform, Animated, Alert, Easing } from 'react-native';
 import { useStore } from '../store/useStore';
+import { useTheme } from '../contexts/ThemeContext';
 
 const pricingPlans = [
   {
@@ -38,24 +39,25 @@ interface PaymentModalProps {
   defaultPlan?: string | null;
 }
 
-export const PaymentModal: React.FC<PaymentModalProps> = ({ 
-  visible, 
+export const PaymentModal: React.FC<PaymentModalProps> = ({
+  visible,
   onClose,
   defaultPlan = 'yearly' // Default to yearly plan
 }) => {
+  const theme = useTheme();
   const [selectedPlan, setSelectedPlan] = useState<string | null>(defaultPlan);
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleTranslateY = useRef(new Animated.Value(20)).current;
   const formOpacity = useRef(new Animated.Value(0)).current;
   const formTranslateY = useRef(new Animated.Value(30)).current;
   const hasAnimated = useRef(false);
-  
+
   const [cardNumber, setCardNumber] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [cvv, setCvv] = useState('');
   const [cardholderName, setCardholderName] = useState('');
   const [email, setEmail] = useState('');
-  
+
   const [errors, setErrors] = useState<{
     cardNumber: boolean;
     expiryDate: boolean;
@@ -69,7 +71,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     cardholderName: false,
     email: false,
   });
-  
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const processingOpacity = useRef(new Animated.Value(0)).current;
@@ -116,14 +118,14 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       spinnerRotation.setValue(0);
     }
   }, [isProcessing]);
-  
+
   const spinnerInterpolate = spinnerRotation.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg'],
   });
 
   const selectedPlanData = pricingPlans.find(p => p.id === selectedPlan);
-  
+
   // Animate on open
   useEffect(() => {
     if (visible && !hasAnimated.current) {
@@ -184,7 +186,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         return false;
     }
   };
-  
+
   const isFormValid = () => {
     return (
       validateField('cardNumber', cardNumber) &&
@@ -231,13 +233,13 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     const isValid = validateField('cvv', cleaned);
     setErrors(prev => ({ ...prev, cvv: cleaned.length > 0 && !isValid }));
   };
-  
+
   const handleCardholderNameChange = (text: string) => {
     setCardholderName(text);
     const isValid = validateField('cardholderName', text);
     setErrors(prev => ({ ...prev, cardholderName: text.length > 0 && !isValid }));
   };
-  
+
   const handleEmailChange = (text: string) => {
     setEmail(text);
     const isValid = validateField('email', text);
@@ -251,7 +253,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
     setIsProcessing(true);
     setIsSuccess(false);
-    
+
     Animated.timing(processingOpacity, {
       toValue: 1,
       duration: 300,
@@ -262,7 +264,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       await new Promise((resolve, reject) => {
         setTimeout(() => {
           const isSuccessful = Math.random() > 0.2;
-          
+
           if (isSuccessful) {
             resolve(true);
           } else {
@@ -281,7 +283,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
       // Payment successful - set subscription to premium
       setSubscriptionType('premium');
-      
+
       setIsProcessing(false);
       Animated.timing(processingOpacity, {
         toValue: 0,
@@ -318,7 +320,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       }).start(() => {
         successOpacity.setValue(0);
         successScale.setValue(0.8);
-        
+
         Alert.alert(
           'Payment Failed',
           error.message || 'Unable to process your payment. Please try again.',
@@ -328,8 +330,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     }
   };
 
-  // Import styles from OnboardingScreen - we'll need to copy them
-  // For now, using inline styles similar to OnboardingScreen
   return (
     <Modal
       visible={visible}
@@ -338,12 +338,12 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       onRequestClose={onClose}
     >
       <KeyboardAvoidingView
-        style={styles.page}
+        style={[styles.page, { backgroundColor: theme.colors.background }]}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <ScrollView
-          style={styles.page}
+          style={[styles.page, { backgroundColor: theme.colors.background }]}
           contentContainerStyle={styles.paymentScrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -355,7 +355,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               onPress={onClose}
               activeOpacity={0.7}
             >
-              <Text style={styles.backButtonText}>← Back</Text>
+              <Text style={[styles.backButtonText, { color: theme.colors.accent }]}>← Back</Text>
             </TouchableOpacity>
 
             <Animated.View
@@ -367,8 +367,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 },
               ]}
             >
-              <Text style={styles.titleLight}>Complete Your Purchase</Text>
-              <Text style={styles.subtitleLight}>
+              <Text style={[styles.titleLight, { color: theme.colors.text.primary }]}>Complete Your Purchase</Text>
+              <Text style={[styles.subtitleLight, { color: theme.colors.text.secondary }]}>
                 {selectedPlanData ? `You're subscribing to ${selectedPlanData.name} Plan` : 'Select a plan to continue'}
               </Text>
             </Animated.View>
@@ -384,15 +384,21 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   },
                 ]}
               >
-                <Text style={styles.formSectionTitle}>Select a Plan</Text>
+                <Text style={[styles.formSectionTitle, { color: theme.colors.text.primary }]}>Select a Plan</Text>
                 {pricingPlans.map((plan) => (
                   <TouchableOpacity
                     key={plan.id}
-                    style={styles.planOption}
+                    style={[
+                      styles.planOption,
+                      {
+                        backgroundColor: theme.colors.surface,
+                        borderColor: theme.colors.border,
+                      },
+                    ]}
                     onPress={() => setSelectedPlan(plan.id)}
                   >
-                    <Text style={styles.planOptionName}>{plan.name}</Text>
-                    <Text style={styles.planOptionPrice}>
+                    <Text style={[styles.planOptionName, { color: theme.colors.text.primary }]}>{plan.name}</Text>
+                    <Text style={[styles.planOptionPrice, { color: theme.colors.text.secondary }]}>
                       ${plan.price.toFixed(2)}
                       {plan.period === 'month' ? '/month' : plan.period === 'year' ? '/year' : ' one-time'}
                     </Text>
@@ -407,31 +413,32 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 style={[
                   styles.planSummary,
                   {
+                    backgroundColor: theme.colors.surface,
                     opacity: formOpacity,
                     transform: [{ translateY: formTranslateY }],
                   },
                 ]}
               >
                 <View style={styles.planSummaryHeader}>
-                  <Text style={styles.planSummaryTitle}>{selectedPlanData.name} Plan</Text>
+                  <Text style={[styles.planSummaryTitle, { color: theme.colors.text.primary }]}>{selectedPlanData.name} Plan</Text>
                   {selectedPlanData.savings && (
-                    <View style={styles.paymentSavingsBadge}>
+                    <View style={[styles.paymentSavingsBadge, { backgroundColor: theme.colors.success }]}>
                       <Text style={styles.paymentSavingsBadgeText}>{selectedPlanData.savings}</Text>
                     </View>
                   )}
                 </View>
                 <View style={styles.planSummaryPrice}>
-                  <Text style={styles.planPrice}>${selectedPlanData.price.toFixed(2)}</Text>
-                  <Text style={styles.planPeriod}>
+                  <Text style={[styles.planPrice, { color: theme.colors.text.primary }]}>${selectedPlanData.price.toFixed(2)}</Text>
+                  <Text style={[styles.planPeriod, { color: theme.colors.text.secondary }]}>
                     {selectedPlanData.period === 'month' ? '/month' : selectedPlanData.period === 'year' ? '/year' : ' one-time'}
                   </Text>
                 </View>
                 {selectedPlanData.originalPrice && (
-                  <Text style={styles.originalPrice}>
+                  <Text style={[styles.originalPrice, { color: theme.colors.text.secondary }]}>
                     ${selectedPlanData.originalPrice.toFixed(2)} before discount
                   </Text>
                 )}
-                <Text style={styles.freeTrialText}>7-day free trial • Cancel anytime</Text>
+                <Text style={[styles.freeTrialText, { color: theme.colors.text.secondary }]}>7-day free trial • Cancel anytime</Text>
               </Animated.View>
             )}
 
@@ -446,48 +453,63 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   },
                 ]}
               >
-                <Text style={styles.formSectionTitle}>Payment Information</Text>
+                <Text style={[styles.formSectionTitle, { color: theme.colors.text.primary }]}>Payment Information</Text>
 
                 {/* Card Number */}
                 <View style={styles.paymentInputContainer}>
-                  <Text style={styles.paymentInputLabel}>Card Number</Text>
+                  <Text style={[styles.paymentInputLabel, { color: theme.colors.text.primary }]}>Card Number</Text>
                   <TextInput
                     style={[
                       styles.paymentInput,
-                      errors.cardNumber && styles.paymentInputError
+                      {
+                        backgroundColor: theme.colors.surface,
+                        color: theme.colors.text.primary,
+                        borderColor: errors.cardNumber ? '#ff3b30' : theme.colors.border,
+                        borderWidth: errors.cardNumber ? 2 : 1,
+                      },
                     ]}
                     placeholder="1234 5678 9012 3456"
                     value={cardNumber}
                     onChangeText={handleCardNumberChange}
                     keyboardType="numeric"
                     maxLength={19}
-                    placeholderTextColor="#6B6B7B"
+                    placeholderTextColor={theme.colors.text.tertiary}
                   />
                 </View>
 
                 {/* Expiry and CVV Row */}
                 <View style={styles.paymentInputRow}>
                   <View style={[styles.paymentInputContainer, { flex: 1, marginRight: 10 }]}>
-                    <Text style={styles.paymentInputLabel}>Expiry Date</Text>
+                    <Text style={[styles.paymentInputLabel, { color: theme.colors.text.primary }]}>Expiry Date</Text>
                     <TextInput
                       style={[
                         styles.paymentInput,
-                        errors.expiryDate && styles.paymentInputError
+                        {
+                          backgroundColor: theme.colors.surface,
+                          color: theme.colors.text.primary,
+                          borderColor: errors.expiryDate ? '#ff3b30' : theme.colors.border,
+                          borderWidth: errors.expiryDate ? 2 : 1,
+                        },
                       ]}
                       placeholder="MM/YY"
                       value={expiryDate}
                       onChangeText={handleExpiryChange}
                       keyboardType="numeric"
                       maxLength={5}
-                      placeholderTextColor="#6B6B7B"
+                      placeholderTextColor={theme.colors.text.tertiary}
                     />
                   </View>
                   <View style={[styles.paymentInputContainer, { flex: 1, marginLeft: 10 }]}>
-                    <Text style={styles.paymentInputLabel}>CVV</Text>
+                    <Text style={[styles.paymentInputLabel, { color: theme.colors.text.primary }]}>CVV</Text>
                     <TextInput
                       style={[
                         styles.paymentInput,
-                        errors.cvv && styles.paymentInputError
+                        {
+                          backgroundColor: theme.colors.surface,
+                          color: theme.colors.text.primary,
+                          borderColor: errors.cvv ? '#ff3b30' : theme.colors.border,
+                          borderWidth: errors.cvv ? 2 : 1,
+                        },
                       ]}
                       placeholder="123"
                       value={cvv}
@@ -495,47 +517,57 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                       keyboardType="numeric"
                       maxLength={3}
                       secureTextEntry
-                      placeholderTextColor="#6B6B7B"
+                      placeholderTextColor={theme.colors.text.tertiary}
                     />
                   </View>
                 </View>
 
                 {/* Cardholder Name */}
                 <View style={styles.paymentInputContainer}>
-                  <Text style={styles.paymentInputLabel}>Cardholder Name</Text>
+                  <Text style={[styles.paymentInputLabel, { color: theme.colors.text.primary }]}>Cardholder Name</Text>
                   <TextInput
                     style={[
                       styles.paymentInput,
-                      errors.cardholderName && styles.paymentInputError
+                      {
+                        backgroundColor: theme.colors.surface,
+                        color: theme.colors.text.primary,
+                        borderColor: errors.cardholderName ? '#ff3b30' : theme.colors.border,
+                        borderWidth: errors.cardholderName ? 2 : 1,
+                      },
                     ]}
                     placeholder="John Doe"
                     value={cardholderName}
                     onChangeText={handleCardholderNameChange}
-                    placeholderTextColor="#6B6B7B"
+                    placeholderTextColor={theme.colors.text.tertiary}
                   />
                 </View>
 
                 {/* Email */}
                 <View style={styles.paymentInputContainer}>
-                  <Text style={styles.paymentInputLabel}>Email</Text>
+                  <Text style={[styles.paymentInputLabel, { color: theme.colors.text.primary }]}>Email</Text>
                   <TextInput
                     style={[
                       styles.paymentInput,
-                      errors.email && styles.paymentInputError
+                      {
+                        backgroundColor: theme.colors.surface,
+                        color: theme.colors.text.primary,
+                        borderColor: errors.email ? '#ff3b30' : theme.colors.border,
+                        borderWidth: errors.email ? 2 : 1,
+                      },
                     ]}
                     placeholder="your.email@example.com"
                     value={email}
                     onChangeText={handleEmailChange}
                     keyboardType="email-address"
                     autoCapitalize="none"
-                    placeholderTextColor="#6B6B7B"
+                    placeholderTextColor={theme.colors.text.tertiary}
                   />
                 </View>
 
                 {/* Security Notice */}
-                <View style={styles.securityNotice}>
+                <View style={[styles.securityNotice, { backgroundColor: theme.colors.surfaceElevated }]}>
                   <Text style={styles.securityIcon}>🔒</Text>
-                  <Text style={styles.securityText}>
+                  <Text style={[styles.securityText, { color: theme.colors.text.secondary }]}>
                     Your payment information is encrypted and secure. We never store your full card details.
                   </Text>
                 </View>
@@ -544,7 +576,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 <TouchableOpacity
                   style={[
                     styles.completePurchaseButton,
-                    (!isFormValid() || isProcessing) && styles.completePurchaseButtonDisabled
+                    {
+                      backgroundColor: (!isFormValid() || isProcessing) ? theme.colors.surfaceElevated : theme.colors.accent,
+                      shadowColor: theme.colors.accent,
+                      shadowOpacity: (!isFormValid() || isProcessing) ? 0 : (theme.isDark ? 0.3 : 0.06),
+                    },
                   ]}
                   onPress={handlePayment}
                   activeOpacity={0.7}
@@ -552,21 +588,21 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 >
                   {isProcessing ? (
                     <View style={styles.processingContainer}>
-                      <Animated.View 
+                      <Animated.View
                         style={[
-                          styles.spinner, 
-                          { 
+                          styles.spinner,
+                          {
                             transform: [{ rotate: spinnerInterpolate }],
-                            opacity: processingOpacity 
+                            opacity: processingOpacity
                           }
-                        ]} 
+                        ]}
                       />
                       <Text style={styles.completePurchaseButtonText}>Processing...</Text>
                     </View>
                   ) : (
                     <Text style={[
                       styles.completePurchaseButtonText,
-                      !isFormValid() && styles.completePurchaseButtonTextDisabled
+                      !isFormValid() && { color: theme.colors.text.secondary },
                     ]}>
                       Complete Purchase
                     </Text>
@@ -585,17 +621,20 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               { opacity: processingOpacity }
             ]}
           >
-            <View style={styles.processingContent}>
+            <View style={[styles.processingContent, { backgroundColor: theme.colors.surface }]}>
               <View style={styles.processingSpinnerContainer}>
-                <Animated.View 
+                <Animated.View
                   style={[
                     styles.processingSpinner,
-                    { transform: [{ rotate: spinnerInterpolate }] }
+                    {
+                      borderColor: theme.colors.accent,
+                      transform: [{ rotate: spinnerInterpolate }],
+                    }
                   ]}
                 />
               </View>
-              <Text style={styles.processingText}>Processing your payment...</Text>
-              <Text style={styles.processingSubtext}>Please wait</Text>
+              <Text style={[styles.processingText, { color: theme.colors.text.primary }]}>Processing your payment...</Text>
+              <Text style={[styles.processingSubtext, { color: theme.colors.text.secondary }]}>Please wait</Text>
             </View>
           </Animated.View>
         )}
@@ -614,15 +653,16 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               style={[
                 styles.successContent,
                 {
+                  backgroundColor: theme.colors.surface,
                   transform: [{ scale: successScale }],
                 }
               ]}
             >
-              <View style={styles.successIconContainer}>
+              <View style={[styles.successIconContainer, { backgroundColor: theme.colors.success }]}>
                 <Text style={styles.successIcon}>✓</Text>
               </View>
-              <Text style={styles.successTitle}>Payment Successful!</Text>
-              <Text style={styles.successSubtext}>Your subscription is now active</Text>
+              <Text style={[styles.successTitle, { color: theme.colors.text.primary }]}>Payment Successful!</Text>
+              <Text style={[styles.successSubtext, { color: theme.colors.text.secondary }]}>Your subscription is now active</Text>
             </Animated.View>
           </Animated.View>
         )}
@@ -635,7 +675,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 const styles = StyleSheet.create({
   page: {
     flex: 1,
-    backgroundColor: '#0A0A0F',
   },
   paymentScrollContent: {
     flexGrow: 1,
@@ -653,7 +692,6 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#0A84FF',
   },
   titleContainer: {
     marginBottom: 30,
@@ -661,39 +699,32 @@ const styles = StyleSheet.create({
   titleLight: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#F2F2F7',
     marginBottom: 8,
   },
   subtitleLight: {
     fontSize: 17,
     fontWeight: '400',
-    color: '#A0A0B0',
     lineHeight: 24,
   },
   planSelection: {
     marginBottom: 30,
   },
   planOption: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
   },
   planOptionName: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#F2F2F7',
     marginBottom: 4,
   },
   planOptionPrice: {
     fontSize: 16,
     fontWeight: '400',
-    color: '#A0A0B0',
   },
   planSummary: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 20,
     marginBottom: 30,
@@ -712,10 +743,8 @@ const styles = StyleSheet.create({
   planSummaryTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#F2F2F7',
   },
   paymentSavingsBadge: {
-    backgroundColor: '#34C759',
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -733,25 +762,21 @@ const styles = StyleSheet.create({
   planPrice: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#F2F2F7',
   },
   planPeriod: {
     fontSize: 18,
     fontWeight: '400',
-    color: '#A0A0B0',
     marginLeft: 4,
   },
   originalPrice: {
     fontSize: 14,
     fontWeight: '400',
-    color: '#A0A0B0',
     textDecorationLine: 'line-through',
     marginBottom: 8,
   },
   freeTrialText: {
     fontSize: 14,
     fontWeight: '400',
-    color: '#A0A0B0',
   },
   paymentForm: {
     marginBottom: 20,
@@ -759,7 +784,6 @@ const styles = StyleSheet.create({
   formSectionTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#F2F2F7',
     marginBottom: 20,
   },
   paymentInputContainer: {
@@ -772,28 +796,18 @@ const styles = StyleSheet.create({
   paymentInputLabel: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#F2F2F7',
     marginBottom: 8,
   },
   paymentInput: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
     fontWeight: '400',
-    color: '#F2F2F7',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-  },
-  paymentInputError: {
-    borderColor: '#ff3b30',
-    borderWidth: 2,
   },
   securityNotice: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
@@ -806,34 +820,23 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: '400',
-    color: '#A0A0B0',
     lineHeight: 20,
   },
   completePurchaseButton: {
-    backgroundColor: '#0A84FF',
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 32,
     alignItems: 'center',
     marginTop: 10,
     marginBottom: 20,
-    shadowColor: '#0A84FF',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
-  },
-  completePurchaseButtonDisabled: {
-    backgroundColor: '#2C2C2E',
-    shadowOpacity: 0,
   },
   completePurchaseButtonText: {
     fontSize: 17,
     fontWeight: '600',
     color: '#ffffff',
-  },
-  completePurchaseButtonTextDisabled: {
-    color: '#A0A0B0',
   },
   processingContainer: {
     flexDirection: 'row',
@@ -861,7 +864,6 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   processingContent: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 20,
     padding: 40,
     alignItems: 'center',
@@ -880,20 +882,17 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
     borderWidth: 4,
-    borderColor: '#0A84FF',
     borderTopColor: 'transparent',
   },
   processingText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#F2F2F7',
     marginBottom: 8,
     textAlign: 'center',
   },
   processingSubtext: {
     fontSize: 14,
     fontWeight: '400',
-    color: '#A0A0B0',
     textAlign: 'center',
   },
   successOverlay: {
@@ -908,7 +907,6 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   successContent: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 20,
     padding: 40,
     alignItems: 'center',
@@ -919,7 +917,6 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#34C759',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
@@ -932,16 +929,12 @@ const styles = StyleSheet.create({
   successTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#F2F2F7',
     marginBottom: 8,
     textAlign: 'center',
   },
   successSubtext: {
     fontSize: 16,
     fontWeight: '400',
-    color: '#A0A0B0',
     textAlign: 'center',
   },
 });
-
-

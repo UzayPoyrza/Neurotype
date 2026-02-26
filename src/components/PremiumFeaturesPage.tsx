@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Easing, Dimensions, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../contexts/ThemeContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -178,7 +179,7 @@ const PremiumFeatureCard: React.FC<{
             >
               <Text style={styles.premiumFeatureIcon}>{icon}</Text>
             </Animated.View>
-            
+
             <View style={styles.premiumFeatureTextContainer}>
               <Text style={styles.premiumFeatureTitle}>{title}</Text>
               <Text style={styles.premiumFeatureDescription}>{description}</Text>
@@ -199,13 +200,14 @@ interface PremiumFeaturesPageProps {
   isOnboarding?: boolean; // True when used in onboarding horizontal scroll
 }
 
-export const PremiumFeaturesPage: React.FC<PremiumFeaturesPageProps> = ({ 
-  isActive = true, 
-  selectedPlan, 
-  onSelectPlan, 
+export const PremiumFeaturesPage: React.FC<PremiumFeaturesPageProps> = ({
+  isActive = true,
+  selectedPlan,
+  onSelectPlan,
   onClose,
   isOnboarding = false
 }) => {
+  const theme = useTheme();
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const titleTranslateY = useRef(new Animated.Value(20)).current;
   const cardsOpacity = useRef(new Animated.Value(0)).current;
@@ -281,7 +283,7 @@ export const PremiumFeaturesPage: React.FC<PremiumFeaturesPageProps> = ({
     // Toggle selection - if clicking the same plan, deselect it
     const newSelectedPlan = selectedPlan === planId ? null : planId;
     onSelectPlan(newSelectedPlan);
-    
+
     // Animate the selected card
     const index = pricingPlans.findIndex(p => p.id === planId);
     if (index !== -1) {
@@ -344,7 +346,7 @@ export const PremiumFeaturesPage: React.FC<PremiumFeaturesPageProps> = ({
   });
 
   return (
-    <View style={[styles.page, isOnboarding && styles.pageOnboarding]}>
+    <View style={[styles.page, { backgroundColor: theme.colors.background }, isOnboarding && styles.pageOnboarding]}>
       {/* Close Button */}
       <Animated.View
         style={[
@@ -358,16 +360,16 @@ export const PremiumFeaturesPage: React.FC<PremiumFeaturesPageProps> = ({
       >
         <TouchableOpacity
           onPress={onClose}
-          style={styles.closeButton}
+          style={[styles.closeButton, { backgroundColor: theme.colors.borderMedium }]}
           activeOpacity={0.7}
         >
-          <Text style={styles.closeButtonText}>✕</Text>
+          <Text style={[styles.closeButtonText, { color: theme.colors.text.primary }]}>✕</Text>
         </TouchableOpacity>
       </Animated.View>
 
-      <ScrollView 
+      <ScrollView
         ref={mainScrollViewRef}
-        style={styles.page} 
+        style={[styles.page, { backgroundColor: theme.colors.background }]}
         contentContainerStyle={styles.premiumScrollContent}
         showsVerticalScrollIndicator={false}
         onScroll={handleMainScroll}
@@ -388,8 +390,8 @@ export const PremiumFeaturesPage: React.FC<PremiumFeaturesPageProps> = ({
               },
             ]}
           >
-            <Text style={styles.titleLight}>Choose Your Plan</Text>
-            <Text style={styles.subtitleLight}>Unlock the full potential of Neurotype</Text>
+            <Text style={[styles.titleLight, { color: theme.colors.text.primary }]}>Choose Your Plan</Text>
+            <Text style={[styles.subtitleLight, { color: theme.colors.text.secondary }]}>Unlock the full potential of Neurotype</Text>
           </Animated.View>
 
           <Animated.View
@@ -419,33 +421,38 @@ export const PremiumFeaturesPage: React.FC<PremiumFeaturesPageProps> = ({
               {pricingPlans.map((plan, index) => {
                 const isSelected = selectedPlan === plan.id;
                 const monthlyPrice = calculateMonthlyEquivalent(plan);
-                
+
                 return (
                   <View key={plan.id} style={styles.pricingCardWrapper}>
                     <Animated.View
                       style={[
                         styles.pricingCard,
-                        isSelected && styles.pricingCardSelected,
+                        {
+                          backgroundColor: isSelected ? theme.colors.surfaceElevated : theme.colors.surface,
+                          borderColor: isSelected ? theme.colors.accent : theme.colors.border,
+                          borderWidth: isSelected ? 3 : 2,
+                          shadowOpacity: isSelected ? (theme.isDark ? 0.3 : 0.06) : (theme.isDark ? 0.3 : 0.06),
+                        },
                         {
                           transform: [{ scale: scaleAnimations[index] }],
                         },
                       ]}
                     >
                       {plan.popular && (
-                        <View style={styles.popularBadge}>
+                        <View style={[styles.popularBadge, { backgroundColor: theme.colors.accent }]}>
                           <Text style={styles.popularBadgeText}>Most Popular</Text>
                         </View>
                       )}
-                      
+
                       <TouchableOpacity
                         activeOpacity={0.9}
                         onPress={() => handleSelectPlan(plan.id)}
                         style={styles.pricingCardTouchable}
                       >
                         <View style={styles.pricingCardHeader}>
-                          <Text style={styles.pricingCardName}>{plan.name}</Text>
+                          <Text style={[styles.pricingCardName, { color: theme.colors.text.primary }]}>{plan.name}</Text>
                           {plan.savings && (
-                            <View style={styles.savingsBadge}>
+                            <View style={[styles.savingsBadge, { backgroundColor: theme.colors.success }]}>
                               <Text style={styles.savingsBadgeText}>{plan.savings}</Text>
                             </View>
                           )}
@@ -453,20 +460,20 @@ export const PremiumFeaturesPage: React.FC<PremiumFeaturesPageProps> = ({
 
                         <View style={styles.pricingCardPriceContainer}>
                           <View style={styles.pricingCardPriceRow}>
-                            <Text style={styles.pricingCardPrice}>
+                            <Text style={[styles.pricingCardPrice, { color: theme.colors.text.primary }]}>
                               {formatPrice(plan.price)}
                             </Text>
                             {plan.period !== 'one-time' && (
-                              <Text style={styles.pricingCardPeriod}>/{plan.period}</Text>
+                              <Text style={[styles.pricingCardPeriod, { color: theme.colors.text.secondary }]}>/{plan.period}</Text>
                             )}
                           </View>
                           {plan.period === 'year' && (
-                            <Text style={styles.pricingCardEquivalent}>
+                            <Text style={[styles.pricingCardEquivalent, { color: theme.colors.text.secondary }]}>
                               ${monthlyPrice}/month billed annually
                             </Text>
                           )}
                           {plan.originalPrice && (
-                            <Text style={styles.pricingCardOriginal}>
+                            <Text style={[styles.pricingCardOriginal, { color: theme.colors.surfaceTertiary }]}>
                               ${plan.originalPrice.toFixed(2)}/year
                             </Text>
                           )}
@@ -475,19 +482,22 @@ export const PremiumFeaturesPage: React.FC<PremiumFeaturesPageProps> = ({
                         <View style={styles.pricingCardFeatures}>
                           {plan.features.map((feature, featureIndex) => (
                             <View key={featureIndex} style={styles.pricingCardFeature}>
-                              <Text style={styles.pricingCardFeatureIcon}>✓</Text>
-                              <Text style={styles.pricingCardFeatureText}>{feature}</Text>
+                              <Text style={[styles.pricingCardFeatureIcon, { color: theme.colors.success }]}>✓</Text>
+                              <Text style={[styles.pricingCardFeatureText, { color: theme.colors.text.primary }]}>{feature}</Text>
                             </View>
                           ))}
                         </View>
 
                         <View style={[
                           styles.pricingCardButton,
-                          isSelected && styles.pricingCardButtonSelected,
+                          {
+                            backgroundColor: isSelected ? theme.colors.accent : theme.colors.surfaceElevated,
+                            borderColor: isSelected ? theme.colors.accent : theme.colors.border,
+                          },
                         ]}>
                           <Text style={[
                             styles.pricingCardButtonText,
-                            isSelected && styles.pricingCardButtonTextSelected,
+                            { color: isSelected ? '#ffffff' : theme.colors.text.primary },
                           ]}>
                             {isSelected ? 'Selected' : 'Select Plan'}
                           </Text>
@@ -498,7 +508,7 @@ export const PremiumFeaturesPage: React.FC<PremiumFeaturesPageProps> = ({
                 );
               })}
             </ScrollView>
-            
+
             {/* Page Indicators */}
             <View style={styles.pricingIndicators}>
               {pricingPlans.map((_, index) => (
@@ -506,16 +516,19 @@ export const PremiumFeaturesPage: React.FC<PremiumFeaturesPageProps> = ({
                   key={index}
                   style={[
                     styles.pricingIndicator,
-                    currentPricingPage === index && styles.pricingIndicatorActive,
+                    {
+                      backgroundColor: currentPricingPage === index ? theme.colors.accent : theme.colors.surfaceTertiary,
+                      width: currentPricingPage === index ? 24 : 8,
+                    },
                     index < pricingPlans.length - 1 && { marginRight: 8 },
                   ]}
                 />
               ))}
             </View>
-            
+
             {/* Cancel Anytime Text */}
             <View style={styles.pricingFooter}>
-              <Text style={styles.pricingFooterText}>
+              <Text style={[styles.pricingFooterText, { color: theme.colors.text.secondary }]}>
                 Cancel anytime. All plans include a 7-day free trial.
               </Text>
             </View>
@@ -529,11 +542,11 @@ export const PremiumFeaturesPage: React.FC<PremiumFeaturesPageProps> = ({
               },
             ]}
           >
-            <Text style={styles.premiumFeaturesListTitle}>All Premium Features</Text>
-            <Text style={styles.premiumFeaturesListSubtitle}>
+            <Text style={[styles.premiumFeaturesListTitle, { color: theme.colors.text.primary }]}>All Premium Features</Text>
+            <Text style={[styles.premiumFeaturesListSubtitle, { color: theme.colors.text.secondary }]}>
               Everything you need for your meditation journey
             </Text>
-            
+
             <View style={styles.premiumFeaturesGrid}>
               {[
                 {
@@ -593,18 +606,19 @@ export const PremiumFeaturesPage: React.FC<PremiumFeaturesPageProps> = ({
           </Animated.View>
         </View>
       </ScrollView>
-      
+
       {/* Scroll Progress Indicator */}
       {scrollableHeight > 0 && (
         <View style={[
           styles.scrollProgressContainer,
           isOnboarding ? styles.scrollProgressContainerOnboarding : styles.scrollProgressContainerStandalone
         ]}>
-          <View style={styles.scrollProgressTrack}>
+          <View style={[styles.scrollProgressTrack, { backgroundColor: theme.colors.border }]}>
             <Animated.View
               style={[
                 styles.scrollProgressBar,
                 {
+                  backgroundColor: theme.colors.accent,
                   height: progressBarHeight,
                 },
               ]}
@@ -619,7 +633,6 @@ export const PremiumFeaturesPage: React.FC<PremiumFeaturesPageProps> = ({
 const styles = StyleSheet.create({
   page: {
     flex: 1,
-    backgroundColor: '#0A0A0F',
   },
   pageOnboarding: {
     width: SCREEN_WIDTH,
@@ -644,7 +657,6 @@ const styles = StyleSheet.create({
   titleLight: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#F2F2F7',
     textAlign: 'center',
     marginBottom: 12,
     letterSpacing: -0.5,
@@ -652,7 +664,6 @@ const styles = StyleSheet.create({
   subtitleLight: {
     fontSize: 17,
     fontWeight: '400',
-    color: '#A0A0B0',
     textAlign: 'center',
   },
   premiumScrollContent: {
@@ -676,14 +687,12 @@ const styles = StyleSheet.create({
   scrollProgressTrack: {
     width: 4,
     height: '100%',
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     borderRadius: 2,
     overflow: 'hidden',
     justifyContent: 'flex-start',
   },
   scrollProgressBar: {
     width: '100%',
-    backgroundColor: '#0A84FF',
     borderRadius: 2,
     minHeight: 4,
   },
@@ -702,14 +711,12 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   closeButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#F2F2F7',
     textAlign: 'center',
     lineHeight: 18,
   },
@@ -741,15 +748,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   pricingCard: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 20,
     padding: 20,
     paddingTop: 32,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.06)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
     position: 'relative',
@@ -759,14 +762,6 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH - 40,
     alignSelf: 'center',
   },
-  pricingCardSelected: {
-    borderColor: '#0A84FF',
-    borderWidth: 3,
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 6,
-    backgroundColor: '#2C2C2E',
-  },
   pricingCardTouchable: {
     width: '100%',
   },
@@ -774,7 +769,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     alignSelf: 'center',
-    backgroundColor: '#0A84FF',
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 20,
@@ -796,11 +790,9 @@ const styles = StyleSheet.create({
   pricingCardName: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#F2F2F7',
     letterSpacing: -0.5,
   },
   savingsBadge: {
-    backgroundColor: '#34C759',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
@@ -822,25 +814,21 @@ const styles = StyleSheet.create({
   pricingCardPrice: {
     fontSize: 36,
     fontWeight: '700',
-    color: '#F2F2F7',
     letterSpacing: -1,
   },
   pricingCardPeriod: {
     fontSize: 18,
     fontWeight: '500',
-    color: '#A0A0B0',
     marginLeft: 4,
   },
   pricingCardEquivalent: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#A0A0B0',
     marginTop: 4,
   },
   pricingCardOriginal: {
     fontSize: 14,
     fontWeight: '400',
-    color: '#3A3A3C',
     textDecorationLine: 'line-through',
     marginTop: 2,
   },
@@ -865,19 +853,12 @@ const styles = StyleSheet.create({
   pricingFooterText: {
     fontSize: 13,
     fontWeight: '400',
-    color: '#A0A0B0',
     textAlign: 'center',
     lineHeight: 18,
   },
   pricingIndicator: {
-    width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#3A3A3C',
-  },
-  pricingIndicatorActive: {
-    width: 24,
-    backgroundColor: '#0A84FF',
   },
   pricingCardFeature: {
     flexDirection: 'row',
@@ -887,7 +868,6 @@ const styles = StyleSheet.create({
   pricingCardFeatureIcon: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#34C759',
     marginRight: 10,
     marginTop: 2,
     width: 20,
@@ -896,30 +876,19 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: '400',
-    color: '#F2F2F7',
     lineHeight: 20,
   },
   pricingCardButton: {
-    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 24,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.06)',
-  },
-  pricingCardButtonSelected: {
-    backgroundColor: '#0A84FF',
-    borderColor: '#0A84FF',
   },
   pricingCardButtonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#F2F2F7',
-  },
-  pricingCardButtonTextSelected: {
-    color: '#ffffff',
   },
   premiumFeaturesList: {
     paddingHorizontal: 0,
@@ -928,7 +897,6 @@ const styles = StyleSheet.create({
   premiumFeaturesListTitle: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#F2F2F7',
     marginBottom: 8,
     textAlign: 'center',
     letterSpacing: -0.5,
@@ -936,7 +904,6 @@ const styles = StyleSheet.create({
   premiumFeaturesListSubtitle: {
     fontSize: 16,
     fontWeight: '400',
-    color: '#A0A0B0',
     marginBottom: 24,
     textAlign: 'center',
   },
@@ -1004,4 +971,3 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 });
-

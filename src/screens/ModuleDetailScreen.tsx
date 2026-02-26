@@ -6,7 +6,7 @@ import { SessionCard } from '../components/SessionCard';
 import { Session } from '../types';
 import { mentalHealthModules } from '../data/modules';
 import { useStore } from '../store/useStore';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 import { getAllSessions, getSessionsByModality } from '../services/sessionService';
 import { showErrorAlert, ERROR_TITLES } from '../utils/errorHandler';
 
@@ -31,7 +31,7 @@ const AnimatedSessionCard: React.FC<{
 }> = ({ session, onStart, variant, onLike, isRemoving }) => {
   const opacity = useRef(new Animated.Value(1)).current;
   const translateX = useRef(new Animated.Value(0)).current;
-  
+
   useEffect(() => {
     if (isRemoving) {
       // Animate out: fade and slide to the right
@@ -53,7 +53,7 @@ const AnimatedSessionCard: React.FC<{
       translateX.setValue(0);
     }
   }, [isRemoving]);
-  
+
   return (
     <Animated.View
       style={{
@@ -72,50 +72,51 @@ const AnimatedSessionCard: React.FC<{
 };
 
 export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
+  const theme = useTheme();
   const route = useRoute<ModuleDetailRouteProp>();
   const navigation = useNavigation<ModuleDetailNavigationProp>();
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
-  
+
   const { moduleId } = route.params;
   const module = mentalHealthModules.find(m => m.id === moduleId);
   const likedSessionIds = useStore(state => state.likedSessionIds);
   const cacheSessions = useStore(state => state.cacheSessions);
-  
+
   // Session state from database
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Message state for "Added to Liked meditations" or "Removed from Liked meditations"
   const [showAddedMessage, setShowAddedMessage] = useState(false);
   const [isLikedAction, setIsLikedAction] = useState(true); // true = added, false = removed
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   // Animation for sessions list fade-in
   const listFadeAnim = useRef(new Animated.Value(0)).current;
   const listTranslateAnim = useRef(new Animated.Value(20)).current;
-  
+
   // Track sessions that are being removed (for animation)
   const [removingSessionIds, setRemovingSessionIds] = useState<Set<string>>(new Set());
-  
+
   const handleLike = (isLiked: boolean, sessionId?: string) => {
     // Clear any existing timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    
+
     // Stop any ongoing animation
     fadeAnim.stopAnimation();
-    
+
     // Reset animation value
     fadeAnim.setValue(0);
-    
+
     // Set the action type and show message
     setIsLikedAction(isLiked);
     setShowAddedMessage(true);
-    
+
     // If unliking and we're in the liked meditations module, animate removal
     if (!isLiked && moduleId === 'liked-meditations' && sessionId) {
       setRemovingSessionIds(prev => new Set(prev).add(sessionId));
@@ -128,14 +129,14 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
         });
       }, 300);
     }
-    
+
     // Fade in animation
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 300,
       useNativeDriver: true,
     }).start();
-    
+
     // Fade out after 2 seconds
     timeoutRef.current = setTimeout(() => {
       Animated.timing(fadeAnim, {
@@ -147,7 +148,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
       });
     }, 2000);
   };
-  
+
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
@@ -175,21 +176,21 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
       console.log('[ModuleDetailScreen] 🔄 Starting to fetch sessions for module:', moduleId);
       setIsLoading(true);
       setError(null);
-      
+
       // Reset animation values for fresh animation
       listFadeAnim.setValue(0);
       listTranslateAnim.setValue(20);
-      
+
       try {
         let fetchedSessions: Session[] = [];
-        
+
         // Handle liked meditations case - fetch all sessions and filter by liked
         if (moduleId === 'liked-meditations') {
           console.log('[ModuleDetailScreen] 📥 Fetching all sessions for liked meditations...');
           const allSessions = await getAllSessions();
           console.log('[ModuleDetailScreen] ✅ Fetched', allSessions.length, 'total sessions');
           // Only filter by likedSessionIds here - removingSessionIds is handled by moduleSessions useMemo
-          fetchedSessions = allSessions.filter(session => 
+          fetchedSessions = allSessions.filter(session =>
             likedSessionIds.includes(session.id)
           );
           console.log('[ModuleDetailScreen] 🔍 Filtered to', fetchedSessions.length, 'liked sessions');
@@ -198,7 +199,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
           fetchedSessions = await getSessionsByModality(moduleId);
           console.log('[ModuleDetailScreen] ✅ Fetched', fetchedSessions.length, 'sessions for modality', moduleId);
         }
-        
+
         // Log session data to verify what we're getting
         if (fetchedSessions.length > 0) {
           console.log('[ModuleDetailScreen] 📋 Sample session data:', {
@@ -210,7 +211,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
             whyItWorks: fetchedSessions[0].whyItWorks?.substring(0, 50) + '...',
           });
         }
-        
+
         setSessions(fetchedSessions);
         // Cache all sessions with their full data (description, whyItWorks, thumbnail_url, etc.)
         console.log('[ModuleDetailScreen] 💾 Caching', fetchedSessions.length, 'sessions...');
@@ -232,56 +233,56 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
 
   // Track previous likedSessionIds to detect if we're adding or removing
   const prevLikedSessionIdsRef = useRef<string[]>(likedSessionIds);
-  
+
   // Background sync when likedSessionIds changes (only for adding new liked sessions)
   useEffect(() => {
     // Only sync for liked meditations module, and only if not currently loading
     if (moduleId === 'liked-meditations' && !isLoading) {
       const prevLikedIds = prevLikedSessionIdsRef.current;
       const isAdding = likedSessionIds.length > prevLikedIds.length;
-      
+
       // INSTANT UPDATE: The moduleSessions useMemo already filters based on likedSessionIds
       // So unliking is instant - no state updates needed, just let useMemo handle it
-      
+
       // If unliking, instantly update sessions state to remove unliked session (optimistic update)
       if (!isAdding) {
         // Immediately filter out unliked sessions from state (instant, no loading)
-        const updatedSessions = sessions.filter(session => 
+        const updatedSessions = sessions.filter(session =>
           likedSessionIds.includes(session.id) || removingSessionIds.has(session.id)
         );
         setSessions(updatedSessions);
         prevLikedSessionIdsRef.current = likedSessionIds;
         return; // Early return - skip all background processing for unliking
       }
-      
+
       // Only do background sync if we're ADDING new likes
       if (isAdding) {
         const getCachedSession = useStore.getState().getCachedSession;
         const sessionCache = useStore.getState().sessionCache;
         const cachedSessionIds = Object.keys(sessionCache);
-        
+
         // Find newly liked sessions that aren't in cache yet
         const newLikedIds = likedSessionIds.filter(id => !prevLikedIds.includes(id));
         const missingSessionIds = newLikedIds.filter(id => !cachedSessionIds.includes(id));
-        
+
         if (missingSessionIds.length > 0) {
           // New liked sessions not in cache - fetch in background (silent, no loading screen)
           console.log('[ModuleDetailScreen] 📥 Background sync: Fetching', missingSessionIds.length, 'new liked sessions...');
           getAllSessions()
             .then(allSessions => {
               // Get the newly liked sessions
-              const newSessions = allSessions.filter(session => 
+              const newSessions = allSessions.filter(session =>
                 missingSessionIds.includes(session.id)
               );
-              
+
               // Add to cache
               if (newSessions.length > 0) {
                 cacheSessions(newSessions);
                 console.log('[ModuleDetailScreen] ✅ Background sync: Cached', newSessions.length, 'new sessions');
               }
-              
+
               // Update sessions list with all liked sessions (including new ones)
-              const allLikedSessions = allSessions.filter(session => 
+              const allLikedSessions = allSessions.filter(session =>
                 likedSessionIds.includes(session.id)
               );
               setSessions(allLikedSessions);
@@ -299,7 +300,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
           setSessions(allLikedSessions);
         }
       }
-      
+
       // Update ref for next comparison (only if we processed adding)
       prevLikedSessionIdsRef.current = likedSessionIds;
     }
@@ -308,7 +309,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
   // Filter sessions based on module type (for liked meditations with removing animation)
   const moduleSessions = useMemo(() => {
     if (moduleId === 'liked-meditations') {
-      return sessions.filter(session => 
+      return sessions.filter(session =>
         likedSessionIds.includes(session.id) || removingSessionIds.has(session.id)
       );
     }
@@ -344,14 +345,17 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
 
   if (!module && moduleId !== 'liked-meditations') {
     return (
-      <View style={[styles.container, { backgroundColor: '#0A0A0F' }]}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Text style={styles.backButtonText}>← Back</Text>
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <View style={[styles.header, {
+          backgroundColor: theme.colors.surface,
+          borderBottomColor: theme.colors.border,
+        }]}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backButton, { backgroundColor: theme.colors.surfaceElevated }]}>
+            <Text style={[styles.backButtonText, { color: theme.colors.accent }]}>← Back</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Module not found</Text>
+          <Text style={[styles.errorText, { color: theme.colors.text.primary }]}>Module not found</Text>
         </View>
       </View>
     );
@@ -360,17 +364,21 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
   return (
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
+      <View style={[styles.header, {
+        backgroundColor: theme.colors.surface,
+        borderBottomColor: theme.colors.border,
+        shadowOpacity: theme.isDark ? 0.05 : 0.06,
+      }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backButton, { backgroundColor: theme.colors.surfaceElevated }]}>
+          <Text style={[styles.backButtonText, { color: theme.colors.accent }]}>← Back</Text>
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <View style={[styles.moduleIcon, { backgroundColor: moduleId === 'liked-meditations' ? '#E74C3C' : module?.color }]}>
+          <View style={[styles.moduleIcon, { backgroundColor: moduleId === 'liked-meditations' ? '#E74C3C' : module?.color, borderColor: theme.colors.surface }]}>
             <Text style={styles.moduleIconText}>
               {moduleId === 'liked-meditations' ? '❤️' : module?.title.charAt(0)}
             </Text>
           </View>
-          <Text style={styles.moduleTitle}>
+          <Text style={[styles.moduleTitle, { color: theme.colors.text.primary }]}>
             {moduleId === 'liked-meditations'
               ? (isLoading
                   ? 'Loading...'
@@ -378,8 +386,8 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
               : module?.title
             }
           </Text>
-          <Text style={styles.moduleDescription}>
-            {moduleId === 'liked-meditations' 
+          <Text style={[styles.moduleDescription, { color: theme.colors.text.secondary }]}>
+            {moduleId === 'liked-meditations'
               ? 'View hearted meditations'
               : module?.description
             }
@@ -391,14 +399,18 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
       <View style={styles.content}>
         {isLoading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={styles.loadingText}>Loading sessions...</Text>
+            <ActivityIndicator size="large" color={theme.colors.accent} />
+            <Text style={[styles.loadingText, { color: theme.colors.text.secondary }]}>Loading sessions...</Text>
           </View>
         ) : error ? (
           <View style={styles.emptyStateContainer}>
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>Error Loading Sessions</Text>
-              <Text style={styles.emptySubtext}>{error}</Text>
+            <View style={[styles.emptyState, {
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.border,
+              shadowOpacity: theme.isDark ? 0.05 : 0.06,
+            }]}>
+              <Text style={[styles.emptyText, { color: theme.colors.text.primary }]}>Error Loading Sessions</Text>
+              <Text style={[styles.emptySubtext, { color: theme.colors.text.secondary }]}>{error}</Text>
             </View>
           </View>
         ) : (
@@ -431,12 +443,16 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
 
             {moduleSessions.length === 0 && (
               <View style={styles.emptyStateContainer}>
-                <View style={styles.emptyState}>
-                  <Text style={styles.emptyText}>
+                <View style={[styles.emptyState, {
+                  backgroundColor: theme.colors.surface,
+                  borderColor: theme.colors.border,
+                  shadowOpacity: theme.isDark ? 0.05 : 0.06,
+                }]}>
+                  <Text style={[styles.emptyText, { color: theme.colors.text.primary }]}>
                     {moduleId === 'liked-meditations' ? 'No Liked Meditations' : 'Coming Soon'}
                   </Text>
-                  <Text style={styles.emptySubtext}>
-                    {moduleId === 'liked-meditations' 
+                  <Text style={[styles.emptySubtext, { color: theme.colors.text.secondary }]}>
+                    {moduleId === 'liked-meditations'
                       ? 'Heart meditations you enjoy to see them here'
                       : `Meditations for ${module?.title} are being prepared`
                     }
@@ -447,13 +463,15 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
           </Animated.View>
         )}
       </View>
-      
+
       {/* Added/Removed from Liked meditations message */}
       {showAddedMessage && (
-        <Animated.View 
+        <Animated.View
           style={[
             styles.addedMessage,
             {
+              backgroundColor: theme.colors.surfaceElevated,
+              shadowOpacity: theme.isDark ? 0.3 : 0.06,
               opacity: fadeAnim,
               transform: [{
                 translateY: fadeAnim.interpolate({
@@ -464,7 +482,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
             },
           ]}
         >
-          <Text style={styles.addedMessageText}>
+          <Text style={[styles.addedMessageText, { color: theme.colors.text.primary }]}>
             {isLikedAction ? 'Added to Liked meditations' : 'Removed from Liked meditations'}
           </Text>
         </Animated.View>
@@ -476,24 +494,19 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0A0F',
   },
   header: {
-    backgroundColor: '#1C1C1E',
     paddingTop: 60, // Account for status bar
     paddingBottom: 24,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 2,
   },
   backButton: {
     alignSelf: 'flex-start',
-    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -502,7 +515,6 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0A84FF',
   },
   headerContent: {
     alignItems: 'center',
@@ -513,7 +525,6 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     borderWidth: 2,
-    borderColor: '#1C1C1E',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
@@ -534,14 +545,12 @@ const styles = StyleSheet.create({
   moduleTitle: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#F2F2F7',
     textAlign: 'center',
     marginBottom: 8,
   },
   moduleDescription: {
     fontSize: 17,
     fontWeight: '400',
-    color: '#A0A0B0',
     textAlign: 'center',
   },
   content: {
@@ -559,7 +568,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 17,
-    color: '#A0A0B0',
     fontWeight: '400',
   },
   sectionHeader: {
@@ -568,13 +576,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#F2F2F7',
     marginBottom: 8,
   },
   sectionSubtitle: {
     fontSize: 17,
     fontWeight: '400',
-    color: '#A0A0B0',
   },
   listContainer: {
     paddingBottom: 100,
@@ -590,25 +596,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 56,
     paddingHorizontal: 40,
-    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     marginHorizontal: 16, // Add side margins for spacing from edges
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
   },
   emptyText: {
-    color: '#F2F2F7',
     textAlign: 'center',
     fontSize: 22,
     fontWeight: '600',
   },
   emptySubtext: {
-    color: '#A0A0B0',
     textAlign: 'center',
     marginTop: 16,
     fontSize: 18,
@@ -622,14 +623,12 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 19,
     fontWeight: '600',
-    color: '#F2F2F7',
   },
   addedMessage: {
     position: 'absolute',
     bottom: 90,
     left: 20,
     right: 20,
-    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 16,
@@ -637,13 +636,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
     zIndex: 1000,
   },
   addedMessageText: {
-    color: '#F2F2F7',
     fontSize: 15,
     fontWeight: '600',
   },

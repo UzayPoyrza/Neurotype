@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Modal, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Modal,
   ScrollView,
   Dimensions
 } from 'react-native';
@@ -16,7 +16,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { MaterialCommunityIcons, FontAwesome6 } from '@expo/vector-icons';
 import { MentalHealthModule, categoryColors } from '../data/modules';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 import { useStore } from '../store/useStore';
 
 interface ModuleGridModalProps {
@@ -36,6 +36,7 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
   onModuleSelect,
   onClose,
 }) => {
+  const theme = useTheme();
   const { width } = Dimensions.get('window');
   const cardWidth = (width - 48) / 2; // 2 columns with tighter padding
   const [pressedCard, setPressedCard] = useState<string | null>(null);
@@ -43,7 +44,7 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
   const [isShuffling, setIsShuffling] = useState(false);
   const recentModuleIds = useStore(state => state.recentModuleIds);
   const addRecentModule = useStore(state => state.addRecentModule);
-  
+
   // Animation values for shuffle effect
   const moduleOpacity = useSharedValue(1);
   const moduleScale = useSharedValue(1);
@@ -88,11 +89,11 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
   // Shuffle animation for modules
   const triggerShuffleAnimation = () => {
     setIsShuffling(true);
-    
+
     // Fall down animation
     moduleOpacity.value = withTiming(0, { duration: 200 });
     moduleScale.value = withTiming(0.8, { duration: 200 });
-    
+
     // After falling, shuffle back up
     setTimeout(() => {
       moduleOpacity.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.back(1.2)) });
@@ -112,7 +113,7 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
   // Sort modules based on selected sort option
   const sortedModules = useMemo(() => {
     const modulesCopy = [...modules];
-    
+
     switch (selectedSort) {
       case 'alphabetical':
         modulesCopy.sort((a, b) => a.title.localeCompare(b.title));
@@ -129,7 +130,7 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
         modulesCopy.sort((a, b) => {
           const aRecentIndex = recentModuleIds.indexOf(a.id);
           const bRecentIndex = recentModuleIds.indexOf(b.id);
-          
+
           if (aRecentIndex !== -1 && bRecentIndex !== -1) {
             // Both are recent, sort by recent order
             return aRecentIndex - bRecentIndex;
@@ -144,7 +145,7 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
         });
         break;
     }
-    
+
     return modulesCopy;
   }, [modules, selectedSort, recentModuleIds]);
 
@@ -165,67 +166,73 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
       presentationStyle="formSheet"
       onRequestClose={onClose}
     >
-      <View style={styles.modalContainer}>
+      <View style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>Choose Your Journey</Text>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>Choose Your Journey</Text>
+            <Text style={[styles.subtitle, { color: theme.colors.text.secondary }]}>
               Select a mental health focus area to get started
             </Text>
           </View>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Text style={styles.closeText}>✕</Text>
+          <TouchableOpacity onPress={onClose} style={[styles.closeButton, { backgroundColor: theme.colors.border }]}>
+            <Text style={[styles.closeText, { color: theme.colors.text.primary }]}>✕</Text>
           </TouchableOpacity>
         </View>
 
         {/* Sort Options */}
         <View style={styles.sortSection}>
           <View style={styles.sortContainer}>
-            <Text style={styles.sortIcon}>⇅</Text>
+            <Text style={[styles.sortIcon, { color: theme.colors.text.secondary }]}>⇅</Text>
             <TouchableOpacity
               style={[
                 styles.sortButton,
-                selectedSort === 'recent' && styles.sortButtonActive
+                { backgroundColor: theme.colors.surfaceElevated },
+                selectedSort === 'recent' && { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent },
               ]}
               onPress={() => handleSortChange('recent')}
               activeOpacity={0.7}
             >
               <Text style={[
                 styles.sortButtonText,
-                selectedSort === 'recent' && styles.sortButtonTextActive
+                { color: theme.colors.text.primary },
+                selectedSort === 'recent' && { color: '#ffffff' },
               ]}>
                 Recent
               </Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={[
                 styles.sortButton,
-                selectedSort === 'alphabetical' && styles.sortButtonActive
+                { backgroundColor: theme.colors.surfaceElevated },
+                selectedSort === 'alphabetical' && { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent },
               ]}
               onPress={() => handleSortChange('alphabetical')}
               activeOpacity={0.7}
             >
               <Text style={[
                 styles.sortButtonText,
-                selectedSort === 'alphabetical' && styles.sortButtonTextActive
+                { color: theme.colors.text.primary },
+                selectedSort === 'alphabetical' && { color: '#ffffff' },
               ]}>
                 A-Z
               </Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={[
                 styles.sortButton,
-                selectedSort === 'category' && styles.sortButtonActive
+                { backgroundColor: theme.colors.surfaceElevated },
+                selectedSort === 'category' && { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent },
               ]}
               onPress={() => handleSortChange('category')}
               activeOpacity={0.7}
             >
               <Text style={[
                 styles.sortButtonText,
-                selectedSort === 'category' && styles.sortButtonTextActive
+                { color: theme.colors.text.primary },
+                selectedSort === 'category' && { color: '#ffffff' },
               ]}>
                 Category
               </Text>
@@ -235,22 +242,27 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
 
         {/* Module Grid */}
         <Animated.View style={[styles.scrollViewContainer, moduleGridAnimatedStyle]}>
-          <ScrollView 
+          <ScrollView
             style={styles.scrollView}
             contentContainerStyle={styles.gridContainer}
             showsVerticalScrollIndicator={false}
           >
             {sortedModules.map((module) => {
             const isSelected = module.id === selectedModuleId;
-            
+
             return (
               <TouchableOpacity
                 key={module.id}
                 style={[
                   styles.moduleCard,
-                  { width: cardWidth },
-                  isSelected && styles.selectedCard,
-                  pressedCard === module.id && styles.pressedCard
+                  {
+                    width: cardWidth,
+                    backgroundColor: theme.colors.surface,
+                    borderColor: theme.colors.border,
+                    shadowOpacity: theme.isDark ? 0.3 : 0.06,
+                  },
+                  isSelected && { borderColor: theme.colors.accent, borderWidth: 2 },
+                  pressedCard === module.id && styles.pressedCard,
                 ]}
                 onPress={() => handleModuleSelect(module.id)}
                 onPressIn={() => setPressedCard(module.id)}
@@ -259,7 +271,7 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
               >
                 {/* Gradient Background Overlay */}
                 <View style={[styles.gradientOverlay, { backgroundColor: hexToRgba(module.color, 0.08) }]} />
-                
+
                 {/* Module Icon */}
                 <View style={[styles.iconContainer, { backgroundColor: module.color }]}>
                   {getCategoryIcon(module.category)}
@@ -267,27 +279,28 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
 
                 {/* Selected Indicator */}
                 {isSelected && (
-                  <View style={styles.selectedIndicator}>
+                  <View style={[styles.selectedIndicator, { backgroundColor: theme.colors.surfaceElevated }]}>
                     <View style={[styles.selectedDot, { backgroundColor: module.color }]} />
                   </View>
                 )}
 
                 {/* Module Info */}
                 <View style={styles.moduleContent}>
-                  <Text 
+                  <Text
                     style={[
-                      styles.moduleTitle, 
-                      isSelected && styles.selectedTitle
-                    ]} 
-                    numberOfLines={2} 
+                      styles.moduleTitle,
+                      { color: theme.colors.text.primary },
+                      isSelected && { color: theme.colors.accent },
+                    ]}
+                    numberOfLines={2}
                     ellipsizeMode="tail"
                   >
                     {module.title}
                   </Text>
-                  
-                  <Text 
-                    style={styles.moduleDescription} 
-                    numberOfLines={2} 
+
+                  <Text
+                    style={[styles.moduleDescription, { color: theme.colors.text.secondary }]}
+                    numberOfLines={2}
                     ellipsizeMode="tail"
                   >
                     {module.description}
@@ -296,7 +309,7 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
                   {/* Category Badge */}
                   <View style={styles.categoryContainer}>
                     <View style={[
-                      styles.categoryBadge, 
+                      styles.categoryBadge,
                       { backgroundColor: hexToRgba(getCategoryColor(module.category), 0.12) }
                     ]}>
                       <Text style={[
@@ -321,7 +334,6 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
 const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
-    backgroundColor: theme.health.container.backgroundColor,
   },
   header: {
     flexDirection: 'row',
@@ -341,7 +353,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 26,
     fontWeight: 'bold',
-    color: '#F2F2F7',
     marginBottom: 4,
     letterSpacing: -0.5,
     textAlign: 'center',
@@ -350,7 +361,6 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.06)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 0,
@@ -361,12 +371,10 @@ const styles = StyleSheet.create({
   },
   closeText: {
     fontSize: 16,
-    color: '#F2F2F7',
     fontWeight: '600',
   },
   subtitle: {
     fontSize: 15,
-    color: '#A0A0B0',
     textAlign: 'center',
     marginTop: 0,
     marginBottom: 0,
@@ -386,7 +394,6 @@ const styles = StyleSheet.create({
   },
   sortIcon: {
     fontSize: 16,
-    color: '#A0A0B0',
     fontWeight: '500',
     marginRight: 4,
   },
@@ -394,21 +401,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#2C2C2E',
     borderWidth: 1,
     borderColor: 'transparent',
   },
-  sortButtonActive: {
-    backgroundColor: '#0A84FF',
-    borderColor: '#0A84FF',
-  },
   sortButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#F2F2F7',
-  },
-  sortButtonTextActive: {
-    color: '#ffffff',
     fontWeight: '600',
   },
   scrollViewContainer: {
@@ -426,27 +423,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   moduleCard: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.06)',
     marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
     overflow: 'hidden',
     position: 'relative',
     height: 190,
     justifyContent: 'flex-start',
-  },
-  selectedCard: {
-    borderWidth: 2,
-    borderColor: '#0A84FF',
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 4,
   },
   pressedCard: {
     transform: [{ scale: 0.98 }],
@@ -484,7 +471,6 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#2C2C2E',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -507,18 +493,13 @@ const styles = StyleSheet.create({
   moduleTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#F2F2F7',
     marginBottom: 2,
     textAlign: 'center',
     lineHeight: 22,
     letterSpacing: -0.2,
   },
-  selectedTitle: {
-    color: '#0A84FF',
-  },
   moduleDescription: {
     fontSize: 13,
-    color: '#A0A0B0',
     textAlign: 'center',
     lineHeight: 18,
     fontWeight: '400',

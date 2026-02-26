@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { View, TextInput, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface SearchBarProps {
   placeholder?: string;
@@ -22,6 +22,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   onFocus,
   onBlur,
 }) => {
+  const theme = useTheme();
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<TextInput>(null);
 
@@ -33,26 +34,35 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   };
 
   return (
-    <View style={[styles.searchContainer, isFocused && styles.focusedContainer]}>
+    <View
+      style={[
+        styles.searchContainer,
+        {
+          backgroundColor: theme.colors.surface,
+          borderColor: isFocused ? theme.colors.accent : theme.colors.border,
+        },
+        isFocused && styles.focusedContainer,
+      ]}
+    >
       {/* Search Icon */}
       <View style={styles.searchIcon}>
         <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
           <Circle cx="11" cy="11" r="8" stroke={theme.colors.secondary} strokeWidth="2" fill="none"/>
-          <Path 
-            d="m21 21-4.35-4.35" 
-            stroke={theme.colors.secondary} 
-            strokeWidth="2" 
-            strokeLinecap="round" 
+          <Path
+            d="m21 21-4.35-4.35"
+            stroke={theme.colors.secondary}
+            strokeWidth="2"
+            strokeLinecap="round"
             strokeLinejoin="round"
             fill="none"
           />
         </Svg>
       </View>
-      
+
       {/* Search Input */}
       <TextInput
         ref={inputRef}
-        style={styles.input}
+        style={[styles.input, { color: theme.colors.text.primary }]}
         placeholder={placeholder}
         placeholderTextColor={theme.colors.secondary}
         value={value}
@@ -70,11 +80,14 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         autoCapitalize="none"
         autoCorrect={false}
       />
-      
+
       {/* Clear Button */}
       {value.length > 0 && (
-        <TouchableOpacity style={styles.clearButton} onPress={handleClear}>
-          <Text style={styles.clearButtonText}>✕</Text>
+        <TouchableOpacity
+          style={[styles.clearButton, { backgroundColor: theme.colors.surfaceTertiary }]}
+          onPress={handleClear}
+        >
+          <Text style={[styles.clearButtonText, { color: theme.colors.text.primary }]}>✕</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -85,12 +98,10 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -100,7 +111,6 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   focusedContainer: {
-    borderColor: '#0A84FF',
     shadowOpacity: 0.15,
   },
   searchIcon: {
@@ -111,7 +121,6 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#F2F2F7',
     fontWeight: '400',
     minHeight: 24,
   },
@@ -119,14 +128,12 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#3A3A3C',
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,
   },
   clearButtonText: {
     fontSize: 12,
-    color: '#ffffff',
     fontWeight: 'bold',
   },
-}); 
+});

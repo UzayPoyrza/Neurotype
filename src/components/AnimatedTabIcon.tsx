@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { TouchableOpacity, Text, StyleSheet, Animated, Vibration } from 'react-native';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface AnimatedTabIconProps {
   children: React.ReactNode;
@@ -14,6 +15,7 @@ export const AnimatedTabIcon: React.FC<AnimatedTabIconProps> = ({
   onPress,
   label,
 }) => {
+  const theme = useTheme();
   const scaleAnimation = useRef(new Animated.Value(1)).current;
 
   const handlePress = () => {
@@ -56,7 +58,7 @@ export const AnimatedTabIcon: React.FC<AnimatedTabIconProps> = ({
       </Animated.View>
       <Text style={[
         styles.label,
-        focused ? styles.focusedLabel : styles.unfocusedLabel,
+        { color: focused ? theme.colors.text.primary : theme.colors.text.secondary },
       ]}>
         {label}
       </Text>
@@ -80,10 +82,4 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontWeight: '500',
   },
-  focusedLabel: {
-    color: '#F2F2F7',
-  },
-  unfocusedLabel: {
-    color: '#A0A0B0',
-  },
-}); 
+});

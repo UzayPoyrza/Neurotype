@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface SubscriptionBadgeProps {
   subscriptionType: 'basic' | 'premium';
@@ -12,6 +13,7 @@ export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({
   subscriptionType,
   size = 'medium'
 }) => {
+  const theme = useTheme();
   const isPremium = subscriptionType === 'premium';
 
   const sizeConfig = {
@@ -36,11 +38,11 @@ export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({
           },
         ]}
       >
-        <Ionicons name="diamond" size={config.iconSize} color="#1C1C1E" />
+        <Ionicons name="diamond" size={config.iconSize} color={theme.colors.surface} />
         <Text
           style={[
             styles.premiumText,
-            { fontSize: config.fontSize, marginLeft: config.gap },
+            { fontSize: config.fontSize, marginLeft: config.gap, color: theme.colors.surface },
           ]}
         >
           Neurotype Premium
@@ -57,14 +59,16 @@ export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({
         {
           paddingHorizontal: config.paddingH,
           paddingVertical: config.paddingV,
+          backgroundColor: theme.colors.surfaceElevated,
+          borderColor: theme.colors.border,
         },
       ]}
     >
-      <Ionicons name="leaf-outline" size={config.iconSize} color="#D0D0D8" />
+      <Ionicons name="leaf-outline" size={config.iconSize} color={theme.colors.text.secondary} />
       <Text
         style={[
           styles.basicText,
-          { fontSize: config.fontSize, marginLeft: config.gap },
+          { fontSize: config.fontSize, marginLeft: config.gap, color: theme.colors.text.secondary },
         ]}
       >
         Neurotype Basic
@@ -81,18 +85,14 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   basicBadge: {
-    backgroundColor: '#2C2C2E',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
   },
   premiumText: {
     fontWeight: '700',
-    color: '#1C1C1E',
     letterSpacing: -0.3,
   },
   basicText: {
     fontWeight: '600',
-    color: '#D0D0D8',
     letterSpacing: -0.3,
   },
 });

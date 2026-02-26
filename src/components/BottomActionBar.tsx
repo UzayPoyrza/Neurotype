@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   Animated,
 } from 'react-native';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface BottomActionBarProps {
   primaryAction: {
@@ -33,13 +33,14 @@ export const BottomActionBar: React.FC<BottomActionBarProps> = ({
   themeColor = '#6B73FF',
   globalBackgroundColor = '#0A0A0F',
 }) => {
+  const theme = useTheme();
   const primaryScale = useRef(new Animated.Value(1)).current;
   const secondaryScale = useRef(new Animated.Value(1)).current;
 
   // Convert any color format to rgba with opacity for glass effect
   const colorToRgba = (color: string, opacity: number) => {
     console.log('Converting color:', color);
-    
+
     // If it's already rgba, just update the opacity
     if (color.startsWith('rgba(')) {
       const rgbaMatch = color.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*[\d.]+\)/);
@@ -49,7 +50,7 @@ export const BottomActionBar: React.FC<BottomActionBarProps> = ({
         return `rgba(${r}, ${g}, ${b}, ${opacity})`;
       }
     }
-    
+
     // If it's rgb, convert to rgba
     if (color.startsWith('rgb(')) {
       const rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
@@ -59,16 +60,16 @@ export const BottomActionBar: React.FC<BottomActionBarProps> = ({
         return `rgba(${r}, ${g}, ${b}, ${opacity})`;
       }
     }
-    
+
     // If it's hex, convert to rgba
     if (color.startsWith('#')) {
       let cleanHex = color.replace('#', '');
-      
+
       // If it's a 3-character hex, expand it
       if (cleanHex.length === 3) {
         cleanHex = cleanHex.split('').map(char => char + char).join('');
       }
-      
+
       if (cleanHex.length === 6) {
         const r = parseInt(cleanHex.slice(0, 2), 16);
         const g = parseInt(cleanHex.slice(2, 4), 16);
@@ -77,7 +78,7 @@ export const BottomActionBar: React.FC<BottomActionBarProps> = ({
         return `rgba(${r}, ${g}, ${b}, ${opacity})`;
       }
     }
-    
+
     // Fallback for unknown formats
     console.log('Unknown color format, using fallback:', color);
     return `rgba(10, 10, 15, ${opacity})`;
@@ -122,13 +123,25 @@ export const BottomActionBar: React.FC<BottomActionBarProps> = ({
 
   return (
     <View style={styles.container}>
-      <View style={styles.actionBar}>
+      <View
+        style={[
+          styles.actionBar,
+          {
+            backgroundColor: theme.isDark ? 'rgba(28, 28, 30, 0.85)' : 'rgba(255, 255, 255, 0.85)',
+            borderColor: theme.colors.border,
+            shadowOpacity: theme.isDark ? 0.4 : 0.08,
+          },
+        ]}
+      >
         {/* Secondary Action (Tutorial) - Blue Style */}
         <Animated.View style={{ transform: [{ scale: secondaryScale }] }}>
           <TouchableOpacity
             style={[
               styles.secondaryButton,
-              { borderColor: '#0A84FF' }
+              {
+                backgroundColor: theme.colors.accent,
+                borderColor: theme.colors.accent,
+              },
             ]}
             onPress={handleSecondaryPress}
             activeOpacity={0.8}
@@ -187,17 +200,14 @@ const styles = StyleSheet.create({
   },
   actionBar: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(28, 28, 30, 0.85)',
     borderRadius: 12,
     paddingVertical: 2,
     paddingHorizontal: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -6 },
-    shadowOpacity: 0.4,
     shadowRadius: 16,
     elevation: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
     justifyContent: 'space-between',
     alignItems: 'center',
     overflow: 'hidden',
@@ -207,7 +217,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 8,
     borderWidth: 1.5,
-    backgroundColor: '#0A84FF',
     alignItems: 'center',
     justifyContent: 'center',
     flex: 0.45,

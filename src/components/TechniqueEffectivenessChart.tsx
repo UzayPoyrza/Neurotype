@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { TechniqueEffectiveness } from '../types';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 import { InfoBox } from './InfoBox';
 
 interface TechniqueEffectivenessChartProps {
@@ -11,6 +11,7 @@ interface TechniqueEffectivenessChartProps {
 export const TechniqueEffectivenessChart: React.FC<TechniqueEffectivenessChartProps> = ({
   techniques,
 }) => {
+  const theme = useTheme();
   const [showInfoBox, setShowInfoBox] = useState(false);
   const [infoButtonActive, setInfoButtonActive] = useState(false);
   const infoButtonRef = useRef<View>(null);
@@ -24,7 +25,7 @@ export const TechniqueEffectivenessChart: React.FC<TechniqueEffectivenessChartPr
   });
 
   const getBarColor = (effectiveness: number | null) => {
-    if (effectiveness === null) return '#2C2C2E';
+    if (effectiveness === null) return theme.colors.surfaceElevated;
     if (effectiveness >= 80) return '#4CAF50'; // Green for high effectiveness
     if (effectiveness >= 60) return '#8BC34A'; // Light green for good effectiveness
     if (effectiveness >= 40) return '#FFC107'; // Yellow for moderate effectiveness
@@ -34,27 +35,27 @@ export const TechniqueEffectivenessChart: React.FC<TechniqueEffectivenessChartPr
   const renderBar = (technique: TechniqueEffectiveness, index: number) => {
     const barWidth = technique.effectiveness === null ? 20 : technique.effectiveness;
     const barColor = getBarColor(technique.effectiveness);
-    
+
     return (
       <View key={technique.techniqueId} style={styles.techniqueRow}>
         <View style={styles.techniqueInfo}>
-          <Text style={styles.techniqueName}>{technique.techniqueName}</Text>
-          <Text style={styles.effectivenessText}>
-            {technique.effectiveness === null 
-              ? 'Haven\'t tried yet' 
+          <Text style={[styles.techniqueName, { color: theme.colors.text.primary }]}>{technique.techniqueName}</Text>
+          <Text style={[styles.effectivenessText, { color: theme.colors.text.secondary }]}>
+            {technique.effectiveness === null
+              ? 'Haven\'t tried yet'
               : `${technique.effectiveness}%`
             }
           </Text>
         </View>
-        <View style={styles.barContainer}>
-          <View 
+        <View style={[styles.barContainer, { backgroundColor: theme.colors.surfaceElevated }]}>
+          <View
             style={[
-              styles.bar, 
-              { 
-                width: `${barWidth}%`, 
-                backgroundColor: barColor 
+              styles.bar,
+              {
+                width: `${barWidth}%`,
+                backgroundColor: barColor
               }
-            ]} 
+            ]}
           />
         </View>
       </View>
@@ -72,15 +73,23 @@ export const TechniqueEffectivenessChart: React.FC<TechniqueEffectivenessChartPr
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.surface, shadowOpacity: theme.isDark ? 0.3 : 0.06 }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>Most Effective Techniques</Text>
+        <Text style={[styles.title, { color: theme.colors.text.primary }]}>Most Effective Techniques</Text>
         <TouchableOpacity
           ref={infoButtonRef}
-          style={[styles.infoButton, infoButtonActive && styles.infoButtonActive]}
+          style={[
+            styles.infoButton,
+            { backgroundColor: theme.colors.surfaceElevated },
+            infoButtonActive && { backgroundColor: theme.colors.accent },
+          ]}
           onPress={handleInfoPress}
         >
-          <Text style={[styles.infoButtonText, infoButtonActive && styles.infoButtonTextActive]}>i</Text>
+          <Text style={[
+            styles.infoButtonText,
+            { color: theme.colors.text.secondary },
+            infoButtonActive && { color: '#ffffff' },
+          ]}>i</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.chartContainer}>
@@ -100,14 +109,12 @@ export const TechniqueEffectivenessChart: React.FC<TechniqueEffectivenessChartPr
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     marginHorizontal: 20,
     marginBottom: 12,
     padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
   },
@@ -120,28 +127,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#F2F2F7',
     flex: 1,
   },
   infoButton: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#2C2C2E',
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,
   },
-  infoButtonActive: {
-    backgroundColor: '#0A84FF',
-  },
   infoButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#A0A0B0',
-  },
-  infoButtonTextActive: {
-    color: '#ffffff',
   },
   chartContainer: {
     gap: 12,
@@ -158,18 +156,15 @@ const styles = StyleSheet.create({
   techniqueName: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#F2F2F7',
     marginBottom: 2,
   },
   effectivenessText: {
     fontSize: 12,
-    color: '#A0A0B0',
     fontWeight: '500',
   },
   barContainer: {
     width: 100,
     height: 8,
-    backgroundColor: '#2C2C2E',
     borderRadius: 4,
     overflow: 'hidden',
   },

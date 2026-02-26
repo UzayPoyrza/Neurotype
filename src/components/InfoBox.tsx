@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableWithoutFeedback, Animated, TouchableOpacity } from 'react-native';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface InfoBoxProps {
   isVisible: boolean;
@@ -22,6 +23,7 @@ export const InfoBox: React.FC<InfoBoxProps> = ({
   position = {},
   onHowToUsePress
 }) => {
+  const theme = useTheme();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -46,18 +48,23 @@ export const InfoBox: React.FC<InfoBoxProps> = ({
     <TouchableWithoutFeedback onPress={onClose}>
       <View style={styles.overlay}>
         <TouchableWithoutFeedback onPress={() => {}}>
-          <Animated.View 
+          <Animated.View
             style={[
               styles.infoBox,
+              {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.borderMedium,
+                shadowOpacity: theme.isDark ? 0.3 : 0.08,
+              },
               position,
               { opacity: fadeAnim }
             ]}
           >
-            <Text style={styles.infoTitle}>{title}</Text>
-            <Text style={[styles.infoContent, onHowToUsePress && styles.infoContentWithButton]}>{content}</Text>
+            <Text style={[styles.infoTitle, { color: theme.colors.text.primary }]}>{title}</Text>
+            <Text style={[styles.infoContent, { color: theme.colors.text.secondary }, onHowToUsePress && styles.infoContentWithButton]}>{content}</Text>
             {onHowToUsePress && (
-              <TouchableOpacity 
-                style={styles.howToUseButton}
+              <TouchableOpacity
+                style={[styles.howToUseButton, { backgroundColor: theme.colors.accent }]}
                 onPress={() => {
                   onClose();
                   onHowToUsePress();
@@ -85,27 +92,22 @@ const styles = StyleSheet.create({
   },
   infoBox: {
     position: 'absolute',
-    backgroundColor: '#1A1A24',
     borderRadius: 12,
     padding: 16,
     maxWidth: 280,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
   },
   infoTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
     marginBottom: 8,
   },
   infoContent: {
     fontSize: 14,
-    color: '#A0A0B0',
     lineHeight: 20,
   },
   infoContentWithButton: {
@@ -115,7 +117,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingVertical: 10,
     paddingHorizontal: 12,
-    backgroundColor: '#0A84FF',
     borderRadius: 8,
     alignItems: 'center',
   },

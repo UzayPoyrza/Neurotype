@@ -8,7 +8,7 @@ import {
   PanResponder,
   Dimensions,
 } from 'react-native';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 import Svg, { Path } from 'react-native-svg';
 
 // Classic circular refresh icon using SVG (matches common refresh/swap symbol)
@@ -33,10 +33,11 @@ export const DraggableFloatingButton: React.FC<DraggableFloatingButtonProps> = (
   backgroundColor,
   onPress,
 }) => {
+  const theme = useTheme();
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
   const buttonSize = 56; // Match play button size
   const margin = 16; // Better spacing from corners
-  
+
   // Corner positions - fixed to screen viewport, closer to corners
   const corners = {
     'top-left': { x: margin, y: 80 },
@@ -48,7 +49,7 @@ export const DraggableFloatingButton: React.FC<DraggableFloatingButtonProps> = (
   const [currentCorner, setCurrentCorner] = useState<Corner>('bottom-right');
   const [position, setPosition] = useState(corners[currentCorner]);
   const [isDragging, setIsDragging] = useState(false);
-  
+
   const pan = useRef(new Animated.ValueXY()).current;
   const scale = useRef(new Animated.Value(1)).current;
 
@@ -62,15 +63,15 @@ export const DraggableFloatingButton: React.FC<DraggableFloatingButtonProps> = (
       corner: corner as Corner,
       distance: Math.sqrt(Math.pow(x - pos.x, 2) + Math.pow(y - pos.y, 2)),
     }));
-    
-    return distances.reduce((nearest, current) => 
+
+    return distances.reduce((nearest, current) =>
       current.distance < nearest.distance ? current : nearest
     ).corner;
   };
 
   const snapToCorner = (corner: Corner) => {
     const targetPos = corners[corner];
-    
+
     Animated.parallel([
       Animated.spring(pan, {
         toValue: targetPos,
@@ -85,7 +86,7 @@ export const DraggableFloatingButton: React.FC<DraggableFloatingButtonProps> = (
         friction: 8,
       }),
     ]).start();
-    
+
     setCurrentCorner(corner);
     setPosition(targetPos);
   };
@@ -96,18 +97,18 @@ export const DraggableFloatingButton: React.FC<DraggableFloatingButtonProps> = (
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: () => {
         setIsDragging(true);
-        
+
         // Get current position from animated value
         const currentPos = {
           x: (pan.x as any)._value,
           y: (pan.y as any)._value,
         };
         setPosition(currentPos);
-        
+
         // Set up offset for relative dragging
         pan.setOffset(currentPos);
         pan.setValue({ x: 0, y: 0 });
-        
+
         // Scale up when dragging starts
         Animated.spring(scale, {
           toValue: 1.15,
@@ -122,18 +123,18 @@ export const DraggableFloatingButton: React.FC<DraggableFloatingButtonProps> = (
       ),
       onPanResponderRelease: (evt, gestureState) => {
         setIsDragging(false);
-        
+
         // Flatten offset to get absolute position
         pan.flattenOffset();
-        
+
         // Get final position
         const finalX = (pan.x as any)._value;
         const finalY = (pan.y as any)._value;
-        
+
         // Keep within bounds
         const boundedX = Math.max(margin, Math.min(screenWidth - buttonSize - margin, finalX));
         const boundedY = Math.max(80, Math.min(screenHeight - buttonSize - 100, finalY));
-        
+
         // Find nearest corner and snap to it
         const nearestCorner = findNearestCorner(boundedX, boundedY);
         snapToCorner(nearestCorner);
@@ -156,7 +157,13 @@ export const DraggableFloatingButton: React.FC<DraggableFloatingButtonProps> = (
       {...panResponder.panHandlers}
     >
       <TouchableOpacity
-        style={[styles.floatingButton, { backgroundColor: backgroundColor }]}
+        style={[
+          styles.floatingButton,
+          {
+            backgroundColor: backgroundColor,
+            shadowOpacity: theme.isDark ? 0.3 : 0.06,
+          },
+        ]}
         onPress={onPress}
         activeOpacity={0.8}
         disabled={isDragging}

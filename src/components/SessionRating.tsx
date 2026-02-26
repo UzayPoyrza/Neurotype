@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface SessionRatingProps {
   onSubmit: (rating: number) => void;
@@ -11,6 +11,7 @@ export const SessionRating: React.FC<SessionRatingProps> = ({
   onSubmit,
   onCancel,
 }) => {
+  const theme = useTheme();
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
 
   const handleRatingSelect = (rating: number) => {
@@ -35,10 +36,14 @@ export const SessionRating: React.FC<SessionRatingProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.surface }]}>
       <View style={styles.content}>
-        <Text style={styles.title}>How was your session?</Text>
-        <Text style={styles.subtitle}>Rate your experience to help us personalize your journey</Text>
+        <Text style={[styles.title, { color: theme.colors.text.primary, fontFamily: theme.typography.fontFamily }]}>
+          How was your session?
+        </Text>
+        <Text style={[styles.subtitle, { color: theme.colors.text.secondary, fontFamily: theme.typography.fontFamily }]}>
+          Rate your experience to help us personalize your journey
+        </Text>
 
         {/* Rating Scale */}
         <View style={styles.ratingContainer}>
@@ -47,7 +52,15 @@ export const SessionRating: React.FC<SessionRatingProps> = ({
               key={rating}
               style={[
                 styles.ratingButton,
-                selectedRating === rating && styles.selectedRating,
+                {
+                  backgroundColor: selectedRating === rating ? theme.colors.primary : theme.colors.background,
+                  borderColor: selectedRating === rating ? theme.colors.primary : theme.colors.border,
+                  borderRadius: 25,
+                  shadowColor: theme.colors.shadow,
+                  shadowOpacity: selectedRating === rating ? (theme.isDark ? 0.3 : 0.12) : (theme.isDark ? 0.3 : 0.06),
+                  shadowRadius: selectedRating === rating ? 4 : 2,
+                  elevation: selectedRating === rating ? 4 : 2,
+                },
               ]}
               onPress={() => handleRatingSelect(rating)}
               activeOpacity={0.8}
@@ -55,7 +68,10 @@ export const SessionRating: React.FC<SessionRatingProps> = ({
               <Text
                 style={[
                   styles.ratingNumber,
-                  selectedRating === rating && styles.selectedRatingNumber,
+                  {
+                    color: selectedRating === rating ? theme.colors.text.onPrimary : theme.colors.text.primary,
+                    fontFamily: theme.typography.fontFamily,
+                  },
                 ]}
               >
                 {rating}
@@ -66,21 +82,47 @@ export const SessionRating: React.FC<SessionRatingProps> = ({
 
         {/* Rating Description */}
         {selectedRating && (
-          <View style={styles.ratingDescription}>
-            <Text style={styles.ratingText}>{getRatingText(selectedRating)}</Text>
+          <View style={[
+            styles.ratingDescription,
+            {
+              backgroundColor: theme.colors.background,
+              borderColor: theme.colors.border,
+              borderRadius: theme.borderRadius.lg,
+            }
+          ]}>
+            <Text style={[styles.ratingText, { color: theme.colors.text.primary, fontFamily: theme.typography.fontFamily }]}>
+              {getRatingText(selectedRating)}
+            </Text>
           </View>
         )}
 
         {/* Action Buttons */}
         <View style={styles.actions}>
-          <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
-            <Text style={styles.cancelButtonText}>Skip</Text>
+          <TouchableOpacity
+            style={[
+              styles.cancelButton,
+              {
+                borderColor: theme.colors.border,
+                borderRadius: theme.borderRadius.lg,
+              }
+            ]}
+            onPress={onCancel}
+          >
+            <Text style={[styles.cancelButtonText, { color: theme.colors.text.secondary, fontFamily: theme.typography.fontFamily }]}>
+              Skip
+            </Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             style={[
               styles.submitButton,
-              selectedRating === null && styles.disabledButton,
+              {
+                backgroundColor: selectedRating === null ? theme.colors.disabled : theme.colors.primary,
+                borderColor: selectedRating === null ? theme.colors.disabled : theme.colors.primary,
+                borderRadius: theme.borderRadius.lg,
+                shadowColor: theme.colors.shadow,
+                shadowOpacity: theme.isDark ? 0.3 : 0.06,
+              },
             ]}
             onPress={handleSubmit}
             disabled={selectedRating === null}
@@ -88,7 +130,10 @@ export const SessionRating: React.FC<SessionRatingProps> = ({
             <Text
               style={[
                 styles.submitButtonText,
-                selectedRating === null && styles.disabledButtonText,
+                {
+                  color: selectedRating === null ? theme.colors.disabledText : theme.colors.text.onPrimary,
+                  fontFamily: theme.typography.fontFamily,
+                },
               ]}
             >
               Submit Rating
@@ -103,7 +148,6 @@ export const SessionRating: React.FC<SessionRatingProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.surface,
     justifyContent: 'center',
     paddingHorizontal: 20,
   },
@@ -113,18 +157,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '600',
-    color: theme.colors.text.primary,
     textAlign: 'center',
     marginBottom: 8,
-    fontFamily: theme.typography.fontFamily,
   },
   subtitle: {
     fontSize: 14,
-    color: theme.colors.text.secondary,
     textAlign: 'center',
     marginBottom: 40,
     lineHeight: 20,
-    fontFamily: theme.typography.fontFamily,
   },
   ratingContainer: {
     flexDirection: 'row',
@@ -135,49 +175,25 @@ const styles = StyleSheet.create({
   ratingButton: {
     width: 50,
     height: 50,
-    borderRadius: 25,
-    backgroundColor: theme.colors.background,
-    borderWidth: theme.borders.width.thick,
-    borderColor: theme.colors.border,
+    borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 1, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  selectedRating: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
   },
   ratingNumber: {
     fontSize: 18,
     fontWeight: '600',
-    color: theme.colors.text.primary,
-    fontFamily: theme.typography.fontFamily,
-  },
-  selectedRatingNumber: {
-    color: theme.colors.text.onPrimary,
   },
   ratingDescription: {
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.borderRadius.lg,
     paddingVertical: 12,
     paddingHorizontal: 20,
     marginBottom: 40,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.border,
+    borderWidth: 1,
   },
   ratingText: {
     fontSize: 14,
     fontWeight: '500',
-    color: theme.colors.text.primary,
     textAlign: 'center',
-    fontFamily: theme.typography.fontFamily,
   },
   actions: {
     flexDirection: 'row',
@@ -187,45 +203,27 @@ const styles = StyleSheet.create({
   cancelButton: {
     flex: 1,
     backgroundColor: 'transparent',
-    borderRadius: theme.borderRadius.lg,
     paddingVertical: 16,
     paddingHorizontal: 24,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.border,
+    borderWidth: 1,
     alignItems: 'center',
   },
   cancelButtonText: {
     fontSize: 16,
     fontWeight: '500',
-    color: theme.colors.text.secondary,
-    fontFamily: theme.typography.fontFamily,
   },
   submitButton: {
     flex: 2,
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.borderRadius.lg,
     paddingVertical: 16,
     paddingHorizontal: 24,
-    borderWidth: theme.borders.width.thick,
-    borderColor: theme.colors.primary,
+    borderWidth: 2,
     alignItems: 'center',
-    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 4,
   },
   submitButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: theme.colors.text.onPrimary,
-    fontFamily: theme.typography.fontFamily,
-  },
-  disabledButton: {
-    backgroundColor: theme.colors.disabled,
-    borderColor: theme.colors.disabled,
-  },
-  disabledButtonText: {
-    color: theme.colors.disabledText,
   },
 });

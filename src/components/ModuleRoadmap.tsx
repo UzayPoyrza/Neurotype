@@ -7,7 +7,7 @@ import { Session } from '../types';
 import { MentalHealthModule } from '../data/modules';
 import { mockSessions } from '../data/mockData';
 import { useStore, createCompletionBackground } from '../store/useStore';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 import { useUserId } from '../hooks/useUserId';
 import { getUserCompletedSessions, isSessionCompleted } from '../services/progressService';
 import { getSessionById } from '../services/sessionService';
@@ -68,6 +68,7 @@ const NeuroadaptationCard: React.FC<NeuroadaptationCardProps> = ({
   index,
   accentColor,
 }) => {
+  const theme = useTheme();
   const progressAnim = useRef(new Animated.Value(0)).current;
   const cardOpacity = useRef(new Animated.Value(0)).current;
   const cardScale = useRef(new Animated.Value(0.95)).current;
@@ -132,27 +133,30 @@ const NeuroadaptationCard: React.FC<NeuroadaptationCardProps> = ({
       style={[
         styles.neuroCard,
         {
+          backgroundColor: theme.colors.surface,
+          borderColor: theme.colors.border,
           opacity: cardOpacity,
           transform: [{ scale: cardScale }],
           borderLeftWidth: 3,
           borderLeftColor: borderColor,
+          shadowOpacity: theme.isDark ? 0.3 : 0.06,
         },
       ]}
     >
       <View style={styles.neuroCardHeader}>
         <View style={styles.neuroCardTitleRow}>
-          <Text style={styles.neuroCardTitle}>{milestone.title}</Text>
+          <Text style={[styles.neuroCardTitle, { color: theme.colors.text.primary }]}>{milestone.title}</Text>
           {isUnlocked && (
             <View style={[styles.checkmarkBadge, { backgroundColor: accentColor }]}>
               <Text style={styles.checkmarkText}>✓</Text>
             </View>
           )}
         </View>
-        <Text style={styles.neuroCardTimeRange}>{milestone.timeRange}</Text>
+        <Text style={[styles.neuroCardTimeRange, { color: theme.colors.text.secondary }]}>{milestone.timeRange}</Text>
       </View>
 
       <View style={styles.progressBarContainer}>
-        <View style={styles.progressBarTrack}>
+        <View style={[styles.progressBarTrack, { backgroundColor: theme.colors.surfaceElevated }]}>
           <Animated.View
             style={[
               styles.progressBarFill,
@@ -169,7 +173,7 @@ const NeuroadaptationCard: React.FC<NeuroadaptationCardProps> = ({
         </Text>
       </View>
 
-      <Text style={styles.neuroCardDescription}>{milestone.description}</Text>
+      <Text style={[styles.neuroCardDescription, { color: theme.colors.text.secondary }]}>{milestone.description}</Text>
 
       {isPartiallyComplete || isUnlocked ? (
         <View style={[
@@ -180,10 +184,10 @@ const NeuroadaptationCard: React.FC<NeuroadaptationCardProps> = ({
           }
         ]}>
           <Text style={[styles.whatYouFeelLabel, { color: accentColor }]}>What you feel:</Text>
-          <Text style={styles.whatYouFeelText}>{milestone.whatYouFeel}</Text>
+          <Text style={[styles.whatYouFeelText, { color: theme.colors.text.secondary }]}>{milestone.whatYouFeel}</Text>
         </View>
       ) : (
-        <Text style={styles.sessionsRequired}>
+        <Text style={[styles.sessionsRequired, { color: theme.colors.text.secondary }]}>
           {milestone.sessionsRequired - totalSessions} more sessions to unlock
         </Text>
       )}
@@ -200,6 +204,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   onSessionSelect,
   onBackPress,
 }) => {
+  const theme = useTheme();
   const navigation = useNavigation<ModuleRoadmapNavigationProp>();
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const isSessionCompletedToday = useStore(state => state.isSessionCompletedToday);
@@ -222,7 +227,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   const userId = useUserId();
   const [fetchedCompletedSessions, setFetchedCompletedSessions] = useState<CompletedMeditation[]>([]);
   const [isLoadingSessions, setIsLoadingSessions] = useState(true); // Start with loading true
-  
+
   // Fetch actual completed sessions from database
   useEffect(() => {
     const fetchCompletedSessions = async () => {
@@ -236,7 +241,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
       try {
         // 1. Fetch ALL completed sessions (don't filter by context_module yet)
         const completedSessionsData = await getUserCompletedSessions(userId, 50);
-        
+
         if (completedSessionsData.length === 0) {
           setFetchedCompletedSessions([]);
           return;
@@ -301,17 +306,17 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         // Use completed_date from completed_sessions for dates
         const moduleCompletedSessions: CompletedMeditation[] = [];
         const seenKeys = new Set<string>(); // Track seen keys to prevent duplicates
-        
+
         for (const cs of completedSessionsData) {
           const sessionModules = sessionModulesMap.get(cs.session_id) || [];
-          
+
           // Count this session if it belongs to the current module
           if (sessionModules.includes(module.id)) {
             const session = sessionsMap.get(cs.session_id);
             if (session) {
               // Create a unique key - use cs.id if available, otherwise combine session_id, completed_date, and created_at for uniqueness
               const uniqueKey = cs.id || `${module.id}-completed-${cs.session_id}-${cs.completed_date}-${cs.created_at || Date.now()}`;
-              
+
               // Skip if we've already added this exact completion
               if (!seenKeys.has(uniqueKey)) {
                 seenKeys.add(uniqueKey);
@@ -327,7 +332,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
 
         // 8. Sort by completed_date (most recent first)
         moduleCompletedSessions.sort((a, b) => b.completedDate.getTime() - a.completedDate.getTime());
-        
+
         setFetchedCompletedSessions(moduleCompletedSessions);
       } catch (error) {
         console.error('Error fetching completed sessions:', error);
@@ -339,7 +344,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
 
     fetchCompletedSessions();
   }, [userId, module.id]);
-  
+
   const roadmapData = useMemo(() => {
     const relevantGoals = {
       anxiety: ['anxiety'],
@@ -357,7 +362,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
 
     // Use all fetched completed sessions from database for counting (already sorted with most recent first)
     const completedSessions = fetchedCompletedSessions;
-    
+
     // Limit to 6 most recent for display purposes only
     const displaySessions = fetchedCompletedSessions.slice(0, 6);
 
@@ -365,7 +370,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
     const goals = relevantGoals[module.id as keyof typeof relevantGoals] || ['focus'];
     const moduleSessions = mockSessions.filter(session => goals.includes(session.goal));
     const tomorrowCandidate = moduleSessions[0];
-    
+
     const tomorrowSession = tomorrowCandidate
       ? {
           ...tomorrowCandidate,
@@ -383,7 +388,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   const { completedSessions, displaySessions, tomorrowSession } = roadmapData;
   // Use the recommended session passed as prop (from TodayScreen)
   const todayRecommendedSessionId = recommendedSession?.id;
-  
+
   // Calculate number of sessions completed today
   const todayCount = useMemo(() => {
     const today = new Date();
@@ -391,20 +396,20 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
       return item.completedDate.toDateString() === today.toDateString();
     }).length;
   }, [completedSessions]);
-  
+
   // Filter to only count one session per day for neuroadaptation
   // We only need the count, so we just track unique dates
   const uniqueDailySessionsCount = useMemo(() => {
     const seenDates = new Set<string>();
-    
+
     for (const session of completedSessions) {
       const dateKey = session.completedDate.toDateString();
       seenDates.add(dateKey);
     }
-    
+
     return seenDates.size;
   }, [completedSessions]);
-  
+
   const titleText = `${module.title} Journey`;
   // Use smaller font for longer titles
   // <= 20 chars: 30px, 21-24 chars: 26px, > 24 chars: 22px
@@ -412,24 +417,24 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
 
   const handleTabChange = (tab: TabType) => {
     const tabIndex = tab === 'timeline' ? 0 : 1;
-    
+
     // Scroll to the appropriate page
     horizontalScrollRef.current?.scrollTo({
       x: tabIndex * screenWidth,
       animated: true,
     });
-    
+
     setActiveTab(tab);
   };
 
   const handleScroll = (event: any) => {
     const offsetX = event.nativeEvent.contentOffset.x;
-    
+
     // Update scrollX animated value for tab indicator
     scrollX.setValue(offsetX);
-    
+
     const tabIndex = Math.round(offsetX / screenWidth);
-    
+
     // Update active tab based on scroll position
     const newTab = tabIndex === 0 ? 'timeline' : 'overview';
     if (newTab !== activeTab) {
@@ -440,7 +445,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   const handleScrollEnd = (event: any) => {
     const offsetX = event.nativeEvent.contentOffset.x;
     const maxScrollX = screenWidth; // Maximum scroll position (Overview page)
-    
+
     // Check if we're at the left edge (Timeline page) and scrolled beyond it
     if (offsetX < -30) {
       // Navigate back
@@ -451,7 +456,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
       }
       return;
     }
-    
+
     // Check if we're at the right edge (Overview page) and scrolled beyond it
     if (offsetX > maxScrollX + 30) {
       // Snap back to the Overview page
@@ -464,7 +469,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
 
   const handleMomentumScrollEnd = (event: any) => {
     const offsetX = event.nativeEvent.contentOffset.x;
-    
+
     // Check if we're at the left edge (Timeline page) and scrolled beyond it
     if (offsetX < -30) {
       // Navigate back
@@ -493,7 +498,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         }),
       ]).start(() => pulse());
     };
-    
+
     pulse();
   }, [pulseAnim]);
 
@@ -513,7 +518,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         }),
       ]).start(() => glow());
     };
-    
+
     glow();
   }, [glowAnim]);
 
@@ -533,7 +538,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         }),
       ]).start(() => pulseArrow());
     };
-    
+
     pulseArrow();
     return () => {
       scrollArrowScale.stopAnimation();
@@ -569,9 +574,9 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         }}
       >
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent Sessions</Text>
-          <Text style={styles.sectionSubtitle}>
-            {completedSessions.length > 0 
+          <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Recent Sessions</Text>
+          <Text style={[styles.sectionSubtitle, { color: theme.colors.text.secondary }]}>
+            {completedSessions.length > 0
               ? completedSessions.length > 6
                 ? `Showing 6 most recent of ${completedSessions.length} sessions`
                 : `${completedSessions.length} completed ${completedSessions.length === 1 ? 'session' : 'sessions'}`
@@ -579,14 +584,14 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
           </Text>
         </View>
         {completedSessions.length === 0 ? (
-          <View style={[styles.tomorrowCard, styles.tomorrowCardLocked]}>
+          <View style={[styles.tomorrowCard, styles.tomorrowCardLocked, { backgroundColor: theme.colors.surface, borderColor: theme.colors.surfaceTertiary }]}>
             <View style={styles.tomorrowHeader}>
-              <View style={[styles.tomorrowIcon, styles.tomorrowIconLocked, { backgroundColor: '#3A3A3C' }]}>
+              <View style={[styles.tomorrowIcon, styles.tomorrowIconLocked, { backgroundColor: theme.colors.surfaceTertiary }]}>
                 <Text style={styles.tomorrowIconText}>🔒</Text>
               </View>
               <View style={styles.tomorrowLockedContent}>
-                <Text style={styles.tomorrowLockedTitle}>Complete a meditation</Text>
-                <Text style={styles.tomorrowLockedDescription}>
+                <Text style={[styles.tomorrowLockedTitle, { color: theme.colors.text.secondary }]}>Complete a meditation</Text>
+                <Text style={[styles.tomorrowLockedDescription, { color: theme.colors.text.secondary }]}>
                   Finish a session to see it here
                 </Text>
               </View>
@@ -604,7 +609,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
                 const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
                 const isAtEnd = contentOffset.x + layoutMeasurement.width >= contentSize.width - 10;
                 const hasOverflow = contentSize.width > layoutMeasurement.width;
-                
+
                 if (isAtEnd || !hasOverflow) {
                   if (showScrollArrow) {
                     setShowScrollArrow(false);
@@ -650,19 +655,19 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
               scrollEventThrottle={16}
             >
               {displaySessions.map(item => (
-                <View key={item.id} style={styles.completedCardWrapper}>
+                <View key={item.id} style={[styles.completedCardWrapper, { shadowOpacity: theme.isDark ? 0.3 : 0.06 }]}>
                   <TouchableOpacity
-                    style={styles.completedCard}
+                    style={[styles.completedCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
                     onPress={() => navigation.navigate('MeditationDetail', { sessionId: item.session.id })}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.completedTitle} numberOfLines={2}>
+                    <Text style={[styles.completedTitle, { color: theme.colors.text.primary }]} numberOfLines={2}>
                       {item.session.title}
                     </Text>
-                    <Text style={styles.completedMeta}>
+                    <Text style={[styles.completedMeta, { color: theme.colors.text.secondary }]}>
                       {item.session.durationMin} min • {item.session.modality}
                     </Text>
-                    <Text style={styles.completedDate}>{formatDate(item.completedDate)}</Text>
+                    <Text style={[styles.completedDate, { color: theme.colors.success }]}>{formatDate(item.completedDate)}</Text>
                     <View style={[styles.completedBadge, { backgroundColor: module.color }]}>
                       <Text style={styles.completedBadgeIcon}>✓</Text>
                     </View>
@@ -705,7 +710,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
 
     // Check if this session is completed
     const isCompleted = isSessionCompletedToday(module.id, recommendedSession.id) || todayCompleted;
-    
+
     // Get completion background color
     const completionBackgroundColor = createCompletionBackground(
       module.color,
@@ -729,8 +734,8 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         }}
       >
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Today's Plan</Text>
-          <Text style={styles.sectionSubtitle}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Today's Plan</Text>
+          <Text style={[styles.sectionSubtitle, { color: theme.colors.text.secondary }]}>
             {todayCompleted ? 'You finished today\'s check-in 🎉' : 'Your recommended meditation for today'}
           </Text>
         </View>
@@ -750,9 +755,9 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
               activeOpacity={0.85}
               style={[
                 styles.todayCard,
-                { 
+                {
                   borderWidth: 0,
-                  backgroundColor: '#1C1C1E'
+                  backgroundColor: theme.colors.surface,
                 },
               ]}
             >
@@ -764,7 +769,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
                   </Text>
                 </View>
               </View>
-              
+
               {/* Content area with text and play button */}
               <View style={styles.todayCardContentWrapper}>
                 <View style={styles.todayCardTextSection}>
@@ -774,14 +779,14 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
                   >
                     {recommendedSession.title}
                   </Text>
-                  <Text style={styles.todayCardDuration}>
+                  <Text style={[styles.todayCardDuration, { color: theme.colors.text.secondary }]}>
                     {recommendedSession.durationMin} min • {recommendedSession.modality}
                   </Text>
                 </View>
-                
+
                 {/* Play button or checkmark positioned center-right */}
                 {isCompleted ? (
-                  <View style={styles.todayCompletedButton}>
+                  <View style={[styles.todayCompletedButton, { backgroundColor: theme.colors.success }]}>
                     <Text style={styles.todayCompletedCheckmark}>✓</Text>
                   </View>
                 ) : (
@@ -790,13 +795,13 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
                   </View>
                 )}
               </View>
-              
+
               {/* Footer with CTA */}
               <View style={[styles.todayCardFooter, isCompleted && styles.todayCardFooterCompleted]}>
                 {isCompleted ? (
-                  <Text style={styles.todayCardCompletedText}>You already completed this session today.</Text>
+                  <Text style={[styles.todayCardCompletedText, { color: theme.colors.text.secondary }]}>You already completed this session today.</Text>
                 ) : (
-                  <Text style={styles.todayCardCTA}>Tap to begin session</Text>
+                  <Text style={[styles.todayCardCTA, { color: theme.colors.text.primary }]}>Tap to begin session</Text>
                 )}
               </View>
             </TouchableOpacity>
@@ -817,17 +822,17 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
           }}
         >
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Tomorrow</Text>
-            <Text style={styles.sectionSubtitle}>Finish today's meditation to unlock</Text>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Tomorrow</Text>
+            <Text style={[styles.sectionSubtitle, { color: theme.colors.text.secondary }]}>Finish today's meditation to unlock</Text>
           </View>
-          <View style={[styles.tomorrowCard, styles.tomorrowCardLocked]}>
+          <View style={[styles.tomorrowCard, styles.tomorrowCardLocked, { backgroundColor: theme.colors.surface, borderColor: theme.colors.surfaceTertiary }]}>
             <View style={styles.tomorrowHeader}>
-              <View style={[styles.tomorrowIcon, styles.tomorrowIconLocked, { backgroundColor: '#3A3A3C' }]}>
+              <View style={[styles.tomorrowIcon, styles.tomorrowIconLocked, { backgroundColor: theme.colors.surfaceTertiary }]}>
                 <Text style={styles.tomorrowIconText}>🔒</Text>
               </View>
               <View style={styles.tomorrowLockedContent}>
-                <Text style={styles.tomorrowLockedTitle}>Feature coming soon</Text>
-                <Text style={styles.tomorrowLockedDescription}>
+                <Text style={[styles.tomorrowLockedTitle, { color: theme.colors.text.secondary }]}>Feature coming soon</Text>
+                <Text style={[styles.tomorrowLockedDescription, { color: theme.colors.text.secondary }]}>
                   Complete today's sessions to see what's coming next
                 </Text>
               </View>
@@ -860,17 +865,17 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         }}
       >
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Tomorrow</Text>
-          <Text style={styles.sectionSubtitle}>Preview of what's coming next</Text>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Tomorrow</Text>
+          <Text style={[styles.sectionSubtitle, { color: theme.colors.text.secondary }]}>Preview of what's coming next</Text>
         </View>
-        <View style={[styles.tomorrowCard, styles.tomorrowCardLocked]}>
+        <View style={[styles.tomorrowCard, styles.tomorrowCardLocked, { backgroundColor: theme.colors.surface, borderColor: theme.colors.surfaceTertiary }]}>
           <View style={styles.tomorrowHeader}>
-            <View style={[styles.tomorrowIcon, styles.tomorrowIconLocked, { backgroundColor: '#3A3A3C' }]}>
+            <View style={[styles.tomorrowIcon, styles.tomorrowIconLocked, { backgroundColor: theme.colors.surfaceTertiary }]}>
               <Text style={styles.tomorrowIconText}>🔒</Text>
             </View>
             <View style={styles.tomorrowLockedContent}>
-              <Text style={styles.tomorrowLockedTitle}>Feature coming soon</Text>
-              <Text style={styles.tomorrowLockedDescription}>
+              <Text style={[styles.tomorrowLockedTitle, { color: theme.colors.text.secondary }]}>Feature coming soon</Text>
+              <Text style={[styles.tomorrowLockedDescription, { color: theme.colors.text.secondary }]}>
                 Complete today's sessions to see what's coming next
               </Text>
             </View>
@@ -894,7 +899,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   const renderTimelinePage = () => {
     // Use filtered count (one per day) for neuroadaptation progress
     const totalSessions = uniqueDailySessionsCount;
-    
+
     // Calculate average sessions required based on time ranges
     // 5-7 daily sessions: (5+7)/2 = 6
     // 3-4 weeks of daily sessions: (3*7 + 4*7)/2 = (21+28)/2 = 24.5, rounded to 25
@@ -902,7 +907,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
     // 3 Months of daily sessions: 3 * 30.44 = 91.32, rounded to 91
     // 6 Months of daily sessions: 6 * 30.44 = 182.64, rounded to 183
     // 1 Year of daily sessions: 365
-    
+
     // Calculate progress for each milestone based on sessions completed
     const milestones = [
       {
@@ -956,8 +961,8 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
     ];
 
     return (
-      <ScrollView 
-        style={[styles.page, { width: screenWidth }]} 
+      <ScrollView
+        style={[styles.page, { width: screenWidth }]}
         contentContainerStyle={styles.timelinePageContent}
         showsVerticalScrollIndicator={false}
       >
@@ -977,7 +982,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
               const progress = Math.min(100, (totalSessions / milestone.sessionsRequired) * 100);
               const isUnlocked = totalSessions >= milestone.sessionsRequired;
               const isPartiallyComplete = totalSessions > 0 && totalSessions < milestone.sessionsRequired;
-              
+
               return (
                 <NeuroadaptationCard
                   key={milestone.id}
@@ -1014,21 +1019,21 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
           style={[styles.section, styles.sectionFirst]}
         >
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{module.title} Progress</Text>
-            <Text style={styles.sectionSubtitle}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>{module.title} Progress</Text>
+            <Text style={[styles.sectionSubtitle, { color: theme.colors.text.secondary }]}>
               Track your journey and milestones
             </Text>
           </View>
-          <View style={[styles.summaryCard, { borderColor: module.color, backgroundColor: '#1C1C1E' }]}>
+          <View style={[styles.summaryCard, { borderColor: module.color, backgroundColor: theme.colors.surface, shadowOpacity: theme.isDark ? 0.3 : 0.06 }]}>
             <View style={styles.summaryStatsRow}>
               <View style={styles.summaryStat}>
-                <Text style={styles.summaryStatValue}>{completedSessions.length}</Text>
-                <Text style={styles.summaryStatLabel}>Completed</Text>
+                <Text style={[styles.summaryStatValue, { color: theme.colors.text.primary }]}>{completedSessions.length}</Text>
+                <Text style={[styles.summaryStatLabel, { color: theme.colors.text.secondary }]}>Completed</Text>
               </View>
-              <View style={styles.summaryDivider} />
+              <View style={[styles.summaryDivider, { backgroundColor: theme.colors.border }]} />
               <View style={styles.summaryStat}>
-                <Text style={styles.summaryStatValue}>{todayCount}</Text>
-                <Text style={styles.summaryStatLabel}>Today</Text>
+                <Text style={[styles.summaryStatValue, { color: theme.colors.text.primary }]}>{todayCount}</Text>
+                <Text style={[styles.summaryStatLabel, { color: theme.colors.text.secondary }]}>Today</Text>
               </View>
             </View>
           </View>
@@ -1043,45 +1048,46 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   return (
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      
+
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         {/* Sticky Header */}
-        <View style={styles.stickyHeader}>
+        <View style={[styles.stickyHeader, { backgroundColor: theme.colors.glass.background, borderBottomColor: theme.colors.border, shadowOpacity: theme.isDark ? 0.3 : 0.06 }]}>
           <View style={styles.headerContent}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.backButton}
               onPress={onBackPress || (() => navigation.goBack())}
             >
-              <Text style={styles.backButtonText}>←</Text>
+              <Text style={[styles.backButtonText, { color: theme.colors.accent }]}>←</Text>
             </TouchableOpacity>
-            <Text style={styles.headerTitle} numberOfLines={1} ellipsizeMode="tail">{titleText}</Text>
+            <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]} numberOfLines={1} ellipsizeMode="tail">{titleText}</Text>
             <View style={styles.headerActions} />
           </View>
-          
+
           {/* Tabs in Header */}
           <View style={styles.tabsContainer}>
             <TouchableOpacity
               style={[styles.tab, activeTab === 'timeline' && styles.activeTab]}
               onPress={() => handleTabChange('timeline')}
             >
-              <Text style={[styles.tabText, activeTab === 'timeline' && styles.activeTabText]}>
+              <Text style={[styles.tabText, { color: theme.colors.text.secondary }, activeTab === 'timeline' && { color: theme.colors.accent, fontWeight: '600' }]}>
                 Neuroadaptation
               </Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={[styles.tab, activeTab === 'overview' && styles.activeTab]}
               onPress={() => handleTabChange('overview')}
             >
-              <Text style={[styles.tabText, activeTab === 'overview' && styles.activeTabText]}>
+              <Text style={[styles.tabText, { color: theme.colors.text.secondary }, activeTab === 'overview' && { color: theme.colors.accent, fontWeight: '600' }]}>
                 Overview
               </Text>
             </TouchableOpacity>
-            
+
             {/* Animated Indicator */}
-            <Animated.View 
+            <Animated.View
               style={[
                 styles.tabIndicator,
+                { backgroundColor: theme.colors.accent },
                 {
                   width: screenWidth / 2,
                   transform: [{
@@ -1095,7 +1101,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
                     })
                   }]
                 }
-              ]} 
+              ]}
             />
           </View>
         </View>
@@ -1115,7 +1121,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         >
           {/* Timeline Page */}
           {renderTimelinePage()}
-          
+
           {/* Overview Page */}
           {renderOverviewPage()}
         </ScrollView>
@@ -1127,20 +1133,16 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.health.container.backgroundColor,
   },
   safeArea: {
     flex: 1,
   },
   stickyHeader: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
     zIndex: 100,
     paddingTop: 52, // Status bar height
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 4,
   },
@@ -1160,12 +1162,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   backButtonText: {
-    color: '#0A84FF',
     fontSize: 24,
     fontWeight: '400',
   },
   headerTitle: {
-    color: theme.colors.text.primary,
     fontSize: 17,
     fontWeight: '600',
     flex: 1,
@@ -1194,18 +1194,12 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 15,
     fontWeight: '400',
-    color: theme.colors.text.secondary,
-  },
-  activeTabText: {
-    color: '#0A84FF',
-    fontWeight: '600',
   },
   tabIndicator: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     height: 2,
-    backgroundColor: '#0A84FF',
     borderRadius: 1,
   },
   horizontalScrollView: {
@@ -1228,20 +1222,17 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
   },
   summaryCard: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 6,
   },
   summaryTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#F2F2F7',
     fontFamily: 'System',
   },
   summaryStatsRow: {
@@ -1256,20 +1247,17 @@ const styles = StyleSheet.create({
   summaryStatValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#F2F2F7',
     fontFamily: 'System',
   },
   summaryStatLabel: {
     marginTop: 2,
     fontSize: 12,
     fontWeight: '500',
-    color: '#A0A0B0',
     fontFamily: 'System',
   },
   summaryDivider: {
     width: 1,
     height: 28,
-    backgroundColor: 'rgba(255,255,255,0.06)',
   },
   section: {
     width: '100%',
@@ -1284,13 +1272,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#F2F2F7',
     fontFamily: 'System',
   },
   sectionSubtitle: {
     marginTop: 4,
     fontSize: 14,
-    color: '#A0A0B0',
     fontFamily: 'System',
   },
   completedScrollContainer: {
@@ -1329,18 +1315,15 @@ const styles = StyleSheet.create({
   completedCardWrapper: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
     shadowRadius: 10,
     elevation: 4,
   },
   completedCard: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 12,
     padding: 8,
     width: 160,
     height: 120,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
     justifyContent: 'space-between',
     position: 'relative',
   },
@@ -1362,20 +1345,17 @@ const styles = StyleSheet.create({
   completedTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#F2F2F7',
     lineHeight: 19,
     marginBottom: 2,
     fontFamily: 'System',
   },
   completedMeta: {
     fontSize: 12,
-    color: '#A0A0B0',
     marginBottom: 2,
     fontFamily: 'System',
   },
   completedDate: {
     fontSize: 12,
-    color: '#34C759',
     fontWeight: '600',
     fontFamily: 'System',
   },
@@ -1391,7 +1371,6 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   todayCard: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 20,
     padding: 18,
     position: 'relative',
@@ -1442,7 +1421,6 @@ const styles = StyleSheet.create({
   todayCardTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#F2F2F7',
     fontFamily: 'System',
     marginBottom: 6,
     lineHeight: 26,
@@ -1450,7 +1428,6 @@ const styles = StyleSheet.create({
   },
   todayCardDuration: {
     fontSize: 14,
-    color: '#A0A0B0',
     fontFamily: 'System',
     marginTop: 0,
     lineHeight: 20,
@@ -1490,14 +1467,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '400',
     fontStyle: 'italic',
-    color: '#A0A0B0',
     letterSpacing: -0.2,
   },
   todayCardCTA: {
     fontSize: 14,
     fontWeight: '400',
     fontStyle: 'italic',
-    color: '#F2F2F7',
     letterSpacing: -0.2,
   },
   todayPlayButton: {
@@ -1524,7 +1499,6 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#34c759',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -1540,12 +1514,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   tomorrowCard: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 18,
     padding: 18,
     paddingVertical: 24,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -1572,36 +1544,31 @@ const styles = StyleSheet.create({
   },
   tomorrowLabel: {
     fontSize: 13,
-    color: '#A0A0B0',
     fontFamily: 'System',
   },
   tomorrowTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#F2F2F7',
     fontFamily: 'System',
   },
   tomorrowMeta: {
     fontSize: 13,
-    color: '#A0A0B0',
     marginBottom: 10,
     fontFamily: 'System',
   },
   tomorrowDescription: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#A0A0B0',
     fontFamily: 'System',
   },
   tomorrowCardLocked: {
     opacity: 0.6,
-    borderColor: '#3A3A3C',
     borderStyle: 'dashed',
     justifyContent: 'center',
     minHeight: 100,
   },
   tomorrowIconLocked: {
-    backgroundColor: '#3A3A3C',
+    // background color set via inline style using theme token
   },
   tomorrowLockedContent: {
     flex: 1,
@@ -1609,14 +1576,12 @@ const styles = StyleSheet.create({
   tomorrowLockedTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#A0A0B0',
     fontFamily: 'System',
     marginBottom: 4,
   },
   tomorrowLockedDescription: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#A0A0B0',
     fontFamily: 'System',
   },
   timelinePageContent: {
@@ -1630,14 +1595,12 @@ const styles = StyleSheet.create({
   timelineTitle: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#F2F2F7',
     marginBottom: 8,
     fontFamily: 'System',
   },
   timelineSubtitle: {
     fontSize: 16,
     lineHeight: 22,
-    color: '#A0A0B0',
     marginBottom: 24,
     fontFamily: 'System',
   },
@@ -1647,7 +1610,6 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
@@ -1657,34 +1619,28 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
     marginRight: 12,
   },
   statValue: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#F2F2F7',
     fontFamily: 'System',
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 13,
-    color: '#A0A0B0',
     fontWeight: '500',
     fontFamily: 'System',
   },
   neuroCard: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 2,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
   },
   neuroCardHeader: {
     marginBottom: 16,
@@ -1698,7 +1654,6 @@ const styles = StyleSheet.create({
   neuroCardTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#F2F2F7',
     fontFamily: 'System',
     flex: 1,
   },
@@ -1718,7 +1673,6 @@ const styles = StyleSheet.create({
   },
   neuroCardTimeRange: {
     fontSize: 14,
-    color: '#A0A0B0',
     fontWeight: '500',
     fontFamily: 'System',
   },
@@ -1730,7 +1684,6 @@ const styles = StyleSheet.create({
   progressBarTrack: {
     flex: 1,
     height: 8,
-    backgroundColor: '#2C2C2E',
     borderRadius: 4,
     overflow: 'hidden',
     marginRight: 12,
@@ -1749,7 +1702,6 @@ const styles = StyleSheet.create({
   neuroCardDescription: {
     fontSize: 15,
     lineHeight: 22,
-    color: '#A0A0B0',
     marginBottom: 12,
     fontFamily: 'System',
   },
@@ -1769,17 +1721,14 @@ const styles = StyleSheet.create({
   whatYouFeelText: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#A0A0B0',
     fontFamily: 'System',
   },
   sessionsRequired: {
     fontSize: 13,
-    color: '#A0A0B0',
     fontStyle: 'italic',
     fontFamily: 'System',
   },
   placeholderCard: {
-    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     padding: 32,
     alignItems: 'center',
@@ -1798,13 +1747,11 @@ const styles = StyleSheet.create({
   placeholderTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: theme.colors.text.primary,
     marginBottom: 12,
   },
   placeholderText: {
     fontSize: 15,
     lineHeight: 22,
-    color: theme.colors.text.secondary,
     textAlign: 'center',
   },
 });

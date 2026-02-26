@@ -1,17 +1,17 @@
 import React, { useRef, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Animated, 
-  Dimensions, 
-  Modal, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Animated,
+  Dimensions,
+  Modal,
   ScrollView
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Session } from '../types';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface ExtendedSession extends Session {
   description?: string;
@@ -35,6 +35,7 @@ export const MeditationDetailModal: React.FC<MeditationDetailModalProps> = ({
   onStart,
   onTutorial,
 }) => {
+  const theme = useTheme();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
 
@@ -89,10 +90,10 @@ export const MeditationDetailModal: React.FC<MeditationDetailModalProps> = ({
   const getGoalColor = (goal: string) => {
     const colors: { [key: string]: string } = {
       anxiety: '#FF6B6B',
-      focus: '#4ECDC4', 
+      focus: '#4ECDC4',
       sleep: '#45B7D1',
     };
-    return colors[goal] || theme.colors.primary;
+    return colors[goal] || theme.colors.accent;
   };
 
   return (
@@ -125,6 +126,8 @@ export const MeditationDetailModal: React.FC<MeditationDetailModalProps> = ({
             styles.modal,
             {
               height: modalHeight,
+              backgroundColor: theme.colors.surface,
+              shadowOpacity: theme.isDark ? 0.3 : 0.06,
               transform: [
                 {
                   translateY: slideAnim.interpolate({
@@ -139,31 +142,34 @@ export const MeditationDetailModal: React.FC<MeditationDetailModalProps> = ({
           <SafeAreaView style={styles.safeArea}>
             {/* Header with Handle */}
             <View style={styles.header}>
-              <View style={styles.handle} />
-              <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-                <Text style={styles.closeButtonText}>✕</Text>
+              <View style={[styles.handle, { backgroundColor: theme.colors.surfaceTertiary }]} />
+              <TouchableOpacity
+                style={[styles.closeButton, { backgroundColor: theme.colors.surfaceElevated }]}
+                onPress={onClose}
+              >
+                <Text style={[styles.closeButtonText, { color: theme.colors.accent }]}>✕</Text>
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
               {/* Hero Section */}
               <View style={styles.heroSection}>
-                <View style={styles.modalityIcon}>
+                <View style={[styles.modalityIcon, { backgroundColor: theme.colors.surfaceElevated }]}>
                   <Text style={styles.modalityIconText}>{getModalityIcon(session.modality)}</Text>
                 </View>
-                
-                <Text style={styles.sessionTitle}>{session.title}</Text>
-                
+
+                <Text style={[styles.sessionTitle, { color: theme.colors.text.primary }]}>{session.title}</Text>
+
                 <View style={styles.sessionMeta}>
                   <View style={[styles.metaBadge, { backgroundColor: getGoalColor(session.goal) }]}>
                     <Text style={styles.metaBadgeText}>{session.goal}</Text>
                   </View>
-                  <Text style={styles.durationText}>{session.durationMin} min</Text>
-                  <Text style={styles.modalityText}>{session.modality}</Text>
+                  <Text style={[styles.durationText, { color: theme.colors.text.secondary }]}>{session.durationMin} min</Text>
+                  <Text style={[styles.modalityText, { color: theme.colors.text.secondary }]}>{session.modality}</Text>
                 </View>
 
                 {session.adaptiveReason && (
-                  <View style={styles.recommendedBadge}>
+                  <View style={[styles.recommendedBadge, { backgroundColor: theme.colors.success }]}>
                     <Text style={styles.recommendedBadgeText}>✨ {session.adaptiveReason}</Text>
                   </View>
                 )}
@@ -172,36 +178,38 @@ export const MeditationDetailModal: React.FC<MeditationDetailModalProps> = ({
               {/* Description Section */}
               {session.description && (
                 <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Overview</Text>
-                  <Text style={styles.descriptionText}>{session.description}</Text>
+                  <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Overview</Text>
+                  <Text style={[styles.descriptionText, { color: theme.colors.text.primary, backgroundColor: theme.colors.surfaceElevated }]}>
+                    {session.description}
+                  </Text>
                 </View>
               )}
 
               {/* Why It Works Section */}
               {session.whyItWorks && (
                 <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>How It Works</Text>
-                  <View style={styles.whyItWorksCard}>
-                    <Text style={styles.whyItWorksText}>{session.whyItWorks}</Text>
+                  <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>How It Works</Text>
+                  <View style={[styles.whyItWorksCard, { backgroundColor: theme.colors.surfaceElevated }]}>
+                    <Text style={[styles.whyItWorksText, { color: theme.colors.text.primary }]}>{session.whyItWorks}</Text>
                   </View>
                 </View>
               )}
 
               {/* Benefits Section */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Benefits</Text>
+                <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Benefits</Text>
                 <View style={styles.benefitsList}>
-                  <View style={styles.benefitItem}>
+                  <View style={[styles.benefitItem, { backgroundColor: theme.colors.surfaceElevated }]}>
                     <Text style={styles.benefitIcon}>🧠</Text>
-                    <Text style={styles.benefitText}>Improved focus and clarity</Text>
+                    <Text style={[styles.benefitText, { color: theme.colors.text.primary }]}>Improved focus and clarity</Text>
                   </View>
-                  <View style={styles.benefitItem}>
+                  <View style={[styles.benefitItem, { backgroundColor: theme.colors.surfaceElevated }]}>
                     <Text style={styles.benefitIcon}>😌</Text>
-                    <Text style={styles.benefitText}>Reduced stress and anxiety</Text>
+                    <Text style={[styles.benefitText, { color: theme.colors.text.primary }]}>Reduced stress and anxiety</Text>
                   </View>
-                  <View style={styles.benefitItem}>
+                  <View style={[styles.benefitItem, { backgroundColor: theme.colors.surfaceElevated }]}>
                     <Text style={styles.benefitIcon}>💤</Text>
-                    <Text style={styles.benefitText}>Better sleep quality</Text>
+                    <Text style={[styles.benefitText, { color: theme.colors.text.primary }]}>Better sleep quality</Text>
                   </View>
                 </View>
               </View>
@@ -209,13 +217,22 @@ export const MeditationDetailModal: React.FC<MeditationDetailModalProps> = ({
               {/* Action Buttons */}
               <View style={styles.actionButtons}>
                 {onTutorial && (
-                  <TouchableOpacity style={styles.tutorialButton} onPress={onTutorial}>
-                    <Text style={styles.tutorialButtonText}>Learn More</Text>
+                  <TouchableOpacity
+                    style={[
+                      styles.tutorialButton,
+                      {
+                        backgroundColor: theme.colors.surfaceElevated,
+                        borderColor: theme.colors.border,
+                      },
+                    ]}
+                    onPress={onTutorial}
+                  >
+                    <Text style={[styles.tutorialButtonText, { color: theme.colors.accent }]}>Learn More</Text>
                   </TouchableOpacity>
                 )}
-                
-                <TouchableOpacity 
-                  style={[styles.startButton, { backgroundColor: getGoalColor(session.goal) }]} 
+
+                <TouchableOpacity
+                  style={[styles.startButton, { backgroundColor: getGoalColor(session.goal) }]}
                   onPress={onStart}
                 >
                   <Text style={styles.startButtonText}>Start Practice</Text>
@@ -249,12 +266,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modal: {
-    backgroundColor: '#1C1C1E',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 8,
   },
@@ -272,7 +287,6 @@ const styles = StyleSheet.create({
   handle: {
     width: 36,
     height: 5,
-    backgroundColor: '#3A3A3C',
     borderRadius: 3,
     marginLeft: 'auto',
     marginRight: 'auto',
@@ -282,7 +296,6 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#2C2C2E',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -294,7 +307,6 @@ const styles = StyleSheet.create({
   closeButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#0A84FF',
   },
   scrollView: {
     flex: 1,
@@ -308,7 +320,6 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: '#2C2C2E',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
@@ -324,7 +335,6 @@ const styles = StyleSheet.create({
   sessionTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#F2F2F7',
     textAlign: 'center',
     marginBottom: 12,
   },
@@ -347,17 +357,14 @@ const styles = StyleSheet.create({
   },
   durationText: {
     fontSize: 15,
-    color: '#A0A0B0',
     fontWeight: '500',
   },
   modalityText: {
     fontSize: 15,
-    color: '#A0A0B0',
     fontWeight: '500',
     textTransform: 'capitalize',
   },
   recommendedBadge: {
-    backgroundColor: '#34C759',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
@@ -374,14 +381,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#F2F2F7',
     marginBottom: 12,
   },
   descriptionText: {
     fontSize: 17,
     lineHeight: 22,
-    color: '#F2F2F7',
-    backgroundColor: '#2C2C2E',
     padding: 16,
     borderRadius: 12,
     shadowColor: '#000',
@@ -391,7 +395,6 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   whyItWorksCard: {
-    backgroundColor: '#2C2C2E',
     padding: 16,
     borderRadius: 12,
     shadowColor: '#000',
@@ -403,7 +406,6 @@ const styles = StyleSheet.create({
   whyItWorksText: {
     fontSize: 17,
     lineHeight: 22,
-    color: '#F2F2F7',
     fontStyle: 'italic',
   },
   benefitsList: {
@@ -412,7 +414,6 @@ const styles = StyleSheet.create({
   benefitItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2C2C2E',
     padding: 16,
     borderRadius: 12,
     shadowColor: '#000',
@@ -427,7 +428,6 @@ const styles = StyleSheet.create({
   },
   benefitText: {
     fontSize: 17,
-    color: '#F2F2F7',
     flex: 1,
   },
   actionButtons: {
@@ -438,19 +438,16 @@ const styles = StyleSheet.create({
   },
   tutorialButton: {
     flex: 1,
-    backgroundColor: '#2C2C2E',
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
   },
   tutorialButtonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#0A84FF',
   },
   startButton: {
     flex: 2,

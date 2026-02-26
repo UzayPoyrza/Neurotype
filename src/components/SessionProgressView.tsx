@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { Session } from '../types';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface SessionProgressViewProps {
   session: Session;
@@ -14,6 +14,7 @@ export const SessionProgressView: React.FC<SessionProgressViewProps> = ({
   onFinish,
   onCancel,
 }) => {
+  const theme = useTheme();
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const progressAnim = useRef(new Animated.Value(0)).current;
@@ -38,7 +39,7 @@ export const SessionProgressView: React.FC<SessionProgressViewProps> = ({
         }),
       ]).start(() => pulse());
     };
-    
+
     if (isActive) {
       pulse();
     }
@@ -49,14 +50,14 @@ export const SessionProgressView: React.FC<SessionProgressViewProps> = ({
     intervalRef.current = setInterval(() => {
       setTimeElapsed(prev => {
         const newTime = prev + 1;
-        
+
         // Update progress animation
         Animated.timing(progressAnim, {
           toValue: newTime / totalDuration,
           duration: 100,
           useNativeDriver: false,
         }).start();
-        
+
         // Auto-finish when time is up
         if (newTime >= totalDuration) {
           if (intervalRef.current) {
@@ -65,7 +66,7 @@ export const SessionProgressView: React.FC<SessionProgressViewProps> = ({
           setIsActive(false);
           setTimeout(onFinish, 500);
         }
-        
+
         return newTime;
       });
     }, 1000);
@@ -92,12 +93,16 @@ export const SessionProgressView: React.FC<SessionProgressViewProps> = ({
   const progressPercentage = (timeElapsed / totalDuration) * 100;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.surface }]}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
-          <Text style={styles.cancelText}>Cancel</Text>
+          <Text style={[styles.cancelText, { color: theme.colors.text.secondary, fontFamily: theme.typography.fontFamily }]}>
+            Cancel
+          </Text>
         </TouchableOpacity>
-        <Text style={styles.sessionTitle}>{session.title}</Text>
+        <Text style={[styles.sessionTitle, { color: theme.colors.text.primary, fontFamily: theme.typography.fontFamily }]}>
+          {session.title}
+        </Text>
         <View style={styles.placeholder} />
       </View>
 
@@ -107,6 +112,10 @@ export const SessionProgressView: React.FC<SessionProgressViewProps> = ({
           style={[
             styles.progressCircle,
             {
+              backgroundColor: theme.colors.background,
+              borderColor: theme.colors.border,
+              shadowColor: theme.colors.shadow,
+              shadowOpacity: theme.isDark ? 0.3 : 0.06,
               transform: [
                 {
                   scale: pulseAnim.interpolate({
@@ -118,11 +127,12 @@ export const SessionProgressView: React.FC<SessionProgressViewProps> = ({
             },
           ]}
         >
-          <View style={styles.progressTrack}>
+          <View style={[styles.progressTrack, { backgroundColor: theme.colors.disabled }]}>
             <Animated.View
               style={[
                 styles.progressFill,
                 {
+                  backgroundColor: theme.colors.success,
                   width: progressAnim.interpolate({
                     inputRange: [0, 1],
                     outputRange: ['0%', '100%'],
@@ -131,41 +141,94 @@ export const SessionProgressView: React.FC<SessionProgressViewProps> = ({
               ]}
             />
           </View>
-          
+
           <View style={styles.timeContainer}>
-            <Text style={styles.timeElapsed}>{formatTime(timeElapsed)}</Text>
-            <Text style={styles.totalTime}>/ {formatTime(totalDuration)}</Text>
+            <Text style={[styles.timeElapsed, { color: theme.colors.text.primary, fontFamily: theme.typography.fontFamily }]}>
+              {formatTime(timeElapsed)}
+            </Text>
+            <Text style={[styles.totalTime, { color: theme.colors.text.secondary, fontFamily: theme.typography.fontFamily }]}>
+              / {formatTime(totalDuration)}
+            </Text>
           </View>
         </Animated.View>
 
         {/* Progress Percentage */}
-        <Text style={styles.progressText}>
+        <Text style={[styles.progressText, { color: theme.colors.text.secondary, fontFamily: theme.typography.fontFamily }]}>
           {Math.round(progressPercentage)}% Complete
         </Text>
       </View>
 
       <View style={styles.controls}>
         {!isActive && timeElapsed === 0 && (
-          <TouchableOpacity style={styles.startButton} onPress={startSession}>
-            <Text style={styles.startButtonText}>Begin Session</Text>
+          <TouchableOpacity
+            style={[
+              styles.startButton,
+              {
+                backgroundColor: theme.colors.primary,
+                borderColor: theme.colors.primary,
+                borderRadius: theme.borderRadius.lg,
+                shadowColor: theme.colors.shadow,
+                shadowOpacity: theme.isDark ? 0.3 : 0.06,
+              },
+            ]}
+            onPress={startSession}
+          >
+            <Text style={[styles.startButtonText, { color: theme.colors.text.onPrimary, fontFamily: theme.typography.fontFamily }]}>
+              Begin Session
+            </Text>
           </TouchableOpacity>
         )}
-        
+
         {!isActive && timeElapsed > 0 && timeElapsed < totalDuration && (
-          <TouchableOpacity style={styles.resumeButton} onPress={resumeSession}>
-            <Text style={styles.resumeButtonText}>Resume</Text>
+          <TouchableOpacity
+            style={[
+              styles.resumeButton,
+              {
+                backgroundColor: theme.colors.success,
+                borderColor: theme.colors.success,
+                borderRadius: theme.borderRadius.lg,
+              },
+            ]}
+            onPress={resumeSession}
+          >
+            <Text style={[styles.resumeButtonText, { color: theme.colors.text.onPrimary, fontFamily: theme.typography.fontFamily }]}>
+              Resume
+            </Text>
           </TouchableOpacity>
         )}
-        
+
         {isActive && (
-          <TouchableOpacity style={styles.pauseButton} onPress={pauseSession}>
-            <Text style={styles.pauseButtonText}>Pause</Text>
+          <TouchableOpacity
+            style={[
+              styles.pauseButton,
+              {
+                backgroundColor: theme.colors.secondary,
+                borderColor: theme.colors.secondary,
+                borderRadius: theme.borderRadius.lg,
+              },
+            ]}
+            onPress={pauseSession}
+          >
+            <Text style={[styles.pauseButtonText, { color: theme.colors.text.onPrimary, fontFamily: theme.typography.fontFamily }]}>
+              Pause
+            </Text>
           </TouchableOpacity>
         )}
 
         {timeElapsed > 0 && (
-          <TouchableOpacity style={styles.finishButton} onPress={onFinish}>
-            <Text style={styles.finishButtonText}>Finish Early</Text>
+          <TouchableOpacity
+            style={[
+              styles.finishButton,
+              {
+                borderColor: theme.colors.border,
+                borderRadius: theme.borderRadius.lg,
+              },
+            ]}
+            onPress={onFinish}
+          >
+            <Text style={[styles.finishButtonText, { color: theme.colors.text.secondary, fontFamily: theme.typography.fontFamily }]}>
+              Finish Early
+            </Text>
           </TouchableOpacity>
         )}
       </View>
@@ -176,7 +239,6 @@ export const SessionProgressView: React.FC<SessionProgressViewProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.surface,
     paddingTop: 60,
   },
   header: {
@@ -191,16 +253,12 @@ const styles = StyleSheet.create({
   },
   cancelText: {
     fontSize: 16,
-    color: theme.colors.text.secondary,
-    fontFamily: theme.typography.fontFamily,
   },
   sessionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: theme.colors.text.primary,
     textAlign: 'center',
     flex: 1,
-    fontFamily: theme.typography.fontFamily,
   },
   placeholder: {
     width: 60,
@@ -213,15 +271,11 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 100,
-    backgroundColor: theme.colors.background,
-    borderWidth: theme.borders.width.thick,
-    borderColor: theme.colors.border,
+    borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
-    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 4,
   },
@@ -231,13 +285,11 @@ const styles = StyleSheet.create({
     left: 20,
     right: 20,
     height: 8,
-    backgroundColor: theme.colors.disabled,
     borderRadius: 4,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: theme.colors.success,
     borderRadius: 4,
   },
   timeContainer: {
@@ -246,87 +298,60 @@ const styles = StyleSheet.create({
   timeElapsed: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: theme.colors.text.primary,
-    fontFamily: theme.typography.fontFamily,
   },
   totalTime: {
     fontSize: 16,
-    color: theme.colors.text.secondary,
     marginTop: 4,
-    fontFamily: theme.typography.fontFamily,
   },
   progressText: {
     fontSize: 14,
-    color: theme.colors.text.secondary,
-    fontFamily: theme.typography.fontFamily,
   },
   controls: {
     paddingHorizontal: 20,
     gap: 12,
   },
   startButton: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.borderRadius.lg,
     paddingVertical: 16,
     paddingHorizontal: 24,
-    borderWidth: theme.borders.width.thick,
-    borderColor: theme.colors.primary,
+    borderWidth: 2,
     alignItems: 'center',
-    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 4,
   },
   startButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: theme.colors.text.onPrimary,
-    fontFamily: theme.typography.fontFamily,
   },
   pauseButton: {
-    backgroundColor: theme.colors.secondary,
-    borderRadius: theme.borderRadius.lg,
     paddingVertical: 16,
     paddingHorizontal: 24,
-    borderWidth: theme.borders.width.thick,
-    borderColor: theme.colors.secondary,
+    borderWidth: 2,
     alignItems: 'center',
   },
   pauseButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: theme.colors.text.onPrimary,
-    fontFamily: theme.typography.fontFamily,
   },
   resumeButton: {
-    backgroundColor: theme.colors.success,
-    borderRadius: theme.borderRadius.lg,
     paddingVertical: 16,
     paddingHorizontal: 24,
-    borderWidth: theme.borders.width.thick,
-    borderColor: theme.colors.success,
+    borderWidth: 2,
     alignItems: 'center',
   },
   resumeButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: theme.colors.text.onPrimary,
-    fontFamily: theme.typography.fontFamily,
   },
   finishButton: {
     backgroundColor: 'transparent',
-    borderRadius: theme.borderRadius.lg,
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.border,
+    borderWidth: 1,
     alignItems: 'center',
   },
   finishButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: theme.colors.text.secondary,
-    fontFamily: theme.typography.fontFamily,
   },
 });

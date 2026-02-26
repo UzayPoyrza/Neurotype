@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Dimensions, Animated } from 'react-native';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 import { mentalHealthModules } from '../data/modules';
 import { useStore } from '../store/useStore';
 import { ModuleGridModal } from './ModuleGridModal';
@@ -14,6 +14,7 @@ interface HowToUseModalProps {
 }
 
 export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isVisible, onClose }) => {
+  const theme = useTheme();
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -76,7 +77,7 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isVisible, onClose
         }),
       ]).start();
     }
-    
+
     if (currentPage !== 0) {
       setHasClickedChangeButton(false);
     }
@@ -128,10 +129,14 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isVisible, onClose
       presentationStyle="fullScreen"
       onRequestClose={onClose}
     >
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <View style={styles.header}>
-          <TouchableOpacity style={styles.closeButton} onPress={onClose} activeOpacity={0.7}>
-            <Text style={styles.closeButtonText}>✕</Text>
+          <TouchableOpacity
+            style={[styles.closeButton, { backgroundColor: theme.colors.glass.background }]}
+            onPress={onClose}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.closeButtonText, { color: theme.colors.text.primary }]}>✕</Text>
           </TouchableOpacity>
         </View>
 
@@ -145,7 +150,7 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isVisible, onClose
           style={styles.scrollView}
           scrollEnabled={false}
         >
-          <ChangeButtonDemoPage 
+          <ChangeButtonDemoPage
             selectedModule={initialModule}
             isActive={currentPage === 0}
             onModuleChange={handleDemoModuleChange}
@@ -169,7 +174,7 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isVisible, onClose
               onCongratulationsCompleteRef.current = handler;
             }}
           />
-          <HowToUsePage 
+          <HowToUsePage
             isActive={currentPage === 1}
             isModal={true}
             onScrollStateChange={(hasScrolled) => {
@@ -189,9 +194,13 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isVisible, onClose
             },
           ]}
         >
-          <TouchableOpacity 
-            style={[styles.button, !canProceed() && styles.buttonDisabled]} 
-            onPress={handleNext} 
+          <TouchableOpacity
+            style={[
+              styles.button,
+              { backgroundColor: theme.colors.accent },
+              !canProceed() && { backgroundColor: theme.colors.surfaceElevated },
+            ]}
+            onPress={handleNext}
             activeOpacity={0.7}
             disabled={!canProceed()}
           >
@@ -231,7 +240,6 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isVisible, onClose
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.health.container.backgroundColor,
   },
   header: {
     paddingTop: 50,
@@ -244,13 +252,11 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   closeButtonText: {
     fontSize: 18,
-    color: '#F2F2F7',
     fontWeight: '600',
   },
   scrollView: {
@@ -263,7 +269,6 @@ const styles = StyleSheet.create({
     right: 20,
   },
   button: {
-    backgroundColor: '#0A84FF',
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 32,
@@ -273,9 +278,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
-  },
-  buttonDisabled: {
-    backgroundColor: '#2C2C2E',
   },
   buttonText: {
     fontSize: 16,

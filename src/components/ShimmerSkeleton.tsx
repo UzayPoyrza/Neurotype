@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated, ViewStyle } from 'react-native';
+import { useTheme } from '../contexts/ThemeContext';
 
 type ShimmerSkeletonProps = {
   width?: number | string;
@@ -14,6 +15,7 @@ export const ShimmerSkeleton: React.FC<ShimmerSkeletonProps> = ({
   borderRadius = 8,
   style,
 }) => {
+  const theme = useTheme();
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -58,7 +60,15 @@ export const ShimmerSkeleton: React.FC<ShimmerSkeletonProps> = ({
       ]}
     >
       {/* Dark base */}
-      <View style={[styles.base, { borderRadius }]} />
+      <View
+        style={[
+          styles.base,
+          {
+            borderRadius,
+            backgroundColor: theme.colors.surfaceElevated,
+          },
+        ]}
+      />
 
       {/* Shimmer overlay - subtle light sweep */}
       <Animated.View
@@ -70,7 +80,19 @@ export const ShimmerSkeleton: React.FC<ShimmerSkeletonProps> = ({
           },
         ]}
       >
-        <View style={styles.shimmerInner} />
+        <View
+          style={[
+            styles.shimmerInner,
+            {
+              backgroundColor: theme.isDark
+                ? 'rgba(255, 255, 255, 0.06)'
+                : 'rgba(0, 0, 0, 0.04)',
+              shadowColor: theme.isDark
+                ? 'rgba(255, 255, 255, 0.08)'
+                : 'rgba(0, 0, 0, 0.04)',
+            },
+          ]}
+        />
       </Animated.View>
     </View>
   );
@@ -81,8 +103,18 @@ type ShimmerCardProps = {
 };
 
 export const ShimmerSessionCard: React.FC<ShimmerCardProps> = ({ style }) => {
+  const theme = useTheme();
   return (
-    <View style={[styles.cardContainer, style]}>
+    <View
+      style={[
+        styles.cardContainer,
+        {
+          backgroundColor: theme.colors.surface,
+          borderColor: theme.colors.border,
+        },
+        style,
+      ]}
+    >
       <View style={styles.cardContent}>
         {/* Title skeleton */}
         <ShimmerSkeleton width="70%" height={18} borderRadius={6} style={styles.titleSkeleton} />
@@ -101,8 +133,18 @@ export const ShimmerSessionCard: React.FC<ShimmerCardProps> = ({ style }) => {
 };
 
 export const ShimmerAlternativeSessionCard: React.FC<ShimmerCardProps> = ({ style }) => {
+  const theme = useTheme();
   return (
-    <View style={[styles.alternativeCardContainer, style]}>
+    <View
+      style={[
+        styles.alternativeCardContainer,
+        {
+          backgroundColor: theme.colors.surface,
+          borderColor: theme.colors.border,
+        },
+        style,
+      ]}
+    >
       <View style={styles.alternativeCardContent}>
         {/* Title skeleton */}
         <ShimmerSkeleton width="65%" height={16} borderRadius={6} style={styles.alternativeTitleSkeleton} />
@@ -118,8 +160,18 @@ export const ShimmerAlternativeSessionCard: React.FC<ShimmerCardProps> = ({ styl
 };
 
 export const ShimmerCalendarCard: React.FC<ShimmerCardProps> = ({ style }) => {
+  const theme = useTheme();
   return (
-    <View style={[styles.calendarCardContainer, style]}>
+    <View
+      style={[
+        styles.calendarCardContainer,
+        {
+          backgroundColor: theme.colors.surface,
+          borderColor: theme.colors.border,
+        },
+        style,
+      ]}
+    >
       {/* Header */}
       <View style={styles.calendarHeader}>
         <ShimmerSkeleton width={36} height={36} borderRadius={18} />
@@ -146,7 +198,12 @@ export const ShimmerCalendarCard: React.FC<ShimmerCardProps> = ({ style }) => {
       </View>
 
       {/* Legend */}
-      <View style={styles.calendarLegend}>
+      <View
+        style={[
+          styles.calendarLegend,
+          { borderTopColor: theme.colors.border },
+        ]}
+      >
         <ShimmerSkeleton width="30%" height={16} borderRadius={6} style={styles.calendarLegendTitle} />
         <View style={styles.calendarLegendItems}>
           {[...Array(3)].map((_, i) => (
@@ -162,8 +219,18 @@ export const ShimmerCalendarCard: React.FC<ShimmerCardProps> = ({ style }) => {
 };
 
 export const ShimmerSessionsCard: React.FC<ShimmerCardProps> = ({ style }) => {
+  const theme = useTheme();
   return (
-    <View style={[styles.sessionsCardContainer, style]}>
+    <View
+      style={[
+        styles.sessionsCardContainer,
+        {
+          backgroundColor: theme.colors.surface,
+          borderColor: theme.colors.border,
+        },
+        style,
+      ]}
+    >
       {/* Card Header */}
       <View style={styles.cardHeaderTop}>
         <ShimmerSkeleton width="30%" height={17} borderRadius={6} />
@@ -183,10 +250,17 @@ export const ShimmerSessionsCard: React.FC<ShimmerCardProps> = ({ style }) => {
 };
 
 export const ShimmerActivityHistory: React.FC<ShimmerCardProps> = ({ style }) => {
+  const theme = useTheme();
   return (
     <View style={[{ gap: 12 }, style]}>
       {[...Array(4)].map((_, i) => (
-        <View key={i} style={styles.activityItemContainer}>
+        <View
+          key={i}
+          style={[
+            styles.activityItemContainer,
+            { backgroundColor: theme.colors.surfaceElevated },
+          ]}
+        >
           <ShimmerSkeleton width={40} height={40} borderRadius={20} style={styles.activityIconSkeleton} />
           <View style={styles.activityInfoSkeleton}>
             <ShimmerSkeleton width="70%" height={15} borderRadius={6} style={styles.activityTitleSkeleton} />
@@ -201,10 +275,17 @@ export const ShimmerActivityHistory: React.FC<ShimmerCardProps> = ({ style }) =>
 };
 
 export const ShimmerEmotionalFeedbackHistory: React.FC<ShimmerCardProps> = ({ style }) => {
+  const theme = useTheme();
   return (
     <View style={[{ gap: 12 }, style]}>
       {[...Array(4)].map((_, i) => (
-        <View key={i} style={styles.feedbackItemContainer}>
+        <View
+          key={i}
+          style={[
+            styles.feedbackItemContainer,
+            { backgroundColor: theme.colors.surfaceElevated },
+          ]}
+        >
           <ShimmerSkeleton width={40} height={40} borderRadius={20} style={styles.feedbackIconSkeleton} />
           <View style={styles.feedbackInfoSkeleton}>
             <ShimmerSkeleton width="65%" height={15} borderRadius={6} style={styles.feedbackTitleSkeleton} />
@@ -222,8 +303,15 @@ export const ShimmerEmotionalFeedbackHistory: React.FC<ShimmerCardProps> = ({ st
 };
 
 export const ShimmerMeditationDetailMedia: React.FC<ShimmerCardProps> = ({ style }) => {
+  const theme = useTheme();
   return (
-    <View style={[styles.meditationDetailMediaContainer, style]}>
+    <View
+      style={[
+        styles.meditationDetailMediaContainer,
+        { backgroundColor: theme.colors.surfaceElevated },
+        style,
+      ]}
+    >
       <ShimmerSkeleton width={60} height={60} borderRadius={30} style={styles.meditationDetailMediaIcon} />
       <ShimmerSkeleton width={32} height={32} borderRadius={16} style={styles.meditationDetailMediaPlayButton} />
     </View>
@@ -231,6 +319,7 @@ export const ShimmerMeditationDetailMedia: React.FC<ShimmerCardProps> = ({ style
 };
 
 export const ShimmerMeditationDetailContent: React.FC<ShimmerCardProps> = ({ style }) => {
+  const theme = useTheme();
   return (
     <View style={[styles.meditationDetailContentContainer, style]}>
       {/* Title */}
@@ -263,7 +352,13 @@ export const ShimmerMeditationDetailContent: React.FC<ShimmerCardProps> = ({ sty
         {/* Unique Benefits */}
         <ShimmerSkeleton width="45%" height={17} borderRadius={6} style={styles.meditationDetailUniqueBenefitsTitleSkeleton} />
         {[...Array(3)].map((_, i) => (
-          <View key={i} style={styles.meditationDetailBenefitItemSkeleton}>
+          <View
+            key={i}
+            style={[
+              styles.meditationDetailBenefitItemSkeleton,
+              { backgroundColor: theme.colors.surface },
+            ]}
+          >
             <ShimmerSkeleton width={18} height={18} borderRadius={9} style={styles.meditationDetailBenefitIconSkeleton} />
             <ShimmerSkeleton width="100%" height={15} borderRadius={6} style={styles.meditationDetailBenefitTextSkeleton} />
           </View>
@@ -274,8 +369,18 @@ export const ShimmerMeditationDetailContent: React.FC<ShimmerCardProps> = ({ sty
 };
 
 export const ShimmerNeuroadaptationCard: React.FC<ShimmerCardProps> = ({ style }) => {
+  const theme = useTheme();
   return (
-    <View style={[styles.neuroadaptationCardContainer, style]}>
+    <View
+      style={[
+        styles.neuroadaptationCardContainer,
+        {
+          backgroundColor: theme.colors.surface,
+          borderLeftColor: theme.isDark ? '#2A2A36' : '#d1d1d6',
+        },
+        style,
+      ]}
+    >
       {/* Header */}
       <View style={styles.neuroadaptationCardHeader}>
         <View style={styles.neuroadaptationCardTitleRow}>
@@ -298,7 +403,12 @@ export const ShimmerNeuroadaptationCard: React.FC<ShimmerCardProps> = ({ style }
       </View>
 
       {/* What You Feel or Sessions Required */}
-      <View style={styles.neuroadaptationWhatYouFeelContainer}>
+      <View
+        style={[
+          styles.neuroadaptationWhatYouFeelContainer,
+          { backgroundColor: theme.colors.surfaceElevated },
+        ]}
+      >
         <ShimmerSkeleton width="40%" height={13} borderRadius={6} style={styles.neuroadaptationWhatYouFeelLabelSkeleton} />
         <ShimmerSkeleton width="100%" height={14} borderRadius={6} style={styles.neuroadaptationWhatYouFeelTextSkeleton} />
         <ShimmerSkeleton width="95%" height={14} borderRadius={6} style={styles.neuroadaptationWhatYouFeelTextSkeleton} />
@@ -308,8 +418,18 @@ export const ShimmerNeuroadaptationCard: React.FC<ShimmerCardProps> = ({ style }
 };
 
 export const ShimmerProgressPathCard: React.FC<ShimmerCardProps> = ({ style }) => {
+  const theme = useTheme();
   return (
-    <View style={[styles.progressPathCardContainer, style]}>
+    <View
+      style={[
+        styles.progressPathCardContainer,
+        {
+          backgroundColor: theme.colors.surface,
+          borderColor: theme.colors.border,
+        },
+        style,
+      ]}
+    >
       {/* Header */}
       <View style={styles.progressPathHeader}>
         {/* Badge skeleton */}
@@ -323,7 +443,15 @@ export const ShimmerProgressPathCard: React.FC<ShimmerCardProps> = ({ style }) =
       </View>
 
       {/* Timeline section */}
-      <View style={styles.progressPathTimeline}>
+      <View
+        style={[
+          styles.progressPathTimeline,
+          {
+            backgroundColor: theme.colors.surfaceElevated,
+            borderColor: theme.colors.border,
+          },
+        ]}
+      >
         {/* Left column - Completed */}
         <View style={styles.progressPathColumn}>
           <ShimmerSkeleton width="50%" height={13} borderRadius={6} style={styles.progressPathSectionLabelSkeleton} />
@@ -352,7 +480,12 @@ export const ShimmerProgressPathCard: React.FC<ShimmerCardProps> = ({ style }) =
         </View>
 
         {/* Divider */}
-        <View style={styles.progressPathDivider} />
+        <View
+          style={[
+            styles.progressPathDivider,
+            { backgroundColor: theme.colors.disabled },
+          ]}
+        />
 
         {/* Right column - Coming Up */}
         <View style={styles.progressPathColumn}>
@@ -367,7 +500,12 @@ export const ShimmerProgressPathCard: React.FC<ShimmerCardProps> = ({ style }) =
       </View>
 
       {/* Timeline Progress Section */}
-      <View style={styles.progressPathTimelineSection}>
+      <View
+        style={[
+          styles.progressPathTimelineSection,
+          { borderTopColor: theme.colors.border },
+        ]}
+      >
         {/* Header */}
         <View style={styles.progressPathTimelineHeader}>
           <ShimmerSkeleton width="55%" height={13} borderRadius={6} />
@@ -401,7 +539,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#2C2C2E',
   },
   shimmer: {
     position: 'absolute',
@@ -413,9 +550,7 @@ const styles = StyleSheet.create({
   },
   shimmerInner: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     width: '100%',
-    shadowColor: 'rgba(255, 255, 255, 0.08)',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
     shadowRadius: 20,
@@ -424,11 +559,9 @@ const styles = StyleSheet.create({
   cardContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
     minHeight: 104,
   },
   cardContent: {
@@ -452,9 +585,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginVertical: 4,
     borderRadius: 12,
-    backgroundColor: '#1C1C1E',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
     minHeight: 64,
   },
   alternativeCardContent: {
@@ -468,12 +599,10 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   progressPathCardContainer: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     paddingHorizontal: 18,
     paddingVertical: 22,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
@@ -501,8 +630,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-    backgroundColor: '#2C2C2E',
     paddingHorizontal: 14,
     paddingVertical: 18,
     marginBottom: 16,
@@ -530,7 +657,6 @@ const styles = StyleSheet.create({
   },
   progressPathDivider: {
     width: 1,
-    backgroundColor: '#38383A',
     marginHorizontal: 12,
     borderRadius: 0.5,
   },
@@ -539,7 +665,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.06)',
   },
   progressPathTimelineHeader: {
     flexDirection: 'row',
@@ -559,13 +684,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   calendarCardContainer: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     marginHorizontal: 20,
     marginBottom: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.3,
@@ -617,7 +740,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.06)',
   },
   calendarLegendTitle: {
     width: '30%',
@@ -647,13 +769,11 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   sessionsCardContainer: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     marginHorizontal: 20,
     marginBottom: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.3,
@@ -694,7 +814,6 @@ const styles = StyleSheet.create({
   activityItemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     padding: 12,
     overflow: 'hidden',
@@ -735,7 +854,6 @@ const styles = StyleSheet.create({
   feedbackItemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     padding: 12,
     overflow: 'hidden',
@@ -782,7 +900,6 @@ const styles = StyleSheet.create({
   meditationDetailMediaContainer: {
     height: 200,
     width: '100%',
-    backgroundColor: '#2C2C2E',
     borderRadius: 0,
     justifyContent: 'center',
     alignItems: 'center',
@@ -857,7 +974,6 @@ const styles = StyleSheet.create({
   meditationDetailBenefitItemSkeleton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
     padding: 12,
     borderRadius: 10,
     marginBottom: 8,
@@ -874,7 +990,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   neuroadaptationCardContainer: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
@@ -884,7 +999,6 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
     borderLeftWidth: 3,
-    borderLeftColor: '#2A2A36',
   },
   neuroadaptationCardHeader: {
     marginBottom: 12,
@@ -936,7 +1050,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     borderLeftWidth: 3,
-    backgroundColor: '#2C2C2E',
     marginTop: 12,
   },
   neuroadaptationWhatYouFeelLabelSkeleton: {

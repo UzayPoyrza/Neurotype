@@ -2,7 +2,7 @@ import React, { useRef, useCallback, useState } from 'react';
 import { View, ScrollView, StyleSheet, LayoutChangeEvent } from 'react-native';
 import { InstagramStyleNav, InstagramStyleNavRef } from './InstagramStyleNav';
 import { useInstagramScrollDetection } from '../hooks/useInstagramScrollDetection';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface InstagramStyleScreenProps {
   title?: string | React.ReactNode;
@@ -31,12 +31,13 @@ export const InstagramStyleScreen: React.FC<InstagramStyleScreenProps> = ({
   scrollViewStyle,
   isSearchFocused = false,
 }) => {
+  const theme = useTheme();
   const navRef = useRef<InstagramStyleNavRef>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const [scrollViewHeight, setScrollViewHeight] = useState(0);
   const [contentHeight, setContentHeight] = useState(0);
   const headerHeight = 120; // TopShell (60) + RevealBar (60)
-  
+
   const { scrollY, handleScroll, handleTouchStart, handleTouchEnd } = useInstagramScrollDetection({
     onScrollEnd: (direction) => {
       if (navRef.current && !isSearchFocused) {
@@ -63,7 +64,7 @@ export const InstagramStyleScreen: React.FC<InstagramStyleScreenProps> = ({
   }, []);
 
   return (
-    <View style={[styles.container, style]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }, style]}>
       <InstagramStyleNav
         ref={navRef}
         title={title}
@@ -109,7 +110,6 @@ export const InstagramStyleScreen: React.FC<InstagramStyleScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
   },
   scrollView: {
     flex: 1,
@@ -118,4 +118,4 @@ const styles = StyleSheet.create({
   contentContainer: {
     flexGrow: 1,
   },
-}); 
+});

@@ -6,14 +6,14 @@ import {
   ScrollView,
   StyleSheet,
 } from 'react-native';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withTiming, 
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
   withSpring,
-  Easing 
+  Easing
 } from 'react-native-reanimated';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 
 export interface FilterOption {
   id: string;
@@ -53,6 +53,7 @@ const AnimatedFilterChip: React.FC<AnimatedFilterChipProps> = ({
   selectionCount,
   onPress,
 }) => {
+  const theme = useTheme();
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => {
@@ -67,7 +68,7 @@ const AnimatedFilterChip: React.FC<AnimatedFilterChipProps> = ({
     setTimeout(() => {
       scale.value = withSpring(1, { damping: 15, stiffness: 400 });
     }, 100);
-    
+
     onPress();
   };
 
@@ -75,18 +76,48 @@ const AnimatedFilterChip: React.FC<AnimatedFilterChipProps> = ({
     <TouchableOpacity onPress={handlePress} activeOpacity={0.7}>
       <Animated.View style={[
         styles.primaryChip,
-        isSelected && styles.activePrimaryChip,
-        animatedStyle
+        {
+          paddingHorizontal: theme.spacing.lg,
+          paddingVertical: theme.spacing.sm,
+          borderRadius: theme.borders.radius.xxl,
+          backgroundColor: isSelected ? theme.colors.filter.active : theme.colors.filter.inactive,
+          borderWidth: theme.borders.width.thin,
+          borderColor: theme.colors.border,
+          ...theme.shadows.small,
+        },
+        animatedStyle,
       ]}>
         <Text style={[
           styles.primaryChipText,
-          isSelected && styles.activePrimaryChipText,
+          {
+            fontSize: theme.typography.sizes.sm,
+            fontWeight: theme.typography.weights.semibold,
+            color: isSelected ? theme.colors.filter.inactive : theme.colors.filter.active,
+            fontFamily: theme.typography.fontFamily,
+          },
         ]}>
           {category.label}
         </Text>
         {isSelected && selectionCount > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{selectionCount}</Text>
+          <View style={[
+            styles.badge,
+            {
+              backgroundColor: theme.colors.surfaceElevated,
+              borderRadius: theme.borders.radius.xl,
+              marginLeft: theme.spacing.sm,
+            },
+          ]}>
+            <Text style={[
+              styles.badgeText,
+              {
+                fontSize: theme.typography.sizes.xs,
+                fontWeight: theme.typography.weights.bold,
+                color: theme.colors.text.primary,
+                fontFamily: theme.typography.fontFamily,
+              },
+            ]}>
+              {selectionCount}
+            </Text>
           </View>
         )}
       </Animated.View>
@@ -105,6 +136,7 @@ const AnimatedSecondaryChip: React.FC<AnimatedSecondaryChipProps> = ({
   isSelected,
   onPress,
 }) => {
+  const theme = useTheme();
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => {
@@ -119,7 +151,7 @@ const AnimatedSecondaryChip: React.FC<AnimatedSecondaryChipProps> = ({
     setTimeout(() => {
       scale.value = withSpring(1, { damping: 15, stiffness: 400 });
     }, 100);
-    
+
     onPress();
   };
 
@@ -127,18 +159,48 @@ const AnimatedSecondaryChip: React.FC<AnimatedSecondaryChipProps> = ({
     <TouchableOpacity onPress={handlePress} activeOpacity={0.7}>
       <Animated.View style={[
         styles.secondaryChip,
-        isSelected && styles.selectedSecondaryChip,
-        animatedStyle
+        {
+          paddingHorizontal: theme.spacing.lg,
+          paddingVertical: theme.spacing.sm,
+          borderRadius: theme.borders.radius.xxl,
+          backgroundColor: isSelected ? theme.colors.filter.active : theme.colors.filter.inactive,
+          borderWidth: theme.borders.width.thin,
+          borderColor: theme.colors.border,
+          ...theme.shadows.small,
+        },
+        animatedStyle,
       ]}>
         <Text style={[
           styles.secondaryChipText,
-          isSelected && styles.selectedSecondaryChipText,
+          {
+            fontSize: theme.typography.sizes.sm,
+            fontWeight: theme.typography.weights.semibold,
+            color: isSelected ? theme.colors.filter.inactive : theme.colors.filter.active,
+            fontFamily: theme.typography.fontFamily,
+          },
         ]}>
           {option.label}
         </Text>
         {option.badge && (
-          <View style={styles.optionBadge}>
-            <Text style={styles.optionBadgeText}>{option.badge}</Text>
+          <View style={[
+            styles.optionBadge,
+            {
+              backgroundColor: theme.colors.surfaceElevated,
+              borderRadius: theme.borders.radius.xl,
+              marginLeft: theme.spacing.sm,
+            },
+          ]}>
+            <Text style={[
+              styles.optionBadgeText,
+              {
+                fontSize: theme.typography.sizes.xs,
+                fontWeight: theme.typography.weights.bold,
+                color: theme.colors.text.primary,
+                fontFamily: theme.typography.fontFamily,
+              },
+            ]}>
+              {option.badge}
+            </Text>
           </View>
         )}
       </Animated.View>
@@ -152,11 +214,12 @@ export const SpotifyFilterBar: React.FC<SpotifyFilterBarProps> = ({
   initialSelection,
   style,
 }) => {
+  const theme = useTheme();
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [selections, setSelections] = useState<Record<string, string[]>>(
     initialSelection ? { [initialSelection.parentId]: initialSelection.optionIds } : {}
   );
-  
+
   // Animation for transition between primary and secondary filters
   const filterOpacity = useSharedValue(1);
   const filterTranslateX = useSharedValue(0);
@@ -166,7 +229,7 @@ export const SpotifyFilterBar: React.FC<SpotifyFilterBarProps> = ({
       // Close secondary options with animation
       filterOpacity.value = withTiming(0, { duration: 150 });
       filterTranslateX.value = withTiming(30, { duration: 150 });
-      
+
       setTimeout(() => {
         setActiveCategory(null);
         filterOpacity.value = withTiming(1, { duration: 200 });
@@ -176,7 +239,7 @@ export const SpotifyFilterBar: React.FC<SpotifyFilterBarProps> = ({
       // Open secondary options with animation
       filterOpacity.value = withTiming(0, { duration: 150 });
       filterTranslateX.value = withTiming(-30, { duration: 150 });
-      
+
       setTimeout(() => {
         setActiveCategory(categoryId);
         filterOpacity.value = withTiming(1, { duration: 200 });
@@ -204,7 +267,7 @@ export const SpotifyFilterBar: React.FC<SpotifyFilterBarProps> = ({
       if (currentSelections.includes(optionId)) {
         // Deselect if already selected
         newSelections = [];
-        
+
         // Update state immediately
         const updatedSelections = {
           ...selections,
@@ -215,17 +278,17 @@ export const SpotifyFilterBar: React.FC<SpotifyFilterBarProps> = ({
           parentId: categoryId,
           optionIds: newSelections,
         });
-        
+
         // Close secondary filters and return to primary with animation
         filterOpacity.value = withTiming(0, { duration: 150 });
         filterTranslateX.value = withTiming(30, { duration: 150 });
-        
+
         setTimeout(() => {
           setActiveCategory(null);
           filterOpacity.value = withTiming(1, { duration: 200 });
           filterTranslateX.value = withTiming(0, { duration: 200 });
         }, 150);
-        
+
         return; // Exit early to avoid duplicate state update
       } else {
         // Select new option
@@ -249,7 +312,7 @@ export const SpotifyFilterBar: React.FC<SpotifyFilterBarProps> = ({
     // Animate back to primary filters
     filterOpacity.value = withTiming(0, { duration: 150 });
     filterTranslateX.value = withTiming(30, { duration: 150 });
-    
+
     setTimeout(() => {
       setActiveCategory(null);
       filterOpacity.value = withTiming(1, { duration: 200 });
@@ -283,7 +346,15 @@ export const SpotifyFilterBar: React.FC<SpotifyFilterBarProps> = ({
       <Animated.ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.primaryRow}
+        contentContainerStyle={[
+          styles.primaryRow,
+          {
+            paddingHorizontal: theme.spacing.lg,
+            paddingVertical: theme.spacing.md,
+            gap: theme.spacing.md,
+            paddingRight: theme.spacing.xxxl, // Extra padding on the right for infinite scroll feel
+          },
+        ]}
         style={[styles.primaryScrollView, filterAnimatedStyle]}
         bounces={true}
         alwaysBounceHorizontal={true}
@@ -308,13 +379,34 @@ export const SpotifyFilterBar: React.FC<SpotifyFilterBarProps> = ({
           <>
             {/* Back Button */}
             <TouchableOpacity
-              style={styles.backChip}
+              style={[
+                styles.backChip,
+                {
+                  paddingHorizontal: theme.spacing.lg,
+                  paddingVertical: theme.spacing.sm,
+                  borderRadius: theme.borders.radius.xxl,
+                  backgroundColor: theme.colors.background,
+                  borderWidth: theme.borders.width.thin,
+                  borderColor: theme.colors.border,
+                  ...theme.shadows.small,
+                },
+              ]}
               onPress={handleBackPress}
               activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel="Go back to primary filters"
             >
-              <Text style={styles.backChipText}>← Back</Text>
+              <Text style={[
+                styles.backChipText,
+                {
+                  fontSize: theme.typography.sizes.sm,
+                  fontWeight: theme.typography.weights.semibold,
+                  color: theme.colors.filter.active,
+                  fontFamily: theme.typography.fontFamily,
+                },
+              ]}>
+                ← Back
+              </Text>
             </TouchableOpacity>
 
             {/* Secondary Options */}
@@ -344,105 +436,39 @@ const styles = StyleSheet.create({
     maxHeight: 60,
   },
   primaryRow: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
-    gap: theme.spacing.md,
-    paddingRight: theme.spacing.xxxl, // Extra padding on the right for infinite scroll feel
+    alignItems: 'center',
   },
   primaryChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.sm,
-    borderRadius: theme.borders.radius.xxl,
-    backgroundColor: theme.colors.filter.inactive,
-    borderWidth: theme.borders.width.thin,
-    borderColor: 'rgba(255,255,255,0.06)',
     minHeight: 36,
-    ...theme.shadows.small,
   },
-  activePrimaryChip: {
-    backgroundColor: theme.colors.filter.active,
-  },
-  primaryChipText: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.filter.active,
-    fontFamily: theme.typography.fontFamily,
-  },
-  activePrimaryChipText: {
-    color: theme.colors.filter.inactive,
-  },
+  primaryChipText: {},
   badge: {
-    backgroundColor: '#2C2C2E',
-    borderRadius: theme.borders.radius.xl,
     minWidth: 18,
     height: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: theme.spacing.sm,
     paddingHorizontal: 4,
   },
-  badgeText: {
-    fontSize: theme.typography.sizes.xs,
-    fontWeight: theme.typography.weights.bold,
-    color: '#F2F2F7',
-    fontFamily: theme.typography.fontFamily,
-  },
+  badgeText: {},
   backChip: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.sm,
-    borderRadius: theme.borders.radius.xxl,
-    backgroundColor: theme.colors.background,
-    borderWidth: theme.borders.width.thin,
-    borderColor: 'rgba(255,255,255,0.06)',
     minHeight: 36,
-    ...theme.shadows.small,
+    justifyContent: 'center',
   },
-  backChipText: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.filter.active,
-    fontFamily: theme.typography.fontFamily,
-  },
+  backChipText: {},
   secondaryChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.sm,
-    borderRadius: theme.borders.radius.xxl,
-    backgroundColor: theme.colors.filter.inactive,
-    borderWidth: theme.borders.width.thin,
-    borderColor: 'rgba(255,255,255,0.06)',
     minHeight: 36,
-    ...theme.shadows.small,
   },
-  selectedSecondaryChip: {
-    backgroundColor: theme.colors.filter.active,
-  },
-  secondaryChipText: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.filter.active,
-    fontFamily: theme.typography.fontFamily,
-  },
-  selectedSecondaryChipText: {
-    color: theme.colors.filter.inactive,
-  },
+  secondaryChipText: {},
   optionBadge: {
-    backgroundColor: '#2C2C2E',
-    borderRadius: theme.borders.radius.xl,
     minWidth: 16,
     height: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: theme.spacing.sm,
     paddingHorizontal: 3,
   },
-  optionBadgeText: {
-    fontSize: theme.typography.sizes.xs,
-    fontWeight: theme.typography.weights.bold,
-    color: '#F2F2F7',
-    fontFamily: theme.typography.fontFamily,
-  },
-}); 
+  optionBadgeText: {},
+});

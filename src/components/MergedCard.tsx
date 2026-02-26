@@ -1,5 +1,6 @@
 import React, { ReactNode } from 'react';
 import { StyleSheet, StyleProp, View, ViewStyle } from 'react-native';
+import { useTheme } from '../contexts/ThemeContext';
 
 type MergedCardSectionProps = {
   children: ReactNode;
@@ -24,6 +25,7 @@ const MergedCardBase: React.FC<MergedCardProps> = ({
   sectionStyle,
   dividerStyle,
 }) => {
+  const theme = useTheme();
   const childArray = React.Children.toArray(children).filter(Boolean);
 
   if (childArray.length === 0) {
@@ -32,23 +34,45 @@ const MergedCardBase: React.FC<MergedCardProps> = ({
 
   return (
     <View style={[styles.outer, outerStyle]}>
-      <View style={[styles.card, cardStyle]}>
+      <View
+        style={[
+          styles.card,
+          {
+            backgroundColor: theme.colors.surface,
+            borderColor: theme.colors.border,
+          },
+          cardStyle,
+        ]}
+      >
         {childArray.map((child, index) => {
           if (React.isValidElement(child) && child.type === SectionComponent) {
             const { style: childStyle, children: sectionChildren, hideDividerBefore } =
               child.props as MergedCardSectionProps;
             const nextChild = childArray[index + 1];
-            const nextChildHideDividerBefore = React.isValidElement(nextChild) && 
-              nextChild.type === SectionComponent && 
+            const nextChildHideDividerBefore = React.isValidElement(nextChild) &&
+              nextChild.type === SectionComponent &&
               (nextChild.props as MergedCardSectionProps).hideDividerBefore;
-            
+
             return (
               <React.Fragment key={index}>
-                <View style={[styles.section, sectionStyle, childStyle]}>
+                <View
+                  style={[
+                    styles.section,
+                    { backgroundColor: theme.colors.surface },
+                    sectionStyle,
+                    childStyle,
+                  ]}
+                >
                   {sectionChildren}
                 </View>
                 {index < childArray.length - 1 && !nextChildHideDividerBefore && (
-                  <View style={[styles.divider, dividerStyle]} />
+                  <View
+                    style={[
+                      styles.divider,
+                      { backgroundColor: theme.colors.borderMedium },
+                      dividerStyle,
+                    ]}
+                  />
                 )}
               </React.Fragment>
             );
@@ -56,9 +80,15 @@ const MergedCardBase: React.FC<MergedCardProps> = ({
 
           return (
             <React.Fragment key={index}>
-              <View style={[styles.section, sectionStyle]}>{child}</View>
+              <View style={[styles.section, { backgroundColor: theme.colors.surface }, sectionStyle]}>{child}</View>
               {index < childArray.length - 1 && (
-                <View style={[styles.divider, dividerStyle]} />
+                <View
+                  style={[
+                    styles.divider,
+                    { backgroundColor: theme.colors.borderMedium },
+                    dividerStyle,
+                  ]}
+                />
               )}
             </React.Fragment>
           );
@@ -80,20 +110,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   card: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 14,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
   },
   section: {
     paddingVertical: 16,
-    backgroundColor: '#1C1C1E',
   },
   divider: {
     height: 0.5,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     marginHorizontal: 16,
   },
 });
-

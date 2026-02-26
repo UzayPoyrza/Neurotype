@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Session } from '../types';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 import { useStore } from '../store/useStore';
 import { HeartIcon, HeartOutlineIcon } from './icons/PlayerIcons';
 
@@ -12,12 +12,13 @@ interface SessionCardProps {
   onLike?: (isLiked: boolean, sessionId?: string) => void;
 }
 
-export const SessionCard: React.FC<SessionCardProps> = ({ 
-  session, 
-  onStart, 
+export const SessionCard: React.FC<SessionCardProps> = ({
+  session,
+  onStart,
   variant = 'list',
   onLike
 }) => {
+  const theme = useTheme();
   const toggleLikedSession = useStore(state => state.toggleLikedSession);
   const likedSessionIds = useStore(state => state.likedSessionIds);
   const isFavorited = likedSessionIds.includes(session.id);
@@ -27,7 +28,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
       case 'movement':
         return '#ff9500'; // Orange
       case 'somatic':
-        return '#34c759'; // Green  
+        return '#34c759'; // Green
       case 'breathing':
         return '#007aff'; // Blue
       case 'visualization':
@@ -67,7 +68,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
     e.stopPropagation(); // Prevent triggering onStart
     const wasFavorited = isFavorited;
     toggleLikedSession(session.id);
-    
+
     // Show message for both like and unlike actions
     if (onLike) {
       onLike(!wasFavorited, session.id); // true if liked, false if unliked, pass sessionId
@@ -80,6 +81,11 @@ export const SessionCard: React.FC<SessionCardProps> = ({
     <TouchableOpacity
       style={[
         styles.card,
+        {
+          backgroundColor: theme.colors.surface,
+          borderColor: theme.colors.border,
+          borderLeftColor: variant === 'recommended' ? '#34c759' : theme.colors.accent,
+        },
         variant === 'recommended' ? styles.recommendedCard : styles.listCard,
       ]}
       onPress={onStart}
@@ -91,26 +97,35 @@ export const SessionCard: React.FC<SessionCardProps> = ({
             <Text style={[styles.playIconText, { color: modalityColor }]}>▶</Text>
           </View>
           <View style={styles.sessionInfo}>
-            <Text style={styles.title}>{session.title}</Text>
+            <Text style={[styles.title, { color: theme.colors.text.primary }]}>{session.title}</Text>
             <View style={styles.metaInfo}>
-              <View style={[styles.modalityBadge, styles.modalityBadgeColored, { borderColor: getLightBorderColor(getModalityColor(session.modality)) }]}>
-                <Text style={styles.modalityText}>
+              <View
+                style={[
+                  styles.modalityBadge,
+                  styles.modalityBadgeColored,
+                  {
+                    backgroundColor: theme.colors.surfaceElevated,
+                    borderColor: getLightBorderColor(getModalityColor(session.modality)),
+                  },
+                ]}
+              >
+                <Text style={[styles.modalityText, { color: theme.colors.text.primary }]}>
                   {getModalityIcon(session.modality)} {session.modality}
                 </Text>
               </View>
             </View>
           </View>
         </View>
-        
+
         <View style={styles.rightSection}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.heartButton}
             onPress={handleFavoritePress}
           >
             {isFavorited ? (
               <HeartIcon size={28} color="#ff6b6b" />
             ) : (
-              <HeartOutlineIcon size={28} color="#A0A0B0" />
+              <HeartOutlineIcon size={28} color={theme.colors.text.secondary} />
             )}
           </TouchableOpacity>
           <View style={[styles.durationBadge, { backgroundColor: modalityColor }]}>
@@ -124,7 +139,6 @@ export const SessionCard: React.FC<SessionCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 12,
     marginHorizontal: 16,
@@ -138,19 +152,14 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
     borderLeftWidth: 4,
-    borderLeftColor: '#0A84FF',
   },
   recommendedCard: {
-    borderLeftColor: '#34c759',
     shadowOpacity: 0.12,
     shadowRadius: 6,
     elevation: 4,
   },
-  listCard: {
-    borderLeftColor: '#0A84FF',
-  },
+  listCard: {},
   content: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -182,7 +191,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#F2F2F7',
     marginBottom: 2,
   },
   metaInfo: {
@@ -204,20 +212,16 @@ const styles = StyleSheet.create({
     elevation: 3,
     marginRight: 6,
   },
-  modalityBadgeColored: {
-    backgroundColor: '#2C2C2E',
-  },
+  modalityBadgeColored: {},
   modalityText: {
     fontSize: 11,
     fontWeight: '600',
     textTransform: 'capitalize',
     letterSpacing: -0.06,
-    color: '#F2F2F7',
   },
   goalText: {
     fontSize: 12,
     fontWeight: '400',
-    color: '#A0A0B0',
     textTransform: 'capitalize',
   },
   rightSection: {
@@ -256,4 +260,4 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     textAlign: 'center',
   },
-}); 
+});

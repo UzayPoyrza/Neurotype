@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, Animated, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, StatusBar } from 'react-native';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface RegisterScreenProps {
   onRegister: () => void;
@@ -8,6 +8,7 @@ interface RegisterScreenProps {
 }
 
 export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onRegister, onBackToLogin }) => {
+  const theme = useTheme();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [currentText, setCurrentText] = useState('');
   const [isTypingComplete, setIsTypingComplete] = useState(false);
@@ -17,7 +18,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onRegister, onBa
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  
+
   const welcomeText = 'Join Neurotype';
 
   useEffect(() => {
@@ -40,7 +41,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onRegister, onBa
           clearInterval(typeInterval);
           setIsTypingComplete(true);
           setIsTyping(false);
-          
+
           // Hide cursor after typing
           setTimeout(() => {
             setShowCursor(false);
@@ -72,15 +73,15 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onRegister, onBa
   return (
     <>
       <StatusBar hidden={true} />
-      <KeyboardAvoidingView 
-        style={styles.container} 
+      <KeyboardAvoidingView
+        style={[styles.container, { backgroundColor: theme.colors.background }]}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View 
+        <Animated.View
           style={[
             styles.content,
             {
@@ -90,15 +91,15 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onRegister, onBa
         >
           {/* Welcome Text Animation */}
           <View style={styles.welcomeContainer}>
-            <Text style={styles.welcomeText}>
+            <Text style={[styles.welcomeText, { color: theme.colors.text.primary }]}>
               {currentText}
               {showCursor && !isTyping && (
-                <Animated.Text style={styles.cursor}>
+                <Animated.Text style={[styles.cursor, { color: theme.colors.text.primary }]}>
                   |
                 </Animated.Text>
               )}
               {showCursor && isTyping && (
-                <Text style={styles.cursor}>
+                <Text style={[styles.cursor, { color: theme.colors.text.primary }]}>
                   |
                 </Text>
               )}
@@ -106,11 +107,24 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onRegister, onBa
           </View>
 
           {/* Register Form */}
-          <View style={styles.formContainer}>
+          <View style={[
+            styles.formContainer,
+            {
+              backgroundColor: theme.colors.surface,
+              shadowColor: theme.colors.shadow,
+            }
+          ]}>
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Full Name</Text>
+              <Text style={[styles.label, { color: theme.colors.text.primary }]}>Full Name</Text>
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: theme.colors.background,
+                    color: theme.colors.text.primary,
+                    borderColor: theme.colors.border,
+                  }
+                ]}
                 value={name}
                 onChangeText={setName}
                 placeholder="Enter your full name"
@@ -121,9 +135,16 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onRegister, onBa
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={[styles.label, { color: theme.colors.text.primary }]}>Email</Text>
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: theme.colors.background,
+                    color: theme.colors.text.primary,
+                    borderColor: theme.colors.border,
+                  }
+                ]}
                 value={email}
                 onChangeText={setEmail}
                 placeholder="Enter your email"
@@ -135,9 +156,16 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onRegister, onBa
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Password</Text>
+              <Text style={[styles.label, { color: theme.colors.text.primary }]}>Password</Text>
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: theme.colors.background,
+                    color: theme.colors.text.primary,
+                    borderColor: theme.colors.border,
+                  }
+                ]}
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Create a password"
@@ -149,9 +177,16 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onRegister, onBa
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Confirm Password</Text>
+              <Text style={[styles.label, { color: theme.colors.text.primary }]}>Confirm Password</Text>
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: theme.colors.background,
+                    color: theme.colors.text.primary,
+                    borderColor: theme.colors.border,
+                  }
+                ]}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 placeholder="Confirm your password"
@@ -162,64 +197,91 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onRegister, onBa
               />
             </View>
 
-            <TouchableOpacity 
-              style={styles.registerButton}
+            <TouchableOpacity
+              style={[
+                styles.registerButton,
+                {
+                  backgroundColor: theme.colors.primary,
+                  shadowColor: theme.colors.shadow,
+                }
+              ]}
               onPress={handleRegister}
               testID="register-button"
             >
-              <Text style={styles.registerButtonText}>Create Account</Text>
+              <Text style={[styles.registerButtonText, { color: theme.colors.text.onPrimary }]}>Create Account</Text>
             </TouchableOpacity>
 
             {/* Divider */}
             <View style={styles.dividerContainer}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
-              <View style={styles.dividerLine} />
+              <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
+              <Text style={[styles.dividerText, { color: theme.colors.text.secondary }]}>or</Text>
+              <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
             </View>
 
             {/* Social Register Buttons */}
             <View style={styles.socialButtonsContainer}>
-              <TouchableOpacity 
-                style={[styles.socialButton, styles.googleButton]}
+              <TouchableOpacity
+                style={[
+                  styles.socialButton,
+                  styles.googleButton,
+                  {
+                    backgroundColor: theme.colors.surface,
+                    shadowColor: theme.colors.shadow,
+                  }
+                ]}
                 onPress={() => handleSocialRegister('google')}
                 testID="google-register-button"
               >
                 <View style={styles.iconContainer}>
                   <Text style={[styles.iconText, styles.googleIcon]}>G</Text>
                 </View>
-                <Text style={styles.socialButtonText}>Sign up with Google</Text>
+                <Text style={[styles.socialButtonText, { color: theme.colors.text.primary }]}>Sign up with Google</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={[styles.socialButton, styles.facebookButton]}
+              <TouchableOpacity
+                style={[
+                  styles.socialButton,
+                  styles.facebookButton,
+                  {
+                    backgroundColor: theme.colors.surface,
+                    shadowColor: theme.colors.shadow,
+                  }
+                ]}
                 onPress={() => handleSocialRegister('facebook')}
                 testID="facebook-register-button"
               >
                 <View style={styles.iconContainer}>
                   <Text style={[styles.iconText, styles.facebookIcon]}>f</Text>
                 </View>
-                <Text style={styles.socialButtonText}>Sign up with Facebook</Text>
+                <Text style={[styles.socialButtonText, { color: theme.colors.text.primary }]}>Sign up with Facebook</Text>
               </TouchableOpacity>
 
               {Platform.OS === 'ios' && (
-                <TouchableOpacity 
-                  style={[styles.socialButton, styles.appleButton]}
+                <TouchableOpacity
+                  style={[
+                    styles.socialButton,
+                    styles.appleButton,
+                    {
+                      backgroundColor: theme.colors.surface,
+                      shadowColor: theme.colors.shadow,
+                    }
+                  ]}
                   onPress={() => handleSocialRegister('apple')}
                   testID="apple-register-button"
                 >
                   <View style={styles.iconContainer}>
                     <Text style={[styles.iconText, styles.appleIcon]}>⌘</Text>
                   </View>
-                  <Text style={styles.socialButtonText}>Sign up with Apple</Text>
+                  <Text style={[styles.socialButtonText, { color: theme.colors.text.primary }]}>Sign up with Apple</Text>
                 </TouchableOpacity>
               )}
             </View>
 
             {/* Login Link */}
             <View style={styles.loginContainer}>
-              <Text style={styles.loginText}>Already have an account? </Text>
+              <Text style={[styles.loginText, { color: theme.colors.text.secondary }]}>Already have an account? </Text>
               <TouchableOpacity onPress={onBackToLogin}>
-                <Text style={styles.loginLink}>Sign in</Text>
+                <Text style={[styles.loginLink, { color: theme.colors.primary }]}>Sign in</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -233,14 +295,13 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onRegister, onBa
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
   },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.xl,
-    paddingVertical: theme.spacing.xl,
+    paddingHorizontal: 24,
+    paddingVertical: 24,
   },
   content: {
     width: '100%',
@@ -248,13 +309,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   welcomeContainer: {
-    marginBottom: theme.spacing.xxxl,
+    marginBottom: 48,
     alignItems: 'center',
   },
   welcomeText: {
     fontSize: 32,
     fontWeight: '600',
-    color: theme.colors.text.primary,
     fontFamily: 'System',
     fontStyle: 'italic',
     textAlign: 'center',
@@ -264,49 +324,40 @@ const styles = StyleSheet.create({
   },
   cursor: {
     fontSize: 32,
-    color: theme.colors.text.primary,
     fontWeight: '600',
   },
   formContainer: {
     width: '100%',
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.xl,
-    shadowColor: theme.colors.shadow,
+    borderRadius: 16,
+    padding: 24,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 8,
   },
   inputContainer: {
-    marginBottom: theme.spacing.lg,
+    marginBottom: 16,
   },
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: theme.colors.text.primary,
-    marginBottom: theme.spacing.sm,
+    marginBottom: 8,
     fontFamily: 'System',
     fontStyle: 'italic',
   },
   input: {
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.borderRadius.md,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     fontSize: 16,
-    color: theme.colors.text.primary,
     borderWidth: 2,
-    borderColor: theme.colors.border,
     fontFamily: 'System',
   },
   registerButton: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.borderRadius.md,
-    paddingVertical: theme.spacing.lg,
+    borderRadius: 10,
+    paddingVertical: 16,
     alignItems: 'center',
-    marginTop: theme.spacing.md,
-    shadowColor: theme.colors.shadow,
+    marginTop: 12,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
@@ -315,43 +366,37 @@ const styles = StyleSheet.create({
   registerButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: theme.colors.text.onPrimary,
     fontFamily: 'System',
     fontStyle: 'italic',
   },
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: theme.spacing.lg,
+    marginVertical: 16,
     width: '100%',
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: theme.colors.border,
     opacity: 0.3,
   },
   dividerText: {
-    marginHorizontal: theme.spacing.md,
+    marginHorizontal: 12,
     fontSize: 14,
-    color: theme.colors.text.secondary,
     fontFamily: 'System',
     fontStyle: 'italic',
   },
   socialButtonsContainer: {
     width: '100%',
-    gap: theme.spacing.md,
+    gap: 12,
   },
   socialButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.lg,
-    borderRadius: theme.borderRadius.md,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
     borderWidth: 2,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
-    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -362,7 +407,7 @@ const styles = StyleSheet.create({
     height: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: theme.spacing.md,
+    marginRight: 12,
   },
   iconText: {
     fontSize: 18,
@@ -390,7 +435,6 @@ const styles = StyleSheet.create({
   socialButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: theme.colors.text.primary,
     fontFamily: 'System',
     fontStyle: 'italic',
   },
@@ -398,20 +442,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: theme.spacing.xl,
+    marginTop: 24,
   },
   loginText: {
     fontSize: 14,
-    color: theme.colors.text.secondary,
     fontFamily: 'System',
     fontStyle: 'italic',
   },
   loginLink: {
     fontSize: 14,
-    color: theme.colors.primary,
     fontWeight: '600',
     fontFamily: 'System',
     fontStyle: 'italic',
     textDecorationLine: 'underline',
   },
-}); 
+});

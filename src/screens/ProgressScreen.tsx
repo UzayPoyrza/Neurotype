@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, TouchableWithoutFeedback } from 'react-native';
 import { useStore } from '../store/useStore';
-import { theme } from '../styles/theme';
+import { theme as staticTheme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 import { mentalHealthModules } from '../data/modules';
 import { InteractiveCalendar } from '../components/InteractiveCalendar';
 import { TechniqueEffectivenessChart } from '../components/TechniqueEffectivenessChart';
@@ -16,31 +17,35 @@ import { darkenColor } from '../utils/gradientBackgrounds';
 
 
 export const ProgressScreen: React.FC = () => {
+  const theme = useTheme();
   const userProgress = useStore(state => state.userProgress);
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
+  const globalBackgroundColorLight = useStore(state => state.globalBackgroundColorLight);
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
   const userId = useUserId();
-  
+
+  const bgColor = theme.isDark ? globalBackgroundColor : globalBackgroundColorLight;
+
   // Get cache from store
   const sessionsCache = useStore(state => state.sessionsCache);
   const calendarCache = useStore(state => state.calendarCache);
   const setSessionsCache = useStore(state => state.setSessionsCache);
   const setCalendarCache = useStore(state => state.setCalendarCache);
-  
+
   // Get store instance for accessing state outside of render
   const getStoreState = useStore.getState;
-  
+
   // State for streak info box
   const [showStreakInfo, setShowStreakInfo] = useState(false);
   const [streakButtonActive, setStreakButtonActive] = useState(false);
   const streakButtonRef = useRef<any>(null);
-  
+
   // State for session stats from cache
   const [totalSessions, setTotalSessions] = useState(sessionsCache.total);
   const [thisWeekSessions, setThisWeekSessions] = useState(sessionsCache.thisWeek);
   const [thisMonthSessions, setThisMonthSessions] = useState(sessionsCache.thisMonth);
   const [completedSessionsForCalendar, setCompletedSessionsForCalendar] = useState<CompletedSession[]>(calendarCache);
-  
+
   // Initialize loading state: false if cache has data, true otherwise
   const [isLoadingSessions, setIsLoadingSessions] = React.useState(sessionsCache.total === 0 && sessionsCache.thisWeek === 0 && sessionsCache.thisMonth === 0);
   const [isLoadingCalendar, setIsLoadingCalendar] = React.useState(calendarCache.length === 0);
@@ -97,11 +102,11 @@ export const ProgressScreen: React.FC = () => {
         const weekAgo = new Date(today);
         weekAgo.setDate(today.getDate() - 7);
         const weekAgoStr = getLocalDateString(weekAgo);
-        
+
         // Calculate this month
         const currentYear = today.getFullYear();
         const currentMonth = today.getMonth();
-        
+
         const total = allSessions.length;
         const thisWeek = allSessions.filter(session => {
           return session.completed_date >= weekAgoStr && session.completed_date <= todayStr;
@@ -110,11 +115,11 @@ export const ProgressScreen: React.FC = () => {
           const sessionDate = parseLocalDate(session.completed_date);
           return sessionDate.getFullYear() === currentYear && sessionDate.getMonth() === currentMonth;
         }).length;
-        
+
         // Update cache
         setSessionsCache({ total, thisWeek, thisMonth });
         setCalendarCache(allSessions);
-        
+
         console.log('✅ [ProgressScreen] Session stats and calendar data loaded from database', {
           total,
           thisWeek,
@@ -133,7 +138,7 @@ export const ProgressScreen: React.FC = () => {
     if (userId && !hasFetchedOnOpen.current) {
       const currentSessionsCache = getStoreState().sessionsCache;
       const currentCalendarCache = getStoreState().calendarCache;
-      
+
       // Only fetch if cache is empty (app just opened, cache was cleared)
       if ((currentSessionsCache.total === 0 && currentSessionsCache.thisWeek === 0 && currentSessionsCache.thisMonth === 0) && currentCalendarCache.length === 0) {
         console.log('📊 [ProgressScreen] App opened, fetching session stats and calendar data from database...');
@@ -165,26 +170,30 @@ export const ProgressScreen: React.FC = () => {
 
   // Format date for header
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
       weekday: 'short'
     });
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
+    <View style={[styles.container, { backgroundColor: bgColor }]}>
       {/* Sticky Header */}
-      <View style={[styles.stickyHeader, { backgroundColor: globalBackgroundColor }]}>
-        <Text style={styles.title}>Progress</Text>
-        
+      <View style={[styles.stickyHeader, { backgroundColor: bgColor }]}>
+        <Text style={[styles.title, { color: theme.colors.text.primary }]}>Progress</Text>
+
         {/* Streak Display - Top Right */}
         {userProgress.streak > 0 && (
           <View style={styles.streakWrapper}>
-            <TouchableOpacity 
+            <TouchableOpacity
               ref={streakButtonRef}
-              onPress={handleStreakPress} 
-              style={[styles.streakContainer, streakButtonActive && styles.streakContainerActive]}
+              onPress={handleStreakPress}
+              style={[
+                styles.streakContainer,
+                { shadowOpacity: theme.isDark ? 0.3 : 0.06 },
+                streakButtonActive && styles.streakContainerActive,
+              ]}
             >
               <Text style={[styles.headerStreakNumber, streakButtonActive && styles.streakNumberActive]}>{userProgress.streak}</Text>
               <Text style={styles.streakFire}>🔥</Text>
@@ -192,7 +201,7 @@ export const ProgressScreen: React.FC = () => {
           </View>
         )}
       </View>
-    
+
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
         {/* Interactive Calendar */}
@@ -211,7 +220,7 @@ export const ProgressScreen: React.FC = () => {
                 // Could show a modal with meditation details
                 console.log('Completed meditations on', date.toDateString(), completedMeditations);
               }
-            }} 
+            }}
           />
         )}
 
@@ -227,29 +236,29 @@ export const ProgressScreen: React.FC = () => {
               <View style={styles.cardHeaderTop}>
                 <View style={styles.cardTitleContainer}>
                   <View style={styles.cardTitleIconWrapper}>
-                    <BarChartIcon size={26} color="#F2F2F7" />
+                    <BarChartIcon size={26} color={theme.colors.text.primary} />
                   </View>
                   <View style={styles.cardTitleTextWrapper}>
-                    <Text style={styles.cardTitle}>Sessions</Text>
+                    <Text style={[styles.cardTitle, { color: theme.colors.text.primary }]}>Sessions</Text>
                   </View>
                 </View>
               </View>
             </View>
-            
+
             <View style={styles.sessionsContent}>
               <View style={styles.sessionStat}>
-                <Text style={styles.sessionLabel}>Total</Text>
-                <Text style={styles.sessionValue}>{totalSessions}</Text>
+                <Text style={[styles.sessionLabel, { color: theme.colors.text.secondary }]}>Total</Text>
+                <Text style={[styles.sessionValue, { color: theme.colors.text.primary }]}>{totalSessions}</Text>
               </View>
-              
+
               <View style={styles.sessionStat}>
-                <Text style={styles.sessionLabel}>This Week</Text>
-                <Text style={styles.sessionValue}>{thisWeekSessions}</Text>
+                <Text style={[styles.sessionLabel, { color: theme.colors.text.secondary }]}>This Week</Text>
+                <Text style={[styles.sessionValue, { color: theme.colors.text.primary }]}>{thisWeekSessions}</Text>
               </View>
-              
+
               <View style={styles.sessionStat}>
-                <Text style={styles.sessionLabel}>This Month</Text>
-                <Text style={styles.sessionValue}>{thisMonthSessions}</Text>
+                <Text style={[styles.sessionLabel, { color: theme.colors.text.secondary }]}>This Month</Text>
+                <Text style={[styles.sessionValue, { color: theme.colors.text.primary }]}>{thisMonthSessions}</Text>
               </View>
             </View>
           </View>
@@ -272,7 +281,7 @@ export const ProgressScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  ...theme.health, // Use global Apple Health styles
+  ...staticTheme.health, // Use global Apple Health styles
   stickyHeader: {
     paddingHorizontal: 20,
     paddingTop: 60,
@@ -286,7 +295,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  
+
   // Streak Display
   streakContainer: {
     flexDirection: 'row',
@@ -317,7 +326,7 @@ const styles = StyleSheet.create({
   streakNumberActive: {
     color: '#FFFFFF',
   },
-  
+
   // Streak Wrapper (for positioning info box)
   streakWrapper: {
     position: 'relative',
@@ -360,16 +369,14 @@ const styles = StyleSheet.create({
   },
   sessionLabel: {
     fontSize: 15,
-    color: '#A0A0B0',
     fontWeight: '400',
     marginBottom: 4,
   },
   sessionValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#F2F2F7',
   },
   bottomSpacing: {
     height: 120,
   },
-}); 
+});

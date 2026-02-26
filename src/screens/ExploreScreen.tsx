@@ -1,14 +1,14 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, PanResponder } from 'react-native';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withTiming, 
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
   withSequence,
   withDelay,
   withRepeat,
   Easing,
-  runOnJS 
+  runOnJS
 } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
@@ -25,7 +25,7 @@ import { CategoryIcon } from '../components/icons/CategoryIcon';
 import { ExploreIcon } from '../components/icons';
 import { useStore } from '../store/useStore';
 import { mentalHealthModules, MentalHealthModule } from '../data/modules';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 import { ExploreScreen as ExploreScreenComponent } from '../components/ExploreScreen';
 import { getAllSessions } from '../services/sessionService';
 
@@ -39,6 +39,7 @@ type ExploreScreenNavigationProp = StackNavigationProp<ExploreStackParamList, 'E
 
 // Animated Current Module Indicator Component
 const CurrentModuleIndicator: React.FC<{ isVisible: boolean }> = ({ isVisible }) => {
+  const theme = useTheme();
   const opacity = useSharedValue(isVisible ? 1 : 0);
   const scale = useSharedValue(isVisible ? 1 : 0.8);
   const pulseScale = useSharedValue(1);
@@ -48,7 +49,7 @@ const CurrentModuleIndicator: React.FC<{ isVisible: boolean }> = ({ isVisible })
       // Fade in and scale up animation
       opacity.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.cubic) });
       scale.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.back(1.2)) });
-      
+
       // Subtle pulse animation
       pulseScale.value = withRepeat(
         withSequence(
@@ -73,13 +74,25 @@ const CurrentModuleIndicator: React.FC<{ isVisible: boolean }> = ({ isVisible })
   }));
 
   return (
-    <Animated.View style={[styles.currentModuleBadge, animatedStyle]} pointerEvents="none">
+    <Animated.View
+      style={[
+        styles.currentModuleBadge,
+        {
+          backgroundColor: theme.colors.accent,
+          shadowColor: theme.colors.accent,
+          shadowOpacity: theme.isDark ? 0.3 : 0.06,
+        },
+        animatedStyle,
+      ]}
+      pointerEvents="none"
+    >
       <Text style={styles.currentModuleText}>Current Module</Text>
     </Animated.View>
   );
 };
 
 export const ExploreScreen: React.FC = () => {
+  const theme = useTheme();
   const navigation = useNavigation<ExploreScreenNavigationProp>();
   const addRecentModule = useStore(state => state.addRecentModule);
   const recentModuleIds = useStore(state => state.recentModuleIds);
@@ -127,7 +140,7 @@ export const ExploreScreen: React.FC = () => {
 
   // Filter and sort modules
   const filteredModules = useMemo(() => {
-    
+
     // Create pinned "Liked Meditations" item (always show, even when empty)
     const likedMeditationsItem = {
       id: 'liked-meditations',
@@ -167,7 +180,7 @@ export const ExploreScreen: React.FC = () => {
         regularModules.sort((a, b) => {
           const aRecentIndex = recentModuleIds.indexOf(a.id);
           const bRecentIndex = recentModuleIds.indexOf(b.id);
-          
+
           if (aRecentIndex !== -1 && bRecentIndex !== -1) {
             // Both are recent, sort by recent order
             return aRecentIndex - bRecentIndex;
@@ -211,25 +224,25 @@ export const ExploreScreen: React.FC = () => {
     if (showSortModal) {
       // Show modal immediately
       setModalVisible(true);
-      
+
       // Reset modal position immediately before animating
       modalTranslateY.value = 300; // Start below screen
       overlayOpacity.value = 0;
-      
+
       // Animate both overlay and modal smoothly - slide up from bottom
       overlayOpacity.value = withTiming(1, { duration: 150 });
-      modalTranslateY.value = withTiming(0, { 
-        duration: 400, 
-        easing: Easing.out(Easing.cubic) 
+      modalTranslateY.value = withTiming(0, {
+        duration: 400,
+        easing: Easing.out(Easing.cubic)
       });
     } else {
       // Animate out - slide back down faster
       overlayOpacity.value = withTiming(0, { duration: 100 });
-      modalTranslateY.value = withTiming(300, { 
-        duration: 200, 
-        easing: Easing.in(Easing.cubic) 
+      modalTranslateY.value = withTiming(300, {
+        duration: 200,
+        easing: Easing.in(Easing.cubic)
       });
-      
+
       // Hide modal after animation completes
       setTimeout(() => {
         setModalVisible(false);
@@ -260,11 +273,11 @@ export const ExploreScreen: React.FC = () => {
   // Shuffle animation for modules (excluding pinned items)
   const triggerShuffleAnimation = () => {
     setIsShuffling(true);
-    
+
     // Fall down animation for non-pinned modules only
     moduleOpacity.value = withTiming(0, { duration: 200 });
     moduleScale.value = withTiming(0.8, { duration: 200 });
-    
+
     // After falling, shuffle back up
     setTimeout(() => {
       moduleOpacity.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.back(1.2)) });
@@ -302,13 +315,13 @@ export const ExploreScreen: React.FC = () => {
   const titleComponent = (
     <View style={styles.titleContainer}>
       <ExploreIcon size={20} color={theme.colors.primary} focused={true} />
-      <Text style={styles.titleText}>Your Library</Text>
+      <Text style={[styles.titleText, { color: theme.colors.primary }]}>Your Library</Text>
     </View>
   );
 
   return (
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
-      <ExploreScreenComponent 
+      <ExploreScreenComponent
         titleComponent={titleComponent}
         searchComponent={
           <SearchBar
@@ -326,8 +339,8 @@ export const ExploreScreen: React.FC = () => {
       >
         <View style={styles.content}>
           {/* Sorting Section */}
-          <View style={styles.sortingCard}>
-            <TouchableOpacity 
+          <View style={[styles.sortingCard, { backgroundColor: theme.colors.surface }]}>
+            <TouchableOpacity
               style={styles.sortingButton}
               onPress={() => setShowSortModal(true)}
             >
@@ -335,22 +348,22 @@ export const ExploreScreen: React.FC = () => {
                 <View style={styles.sortingTitleContainer}>
                   {selectedSort === 'recents' ? (
                     <>
-                      <RecentIcon size={20} color="#F2F2F7" />
-                      <Text style={[styles.sortingTitle, { marginLeft: 6 }]}>Recents</Text>
+                      <RecentIcon size={20} color={theme.colors.text.primary} />
+                      <Text style={[styles.sortingTitle, { color: theme.colors.text.primary, marginLeft: 6 }]}>Recents</Text>
                     </>
                   ) : selectedSort === 'alphabetical' ? (
                     <>
-                      <AlphabeticalIcon size={20} color="#F2F2F7" />
-                      <Text style={[styles.sortingTitle, { marginLeft: 6 }]}>Alphabetical</Text>
+                      <AlphabeticalIcon size={20} color={theme.colors.text.primary} />
+                      <Text style={[styles.sortingTitle, { color: theme.colors.text.primary, marginLeft: 6 }]}>Alphabetical</Text>
                     </>
                   ) : (
                     <>
-                      <CategoryIcon size={20} color="#F2F2F7" />
-                      <Text style={[styles.sortingTitle, { marginLeft: 6 }]}>By Category</Text>
+                      <CategoryIcon size={20} color={theme.colors.text.primary} />
+                      <Text style={[styles.sortingTitle, { color: theme.colors.text.primary, marginLeft: 6 }]}>By Category</Text>
                     </>
                   )}
                 </View>
-                <Text style={styles.sortingArrow}>⌄</Text>
+                <Text style={[styles.sortingArrow, { color: theme.colors.text.secondary }]}>⌄</Text>
               </View>
             </TouchableOpacity>
           </View>
@@ -363,13 +376,13 @@ export const ExploreScreen: React.FC = () => {
               const isLastRow = rowIndex === Math.ceil(filteredModules.length / 2) - 1;
               const hasOnlyOneCard = modulesInRow.length === 1 && isLastRow;
               const isSearching = searchQuery.trim().length > 0;
-              
+
               return (
                 <View key={rowIndex} style={styles.moduleRow}>
                   {modulesInRow.map((module, moduleIndex) => {
                     const isPinned = 'isPinned' in module && module.isPinned;
                     const isCurrentModule = module.id === todayModuleId;
-                  
+
                   // Apply animation only to non-pinned modules
                   if (isPinned) {
                     return (
@@ -381,7 +394,11 @@ export const ExploreScreen: React.FC = () => {
                         <TouchableOpacity
                           style={[
                             styles.moduleCard,
-                            styles.pinnedModuleCard
+                            styles.pinnedModuleCard,
+                            {
+                              backgroundColor: theme.colors.surface,
+                              shadowOpacity: theme.isDark ? 0.3 : 0.06,
+                            },
                           ]}
                           onPress={() => handleModulePress(module.id)}
                           activeOpacity={0.8}
@@ -389,36 +406,44 @@ export const ExploreScreen: React.FC = () => {
                           <View style={styles.moduleCardHeader}>
                             <View style={styles.moduleHeaderLeft}>
                               <View style={[styles.moduleIndicator, { backgroundColor: module.color }]} />
-                              <Text style={styles.moduleCategory}>
-                                {('isLikedMeditations' in module && module.isLikedMeditations) 
-                                  ? 'PINNED' 
+                              <Text style={[styles.moduleCategory, { color: theme.colors.text.secondary }]}>
+                                {('isLikedMeditations' in module && module.isLikedMeditations)
+                                  ? 'PINNED'
                                   : module.category.toUpperCase()}
                               </Text>
                             </View>
-                            <View style={styles.pinBadge}>
-                              <PinIcon size={14} color="#F2F2F7" />
+                            <View style={[
+                              styles.pinBadge,
+                              {
+                                backgroundColor: theme.colors.surfaceElevated,
+                                borderColor: theme.colors.border,
+                              },
+                            ]}>
+                              <PinIcon size={14} color={theme.colors.text.primary} />
                             </View>
                           </View>
-                          
+
                           <Text style={[
                             styles.moduleTitle,
-                            styles.pinnedModuleTitle
+                            styles.pinnedModuleTitle,
+                            { color: theme.colors.text.primary },
                           ]} numberOfLines={2} ellipsizeMode="tail">
                             {module.title}
                           </Text>
                           <Text style={[
                             styles.moduleDescription,
-                            ('isLikedMeditations' in module && module.isLikedMeditations) 
-                              ? styles.likedMeditationsDescription 
-                              : styles.pinnedModuleDescription
+                            ('isLikedMeditations' in module && module.isLikedMeditations)
+                              ? styles.likedMeditationsDescription
+                              : styles.pinnedModuleDescription,
+                            { color: theme.colors.text.secondary },
                           ]} numberOfLines={2}>
                             {module.description}
                           </Text>
-                          
+
                           <View style={styles.moduleFooter}>
                             <CurrentModuleIndicator isVisible={isCurrentModule} />
-                            <View style={styles.moduleArrow}>
-                              <Text style={styles.moduleArrowText}>→</Text>
+                            <View style={[styles.moduleArrow, { backgroundColor: theme.colors.surfaceElevated }]}>
+                              <Text style={[styles.moduleArrowText, { color: theme.colors.text.primary }]}>→</Text>
                             </View>
                           </View>
                         </TouchableOpacity>
@@ -434,33 +459,40 @@ export const ExploreScreen: React.FC = () => {
                         moduleGridAnimatedStyle
                       ]}>
                         <TouchableOpacity
-                          style={styles.moduleCard}
+                          style={[
+                            styles.moduleCard,
+                            {
+                              backgroundColor: theme.colors.surface,
+                              shadowOpacity: theme.isDark ? 0.3 : 0.06,
+                            },
+                          ]}
                           onPress={() => handleModulePress(module.id)}
                           activeOpacity={0.8}
                         >
                           <View style={styles.moduleCardHeader}>
                             <View style={styles.moduleHeaderLeft}>
                               <View style={[styles.moduleIndicator, { backgroundColor: module.color }]} />
-                              <Text style={styles.moduleCategory}>{module.category.toUpperCase()}</Text>
+                              <Text style={[styles.moduleCategory, { color: theme.colors.text.secondary }]}>{module.category.toUpperCase()}</Text>
                             </View>
                           </View>
-                          
-                          <Text style={styles.moduleTitle} numberOfLines={1} ellipsizeMode="tail">
+
+                          <Text style={[styles.moduleTitle, { color: theme.colors.text.primary }]} numberOfLines={1} ellipsizeMode="tail">
                             {module.title}
                           </Text>
                           <Text style={[
                             styles.moduleDescription,
-                            ('isLikedMeditations' in module && module.isLikedMeditations) 
-                              ? styles.likedMeditationsDescription 
-                              : null
+                            ('isLikedMeditations' in module && module.isLikedMeditations)
+                              ? styles.likedMeditationsDescription
+                              : null,
+                            { color: theme.colors.text.secondary },
                           ]} numberOfLines={2}>
                             {module.description}
                           </Text>
-                          
+
                           <View style={styles.moduleFooter}>
                             <CurrentModuleIndicator isVisible={isCurrentModule} />
-                            <View style={styles.moduleArrow}>
-                              <Text style={styles.moduleArrowText}>→</Text>
+                            <View style={[styles.moduleArrow, { backgroundColor: theme.colors.surfaceElevated }]}>
+                              <Text style={[styles.moduleArrowText, { color: theme.colors.text.primary }]}>→</Text>
                             </View>
                           </View>
                         </TouchableOpacity>
@@ -475,11 +507,17 @@ export const ExploreScreen: React.FC = () => {
 
           {/* Empty State */}
           {filteredModules.length === 0 && (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>
+            <View style={[
+              styles.emptyState,
+              {
+                backgroundColor: theme.colors.surface,
+                shadowOpacity: theme.isDark ? 0.3 : 0.06,
+              },
+            ]}>
+              <Text style={[styles.emptyText, { color: theme.colors.text.primary }]}>
                 No modules match your search
               </Text>
-              <Text style={styles.emptySubtext}>
+              <Text style={[styles.emptySubtext, { color: theme.colors.text.secondary }]}>
                 Try adjusting your search or category filter
               </Text>
             </View>
@@ -493,26 +531,37 @@ export const ExploreScreen: React.FC = () => {
             onRequestClose={() => setShowSortModal(false)}
           >
             <View style={styles.modalContainer}>
-              <Animated.View 
+              <Animated.View
                 style={[styles.modalOverlay, overlayAnimatedStyle]}
               />
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.overlayTouchable}
                 activeOpacity={1}
                 onPress={() => setShowSortModal(false)}
               />
-              <Animated.View 
-                style={[styles.sortModal, modalAnimatedStyle]} 
+              <Animated.View
+                style={[
+                  styles.sortModal,
+                  {
+                    backgroundColor: theme.colors.surface,
+                    shadowOpacity: theme.isDark ? 0.3 : 0.06,
+                  },
+                  modalAnimatedStyle,
+                ]}
                 {...panResponder.panHandlers}
               >
-                <View style={styles.sortModalHeader}>
-                  <View style={styles.dragHandle} />
-                  <Text style={styles.sortModalTitle}>Sort by</Text>
+                <View style={[styles.sortModalHeader, { borderBottomColor: theme.colors.border }]}>
+                  <View style={[styles.dragHandle, { backgroundColor: theme.colors.surfaceTertiary }]} />
+                  <Text style={[styles.sortModalTitle, { color: theme.colors.text.primary }]}>Sort by</Text>
                 </View>
-                
+
                 <View style={styles.sortOptions}>
-                  <TouchableOpacity 
-                    style={[styles.sortOption, selectedSort === 'recents' && styles.sortOptionActive]}
+                  <TouchableOpacity
+                    style={[
+                      styles.sortOption,
+                      { borderBottomColor: theme.colors.border },
+                      selectedSort === 'recents' && [styles.sortOptionActive, { backgroundColor: theme.colors.surfaceElevated }],
+                    ]}
                     onPress={() => {
                       if (selectedSort !== 'recents') {
                         setShowSortModal(false);
@@ -526,22 +575,27 @@ export const ExploreScreen: React.FC = () => {
                     }}
                   >
                     <View style={styles.sortOptionTextContainer}>
-                      <RecentIcon size={18} color={selectedSort === 'recents' ? '#F2F2F7' : '#A0A0B0'} />
+                      <RecentIcon size={18} color={selectedSort === 'recents' ? theme.colors.text.primary : theme.colors.text.secondary} />
                       <Text style={[
                         styles.sortOptionText,
-                        selectedSort === 'recents' && styles.sortOptionTextActive,
+                        { color: theme.colors.text.primary },
+                        selectedSort === 'recents' && [styles.sortOptionTextActive, { color: theme.colors.accent }],
                         { marginLeft: 6 }
                       ]}>
                         Recents
                       </Text>
                     </View>
                     {selectedSort === 'recents' && (
-                      <Text style={styles.checkMark}>✓</Text>
+                      <Text style={[styles.checkMark, { color: theme.colors.accent }]}>✓</Text>
                     )}
                   </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    style={[styles.sortOption, selectedSort === 'alphabetical' && styles.sortOptionActive]}
+
+                  <TouchableOpacity
+                    style={[
+                      styles.sortOption,
+                      { borderBottomColor: theme.colors.border },
+                      selectedSort === 'alphabetical' && [styles.sortOptionActive, { backgroundColor: theme.colors.surfaceElevated }],
+                    ]}
                     onPress={() => {
                       if (selectedSort !== 'alphabetical') {
                         setShowSortModal(false);
@@ -555,22 +609,27 @@ export const ExploreScreen: React.FC = () => {
                     }}
                   >
                     <View style={styles.sortOptionTextContainer}>
-                      <AlphabeticalIcon size={18} color={selectedSort === 'alphabetical' ? '#F2F2F7' : '#A0A0B0'} />
+                      <AlphabeticalIcon size={18} color={selectedSort === 'alphabetical' ? theme.colors.text.primary : theme.colors.text.secondary} />
                       <Text style={[
                         styles.sortOptionText,
-                        selectedSort === 'alphabetical' && styles.sortOptionTextActive,
+                        { color: theme.colors.text.primary },
+                        selectedSort === 'alphabetical' && [styles.sortOptionTextActive, { color: theme.colors.accent }],
                         { marginLeft: 6 }
                       ]}>
                         Alphabetical
                       </Text>
                     </View>
                     {selectedSort === 'alphabetical' && (
-                      <Text style={styles.checkMark}>✓</Text>
+                      <Text style={[styles.checkMark, { color: theme.colors.accent }]}>✓</Text>
                     )}
                   </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    style={[styles.sortOption, selectedSort === 'category' && styles.sortOptionActive]}
+
+                  <TouchableOpacity
+                    style={[
+                      styles.sortOption,
+                      { borderBottomColor: theme.colors.border },
+                      selectedSort === 'category' && [styles.sortOptionActive, { backgroundColor: theme.colors.surfaceElevated }],
+                    ]}
                     onPress={() => {
                       if (selectedSort !== 'category') {
                         setShowSortModal(false);
@@ -584,22 +643,23 @@ export const ExploreScreen: React.FC = () => {
                     }}
                   >
                     <View style={styles.sortOptionTextContainer}>
-                      <CategoryIcon size={18} color={selectedSort === 'category' ? '#F2F2F7' : '#A0A0B0'} />
+                      <CategoryIcon size={18} color={selectedSort === 'category' ? theme.colors.text.primary : theme.colors.text.secondary} />
                       <Text style={[
                         styles.sortOptionText,
-                        selectedSort === 'category' && styles.sortOptionTextActive,
+                        { color: theme.colors.text.primary },
+                        selectedSort === 'category' && [styles.sortOptionTextActive, { color: theme.colors.accent }],
                         { marginLeft: 6 }
                       ]}>
                         By Category
                       </Text>
                     </View>
                     {selectedSort === 'category' && (
-                      <Text style={styles.checkMark}>✓</Text>
+                      <Text style={[styles.checkMark, { color: theme.colors.accent }]}>✓</Text>
                     )}
                   </TouchableOpacity>
                 </View>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={styles.cancelButton}
                   onPress={() => setShowSortModal(false)}
                 >
@@ -618,21 +678,28 @@ export const ExploreScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  ...theme.health, // Use global Apple Health styles
+  container: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+  },
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.sm,
+    gap: 8,
   },
   titleText: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 18,
+    fontWeight: '700',
   },
   sortingCard: {
-    ...theme.health.card,
+    borderRadius: 12,
     marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 4,
+    elevation: 2,
   },
   sortingButton: {
     padding: 16,
@@ -649,7 +716,6 @@ const styles = StyleSheet.create({
   sortingTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#F2F2F7',
   },
   sortOptionTextContainer: {
     flexDirection: 'row',
@@ -658,7 +724,6 @@ const styles = StyleSheet.create({
   sortingArrow: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#A0A0B0',
   },
   moduleGrid: {
     gap: 12,
@@ -669,36 +734,30 @@ const styles = StyleSheet.create({
     borderColor: '#FF6B6B',
     shadowColor: '#FF6B6B',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
     shadowRadius: 6,
     elevation: 6,
   },
   pinnedModuleTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#F2F2F7',
     marginBottom: 4,
     lineHeight: 20,
   },
   pinnedModuleDescription: {
     fontSize: 13,
-    color: '#A0A0B0',
     fontWeight: '500',
     lineHeight: 17,
   },
   likedMeditationsDescription: {
     fontSize: 12,
-    color: '#A0A0B0',
     fontWeight: '400',
     lineHeight: 16,
   },
   pinBadge: {
-    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.15,
@@ -712,7 +771,6 @@ const styles = StyleSheet.create({
   },
   pinnedSessionCount: {
     fontSize: 13,
-    color: '#A0A0B0',
     fontWeight: '600',
   },
   moduleRow: {
@@ -729,12 +787,10 @@ const styles = StyleSheet.create({
     width: '48%', // Take up about half the width instead of full width
   },
   moduleCard: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
     height: 140, // Fixed height for consistency
@@ -760,19 +816,16 @@ const styles = StyleSheet.create({
   moduleCategory: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#A0A0B0',
     letterSpacing: 0.5,
   },
   moduleTitle: {
     fontSize: 16, // Slightly smaller to fit better
     fontWeight: '600',
-    color: '#F2F2F7',
     marginBottom: 4, // Reduced from 6
     lineHeight: 20, // Add line height for better control
   },
   moduleDescription: {
     fontSize: 12, // Slightly smaller
-    color: '#A0A0B0',
     fontWeight: '400',
     lineHeight: 16, // Tighter line height
     marginBottom: 8, // Reduced from 12
@@ -786,30 +839,24 @@ const styles = StyleSheet.create({
   },
   sessionCount: {
     fontSize: 13,
-    color: '#A0A0B0',
     fontWeight: '500',
   },
   moduleArrow: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#2C2C2E',
     justifyContent: 'center',
     alignItems: 'center',
   },
   moduleArrowText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#F2F2F7',
   },
   currentModuleBadge: {
-    backgroundColor: '#0A84FF',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
-    shadowColor: '#0A84FF',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 4,
   },
@@ -822,23 +869,19 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     paddingVertical: 60,
-    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     marginTop: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
   },
   emptyText: {
-    color: '#F2F2F7',
     textAlign: 'center',
     fontSize: 17,
     fontWeight: '600',
   },
   emptySubtext: {
-    color: '#A0A0B0',
     textAlign: 'center',
     marginTop: 8,
     fontSize: 15,
@@ -868,12 +911,10 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   sortModal: {
-    backgroundColor: '#1C1C1E',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 8,
     maxHeight: '50%',
@@ -885,19 +926,16 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
   },
   dragHandle: {
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#3A3A3C',
     marginBottom: 16,
   },
   sortModalTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#F2F2F7',
   },
   sortOptions: {
     paddingHorizontal: 20,
@@ -909,10 +947,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
   },
   sortOptionActive: {
-    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     marginHorizontal: -12,
     paddingHorizontal: 12,
@@ -922,16 +958,13 @@ const styles = StyleSheet.create({
   sortOptionText: {
     fontSize: 17,
     fontWeight: '400',
-    color: '#F2F2F7',
   },
   sortOptionTextActive: {
     fontWeight: '600',
-    color: '#0A84FF',
   },
   checkMark: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#0A84FF',
   },
   cancelButton: {
     backgroundColor: '#ff3b30',
@@ -948,4 +981,4 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     textAlign: 'center',
   },
-}); 
+});

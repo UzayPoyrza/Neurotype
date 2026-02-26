@@ -5,8 +5,8 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 import Svg, { Path } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useStore, prerenderedModuleBackgrounds, createSubtleBackground, createDarkIconBackground } from '../store/useStore';
-import { theme } from '../styles/theme';
+import { useStore, prerenderedModuleBackgrounds, prerenderedLightModuleBackgrounds, createSubtleBackground, createSubtleBackgroundLight, createDarkIconBackground, createLightIconBackground } from '../store/useStore';
+import { useTheme } from '../contexts/ThemeContext';
 import { SubscriptionBadge } from '../components/SubscriptionBadge';
 import { mentalHealthModules } from '../data/modules';
 import type { MentalHealthModule } from '../data/modules';
@@ -145,6 +145,8 @@ const AnimatedFeedbackItem: React.FC<{
 };
 
 export const ProfileScreen: React.FC = () => {
+  const theme = useTheme();
+  const styles = createStyles(theme);
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const { 
     userProgress,
@@ -674,7 +676,9 @@ export const ProfileScreen: React.FC = () => {
   const moduleId = todayModuleId || 'anxiety';
   const activeModule = mentalHealthModules.find(module => module.id === moduleId);
   const moduleBorderColor = activeModule?.color || theme.colors.primary;
-  const avatarBackgroundColor = prerenderedModuleBackgrounds[moduleId] || '#f2f2f7';
+  const avatarBackgroundColor = theme.isDark
+    ? (prerenderedModuleBackgrounds[moduleId] || theme.colors.surfaceElevated)
+    : (prerenderedLightModuleBackgrounds[moduleId] || theme.colors.surfaceElevated);
   const profileInitial = userFirstName?.trim().charAt(0)?.toUpperCase() || 'N';
   const visibleActivityCount = Math.min(recentActivity.length, MAX_VISIBLE_ACTIVITY_ITEMS);
   const activityListMaxHeight = visibleActivityCount * APPROX_ACTIVITY_ROW_HEIGHT;
@@ -855,7 +859,7 @@ export const ProfileScreen: React.FC = () => {
           onPress={() => navigation.navigate('Settings')}
           activeOpacity={0.7}
         >
-          <Ionicons name="settings-outline" size={24} color="#A0A0B0" />
+          <Ionicons name="settings-outline" size={24} color={theme.colors.text.secondary} />
         </TouchableOpacity>
       </View>
       
@@ -920,7 +924,7 @@ export const ProfileScreen: React.FC = () => {
               <View style={styles.cardHeaderTop}>
                 <View style={styles.cardTitleContainer}>
                   <View style={styles.cardTitleIconWrapper}>
-                    <GiftIcon size={23} color="#0A84FF" />
+                    <GiftIcon size={23} color={theme.colors.accent} />
                   </View>
                   <View style={styles.cardTitleTextWrapper}>
                     <Text style={styles.cardTitle}>Share & Earn</Text>
@@ -1000,7 +1004,7 @@ export const ProfileScreen: React.FC = () => {
             <View style={styles.cardHeaderTop}>
               <View style={styles.cardTitleContainer}>
                 <View style={styles.cardTitleIconWrapper}>
-                  <ActivityHistoryIcon size={20} color="#0A84FF" />
+                  <ActivityHistoryIcon size={20} color={theme.colors.accent} />
                 </View>
                 <View style={styles.cardTitleTextWrapper}>
                   <Text style={styles.cardTitle}>Activity History</Text>
@@ -1021,8 +1025,8 @@ export const ProfileScreen: React.FC = () => {
               </View>
             ) : recentActivity.length === 0 ? (
               <View style={styles.emptyState}>
-                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#2C2C2E', marginBottom: 16, justifyContent: 'center', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 20, color: '#6B6B7B', fontWeight: '300' }}>--</Text>
+                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: theme.colors.surfaceElevated, marginBottom: 16, justifyContent: 'center', alignItems: 'center' }}>
+                  <Text style={{ fontSize: 20, color: theme.colors.text.tertiary, fontWeight: '300' }}>--</Text>
                 </View>
                 <Text style={styles.emptyStateTitle}>No sessions yet</Text>
                 <Text style={styles.emptyStateSubtitle}>
@@ -1055,7 +1059,7 @@ export const ProfileScreen: React.FC = () => {
                       const moduleTitle = moduleData?.title;
                       const moduleColor = moduleData?.color || '#007AFF';
                       const moduleInitial = moduleTitle?.trim().charAt(0)?.toUpperCase() || 'M';
-                      const iconBackground = createDarkIconBackground(moduleColor);
+                      const iconBackground = theme.isDark ? createDarkIconBackground(moduleColor) : createLightIconBackground(moduleColor);
                       const formattedDate = formatSessionDate(activityItem.date);
                       const sessionTitle = sessionData?.title || 'Meditation Session';
                       const truncatedTitle = truncateText(sessionTitle, 28);
@@ -1117,18 +1121,19 @@ export const ProfileScreen: React.FC = () => {
                     <>
                       <LinearGradient
                         pointerEvents="none"
-                        colors={['rgba(28,28,30,1)', 'rgba(28,28,30,0)']}
+                        colors={[theme.colors.surface, theme.colors.surface + '00'] as [string, string]}
                         style={styles.scrollFadeTop}
                       />
                       <LinearGradient
                         pointerEvents="none"
-                        colors={['rgba(28,28,30,0)', 'rgba(28,28,30,1)']}
+                        colors={[theme.colors.surface + '00', theme.colors.surface] as [string, string]}
                         style={styles.scrollFadeBottom}
                       />
-                      <View pointerEvents="none" style={styles.scrollHintContainer}>
+                      <View pointerEvents="none" style={[styles.scrollHintContainer, { backgroundColor: theme.colors.surface }]}>
                         <Text
                           style={[
                             styles.scrollHintText,
+                            { color: theme.colors.text.tertiary },
                             !isScrollHintVisible && styles.scrollHintTextHidden
                           ]}
                         >
@@ -1149,7 +1154,7 @@ export const ProfileScreen: React.FC = () => {
           <View style={styles.cardHeaderTop}>
             <View style={styles.cardTitleContainer}>
               <View style={styles.cardTitleIconWrapper}>
-                <ChatWritingIcon size={22} color="#0A84FF" />
+                <ChatWritingIcon size={22} color={theme.colors.accent} />
               </View>
               <View style={styles.cardTitleTextWrapper}>
                 <Text style={styles.cardTitle}>Emotional Feedback History</Text>
@@ -1180,8 +1185,8 @@ export const ProfileScreen: React.FC = () => {
               </View>
             ) : sortedFeedbackHistory.length === 0 ? (
               <View style={styles.emptyState}>
-                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#2C2C2E', marginBottom: 16, justifyContent: 'center', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 20, color: '#6B6B7B', fontWeight: '300' }}>--</Text>
+                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: theme.colors.surfaceElevated, marginBottom: 16, justifyContent: 'center', alignItems: 'center' }}>
+                  <Text style={{ fontSize: 20, color: theme.colors.text.tertiary, fontWeight: '300' }}>--</Text>
                 </View>
                 <Text style={styles.emptyStateTitle}>No feedback yet</Text>
                 <Text style={styles.emptyStateSubtitle}>
@@ -1272,18 +1277,19 @@ export const ProfileScreen: React.FC = () => {
                     <>
                       <LinearGradient
                         pointerEvents="none"
-                        colors={['rgba(28,28,30,1)', 'rgba(28,28,30,0)']}
+                        colors={[theme.colors.surface, theme.colors.surface + '00'] as [string, string]}
                         style={styles.scrollFadeTop}
                       />
                       <LinearGradient
                         pointerEvents="none"
-                        colors={['rgba(28,28,30,0)', 'rgba(28,28,30,1)']}
+                        colors={[theme.colors.surface + '00', theme.colors.surface] as [string, string]}
                         style={styles.scrollFadeBottom}
                       />
-                      <View pointerEvents="none" style={styles.scrollHintContainer}>
+                      <View pointerEvents="none" style={[styles.scrollHintContainer, { backgroundColor: theme.colors.surface }]}>
                         <Text
                           style={[
                             styles.scrollHintText,
+                            { color: theme.colors.text.tertiary },
                             !isFeedbackScrollHintVisible && styles.scrollHintTextHidden
                           ]}
                         >
@@ -1333,7 +1339,7 @@ export const ProfileScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ReturnType<typeof useTheme>) => StyleSheet.create({
   ...theme.health,
   ambientGlow: {
     position: 'absolute',
@@ -1363,11 +1369,11 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: theme.colors.borderMedium,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: theme.colors.border,
   },
   headerTop: {
     flexDirection: 'row',
@@ -1375,12 +1381,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   profileHeaderCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: theme.colors.surface,
     borderRadius: 14,
     marginHorizontal: 16,
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderWidth: theme.isDark ? 1 : 0,
+    borderColor: theme.colors.border,
   },
   profileHeaderContent: {
     flexDirection: 'row',
@@ -1396,16 +1402,16 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     justifyContent: 'center',
     alignItems: 'center',
-    borderColor: 'rgba(255,255,255,0.1)',
-    backgroundColor: '#2C2C2E',
+    borderColor: theme.colors.borderMedium,
+    backgroundColor: theme.colors.surfaceElevated,
   },
   profileInitialText: {
     fontSize: 26,
     fontWeight: '700',
-    color: '#F2F2F7',
+    color: theme.colors.text.primary,
   },
   statsSection: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: theme.colors.surface,
   },
   mergedSectionTop: {
     paddingTop: 0,
@@ -1425,7 +1431,7 @@ const styles = StyleSheet.create({
   subscriptionContainerPremium: {
   },
   upgradeButton: {
-    backgroundColor: '#0A84FF',
+    backgroundColor: theme.colors.accent,
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -1443,13 +1449,13 @@ const styles = StyleSheet.create({
   },
   cancelMessageText: {
     fontSize: 13,
-    color: '#6B6B7B',
+    color: theme.colors.text.tertiary,
     lineHeight: 18,
     fontStyle: 'italic',
   },
   profileSubtitle: {
     fontSize: 15,
-    color: '#6B6B7B',
+    color: theme.colors.text.tertiary,
     fontWeight: '400',
     lineHeight: 20,
   },
@@ -1480,7 +1486,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: theme.colors.text.secondary,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
@@ -1492,7 +1498,7 @@ const styles = StyleSheet.create({
   },
   shareSubtitle: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: theme.colors.text.secondary,
     fontWeight: '400',
     marginBottom: 0,
     textAlign: 'left',
@@ -1509,7 +1515,7 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: '#0A84FF',
+    backgroundColor: theme.colors.accent,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -1522,7 +1528,7 @@ const styles = StyleSheet.create({
   stepText: {
     flex: 1,
     fontSize: 15,
-    color: '#F2F2F7',
+    color: theme.colors.text.primary,
     fontWeight: '400',
   },
   referralSection: {
@@ -1531,7 +1537,7 @@ const styles = StyleSheet.create({
   referralLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#A0A0B0',
+    color: theme.colors.text.secondary,
     marginBottom: 8,
     textTransform: 'uppercase' as const,
     letterSpacing: 0.6,
@@ -1539,7 +1545,7 @@ const styles = StyleSheet.create({
   referralLinkContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: theme.colors.surfaceElevated,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -1547,12 +1553,12 @@ const styles = StyleSheet.create({
   referralLink: {
     flex: 1,
     fontSize: 14,
-    color: '#6B6B7B',
+    color: theme.colors.text.tertiary,
     fontWeight: '400',
     fontFamily: 'Courier',
   },
   copyButton: {
-    backgroundColor: '#0A84FF',
+    backgroundColor: theme.colors.accent,
     borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -1568,7 +1574,7 @@ const styles = StyleSheet.create({
   },
   shareButton: {
     flex: 1,
-    backgroundColor: '#0A84FF',
+    backgroundColor: theme.colors.accent,
     borderRadius: 12,
     paddingVertical: 10,
     alignItems: 'center',
@@ -1581,18 +1587,18 @@ const styles = StyleSheet.create({
   },
   inviteButton: {
     flex: 1,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: theme.colors.surfaceElevated,
     borderRadius: 12,
     paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderWidth: theme.isDark ? 1 : 0,
+    borderColor: theme.colors.borderMedium,
   },
   inviteButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: theme.colors.text.primary,
   },
   statsContent: {
     flexDirection: 'row',
@@ -1608,12 +1614,12 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#F2F2F7',
+    color: theme.colors.text.primary,
     marginBottom: 2,
   },
   statLabel: {
     fontSize: 11,
-    color: '#6B6B7B',
+    color: theme.colors.text.tertiary,
     fontWeight: '500',
     textAlign: 'center',
     textTransform: 'uppercase' as const,
@@ -1622,7 +1628,7 @@ const styles = StyleSheet.create({
   statDivider: {
     width: 0.5,
     height: 32,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: theme.colors.borderMedium,
     marginHorizontal: 20,
   },
   activityContent: {
@@ -1632,7 +1638,7 @@ const styles = StyleSheet.create({
   },
   activitySubtitle: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: theme.colors.text.secondary,
     fontWeight: '400',
     marginTop: 0,
     marginBottom: 0,
@@ -1650,12 +1656,12 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#F2F2F7',
+    color: theme.colors.text.primary,
     marginBottom: 8,
   },
   emptyStateSubtitle: {
     fontSize: 15,
-    color: '#6B6B7B',
+    color: theme.colors.text.tertiary,
     fontWeight: '400',
     textAlign: 'center',
     lineHeight: 20,
@@ -1680,7 +1686,7 @@ const styles = StyleSheet.create({
   activityItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2C2C2E',
+    backgroundColor: theme.colors.surfaceElevated,
     borderRadius: 10,
     padding: 12,
     overflow: 'hidden',
@@ -1710,11 +1716,11 @@ const styles = StyleSheet.create({
   activityTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#F2F2F7',
+    color: theme.colors.text.primary,
   },
   activityDate: {
     fontSize: 13,
-    color: '#6B6B7B',
+    color: theme.colors.text.tertiary,
     fontWeight: '400',
     marginTop: 2,
   },
@@ -1725,7 +1731,7 @@ const styles = StyleSheet.create({
   },
   activityMeta: {
     fontSize: 13,
-    color: '#6B6B7B',
+    color: theme.colors.text.tertiary,
     fontWeight: '400',
   },
   durationBadge: {
@@ -1759,7 +1765,7 @@ const styles = StyleSheet.create({
   },
   deleteFeedbackButtonText: {
     fontSize: 18,
-    color: '#6B6B7B',
+    color: theme.colors.text.tertiary,
     fontWeight: '600',
   },
   scrollFadeTop: {
@@ -1785,11 +1791,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#1C1C1E',
   },
   scrollHintText: {
     fontSize: 11,
-    color: '#6B6B7B',
     fontWeight: '500',
   },
   scrollHintTextHidden: {
@@ -1799,7 +1803,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: theme.colors.surfaceElevated,
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,
@@ -1807,10 +1811,10 @@ const styles = StyleSheet.create({
   infoButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#A0A0B0',
+    color: theme.colors.text.secondary,
   },
   infoButtonActive: {
-    backgroundColor: '#0A84FF',
+    backgroundColor: theme.colors.accent,
   },
   infoButtonTextActive: {
     color: '#ffffff',
@@ -1820,7 +1824,7 @@ const styles = StyleSheet.create({
     bottom: 90,
     left: 20,
     right: 20,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: theme.colors.surfaceElevated,
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 16,
@@ -1828,16 +1832,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
+    shadowOpacity: theme.isDark ? 0.4 : 0.06,
     shadowRadius: 12,
     elevation: 8,
     zIndex: 1000,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderWidth: theme.isDark ? 1 : 0,
+    borderColor: theme.colors.borderMedium,
   },
   toastText: {
-    color: '#FFFFFF',
+    color: theme.colors.text.primary,
     fontSize: 15,
     fontWeight: '600',
   },
-}); 
+});

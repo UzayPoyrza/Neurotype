@@ -1,7 +1,7 @@
-import React, { useRef, useImperativeHandle, forwardRef, useCallback } from 'react';
+import React, { useRef, useImperativeHandle, forwardRef, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, PanResponder } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface InstagramStyleNavProps {
   title?: string | React.ReactNode;
@@ -16,6 +16,7 @@ interface InstagramStyleNavProps {
   scrollViewHeight?: number;
   isSearchFocused?: boolean;
   forceInitialPosition?: 'up' | 'down';
+  backgroundColor?: string;
 }
 
 export interface InstagramStyleNavRef {
@@ -36,29 +37,34 @@ export const InstagramStyleNav = forwardRef<InstagramStyleNavRef, InstagramStyle
   contentHeight = 0,
   scrollViewHeight = 0,
   isSearchFocused = false,
-  forceInitialPosition
+  forceInitialPosition,
+  backgroundColor,
 }, ref) => {
   const navigation = useNavigation();
+  const theme = useTheme();
   const revealTranslateY = useRef(new Animated.Value(0)).current;
   const isAnimating = useRef(false);
   const lastScrollY = useRef(0);
   const scrollDirection = useRef<'up' | 'down' | null>(null);
   const revealBarHeight = 60; // Height of the RevealBar
   const slideRange = 60; // Height of TopShell - how far to slide
-  
+
   // Animated value for the top shell border
   const topShellBorderOpacity = useRef(new Animated.Value(0)).current;
   // Animated value for the reveal bar content opacity
   const revealBarContentOpacity = useRef(new Animated.Value(1)).current;
-  
+
+  const bgColor = backgroundColor || theme.colors.background;
+  const borderColor = theme.isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+
   // Snap to nearest state (fully shown or fully hidden)
   const snapToNearest = useCallback(() => {
     if (isAnimating.current) return;
-    
+
     const currentTranslateY = (revealTranslateY as any)._value || 0;
     const threshold = slideRange / 2;
     const targetValue = currentTranslateY > -threshold ? 0 : -slideRange;
-    
+
     isAnimating.current = true;
     Animated.timing(revealTranslateY, {
       toValue: targetValue,
@@ -77,35 +83,35 @@ export const InstagramStyleNav = forwardRef<InstagramStyleNavRef, InstagramStyle
     if (scrollY && !isSearchFocused) {
       const listener = scrollY.addListener(({ value }) => {
         const scrollDifference = value - lastScrollY.current;
-        
+
         // Only move for real scroll events (not bounce)
         if (Math.abs(scrollDifference) > 3 && value >= 0) {
           const currentTranslateY = (revealTranslateY as any)._value || 0;
-          
+
           // Check if we're at the bottom of the content and scrolling down
-          const isAtBottom = contentHeight > 0 && scrollViewHeight > 0 && 
+          const isAtBottom = contentHeight > 0 && scrollViewHeight > 0 &&
             value + scrollViewHeight >= contentHeight - 10;
-          
+
           // Check if we're in the bottom 10% of the page
           const scrollableHeight = contentHeight - scrollViewHeight;
           const bottom5PercentThreshold = scrollableHeight * 0.9999;
           const isInBottom10Percent = value >= bottom5PercentThreshold;
-          
+
           if ((isAtBottom && scrollDifference > 0) || isInBottom10Percent) {
             // At bottom and scrolling down OR in bottom 10% - keep RevealBar hidden
             revealTranslateY.setValue(-slideRange);
           } else {
             // Normal 1:1 movement
-            const newTranslateY = scrollDifference > 0 
+            const newTranslateY = scrollDifference > 0
               ? Math.max(currentTranslateY - Math.abs(scrollDifference), -slideRange)
               : Math.min(currentTranslateY + Math.abs(scrollDifference), 0);
-            
+
             revealTranslateY.setValue(newTranslateY);
           }
-          
+
           scrollDirection.current = scrollDifference > 0 ? 'down' : 'up';
         }
-        
+
         lastScrollY.current = value;
       });
 
@@ -138,12 +144,12 @@ export const InstagramStyleNav = forwardRef<InstagramStyleNavRef, InstagramStyle
     const listener = revealTranslateY.addListener(({ value }) => {
       // Calculate opacity based on how much the reveal bar has moved up
       const progress = Math.abs(value) / slideRange;
-      
+
       // Top border fades in much later and more gradually
       // Use a steep curve that only becomes visible in the last 20% of the animation
       const borderOpacity = progress < 0.8 ? 0 : Math.pow((progress - 0.8) / 0.2, 3);
       topShellBorderOpacity.setValue(Math.min(borderOpacity, 1));
-      
+
       // Calculate content opacity with stronger fade effect
       // Use exponential curve for more pronounced fade
       const contentOpacity = Math.max(Math.pow(1 - progress, 2), 0);
@@ -196,16 +202,18 @@ export const InstagramStyleNav = forwardRef<InstagramStyleNavRef, InstagramStyle
   return (
     <View style={styles.container}>
       {/* RevealBar - Slides behind TopShell */}
-      <Animated.View 
+      <Animated.View
         style={[
           styles.revealBar,
           {
+            backgroundColor: bgColor,
+            borderBottomColor: borderColor,
             transform: [{ translateY: revealTranslateY }],
           }
         ]}
       >
         {searchComponent ? (
-          <Animated.View 
+          <Animated.View
             style={[
               styles.searchContainer,
               {
@@ -216,7 +224,7 @@ export const InstagramStyleNav = forwardRef<InstagramStyleNavRef, InstagramStyle
             {searchComponent}
           </Animated.View>
         ) : (
-          <Animated.View 
+          <Animated.View
             style={[
               styles.revealBarContent,
               {
@@ -228,11 +236,17 @@ export const InstagramStyleNav = forwardRef<InstagramStyleNavRef, InstagramStyle
             <View style={styles.leftSection}>
               {showBackButton && (
                 <TouchableOpacity
-                  style={styles.backButton}
+                  style={[
+                    styles.backButton,
+                    {
+                      backgroundColor: theme.colors.background,
+                      borderColor: borderColor,
+                    },
+                  ]}
                   onPress={handleBackPress}
                   testID="top-nav-back-button"
                 >
-                  <Text style={styles.backButtonText}>←</Text>
+                  <Text style={[styles.backButtonText, { color: theme.colors.primary }]}>←</Text>
                 </TouchableOpacity>
               )}
               {!showBackButton && leftComponent}
@@ -241,7 +255,7 @@ export const InstagramStyleNav = forwardRef<InstagramStyleNavRef, InstagramStyle
             {/* Center - Title */}
             <View style={styles.centerSection}>
               {typeof title === 'string' ? (
-                <Text style={styles.title} numberOfLines={1}>
+                <Text style={[styles.title, { color: theme.colors.primary }]} numberOfLines={1}>
                   {title}
                 </Text>
               ) : (
@@ -258,15 +272,16 @@ export const InstagramStyleNav = forwardRef<InstagramStyleNavRef, InstagramStyle
       </Animated.View>
 
       {/* TopShell - Always visible and in front */}
-      <Animated.View style={styles.topShell}>
+      <Animated.View style={[styles.topShell, { backgroundColor: bgColor }]}>
         <View style={styles.topShellContent}>
           {/* Status bar padding only - no interactive elements */}
         </View>
         {/* Animated border that appears when reveal bar slides behind */}
-        <Animated.View 
+        <Animated.View
           style={[
             styles.topShellBorder,
             {
+              backgroundColor: borderColor,
               opacity: topShellBorderOpacity,
             }
           ]}
@@ -285,7 +300,6 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   topShell: {
-    backgroundColor: '#0A0A0F',
     height: 60, // Fixed height for status bar + padding
     position: 'absolute',
     top: 0,
@@ -302,13 +316,10 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: theme.borders.width.thick,
-    backgroundColor: theme.colors.primary,
+    height: 2,
   },
   revealBar: {
-    backgroundColor: '#0A0A0F',
-    borderBottomWidth: theme.borders.width.thick,
-    borderBottomColor: theme.colors.primary,
+    borderBottomWidth: 2,
     height: 60,
     position: 'absolute',
     top: 60, // Start below TopShell
@@ -318,8 +329,8 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     flex: 1,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -327,8 +338,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     flex: 1,
   },
   leftSection: {
@@ -346,25 +357,20 @@ const styles = StyleSheet.create({
   backButton: {
     width: 40,
     height: 40,
-    borderRadius: theme.borders.radius.md,
-    backgroundColor: theme.colors.background,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.primary,
+    borderRadius: 10,
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    ...theme.shadows.small,
   },
   backButtonText: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 17,
+    fontWeight: '700',
+    fontFamily: 'System',
   },
   title: {
-    fontSize: theme.typography.sizes.xl,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
+    fontSize: 20,
+    fontWeight: '600',
+    fontFamily: 'System',
     textAlign: 'center',
   },
-}); 
+});

@@ -1,6 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface ChipProps {
   label: string;
@@ -9,17 +9,32 @@ interface ChipProps {
 }
 
 export const Chip: React.FC<ChipProps> = ({ label, selected, onPress }) => {
+  const theme = useTheme();
+
   return (
     <TouchableOpacity
       style={[
         styles.chip,
-        selected ? styles.selectedChip : styles.unselectedChip,
+        {
+          paddingHorizontal: theme.spacing.lg,
+          paddingVertical: theme.spacing.sm,
+          borderRadius: theme.borders.radius.xxl,
+          borderWidth: theme.borders.width.normal,
+          backgroundColor: selected ? theme.colors.primary : theme.colors.surface,
+          borderColor: theme.colors.primary,
+          ...theme.shadows.small,
+        },
       ]}
       onPress={onPress}
     >
       <Text style={[
         styles.chipText,
-        selected ? styles.selectedText : styles.unselectedText,
+        {
+          fontSize: theme.typography.sizes.sm,
+          fontWeight: theme.typography.weights.semibold,
+          fontFamily: theme.typography.fontFamily,
+          color: selected ? theme.colors.surface : theme.colors.primary,
+        },
       ]}>
         {label}
       </Text>
@@ -28,30 +43,6 @@ export const Chip: React.FC<ChipProps> = ({ label, selected, onPress }) => {
 };
 
 const styles = StyleSheet.create({
-  chip: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.sm,
-    borderRadius: theme.borders.radius.xxl,
-    borderWidth: theme.borders.width.normal,
-    ...theme.shadows.small,
-  },
-  selectedChip: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
-  },
-  unselectedChip: {
-    backgroundColor: theme.colors.surface,
-    borderColor: theme.colors.primary,
-  },
-  chipText: {
-    fontSize: theme.typography.sizes.sm,
-    fontWeight: theme.typography.weights.semibold,
-    fontFamily: theme.typography.fontFamily,
-  },
-  selectedText: {
-    color: theme.colors.surface,
-  },
-  unselectedText: {
-    color: theme.colors.primary,
-  },
-}); 
+  chip: {},
+  chipText: {},
+});

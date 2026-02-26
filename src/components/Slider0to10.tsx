@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, LayoutChangeEvent, PanResponder, GestureResponderEvent, Animated, Easing } from 'react-native';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface Slider0to10Props {
   value: number;
@@ -14,15 +15,16 @@ interface Slider0to10Props {
 const BAR_KNOB_SIZE = 26;
 const BAR_TRACK_HEIGHT = 6;
 
-export const Slider0to10: React.FC<Slider0to10Props> = ({ 
-  value, 
-  onValueChange, 
+export const Slider0to10: React.FC<Slider0to10Props> = ({
+  value,
+  onValueChange,
   label,
   showLabels = true,
   variant = 'pill',
   numberColor,
   activeNumberColor,
 }) => {
+  const theme = useTheme();
   const numbers = Array.from({ length: 11 }, (_, i) => i);
   const [trackWidth, setTrackWidth] = useState(0);
   const animatedKnobX = useRef(new Animated.Value(0)).current;
@@ -112,7 +114,7 @@ export const Slider0to10: React.FC<Slider0to10Props> = ({
 
     return (
       <View style={styles.barRoot}>
-        {showLabels && !!label && <Text style={styles.label}>{label}</Text>}
+        {showLabels && !!label && <Text style={[styles.label, { color: theme.colors.text.primary }]}>{label}</Text>}
 
         <View style={styles.barTrackWrapper} {...panResponder.panHandlers}>
           <View style={styles.barTrack} onLayout={handleTrackLayout}>
@@ -184,7 +186,7 @@ export const Slider0to10: React.FC<Slider0to10Props> = ({
 
   return (
     <View style={styles.container}>
-      {showLabels && !!label && <Text style={styles.label}>{label}</Text>}
+      {showLabels && !!label && <Text style={[styles.label, { color: theme.colors.text.primary }]}>{label}</Text>}
       <View style={styles.sliderContainer}>
         {numbers.map((number) => (
           <TouchableOpacity
@@ -225,7 +227,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#F2F2F7',
     marginBottom: 12,
     fontFamily: 'System',
   },
@@ -345,4 +346,4 @@ const styles = StyleSheet.create({
   barNumberTextActive: {
     color: '#ffffff',
   },
-}); 
+});

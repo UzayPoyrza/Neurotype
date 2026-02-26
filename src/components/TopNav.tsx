@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface TopNavProps {
   title: string;
@@ -18,6 +18,7 @@ export const TopNav: React.FC<TopNavProps> = ({
   rightComponent,
   titleMaxLength,
 }) => {
+  const theme = useTheme();
   const navigation = useNavigation();
 
   const handleBackPress = () => {
@@ -29,7 +30,14 @@ export const TopNav: React.FC<TopNavProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[
+      styles.container,
+      {
+        backgroundColor: theme.colors.surface,
+        borderBottomColor: theme.colors.primary,
+        ...theme.shadows.medium,
+      }
+    ]}>
       {/* TopShell - Always visible status bar padding */}
       <View style={styles.topShell}>
         <View style={styles.topShellContent}>
@@ -38,24 +46,51 @@ export const TopNav: React.FC<TopNavProps> = ({
       </View>
 
       {/* Static header content */}
-      <View style={styles.headerContent}>
-        <View style={styles.content}>
+      <View style={[styles.headerContent, { backgroundColor: theme.colors.surface, ...theme.shadows.medium }]}>
+        <View style={[styles.content, { paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.md }]}>
           {/* Left side - Back button or empty space */}
           <View style={styles.leftSection}>
             {showBackButton && (
               <TouchableOpacity
-                style={styles.backButton}
+                style={[
+                  styles.backButton,
+                  {
+                    borderRadius: theme.borders.radius.md,
+                    backgroundColor: theme.colors.background,
+                    borderColor: theme.colors.primary,
+                    ...theme.shadows.small,
+                  }
+                ]}
                 onPress={handleBackPress}
                 testID="top-nav-back-button"
               >
-                <Text style={styles.backButtonText}>←</Text>
+                <Text style={[
+                  styles.backButtonText,
+                  {
+                    fontSize: theme.typography.sizes.lg,
+                    color: theme.colors.primary,
+                    fontFamily: theme.typography.fontFamily,
+                  }
+                ]}>
+                  ←
+                </Text>
               </TouchableOpacity>
             )}
           </View>
 
           {/* Center - Title */}
           <View style={styles.centerSection}>
-            <Text style={styles.title} numberOfLines={1}>
+            <Text
+              style={[
+                styles.title,
+                {
+                  fontSize: theme.typography.sizes.xl,
+                  color: theme.colors.primary,
+                  fontFamily: theme.typography.fontFamily,
+                }
+              ]}
+              numberOfLines={1}
+            >
               {titleMaxLength && title.length > titleMaxLength
                 ? `${title.slice(0, titleMaxLength).trimEnd()}...`
                 : title}
@@ -74,10 +109,7 @@ export const TopNav: React.FC<TopNavProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: theme.colors.surface,
-    borderBottomWidth: theme.borders.width.thick,
-    borderBottomColor: theme.colors.primary,
-    ...theme.shadows.medium,
+    borderBottomWidth: 2,
     zIndex: 1000,
   },
   topShell: {
@@ -87,16 +119,11 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 20, // Status bar padding
   },
-  headerContent: {
-    backgroundColor: theme.colors.surface,
-    ...theme.shadows.medium,
-  },
+  headerContent: {},
   content: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
     minHeight: 60,
   },
   leftSection: {
@@ -114,25 +141,16 @@ const styles = StyleSheet.create({
   backButton: {
     width: 40,
     height: 40,
-    borderRadius: theme.borders.radius.md,
-    backgroundColor: theme.colors.background,
-    borderWidth: theme.borders.width.normal,
-    borderColor: theme.colors.primary,
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    ...theme.shadows.small,
   },
   backButtonText: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
-  },
-  title: {
-    fontSize: theme.typography.sizes.xl,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
+    fontWeight: '700',
     textAlign: 'center',
   },
-}); 
+  title: {
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+});

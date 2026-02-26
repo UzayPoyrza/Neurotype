@@ -3,10 +3,10 @@ import { View, Text, StyleSheet, ScrollView, Animated, Dimensions, TouchableOpac
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Session } from '../types';
-import { useStore, prerenderedModuleBackgrounds } from '../store/useStore';
+import { useStore, prerenderedModuleBackgrounds, prerenderedLightModuleBackgrounds } from '../store/useStore';
 import { mockSessions } from '../data/mockData';
 import { mentalHealthModules } from '../data/modules';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 import { ModuleGridModal } from '../components/ModuleGridModal';
 import { AnimatedFloatingButton } from '../components/AnimatedFloatingButton';
 import { SessionBottomSheet } from '../components/SessionBottomSheet';
@@ -44,6 +44,8 @@ type TodayStackParamList = {
 type TodayScreenNavigationProp = StackNavigationProp<TodayStackParamList, 'TodayMain'>;
 
 export const TodayScreen: React.FC = () => {
+  const theme = useTheme();
+  const styles = createStyles(theme);
   const navigation = useNavigation<TodayScreenNavigationProp>();
   const userId = useUserId();
   const { setActiveSession, setGlobalBackgroundColor, setCurrentScreen, setTodayModuleId, markSessionCompletedToday, isSessionCompletedToday } = useStore();
@@ -109,7 +111,9 @@ export const TodayScreen: React.FC = () => {
   
   // Update global background color when module changes
   useEffect(() => {
-    const subtleColor = prerenderedModuleBackgrounds[selectedModuleId] || prerenderedModuleBackgrounds['anxiety'];
+    const subtleColor = theme.isDark
+      ? (prerenderedModuleBackgrounds[selectedModuleId] || prerenderedModuleBackgrounds['anxiety'])
+      : (prerenderedLightModuleBackgrounds[selectedModuleId] || prerenderedLightModuleBackgrounds['anxiety']);
     setGlobalBackgroundColor(subtleColor);
     setTodayModuleId(selectedModuleId);
     
@@ -1144,12 +1148,18 @@ export const TodayScreen: React.FC = () => {
         
         {/* Info Button */}
         <View style={styles.infoWrapper}>
-          <TouchableOpacity 
-            style={[styles.infoButton, infoButtonActive && styles.infoButtonActive]}
+          <TouchableOpacity
+            style={[
+              styles.infoButton,
+              {
+                backgroundColor: infoButtonActive ? 'rgba(10, 132, 255, 0.15)' : theme.colors.glass.background,
+                borderColor: theme.colors.border,
+              },
+            ]}
             onPress={handleInfoPress}
             activeOpacity={0.7}
           >
-            <Text style={[styles.infoButtonText, infoButtonActive && styles.infoButtonTextActive]}>i</Text>
+            <Text style={[styles.infoButtonText, { color: infoButtonActive ? theme.colors.accent : theme.colors.text.secondary }]}>i</Text>
           </TouchableOpacity>
           
         </View>
@@ -1213,21 +1223,21 @@ export const TodayScreen: React.FC = () => {
               <View style={styles.cardHeaderTop}>
                 <View style={styles.cardTitleContainer}>
                   <View style={styles.cardTitleIconWrapper}>
-                    <MeditationIcon size={24} color="#0A84FF" />
+                    <MeditationIcon size={24} color={theme.colors.accent} />
                   </View>
                   <View style={styles.cardTitleTextWrapper}>
-                    <Text style={styles.cardTitle}>Today's Focus</Text>
+                    <Text style={[styles.cardTitle, { color: theme.colors.text.secondary }]}>Today's Focus</Text>
                   </View>
                 </View>
-                <TouchableOpacity 
-                  style={styles.moduleButton}
+                <TouchableOpacity
+                  style={[styles.moduleButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderMedium }]}
                   onPress={handleModuleButtonPress}
                   activeOpacity={1}
                 >
                   <Animated.View style={{ opacity: moduleButtonFade, flexDirection: 'row', alignItems: 'center' }}>
                     <View style={[styles.moduleIndicator, { backgroundColor: selectedModule.color }]} />
-                    <Text style={styles.moduleButtonText}>{selectedModule.title}</Text>
-                    <Text style={styles.moduleButtonChevron}>&#8250;</Text>
+                    <Text style={[styles.moduleButtonText, { color: theme.colors.text.primary }]}>{selectedModule.title}</Text>
+                    <Text style={[styles.moduleButtonChevron, { color: theme.colors.text.secondary }]}>&#8250;</Text>
                   </Animated.View>
                 </TouchableOpacity>
               </View>
@@ -1241,7 +1251,7 @@ export const TodayScreen: React.FC = () => {
                     },
                   ]}
                 >
-                  <Text style={styles.focusSubtitle}>
+                  <Text style={[styles.focusSubtitle, { color: theme.colors.text.secondary }]}>
                     Personalized for your {selectedModule.title.toLowerCase()} journey
                   </Text>
                 </Animated.View>
@@ -1254,7 +1264,7 @@ export const TodayScreen: React.FC = () => {
                     },
                   ]}
                 >
-                  <Text style={styles.focusSubtitle}>
+                  <Text style={[styles.focusSubtitle, { color: theme.colors.text.secondary }]}>
                     {isTodayCompleted ? 'Session complete for today.' : 'Complete one of the meditations below.'}
                   </Text>
                 </Animated.View>
@@ -1277,7 +1287,8 @@ export const TodayScreen: React.FC = () => {
               >
                 <TouchableOpacity
                   style={[styles.recommendedSession, {
-                    backgroundColor: (todayCompleted || isRecommendedCompleted) ? '#151518' : '#1C1C1E'
+                    backgroundColor: (todayCompleted || isRecommendedCompleted) ? theme.colors.background : theme.colors.surface,
+                    borderColor: theme.colors.border,
                   }]}
                   onPress={() => handleSessionSelect(recommendedSession)}
                   onPressIn={handleHeroCardPressIn}
@@ -1285,23 +1296,23 @@ export const TodayScreen: React.FC = () => {
                   activeOpacity={1}
                 >
                   <View style={styles.sessionContent}>
-                    <Text style={styles.sessionTitle} numberOfLines={1}>{recommendedSession.title}</Text>
-                    <Text style={styles.sessionSubtitle} numberOfLines={1}>
+                    <Text style={[styles.sessionTitle, { color: theme.colors.text.primary }]} numberOfLines={1}>{recommendedSession.title}</Text>
+                    <Text style={[styles.sessionSubtitle, { color: theme.colors.text.secondary }]} numberOfLines={1}>
                       {recommendedSession.adaptiveReason || 'Recommended for you'}
                     </Text>
 
                     <View style={styles.sessionMeta}>
-                      <Text style={styles.sessionMetaText} numberOfLines={1}>
+                      <Text style={[styles.sessionMetaText, { color: theme.colors.text.secondary }]} numberOfLines={1}>
                         {recommendedSession.durationMin} min • {recommendedSession.modality}
                       </Text>
-                      <View style={styles.recommendedBadge}>
+                      <View style={[styles.recommendedBadge, { backgroundColor: theme.colors.accent }]}>
                         <Text style={styles.recommendedBadgeText}>Recommended</Text>
                       </View>
                     </View>
                   </View>
 
                   {(todayCompleted || isRecommendedCompleted) ? (
-                    <View style={[styles.sessionPlayButton, styles.sessionCompletedButton]}>
+                    <View style={[styles.sessionPlayButton, styles.sessionCompletedButton, { backgroundColor: theme.colors.success }]}>
                       <Text style={styles.sessionCompletedCheckmark}>✓</Text>
                     </View>
                   ) : (
@@ -1313,8 +1324,8 @@ export const TodayScreen: React.FC = () => {
               </Animated.View>
             ) : (
               <View style={styles.recommendedSessionContainer}>
-                <View style={[styles.recommendedSession, { backgroundColor: '#1C1C1E' }]}>
-                  <Text style={styles.sessionTitle}>No recommendations available</Text>
+                <View style={[styles.recommendedSession, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                  <Text style={[styles.sessionTitle, { color: theme.colors.text.primary }]}>No recommendations available</Text>
                 </View>
               </View>
             )}
@@ -1325,10 +1336,10 @@ export const TodayScreen: React.FC = () => {
               <View style={styles.cardHeaderTop}>
                 <View style={styles.cardTitleContainer}>
                   <View style={styles.cardTitleIconWrapper}>
-                    <LightbulbIcon size={24} color="#0A84FF" />
+                    <LightbulbIcon size={24} color={theme.colors.accent} />
                   </View>
                   <View style={styles.cardTitleTextWrapper}>
-                    <Text style={styles.cardTitle}>Other Options</Text>
+                    <Text style={[styles.cardTitle, { color: theme.colors.text.secondary }]}>Other Options</Text>
                   </View>
                 </View>
               </View>
@@ -1350,10 +1361,11 @@ export const TodayScreen: React.FC = () => {
                     key={session.id}
                     style={[
                       styles.alternativeSession,
-                      isCompleted && {
-                        ...styles.alternativeSessionCompleted,
-                        backgroundColor: '#151518'
-                      }
+                      {
+                        backgroundColor: isCompleted ? theme.colors.background : theme.colors.surface,
+                        borderColor: theme.colors.borderLight,
+                      },
+                      isCompleted && styles.alternativeSessionCompleted,
                     ]}
                     onPress={() => handleSessionSelect(session)}
                     activeOpacity={0.8}
@@ -1362,31 +1374,32 @@ export const TodayScreen: React.FC = () => {
                       <Text
                         style={[
                           styles.alternativeSessionTitle,
-                          isCompleted && styles.alternativeSessionTitleCompleted
+                          { color: isCompleted ? theme.colors.text.tertiary : theme.colors.text.primary },
+                          isCompleted && styles.alternativeSessionTitleCompleted,
                         ]}
                         numberOfLines={1}
                       >
                         {session.title}
                       </Text>
-                      <Text style={styles.alternativeSessionMeta} numberOfLines={1}>
+                      <Text style={[styles.alternativeSessionMeta, { color: theme.colors.text.secondary }]} numberOfLines={1}>
                         {session.durationMin} min • {session.modality}
                       </Text>
                     </View>
                     {isCompleted ? (
-                      <View style={[styles.alternativeSessionPlayButton, styles.alternativeSessionCompletedButton]}>
+                      <View style={[styles.alternativeSessionPlayButton, styles.alternativeSessionCompletedButton, { backgroundColor: theme.colors.success }]}>
                         <Text style={styles.alternativeSessionCompletedCheckmark}>✓</Text>
                       </View>
                     ) : (
                       <View style={styles.alternativeSessionPlayButton}>
-                        <Text style={styles.alternativeSessionPlayTextUncompleted}>▶</Text>
+                        <Text style={[styles.alternativeSessionPlayTextUncompleted, { color: theme.colors.accent }]}>▶</Text>
                       </View>
                     )}
                   </TouchableOpacity>
                 );
               })
               ) : (
-                <View style={styles.alternativeSession}>
-                  <Text style={styles.alternativeSessionTitle}>No alternative sessions available</Text>
+                <View style={[styles.alternativeSession, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderLight }]}>
+                  <Text style={[styles.alternativeSessionTitle, { color: theme.colors.text.primary }]}>No alternative sessions available</Text>
                 </View>
               )}
             </View>
@@ -1395,26 +1408,26 @@ export const TodayScreen: React.FC = () => {
           {/* Hours until new recommendations */}
           <MergedCard.Section style={styles.mergedSectionHours} hideDividerBefore>
             <View style={styles.hoursRemainingContainer}>
-              <ClockIcon size={14} color="#6B6B7B" />
+              <ClockIcon size={14} color={theme.colors.text.tertiary} />
               {hoursUntilNewRecommendations === 0 ? (
-                <Text style={styles.hoursRemainingText}>
+                <Text style={[styles.hoursRemainingText, { color: theme.colors.text.tertiary }]}>
                   New recommendations available
                 </Text>
               ) : hoursUntilNewRecommendations === 1 ? (
                 <View style={styles.hoursRemainingTextRow}>
                   <Animated.View style={{ transform: [{ scale: hoursNumberScale }] }}>
-                    <Text style={[styles.hoursRemainingText, styles.hoursRemainingTextBold]}>1 hour</Text>
+                    <Text style={[styles.hoursRemainingText, styles.hoursRemainingTextBold, { color: theme.colors.text.secondary }]}>1 hour</Text>
                   </Animated.View>
-                  <Text style={styles.hoursRemainingText}>
+                  <Text style={[styles.hoursRemainingText, { color: theme.colors.text.tertiary }]}>
                     {' until new recommendations'}
                   </Text>
                 </View>
               ) : (
                 <View style={styles.hoursRemainingTextRow}>
                   <Animated.View style={{ transform: [{ scale: hoursNumberScale }] }}>
-                    <Text style={[styles.hoursRemainingText, styles.hoursRemainingTextBold]}>{hoursUntilNewRecommendations} hours</Text>
+                    <Text style={[styles.hoursRemainingText, styles.hoursRemainingTextBold, { color: theme.colors.text.secondary }]}>{hoursUntilNewRecommendations} hours</Text>
                   </Animated.View>
-                  <Text style={styles.hoursRemainingText}>
+                  <Text style={[styles.hoursRemainingText, { color: theme.colors.text.tertiary }]}>
                     {' until new recommendations'}
                   </Text>
                 </View>
@@ -1429,10 +1442,10 @@ export const TodayScreen: React.FC = () => {
             <View style={styles.cardHeaderTop}>
               <View style={styles.cardTitleContainer}>
                 <View style={styles.cardTitleIconWrapper}>
-                  <PathIcon size={24} color="#0A84FF" />
+                  <PathIcon size={24} color={theme.colors.accent} />
                 </View>
                 <View style={styles.cardTitleTextWrapper}>
-                  <Text style={styles.cardTitle}>Progress Path</Text>
+                  <Text style={[styles.cardTitle, { color: theme.colors.text.secondary }]}>Progress Path</Text>
                 </View>
               </View>
             </View>
@@ -1452,7 +1465,7 @@ export const TodayScreen: React.FC = () => {
               ]}
             >
               <TouchableOpacity
-                style={styles.progressPreviewCard}
+                style={[styles.progressPreviewCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
                 onPress={handleRoadmapCardPress}
                 onPressIn={handleRoadmapCardPressIn}
                 onPressOut={handleRoadmapCardPressOut}
@@ -1463,16 +1476,16 @@ export const TodayScreen: React.FC = () => {
                   <LineGraphIcon size={24} color="#FFFFFF" accentColor="#FFFFFF" />
                 </View>
                 <View style={styles.progressPreviewHeaderText}>
-                  <Text style={styles.progressPreviewTitle}>{selectedModule.title} Journey</Text>
-                  <Text style={styles.progressPreviewSubtitle}>
+                  <Text style={[styles.progressPreviewTitle, { color: theme.colors.text.primary }]}>{selectedModule.title} Journey</Text>
+                  <Text style={[styles.progressPreviewSubtitle, { color: theme.colors.text.secondary }]}>
                     See what you’ve completed and what’s next
                   </Text>
                 </View>
               </View>
 
-              <View style={styles.progressPreviewTimeline}>
+              <View style={[styles.progressPreviewTimeline, { backgroundColor: theme.colors.surfaceElevated }]}>
                 <View style={styles.progressPreviewColumn}>
-                  <Text style={styles.progressPreviewSectionLabel}>Completed</Text>
+                  <Text style={[styles.progressPreviewSectionLabel, { color: theme.colors.text.secondary }]}>Completed</Text>
                   {completedPreviewSessions.map((session, index) => {
                     // Calculate days ago from completion date
                     const completedDate = new Date((session as any).completedDate);
@@ -1492,14 +1505,14 @@ export const TodayScreen: React.FC = () => {
                     
                     return (
                       <View key={`${session.id}-${session.completedDate}`} style={styles.progressPreviewItem}>
-                        <View style={styles.progressPreviewItemIcon}>
+                        <View style={[styles.progressPreviewItemIcon, { backgroundColor: theme.colors.success }]}>
                           <Text style={styles.progressPreviewItemIconText}>✓</Text>
                         </View>
                         <View style={styles.progressPreviewItemBody}>
-                          <Text style={styles.progressPreviewItemTitle} numberOfLines={1}>
+                          <Text style={[styles.progressPreviewItemTitle, { color: theme.colors.text.primary }]} numberOfLines={1}>
                             {session.title}
                           </Text>
-                          <Text style={styles.progressPreviewItemMeta}>
+                          <Text style={[styles.progressPreviewItemMeta, { color: theme.colors.text.tertiary }]}>
                             {dateLabel}
                           </Text>
                         </View>
@@ -1508,11 +1521,11 @@ export const TodayScreen: React.FC = () => {
                   })}
                   {completedPreviewSessions.length === 0 && (
                     <View style={styles.progressPreviewLockedState}>
-                      <View style={[styles.progressPreviewItemIcon, styles.progressPreviewItemIconLocked]}>
-                        <LockIcon size={20} color="#8e8e93" />
+                      <View style={[styles.progressPreviewItemIcon, styles.progressPreviewItemIconLocked, { backgroundColor: theme.colors.disabled }]}>
+                        <LockIcon size={20} color={theme.colors.text.secondary} />
                       </View>
                       <View style={styles.progressPreviewItemBody}>
-                        <Text style={styles.progressPreviewLockedText}>
+                        <Text style={[styles.progressPreviewLockedText, { color: theme.colors.text.tertiary }]}>
                           Complete a meditation to see it here
                         </Text>
                       </View>
@@ -1520,16 +1533,16 @@ export const TodayScreen: React.FC = () => {
                   )}
                 </View>
 
-                <View style={styles.progressPreviewDivider} />
+                <View style={[styles.progressPreviewDivider, { backgroundColor: theme.colors.borderMedium }]} />
 
                 <View style={styles.progressPreviewColumn}>
-                  <Text style={styles.progressPreviewSectionLabel}>Coming Up</Text>
+                  <Text style={[styles.progressPreviewSectionLabel, { color: theme.colors.text.secondary }]}>Coming Up</Text>
                   <View style={styles.progressPreviewLockedState}>
-                    <View style={[styles.progressPreviewItemIcon, styles.progressPreviewItemIconLocked]}>
-                      <LockIcon size={20} color="#8e8e93" />
+                    <View style={[styles.progressPreviewItemIcon, styles.progressPreviewItemIconLocked, { backgroundColor: theme.colors.disabled }]}>
+                      <LockIcon size={20} color={theme.colors.text.secondary} />
                     </View>
                     <View style={styles.progressPreviewItemBody}>
-                      <Text style={styles.progressPreviewLockedText}>
+                      <Text style={[styles.progressPreviewLockedText, { color: theme.colors.text.tertiary }]}>
                         Feature coming soon
                       </Text>
                     </View>
@@ -1538,15 +1551,15 @@ export const TodayScreen: React.FC = () => {
               </View>
 
               {/* Timeline Progress Preview */}
-              <View style={styles.progressPreviewTimelineSection}>
+              <View style={[styles.progressPreviewTimelineSection, { borderTopColor: theme.colors.borderMedium }]}>
                 <View style={styles.progressPreviewTimelineHeader}>
-                  <Text style={styles.progressPreviewTimelineLabel}>{timelineProgress.nextMilestone.title}</Text>
+                  <Text style={[styles.progressPreviewTimelineLabel, { color: theme.colors.text.primary }]}>{timelineProgress.nextMilestone.title}</Text>
                   <Text style={[styles.progressPreviewTimelineProgress, { color: selectedModule.color }]}>
                     {Math.round(timelineProgress.progress)}%
                   </Text>
                 </View>
                 <View style={styles.progressPreviewTimelineBarContainer}>
-                  <View style={styles.progressPreviewTimelineBarTrack}>
+                  <View style={[styles.progressPreviewTimelineBarTrack, { backgroundColor: theme.colors.disabled }]}>
                     <View 
                       style={[
                         styles.progressPreviewTimelineBarFill,
@@ -1558,15 +1571,15 @@ export const TodayScreen: React.FC = () => {
                     />
                   </View>
                 </View>
-                <Text style={styles.progressPreviewTimelineText}>
-                  {timelineProgress.sessionsRemaining > 0 
+                <Text style={[styles.progressPreviewTimelineText, { color: theme.colors.text.tertiary }]}>
+                  {timelineProgress.sessionsRemaining > 0
                     ? `${timelineProgress.sessionsRemaining} more sessions to see full benefits`
                     : `Completed ${timelineProgress.nextMilestone.title}`}
                 </Text>
               </View>
 
               <View style={styles.progressPreviewFooter}>
-                <Text style={styles.progressPreviewFooterText}>
+                <Text style={[styles.progressPreviewFooterText, { color: theme.colors.accent }]}>
                   Tap to open your full progress path
                 </Text>
                 <Text style={[styles.progressPreviewFooterArrow, { color: selectedModule.color }]}>›</Text>
@@ -1655,6 +1668,9 @@ export const TodayScreen: React.FC = () => {
           style={[
             styles.toastContainer,
             {
+              backgroundColor: theme.colors.surfaceElevated,
+              borderColor: theme.colors.borderMedium,
+              shadowOpacity: theme.isDark ? 0.4 : 0.06,
               opacity: toastAnim,
               transform: [{
                 translateY: toastAnim.interpolate({
@@ -1665,8 +1681,8 @@ export const TodayScreen: React.FC = () => {
             },
           ]}
         >
-          <Text style={styles.toastText}>
-            Switched to <Text style={styles.toastModuleName}>{toastModuleName}</Text> module
+          <Text style={[styles.toastText, { color: theme.colors.text.primary }]}>
+            Switched to <Text style={[styles.toastModuleName, { color: theme.colors.text.primary }]}>{toastModuleName}</Text> module
           </Text>
         </Animated.View>
       )}
@@ -1674,7 +1690,7 @@ export const TodayScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ReturnType<typeof useTheme>) => StyleSheet.create({
   ...theme.health,
   ambientGlow: {
     position: 'absolute',
@@ -1703,12 +1719,10 @@ const styles = StyleSheet.create({
   moduleButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
   },
   moduleIndicator: {
     width: 8,
@@ -1719,16 +1733,13 @@ const styles = StyleSheet.create({
   moduleButtonText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#F2F2F7',
   },
   moduleButtonChevron: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#8E8E93',
     marginLeft: 4,
   },
   recommendedBadge: {
-    backgroundColor: '#0A84FF',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -1769,7 +1780,6 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
@@ -1787,7 +1797,6 @@ const styles = StyleSheet.create({
   },
   focusSubtitle: {
     fontSize: 15,
-    color: '#8E8E93',
     fontWeight: '400',
     marginBottom: 0,
   },
@@ -1797,13 +1806,11 @@ const styles = StyleSheet.create({
     height: 116,
   },
   recommendedSession: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
     position: 'relative',
     minHeight: 104,
   },
@@ -1814,12 +1821,10 @@ const styles = StyleSheet.create({
   sessionTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#F2F2F7',
     marginBottom: 4,
   },
   sessionSubtitle: {
     fontSize: 14,
-    color: '#A0A0B0',
     fontWeight: '400',
     marginBottom: 8,
     fontStyle: 'italic',
@@ -1831,7 +1836,6 @@ const styles = StyleSheet.create({
   },
   sessionMetaText: {
     fontSize: 13,
-    color: '#8E8E93',
     fontWeight: '400',
   },
   mergedSectionHours: {
@@ -1848,13 +1852,11 @@ const styles = StyleSheet.create({
   },
   hoursRemainingText: {
     fontSize: 12,
-    color: '#6B6B7B',
     fontWeight: '400',
     letterSpacing: -0.1,
   },
   hoursRemainingTextBold: {
     fontWeight: '700',
-    color: '#A0A0B0',
   },
   hoursRemainingTextRow: {
     flexDirection: 'row',
@@ -1874,9 +1876,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 2,
   },
-  sessionCompletedButton: {
-    backgroundColor: '#30D158',
-  },
+  sessionCompletedButton: {},
   sessionCompletedCheckmark: {
     fontSize: 18,
     color: '#ffffff',
@@ -1895,14 +1895,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginVertical: 4,
     borderRadius: 10,
-    backgroundColor: '#1C1C1E',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.04)',
     minHeight: 64,
   },
-  alternativeSessionCompleted: {
-    backgroundColor: '#151518',
-  },
+  alternativeSessionCompleted: {},
   alternativeSessionContent: {
     flex: 1,
     marginRight: 16,
@@ -1910,16 +1906,13 @@ const styles = StyleSheet.create({
   alternativeSessionTitle: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#F2F2F7',
     marginBottom: 2,
   },
   alternativeSessionTitleCompleted: {
-    color: '#6B6B7B',
     opacity: 0.8,
   },
   alternativeSessionMeta: {
     fontSize: 13,
-    color: '#8E8E93',
     fontWeight: '400',
   },
   alternativeSessionPlayButton: {
@@ -1935,9 +1928,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: '600',
   },
-  alternativeSessionCompletedButton: {
-    backgroundColor: '#30D158',
-  },
+  alternativeSessionCompletedButton: {},
   alternativeSessionCompletedCheckmark: {
     fontSize: 16,
     color: '#ffffff',
@@ -1945,7 +1936,6 @@ const styles = StyleSheet.create({
   },
   alternativeSessionPlayTextUncompleted: {
     fontSize: 12,
-    color: '#0A84FF',
     fontWeight: 'bold',
     marginLeft: 1,
   },
@@ -1955,12 +1945,10 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   progressPreviewCard: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 14,
     paddingHorizontal: 18,
     paddingVertical: 22,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
   },
   progressPreviewHeader: {
     flexDirection: 'row',
@@ -1981,18 +1969,15 @@ const styles = StyleSheet.create({
   progressPreviewTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFFFFF',
     marginBottom: 4,
   },
   progressPreviewSubtitle: {
     fontSize: 14,
-    color: '#A0A0B0',
   },
   progressPreviewTimeline: {
     flexDirection: 'row',
     borderRadius: 10,
     borderWidth: 0,
-    backgroundColor: '#2C2C2E',
     paddingHorizontal: 14,
     paddingVertical: 18,
     marginBottom: 16,
@@ -2003,7 +1988,6 @@ const styles = StyleSheet.create({
   progressPreviewSectionLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#A0A0B0',
     marginBottom: 8,
     textTransform: 'uppercase' as const,
     letterSpacing: 0.6,
@@ -2017,7 +2001,6 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#30D158',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
@@ -2036,11 +2019,9 @@ const styles = StyleSheet.create({
   progressPreviewItemTitle: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#F2F2F7',
   },
   progressPreviewItemMeta: {
     fontSize: 12,
-    color: '#6B6B7B',
   },
   progressPreviewLockedState: {
     flexDirection: 'row',
@@ -2048,7 +2029,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   progressPreviewItemIconLocked: {
-    backgroundColor: '#38383A',
     borderWidth: 0,
     width: 36,
     height: 36,
@@ -2056,24 +2036,18 @@ const styles = StyleSheet.create({
   },
   progressPreviewLockedText: {
     fontSize: 12,
-    color: '#6B6B7B',
     lineHeight: 16,
     marginTop: 2,
   },
   progressPreviewDivider: {
     width: 0.5,
-    backgroundColor: 'rgba(255,255,255,0.08)',
     marginHorizontal: 12,
     borderRadius: 0.5,
   },
   progressPreviewItemIconUpcoming: {
-    backgroundColor: '#3A3A3C',
     borderWidth: 1,
-    borderColor: '#48484A',
   },
-  progressPreviewItemIconUpcomingText: {
-    color: '#98989D',
-  },
+  progressPreviewItemIconUpcomingText: {},
   progressPreviewFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -2081,7 +2055,6 @@ const styles = StyleSheet.create({
   },
   progressPreviewFooterText: {
     fontSize: 13,
-    color: '#0A84FF',
     fontWeight: '500',
   },
   progressPreviewFooterArrow: {
@@ -2093,7 +2066,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingTop: 16,
     borderTopWidth: 0.5,
-    borderTopColor: '#48484A',
   },
   progressPreviewTimelineHeader: {
     flexDirection: 'row',
@@ -2104,7 +2076,6 @@ const styles = StyleSheet.create({
   progressPreviewTimelineLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#FFFFFF',
   },
   progressPreviewTimelineProgress: {
     fontSize: 13,
@@ -2115,7 +2086,6 @@ const styles = StyleSheet.create({
   },
   progressPreviewTimelineBarTrack: {
     height: 4,
-    backgroundColor: '#38383A',
     borderRadius: 2,
     overflow: 'hidden',
   },
@@ -2125,7 +2095,6 @@ const styles = StyleSheet.create({
   },
   progressPreviewTimelineText: {
     fontSize: 12,
-    color: '#6B6B7B',
   },
   bottomSpacing: {
     height: 120,
@@ -2139,30 +2108,22 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
   },
   infoButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#A0A0B0',
     fontFamily: 'System',
   },
-  infoButtonActive: {
-    backgroundColor: 'rgba(10, 132, 255, 0.15)',
-  },
-  infoButtonTextActive: {
-    color: '#0A84FF',
-  },
+  infoButtonActive: {},
+  infoButtonTextActive: {},
   toastContainer: {
     position: 'absolute',
     bottom: 90,
     left: 20,
     right: 20,
-    backgroundColor: '#2C2C2E',
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 16,
@@ -2170,21 +2131,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 8,
     zIndex: 1000,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
   },
   toastContent: {},
   toastText: {
-    color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '600',
   },
   toastModuleName: {
     fontWeight: '600',
-    color: '#FFFFFF',
   },
-}); 
+});

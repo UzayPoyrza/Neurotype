@@ -1,19 +1,20 @@
 import React from 'react';
 import { TouchableOpacity, StyleSheet } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { theme } from '../../styles/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface SettingsIconProps {
   size?: number;
   onPress?: () => void;
 }
 
-export const SettingsIcon: React.FC<SettingsIconProps> = ({ 
+export const SettingsIcon: React.FC<SettingsIconProps> = ({
   size = 40,
-  onPress 
+  onPress
 }) => {
+  const theme = useTheme();
   const iconSize = size * 0.6;
-  
+
   return (
     <TouchableOpacity
       style={[
@@ -22,6 +23,10 @@ export const SettingsIcon: React.FC<SettingsIconProps> = ({
           width: size,
           height: size,
           borderRadius: theme.borders.radius.md,
+          backgroundColor: theme.colors.surface,
+          borderWidth: theme.borders.width.thick,
+          borderColor: theme.colors.primary,
+          ...theme.shadows.medium,
         }
       ]}
       onPress={onPress}
@@ -50,11 +55,7 @@ export const SettingsIcon: React.FC<SettingsIconProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: theme.colors.surface,
-    borderWidth: theme.borders.width.thick,
-    borderColor: theme.colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    ...theme.shadows.medium,
   },
 });

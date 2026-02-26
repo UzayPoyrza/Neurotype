@@ -1,5 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface PrimaryButtonProps {
   title: string;
@@ -8,17 +9,21 @@ interface PrimaryButtonProps {
   disabled?: boolean;
 }
 
-export const PrimaryButton: React.FC<PrimaryButtonProps> = ({ 
-  title, 
-  onPress, 
+export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
+  title,
+  onPress,
   testID,
-  disabled = false 
+  disabled = false
 }) => {
+  const theme = useTheme();
+
   return (
     <TouchableOpacity
       style={[
         styles.button,
-        disabled ? styles.disabledButton : styles.enabledButton,
+        disabled
+          ? { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.surfaceElevated }
+          : { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent },
       ]}
       onPress={onPress}
       disabled={disabled}
@@ -26,7 +31,7 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
     >
       <Text style={[
         styles.buttonText,
-        disabled ? styles.disabledText : styles.enabledText,
+        disabled ? { color: theme.colors.text.tertiary } : styles.enabledText,
       ]}>
         {title}
       </Text>
@@ -48,14 +53,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  enabledButton: {
-    backgroundColor: '#0A84FF',
-    borderColor: '#0A84FF',
-  },
-  disabledButton: {
-    backgroundColor: '#2C2C2E',
-    borderColor: '#3A3A3C',
-  },
   buttonText: {
     fontSize: 16,
     fontWeight: '600',
@@ -64,7 +61,4 @@ const styles = StyleSheet.create({
   enabledText: {
     color: '#ffffff',
   },
-  disabledText: {
-    color: '#6B6B7B',
-  },
-}); 
+});

@@ -164,10 +164,44 @@ export const createCompletionButtonColor = (moduleColor: string): string => {
   return `rgb(${r}, ${g}, ${b})`;
 };
 
+// Light mode: create a very subtle light tint from the module color
+export const createSubtleBackgroundLight = (moduleColor: string): string => {
+  const hex = moduleColor.replace('#', '');
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+
+  // Mix with light base (#f2f1f6) — 95% base, 5% module color
+  const baseR = 242, baseG = 241, baseB = 246;
+  const mixedR = Math.round(baseR * 0.95 + r * 0.05);
+  const mixedG = Math.round(baseG * 0.95 + g * 0.05);
+  const mixedB = Math.round(baseB * 0.95 + b * 0.05);
+
+  return `rgb(${mixedR}, ${mixedG}, ${mixedB})`;
+};
+
+// Light mode: muted tint for icon backgrounds on white cards
+export const createLightIconBackground = (moduleColor: string): string => {
+  const hex = moduleColor.replace('#', '');
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+
+  // 85% white base + 15% module color
+  const baseR = 255, baseG = 255, baseB = 255;
+  const mixedR = Math.round(baseR * 0.85 + r * 0.15);
+  const mixedG = Math.round(baseG * 0.85 + g * 0.15);
+  const mixedB = Math.round(baseB * 0.85 + b * 0.15);
+
+  return `rgb(${mixedR}, ${mixedG}, ${mixedB})`;
+};
+
 // Pre-calculate all module background colors for instant switching
 export const prerenderedModuleBackgrounds: Record<string, string> = {};
+export const prerenderedLightModuleBackgrounds: Record<string, string> = {};
 mentalHealthModules.forEach(module => {
   prerenderedModuleBackgrounds[module.id] = createSubtleBackground(module.color);
+  prerenderedLightModuleBackgrounds[module.id] = createSubtleBackgroundLight(module.color);
 });
 
 // Cache entry for completed sessions
@@ -203,7 +237,7 @@ const buildInitialStoreData = () => {
       goal: 'all',
     } as FilterState,
     reminderEnabled: false,
-    darkThemeEnabled: false,
+    darkThemeEnabled: true,
     profileIcon: '👤',
     subscriptionType: 'premium' as const,
     subscriptionCancelAt: null as string | null,
@@ -213,6 +247,7 @@ const buildInitialStoreData = () => {
     activeModuleId: null,
     recentModuleIds: [] as string[],
     globalBackgroundColor: '#0A0A0F',
+    globalBackgroundColorLight: '#f2f1f6',
     currentScreen: 'today' as const,
     todayModuleId: 'anxiety',
     likedSessionIds: [] as string[],
@@ -251,6 +286,7 @@ interface AppState {
   activeModuleId: string | null;
   recentModuleIds: string[];
   globalBackgroundColor: string;
+  globalBackgroundColorLight: string;
   currentScreen: 'today' | 'explore' | 'progress' | 'profile' | 'settings' | 'module-detail';
   todayModuleId: string | null;
   likedSessionIds: string[];
@@ -278,7 +314,7 @@ interface AppState {
   setActiveSession: (session: Session | null) => void;
   setActiveModuleId: (moduleId: string | null) => void;
   addRecentModule: (moduleId: string) => void;
-  setGlobalBackgroundColor: (color: string) => void;
+  setGlobalBackgroundColor: (color: string, lightColor?: string) => void;
   setCurrentScreen: (screen: 'today' | 'explore' | 'progress' | 'profile' | 'settings' | 'module-detail') => void;
   setTodayModuleId: (moduleId: string | null) => void;
   toggleLikedSession: (sessionId: string) => Promise<void>;
@@ -362,8 +398,8 @@ export const useStore = create<AppState>((set, get) => ({
       ].slice(0, 10) // Keep only last 10 recent modules
     })),
     
-  setGlobalBackgroundColor: (color: string) => 
-    set({ globalBackgroundColor: color }),
+  setGlobalBackgroundColor: (color: string, lightColor?: string) =>
+    set({ globalBackgroundColor: color, globalBackgroundColorLight: lightColor || '#f2f1f6' }),
     
   setCurrentScreen: (screen: 'today' | 'explore' | 'progress' | 'profile' | 'settings' | 'module-detail') => 
     set({ currentScreen: screen }),

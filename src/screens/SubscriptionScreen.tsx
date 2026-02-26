@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { PremiumFeaturesPage } from '../components/PremiumFeaturesPage';
+import { useTheme } from '../contexts/ThemeContext';
 
 type ProfileStackParamList = {
   ProfileMain: undefined;
@@ -14,6 +15,7 @@ type ProfileStackParamList = {
 type SubscriptionScreenNavigationProp = StackNavigationProp<ProfileStackParamList, 'Subscription'>;
 
 export const SubscriptionScreen: React.FC = () => {
+  const theme = useTheme();
   const navigation = useNavigation<SubscriptionScreenNavigationProp>();
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
 
@@ -43,9 +45,24 @@ export const SubscriptionScreen: React.FC = () => {
         onClose={handleClose}
       />
       {selectedPlan && (
-        <View style={styles.buttonContainer}>
+        <View
+          style={[
+            styles.buttonContainer,
+            {
+              backgroundColor: theme.colors.background,
+              borderTopColor: theme.colors.border,
+            },
+          ]}
+        >
           <TouchableOpacity
-            style={styles.continueButton}
+            style={[
+              styles.continueButton,
+              {
+                backgroundColor: theme.colors.accent,
+                shadowColor: theme.colors.accent,
+                shadowOpacity: theme.isDark ? 0.3 : 0.06,
+              },
+            ]}
             onPress={handleContinue}
             activeOpacity={0.7}
           >
@@ -69,19 +86,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 40,
     paddingTop: 20,
-    backgroundColor: '#0A0A0F',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.06)',
   },
   continueButton: {
-    backgroundColor: '#0A84FF',
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 32,
     alignItems: 'center',
-    shadowColor: '#0A84FF',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
@@ -91,4 +103,3 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
 });
-

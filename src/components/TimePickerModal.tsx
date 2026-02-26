@@ -9,7 +9,7 @@ import {
   Dimensions,
   Animated,
 } from 'react-native';
-import { theme } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface TimePickerModalProps {
   visible: boolean;
@@ -30,6 +30,8 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
   initialHour = 9,
   initialMinute = 0,
 }) => {
+  const theme = useTheme();
+
   // Convert 24-hour to 12-hour format for display
   const get12Hour = (hour24: number) => {
     if (hour24 === 0) return 12;
@@ -67,7 +69,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
         duration: 300,
         useNativeDriver: true,
       }).start();
-      
+
       // Scroll to initial values after a short delay
       setTimeout(() => {
         const hour12 = get12Hour(initialHour);
@@ -123,7 +125,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
     } else {
       hour24 = selectedHour12 === 12 ? 12 : selectedHour12 + 12;
     }
-    
+
     onConfirm(hour24, selectedMinute);
     onClose();
   };
@@ -154,17 +156,26 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
           onPress={onClose}
         />
         <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
+          <View style={[
+            styles.modalContent,
+            {
+              backgroundColor: theme.colors.surface,
+              shadowOpacity: theme.isDark ? 0.3 : 0.06,
+            },
+          ]}>
             {/* Header */}
             <View style={styles.header}>
-              <Text style={styles.title}>Customise Reminder Time</Text>
-              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                <Text style={styles.closeText}>✕</Text>
+              <Text style={[styles.title, { color: theme.colors.text.primary }]}>Customise Reminder Time</Text>
+              <TouchableOpacity
+                onPress={onClose}
+                style={[styles.closeButton, { backgroundColor: theme.colors.surfaceElevated }]}
+              >
+                <Text style={[styles.closeText, { color: theme.colors.text.primary }]}>✕</Text>
               </TouchableOpacity>
             </View>
 
             {/* Prompt Text */}
-            <Text style={styles.promptText}>
+            <Text style={[styles.promptText, { color: theme.colors.text.secondary }]}>
               What time would you like to be notified? (You won't receive a notification if you completed any meditation that day.)
             </Text>
 
@@ -184,15 +195,26 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                 >
                   {hours.map((hour) => (
                     <View key={hour} style={styles.pickerItem}>
-                      <Text style={styles.pickerItemText}>{hour}</Text>
+                      <Text style={[styles.pickerItemText, { color: theme.colors.text.primary }]}>{hour}</Text>
                     </View>
                   ))}
                 </ScrollView>
-                <View style={styles.pickerOverlay} pointerEvents="none" />
+                <View
+                  style={[
+                    styles.pickerOverlay,
+                    {
+                      borderColor: theme.colors.border,
+                      backgroundColor: theme.isDark
+                        ? 'rgba(44, 44, 46, 0.5)'
+                        : 'rgba(255, 255, 255, 0.5)',
+                    },
+                  ]}
+                  pointerEvents="none"
+                />
               </View>
 
               {/* Colon */}
-              <Text style={styles.colon}>:</Text>
+              <Text style={[styles.colon, { color: theme.colors.text.primary }]}>:</Text>
 
               {/* Minute Picker */}
               <View style={styles.pickerWrapper}>
@@ -208,13 +230,24 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                 >
                   {minutes.map((minute) => (
                     <View key={minute} style={styles.pickerItem}>
-                      <Text style={styles.pickerItemText}>
+                      <Text style={[styles.pickerItemText, { color: theme.colors.text.primary }]}>
                         {minute.toString().padStart(2, '0')}
                       </Text>
                     </View>
                   ))}
                 </ScrollView>
-                <View style={styles.pickerOverlay} pointerEvents="none" />
+                <View
+                  style={[
+                    styles.pickerOverlay,
+                    {
+                      borderColor: theme.colors.border,
+                      backgroundColor: theme.isDark
+                        ? 'rgba(44, 44, 46, 0.5)'
+                        : 'rgba(255, 255, 255, 0.5)',
+                    },
+                  ]}
+                  pointerEvents="none"
+                />
               </View>
 
               {/* Period Picker */}
@@ -231,24 +264,35 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
                 >
                   {periods.map((period) => (
                     <View key={period} style={styles.pickerItem}>
-                      <Text style={styles.pickerItemText}>{period}</Text>
+                      <Text style={[styles.pickerItemText, { color: theme.colors.text.primary }]}>{period}</Text>
                     </View>
                   ))}
                 </ScrollView>
-                <View style={styles.pickerOverlay} pointerEvents="none" />
+                <View
+                  style={[
+                    styles.pickerOverlay,
+                    {
+                      borderColor: theme.colors.border,
+                      backgroundColor: theme.isDark
+                        ? 'rgba(44, 44, 46, 0.5)'
+                        : 'rgba(255, 255, 255, 0.5)',
+                    },
+                  ]}
+                  pointerEvents="none"
+                />
               </View>
             </View>
 
             {/* Action Buttons */}
             <View style={styles.buttonContainer}>
               <TouchableOpacity
-                style={styles.cancelButton}
+                style={[styles.cancelButton, { backgroundColor: theme.colors.surfaceElevated }]}
                 onPress={onClose}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={[styles.cancelButtonText, { color: theme.colors.text.primary }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.confirmButton}
+                style={[styles.confirmButton, { backgroundColor: theme.colors.accent }]}
                 onPress={handleConfirm}
               >
                 <Text style={styles.confirmButtonText}>Confirm</Text>
@@ -276,12 +320,10 @@ const styles = StyleSheet.create({
     maxWidth: 400,
   },
   modalContent: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 20,
     padding: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 8,
   },
@@ -294,7 +336,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#F2F2F7',
     flex: 1,
   },
   closeButton: {
@@ -303,16 +344,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 16,
-    backgroundColor: '#2C2C2E',
   },
   closeText: {
     fontSize: 18,
-    color: '#F2F2F7',
     fontWeight: '600',
   },
   promptText: {
     fontSize: 15,
-    color: '#A0A0B0',
     lineHeight: 20,
     marginBottom: 24,
     textAlign: 'center',
@@ -344,7 +382,6 @@ const styles = StyleSheet.create({
   pickerItemText: {
     fontSize: 24,
     fontWeight: '500',
-    color: '#F2F2F7',
   },
   pickerOverlay: {
     position: 'absolute',
@@ -354,13 +391,10 @@ const styles = StyleSheet.create({
     height: ITEM_HEIGHT,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-    backgroundColor: 'rgba(44, 44, 46, 0.5)',
   },
   colon: {
     fontSize: 24,
     fontWeight: '600',
-    color: '#F2F2F7',
     marginHorizontal: 8,
   },
   buttonContainer: {
@@ -371,7 +405,6 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     flex: 1,
-    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
@@ -379,11 +412,9 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#F2F2F7',
   },
   confirmButton: {
     flex: 1,
-    backgroundColor: '#0A84FF',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
@@ -394,4 +425,3 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
 });
-

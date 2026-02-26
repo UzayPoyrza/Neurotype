@@ -321,11 +321,11 @@ const createStyles = (theme: ReturnType<typeof useTheme>) => StyleSheet.create({
   streakContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: darkenColor('#FF6B35', 0.3),
+    backgroundColor: theme.isDark ? darkenColor('#FF6B35', 0.3) : '#FF6B35',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    shadowColor: darkenColor('#FF6B35', 0.3),
+    shadowColor: theme.isDark ? darkenColor('#FF6B35', 0.3) : '#FF6B35',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -342,7 +342,7 @@ const createStyles = (theme: ReturnType<typeof useTheme>) => StyleSheet.create({
     fontSize: 16,
   },
   streakContainerActive: {
-    backgroundColor: darkenColor('#FF8A65', 0.3),
+    backgroundColor: theme.isDark ? darkenColor('#FF8A65', 0.3) : '#FF8A65',
   },
   streakNumberActive: {
     color: '#FFFFFF',

@@ -1011,8 +1011,8 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
             onPress: handleTutorialPress,
           }
         } : {})}
-        themeColor={darkenColor(getGoalColor(session.goal), 0.3)}
-        secondaryColor={darkenColor(theme.colors.accent, 0.3)}
+        themeColor={theme.isDark ? darkenColor(getGoalColor(session.goal), 0.3) : getGoalColor(session.goal)}
+        secondaryColor={theme.isDark ? darkenColor(theme.colors.accent, 0.3) : theme.colors.accent}
         tabTransitionProgress={scrollX}
       />
 

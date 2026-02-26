@@ -1319,7 +1319,7 @@ export const TodayScreen: React.FC = () => {
                       <Text style={styles.sessionCompletedCheckmark}>✓</Text>
                     </View>
                   ) : (
-                    <View style={[styles.sessionPlayButton, { backgroundColor: darkenColor(selectedModule.color, 0.3) }]}>
+                    <View style={[styles.sessionPlayButton, { backgroundColor: theme.isDark ? darkenColor(selectedModule.color, 0.3) : selectedModule.color }]}>
                       <Text style={styles.sessionPlayText}>▶</Text>
                     </View>
                   )}
@@ -1475,7 +1475,7 @@ export const TodayScreen: React.FC = () => {
                 activeOpacity={1}
               >
               <View style={styles.progressPreviewHeader}>
-                <View style={[styles.progressPreviewBadge, { backgroundColor: darkenColor(selectedModule.color, 0.3) }]}>
+                <View style={[styles.progressPreviewBadge, { backgroundColor: theme.isDark ? darkenColor(selectedModule.color, 0.3) : selectedModule.color }]}>
                   <LineGraphIcon size={24} color="#FFFFFF" accentColor="#FFFFFF" />
                 </View>
                 <View style={styles.progressPreviewHeaderText}>
@@ -1641,7 +1641,7 @@ export const TodayScreen: React.FC = () => {
         }}
       >
         <AnimatedFloatingButton
-          backgroundColor={darkenColor(selectedModule.color, 0.3)}
+          backgroundColor={theme.isDark ? darkenColor(selectedModule.color, 0.3) : selectedModule.color}
           onPress={handleFloatingButtonPress}
           isPillMode={isPillMode}
           onScroll={handleFloatingButtonScroll}

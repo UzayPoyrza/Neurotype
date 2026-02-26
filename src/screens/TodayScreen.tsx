@@ -253,7 +253,7 @@ export const TodayScreen: React.FC = () => {
       toastAnim.stopAnimation();
       floatingButtonOffset.stopAnimation();
     };
-  }, [selectedModuleId, setGlobalBackgroundColor, setTodayModuleId]);
+  }, [selectedModuleId, theme.isDark, setGlobalBackgroundColor, setTodayModuleId]);
 
   // Set screen context when component mounts or updates
   useEffect(() => {

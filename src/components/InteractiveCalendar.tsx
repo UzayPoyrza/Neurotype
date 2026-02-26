@@ -375,14 +375,14 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#2C2C2E',
     alignItems: 'center',
     justifyContent: 'center',
   },
   navButtonText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#ffffff',
+    color: '#F2F2F7',
   },
   navButtonDisabled: {
     backgroundColor: '#2C2C2E',
@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1C1C1E',
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: theme.colors.primary,
+    borderColor: '#0A84FF',
     width: 48,
   },
   dateText: {
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
     color: '#F2F2F7',
   },
   todayText: {
-    color: theme.colors.primary,
+    color: '#0A84FF',
     fontWeight: '600',
   },
   dotsContainer: {

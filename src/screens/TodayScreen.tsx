@@ -1217,6 +1217,7 @@ export const TodayScreen: React.FC = () => {
                   <Animated.View style={{ opacity: moduleButtonFade, flexDirection: 'row', alignItems: 'center' }}>
                     <View style={[styles.moduleIndicator, { backgroundColor: selectedModule.color }]} />
                     <Text style={styles.moduleButtonText}>{selectedModule.title}</Text>
+                    <Text style={styles.moduleButtonChevron}>&#8250;</Text>
                   </Animated.View>
                 </TouchableOpacity>
               </View>
@@ -1702,6 +1703,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#F2F2F7',
   },
+  moduleButtonChevron: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#8E8E93',
+    marginLeft: 4,
+  },
   recommendedBadge: {
     backgroundColor: '#0A84FF',
     paddingHorizontal: 8,
@@ -1777,7 +1784,8 @@ const styles = StyleSheet.create({
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 0,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
     position: 'relative',
     minHeight: 104,
   },
@@ -1870,7 +1878,8 @@ const styles = StyleSheet.create({
     marginVertical: 4,
     borderRadius: 10,
     backgroundColor: '#1C1C1E',
-    borderWidth: 0,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.04)',
     minHeight: 64,
   },
   alternativeSessionCompleted: {
@@ -1899,7 +1908,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#38383A',
+    backgroundColor: 'rgba(10, 132, 255, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1918,7 +1927,7 @@ const styles = StyleSheet.create({
   },
   alternativeSessionPlayTextUncompleted: {
     fontSize: 12,
-    color: '#FFFFFF',
+    color: '#0A84FF',
     fontWeight: 'bold',
     marginLeft: 1,
   },
@@ -2054,11 +2063,11 @@ const styles = StyleSheet.create({
   },
   progressPreviewFooterText: {
     fontSize: 13,
-    color: '#6B6B7B',
-    fontStyle: 'italic',
+    color: '#0A84FF',
+    fontWeight: '500',
   },
   progressPreviewFooterArrow: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '600',
   },
   progressPreviewTimelineSection: {
@@ -2112,9 +2121,11 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   infoButtonText: {
     fontSize: 18,

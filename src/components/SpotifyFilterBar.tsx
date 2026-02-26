@@ -357,7 +357,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.borders.radius.xxl,
     backgroundColor: theme.colors.filter.inactive,
     borderWidth: theme.borders.width.thin,
-    borderColor: '#8e8e93',
+    borderColor: 'rgba(255,255,255,0.06)',
     minHeight: 36,
     ...theme.shadows.small,
   },
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
     color: theme.colors.filter.inactive,
   },
   badge: {
-    backgroundColor: '#e5e5ea',
+    backgroundColor: '#2C2C2E',
     borderRadius: theme.borders.radius.xl,
     minWidth: 18,
     height: 18,
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: theme.typography.sizes.xs,
     fontWeight: theme.typography.weights.bold,
-    color: '#1d1d1f',
+    color: '#F2F2F7',
     fontFamily: theme.typography.fontFamily,
   },
   backChip: {
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.borders.radius.xxl,
     backgroundColor: theme.colors.background,
     borderWidth: theme.borders.width.thin,
-    borderColor: '#8e8e93',
+    borderColor: 'rgba(255,255,255,0.06)',
     minHeight: 36,
     ...theme.shadows.small,
   },
@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.borders.radius.xxl,
     backgroundColor: theme.colors.filter.inactive,
     borderWidth: theme.borders.width.thin,
-    borderColor: '#8e8e93',
+    borderColor: 'rgba(255,255,255,0.06)',
     minHeight: 36,
     ...theme.shadows.small,
   },
@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
     color: theme.colors.filter.inactive,
   },
   optionBadge: {
-    backgroundColor: '#e5e5ea',
+    backgroundColor: '#2C2C2E',
     borderRadius: theme.borders.radius.xl,
     minWidth: 16,
     height: 16,
@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
   optionBadgeText: {
     fontSize: theme.typography.sizes.xs,
     fontWeight: theme.typography.weights.bold,
-    color: '#1d1d1f',
+    color: '#F2F2F7',
     fontFamily: theme.typography.fontFamily,
   },
 }); 

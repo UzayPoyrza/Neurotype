@@ -414,12 +414,12 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   if (isLoading) {
     return (
       <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
-        <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
         <SafeAreaView style={styles.safeArea} edges={['bottom']}>
           {/* Sticky Header */}
           <View style={styles.stickyHeader}>
             <View style={styles.headerContent}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.backButton}
                 onPress={() => navigation.goBack()}
               >
@@ -687,7 +687,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           <View style={styles.historySection}>
             {isLoadingHistory ? (
               <View style={styles.historyLoadingState}>
-                <ActivityIndicator size="large" color="#8e8e93" />
+                <ActivityIndicator size="large" color="#A0A0B0" />
                 <Text style={styles.historyLoadingText}>Loading history...</Text>
               </View>
             ) : sortedHistory.length > 0 ? (
@@ -781,7 +781,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           ) : (
             <View style={styles.historyEmptyState}>
               <View style={styles.historyEmptyIconContainer}>
-                <BarChartIcon size={48} color="#8e8e93" />
+                <BarChartIcon size={48} color="#A0A0B0" />
               </View>
               <Text style={styles.historyEmptyText}>No sessions completed</Text>
               <Text style={styles.historyEmptySubtext}>Start your first meditation to see your progress here</Text>
@@ -853,7 +853,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
 
   return (
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
-      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         {/* Sticky Header */}
@@ -990,7 +990,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           }
         } : {})}
         themeColor={getGoalColor(session.goal)}
-        secondaryColor="#007AFF"
+        secondaryColor="#0A84FF"
         tabTransitionProgress={scrollX}
       />
 
@@ -1076,7 +1076,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.health.container.backgroundColor,
+    backgroundColor: '#0A0A0F',
   },
   safeArea: {
     flex: 1,
@@ -1085,22 +1085,22 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: theme.health.container.backgroundColor,
+    backgroundColor: '#0A0A0F',
   },
   errorText: {
-    color: theme.colors.text.primary,
+    color: '#F2F2F7',
     fontSize: 18,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: theme.health.container.backgroundColor,
+    backgroundColor: '#0A0A0F',
   },
   stickyHeader: {
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    borderBottomColor: 'rgba(255,255,255,0.06)',
     zIndex: 100,
     paddingTop: 44, // Status bar height
     shadowColor: '#000',
@@ -1125,12 +1125,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   backButtonText: {
-    color: '#007AFF',
+    color: '#0A84FF',
     fontSize: 24,
     fontWeight: '400',
   },
   headerTitle: {
-    color: theme.colors.text.primary,
+    color: '#F2F2F7',
     fontSize: 17,
     fontWeight: '600',
     flex: 1,
@@ -1149,7 +1149,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerActionText: {
-    color: '#007AFF',
+    color: '#0A84FF',
     fontSize: 16,
     fontWeight: '400',
   },
@@ -1185,7 +1185,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     borderRadius: 0,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: '#1C1C1E',
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
@@ -1220,10 +1220,10 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#007AFF',
+    shadowColor: '#0A84FF',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -1258,23 +1258,23 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   tagColored: {
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#1C1C1E',
   },
   tagNeutral: {
-    backgroundColor: '#FAFAFA',
-    borderColor: 'rgba(0, 0, 0, 0.08)',
+    backgroundColor: '#1C1C1E',
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   tagTextColored: {
     fontSize: 13,
     fontWeight: '600',
     textTransform: 'capitalize',
     letterSpacing: -0.08,
-    color: '#1C1C1E',
+    color: '#F2F2F7',
   },
   tagTextNeutral: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#1C1C1E',
+    color: '#F2F2F7',
     letterSpacing: -0.08,
   },
   descriptionSection: {
@@ -1286,16 +1286,16 @@ const styles = StyleSheet.create({
   descriptionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#000000',
+    color: '#F2F2F7',
     marginBottom: 14,
     letterSpacing: -0.3,
   },
   descriptionCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1C1C1E',
     borderRadius: 14,
     padding: 18,
     borderWidth: 0.5,
-    borderColor: '#E5E5EA',
+    borderColor: 'rgba(255,255,255,0.06)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
@@ -1305,7 +1305,7 @@ const styles = StyleSheet.create({
   descriptionText: {
     fontSize: 17,
     lineHeight: 25,
-    color: '#1C1C1E',
+    color: '#F2F2F7',
     fontWeight: '400',
     letterSpacing: -0.41,
   },
@@ -1318,20 +1318,20 @@ const styles = StyleSheet.create({
   whyThisMeditationTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#000000',
+    color: '#F2F2F7',
     marginBottom: 14,
     letterSpacing: -0.3,
   },
   whyCalloutCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1C1C1E',
     borderRadius: 14,
     padding: 18,
     borderLeftWidth: 4,
     borderRightWidth: 4,
     borderTopWidth: 0.5,
     borderBottomWidth: 0.5,
-    borderTopColor: '#E5E5EA',
-    borderBottomColor: '#E5E5EA',
+    borderTopColor: 'rgba(255,255,255,0.06)',
+    borderBottomColor: 'rgba(255,255,255,0.06)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
@@ -1342,7 +1342,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     lineHeight: 24,
-    color: '#3C3C43',
+    color: '#F2F2F7',
     fontWeight: '400',
     letterSpacing: -0.2,
   },
@@ -1352,7 +1352,7 @@ const styles = StyleSheet.create({
   benefitInstructionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surface,
+    backgroundColor: '#1C1C1E',
     padding: 16,
     borderRadius: 12,
     shadowColor: '#000',
@@ -1365,7 +1365,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
@@ -1378,17 +1378,17 @@ const styles = StyleSheet.create({
   benefitInstructionText: {
     fontSize: 16,
     lineHeight: 22,
-    color: theme.colors.text.primary,
+    color: '#F2F2F7',
     flex: 1,
   },
   benefitCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1C1C1E',
     borderRadius: 14,
     padding: 18,
     borderWidth: 0.5,
-    borderColor: '#E5E5EA',
+    borderColor: 'rgba(255,255,255,0.06)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
@@ -1399,13 +1399,13 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     marginRight: 14,
     marginTop: 6,
   },
   benefitText: {
     fontSize: 17,
-    color: '#1C1C1E',
+    color: '#F2F2F7',
     flex: 1,
     lineHeight: 24,
     letterSpacing: -0.41,
@@ -1418,7 +1418,7 @@ const styles = StyleSheet.create({
   },
   readMoreText: {
     fontSize: 17,
-    color: '#007AFF',
+    color: '#0A84FF',
     fontWeight: '400',
     letterSpacing: -0.41,
   },
@@ -1439,10 +1439,10 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 15,
     fontWeight: '400',
-    color: theme.colors.text.secondary,
+    color: '#A0A0B0',
   },
   activeTabText: {
-    color: '#007AFF',
+    color: '#0A84FF',
     fontWeight: '600',
   },
   tabIndicator: {
@@ -1451,7 +1451,7 @@ const styles = StyleSheet.create({
     left: 0,
     width: 120,
     height: 2,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     borderRadius: 1,
   },
   tabContent: {
@@ -1463,7 +1463,7 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   dataCard: {
-    backgroundColor: theme.colors.surface,
+    backgroundColor: '#1C1C1E',
     padding: 20,
     borderRadius: 10,
     alignItems: 'center',
@@ -1480,12 +1480,12 @@ const styles = StyleSheet.create({
   dataText: {
     fontSize: 17,
     fontWeight: '600',
-    color: theme.colors.text.primary,
+    color: '#F2F2F7',
     marginBottom: 4,
   },
   dataSubtext: {
     fontSize: 13,
-    color: theme.colors.text.secondary,
+    color: '#A0A0B0',
     textAlign: 'center',
     lineHeight: 18,
   },
@@ -1496,7 +1496,7 @@ const styles = StyleSheet.create({
   recordTypeTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: theme.colors.text.primary,
+    color: '#F2F2F7',
     marginBottom: 12,
   },
   recordTypeButtons: {
@@ -1508,16 +1508,16 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 16,
-    backgroundColor: '#E5E5EA',
+    backgroundColor: '#2C2C2E',
     alignItems: 'center',
   },
   recordTypeButtonActive: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
   },
   recordTypeButtonText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#1C1C1E',
+    color: '#F2F2F7',
   },
   recordTypeButtonTextActive: {
     fontSize: 13,
@@ -1531,7 +1531,7 @@ const styles = StyleSheet.create({
   historyTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: theme.colors.text.primary,
+    color: '#F2F2F7',
     marginBottom: 16,
   },
   historyIcon: {
@@ -1541,12 +1541,12 @@ const styles = StyleSheet.create({
   historyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: theme.colors.text.primary,
+    color: '#F2F2F7',
     marginBottom: 4,
   },
   historySubtext: {
     fontSize: 14,
-    color: theme.colors.text.secondary,
+    color: '#A0A0B0',
     textAlign: 'center',
   },
   historyEmptyState: {
@@ -1559,12 +1559,12 @@ const styles = StyleSheet.create({
   historyEmptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: theme.colors.text.primary,
+    color: '#F2F2F7',
     marginBottom: 8,
   },
   historyEmptySubtext: {
     fontSize: 14,
-    color: theme.colors.text.secondary,
+    color: '#A0A0B0',
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -1574,7 +1574,7 @@ const styles = StyleSheet.create({
   },
   historyLoadingText: {
     fontSize: 15,
-    color: theme.colors.text.secondary,
+    color: '#A0A0B0',
     marginTop: 16,
     fontWeight: '500',
   },
@@ -1582,7 +1582,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   historyCard: {
-    backgroundColor: theme.colors.surface,
+    backgroundColor: '#1C1C1E',
     borderRadius: 12,
     ...theme.shadows.small,
   },
@@ -1603,17 +1603,17 @@ const styles = StyleSheet.create({
   historyDurationNumber: {
     fontSize: 24,
     fontWeight: '700',
-    color: theme.colors.text.primary,
+    color: '#F2F2F7',
     marginRight: 4,
   },
   historyDurationUnit: {
     fontSize: 16,
     fontWeight: '500',
-    color: theme.colors.text.secondary,
+    color: '#A0A0B0',
   },
   historyItemDate: {
     fontSize: 15,
-    color: theme.colors.text.secondary,
+    color: '#A0A0B0',
     fontWeight: '500',
   },
   historyItemRight: {
@@ -1622,7 +1622,7 @@ const styles = StyleSheet.create({
   },
   historyItemTime: {
     fontSize: 15,
-    color: theme.colors.text.secondary,
+    color: '#A0A0B0',
     fontWeight: '500',
     marginRight: 8,
   },
@@ -1640,7 +1640,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.surface,
+    backgroundColor: '#1C1C1E',
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 16,
@@ -1652,7 +1652,7 @@ const styles = StyleSheet.create({
   },
   historyFilterButtonText: {
     fontSize: 15,
-    color: theme.colors.text.primary,
+    color: '#F2F2F7',
   },
   historyFilterBoldText: {
     fontWeight: '700',
@@ -1665,7 +1665,7 @@ const styles = StyleSheet.create({
   },
   historyFilterArrow: {
     fontSize: 12,
-    color: theme.colors.text.secondary,
+    color: '#A0A0B0',
     marginLeft: 8,
   },
   historyFilterDropdown: {
@@ -1673,7 +1673,7 @@ const styles = StyleSheet.create({
     top: '100%',
     left: 0,
     right: 0,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: '#2C2C2E',
     borderRadius: 8,
     marginTop: 0,
     ...theme.shadows.medium,
@@ -1683,15 +1683,15 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    borderBottomColor: 'rgba(255,255,255,0.06)',
   },
   historyFilterOptionText: {
     fontSize: 15,
     fontWeight: '500',
-    color: theme.colors.text.primary,
+    color: '#F2F2F7',
   },
   historyFilterOptionTextActive: {
-    color: '#007AFF',
+    color: '#0A84FF',
     fontWeight: '600',
   },
   howToSection: {
@@ -1701,11 +1701,11 @@ const styles = StyleSheet.create({
   howToTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: theme.colors.text.primary,
+    color: '#F2F2F7',
     marginBottom: 16,
   },
   howToCard: {
-    backgroundColor: theme.colors.surface,
+    backgroundColor: '#1C1C1E',
     padding: 20,
     borderRadius: 12,
     marginBottom: 24,
@@ -1714,7 +1714,7 @@ const styles = StyleSheet.create({
   howToText: {
     fontSize: 16,
     lineHeight: 24,
-    color: theme.colors.text.primary,
+    color: '#F2F2F7',
   },
   tipsSection: {
     gap: 12,
@@ -1722,13 +1722,13 @@ const styles = StyleSheet.create({
   tipsTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: theme.colors.text.primary,
+    color: '#F2F2F7',
     marginBottom: 12,
   },
   tipItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surface,
+    backgroundColor: '#1C1C1E',
     padding: 16,
     borderRadius: 12,
     ...theme.shadows.small,
@@ -1739,7 +1739,7 @@ const styles = StyleSheet.create({
   },
   tipText: {
     fontSize: 16,
-    color: theme.colors.text.primary,
+    color: '#F2F2F7',
     flex: 1,
   },
   startButton: {
@@ -1760,7 +1760,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   videoContainer: {
-    backgroundColor: theme.colors.surface,
+    backgroundColor: '#1C1C1E',
     padding: 20,
     borderRadius: 12,
     alignItems: 'center',
@@ -1769,7 +1769,7 @@ const styles = StyleSheet.create({
   },
   videoPlaceholder: {
     fontSize: 18,
-    color: theme.colors.text.secondary,
+    color: '#A0A0B0',
   },
   instructionsContainer: {
     gap: 4,
@@ -1778,7 +1778,7 @@ const styles = StyleSheet.create({
   instructionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surface,
+    backgroundColor: '#1C1C1E',
     padding: 16,
     borderRadius: 12,
     shadowColor: '#000',
@@ -1791,7 +1791,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
@@ -1804,7 +1804,7 @@ const styles = StyleSheet.create({
   instructionText: {
     fontSize: 16,
     lineHeight: 22,
-    color: theme.colors.text.primary,
+    color: '#F2F2F7',
     flex: 1,
   },
   shareOverlay: {
@@ -1825,7 +1825,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   shareSheet: {
-    backgroundColor: theme.health.container.backgroundColor,
+    backgroundColor: '#0A0A0F',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingBottom: 100,
@@ -1841,7 +1841,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 5,
     borderRadius: 2.5,
-    backgroundColor: 'rgba(0,0,0,0.12)',
+    backgroundColor: '#3A3A3C',
     alignSelf: 'center',
     marginBottom: 20,
   },
@@ -1870,12 +1870,12 @@ const styles = StyleSheet.create({
   shareTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: theme.colors.text.primary,
+    color: '#F2F2F7',
     letterSpacing: -0.4,
   },
   shareDuration: {
     fontSize: 15,
-    color: '#8e8e93',
+    color: '#A0A0B0',
     fontWeight: '500',
   },
   shareTagsRow: {
@@ -1887,18 +1887,18 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1.5,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#1C1C1E',
   },
   shareTagText: {
     fontSize: 14,
     fontWeight: '600',
-    color: theme.colors.text.primary,
+    color: '#F2F2F7',
     textTransform: 'capitalize',
   },
   shareDescription: {
     fontSize: 16,
     lineHeight: 23,
-    color: theme.colors.text.secondary,
+    color: '#A0A0B0',
     letterSpacing: -0.2,
   },
   shareActions: {
@@ -1924,11 +1924,11 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.06)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
   shareSecondaryButtonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: theme.colors.text.primary,
+    color: '#F2F2F7',
   },
 });

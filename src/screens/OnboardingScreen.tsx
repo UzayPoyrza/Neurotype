@@ -337,7 +337,7 @@ const SelectModulePage: React.FC<{
             pointerEvents="none"
           >
             <LinearGradient
-              colors={['rgba(242, 242, 247, 0)', 'rgba(242, 242, 247, 0.4)', 'rgba(242, 242, 247, 0.8)', 'rgba(242, 242, 247, 1)']}
+              colors={['rgba(10, 10, 15, 0)', 'rgba(10, 10, 15, 0.4)', 'rgba(10, 10, 15, 0.8)', 'rgba(10, 10, 15, 1)']}
               locations={[0, 0.3, 0.7, 1]}
               style={styles.scrollArrowGradient}
             >
@@ -1532,7 +1532,7 @@ export const HowToUsePage: React.FC<{
           pointerEvents="none"
         >
           <LinearGradient
-            colors={['rgba(242, 242, 247, 0)', 'rgba(242, 242, 247, 0.4)', 'rgba(242, 242, 247, 0.8)', 'rgba(242, 242, 247, 1)']}
+            colors={['rgba(10, 10, 15, 0)', 'rgba(10, 10, 15, 0.4)', 'rgba(10, 10, 15, 0.8)', 'rgba(10, 10, 15, 1)']}
             locations={[0, 0.3, 0.7, 1]}
             style={styles.scrollArrowGradient}
           >
@@ -2816,7 +2816,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
 
   return (
     <>
-      <StatusBar barStyle="dark-content" backgroundColor="#f2f2f7" />
+      <StatusBar barStyle="light-content" backgroundColor="#0A0A0F" />
       <View style={styles.container}>
         {!showFinishAnimation && currentPage === 0 && (
           <TouchableOpacity style={styles.skipButton} onPress={handleSkip} activeOpacity={0.7}>
@@ -3061,7 +3061,7 @@ const styles = StyleSheet.create({
   skipButtonText: {
     fontSize: 17,
     fontWeight: '400',
-    color: '#8e8e93',
+    color: '#A0A0B0',
   },
   iconWrapper: {
     alignItems: 'center',
@@ -3072,7 +3072,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 26,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -3097,7 +3097,7 @@ const styles = StyleSheet.create({
   titleLight: {
     fontSize: 34,
     fontWeight: '700',
-    color: '#000000',
+    color: '#F2F2F7',
     textAlign: 'center',
     lineHeight: 40,
   },
@@ -3109,7 +3109,7 @@ const styles = StyleSheet.create({
   subtitleLight: {
     fontSize: 20,
     fontWeight: '400',
-    color: '#8e8e93',
+    color: '#A0A0B0',
     textAlign: 'center',
     marginTop: 4,
     lineHeight: 28,
@@ -3122,7 +3122,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginBottom: 24,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 16,
     marginHorizontal: 0,
@@ -3132,7 +3132,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   featureIconContainer: {
     width: 44,
@@ -3151,28 +3151,28 @@ const styles = StyleSheet.create({
   featureTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#000000',
+    color: '#F2F2F7',
     marginBottom: 4,
   },
   featureTitleLight: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#000000',
+    color: '#F2F2F7',
     marginBottom: 4,
   },
   featureDescription: {
     fontSize: 15,
-    color: '#8e8e93',
+    color: '#A0A0B0',
     lineHeight: 20,
   },
   featureDescriptionLight: {
     fontSize: 15,
-    color: '#8e8e93',
+    color: '#A0A0B0',
     lineHeight: 20,
   },
   disclaimerText: {
     fontSize: 13,
-    color: '#8e8e93',
+    color: '#A0A0B0',
     lineHeight: 18,
     textAlign: 'center',
   },
@@ -3214,20 +3214,20 @@ const styles = StyleSheet.create({
   },
   scrollArrowText: {
     fontSize: 24,
-    color: 'rgba(0, 0, 0, 0.4)',
+    color: 'rgba(255, 255, 255, 0.4)',
     fontWeight: '300',
   },
   moduleCard: {
     borderRadius: 16,
     marginBottom: 12,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   moduleCardSelected: {
     shadowOpacity: 0.15,
@@ -3253,7 +3253,7 @@ const styles = StyleSheet.create({
   moduleTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#000000',
+    color: '#F2F2F7',
     marginRight: 8,
   },
   moduleCategoryBadge: {
@@ -3269,7 +3269,7 @@ const styles = StyleSheet.create({
   },
   moduleDescription: {
     fontSize: 15,
-    color: '#8e8e93',
+    color: '#A0A0B0',
     lineHeight: 20,
   },
   checkmarkContainer: {
@@ -3279,7 +3279,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     alignItems: 'center',
     justifyContent: 'center',
     transform: [{ translateY: -14 }], // Half of height to center vertically
@@ -3299,7 +3299,7 @@ const styles = StyleSheet.create({
   demoModuleCard: {
     padding: 20,
     borderRadius: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     width: '100%',
     marginBottom: 30,
     shadowColor: '#000',
@@ -3308,7 +3308,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   demoModuleHeader: {
     flexDirection: 'row',
@@ -3319,7 +3319,7 @@ const styles = StyleSheet.create({
   demoModuleTitle: {
     fontSize: 22,
     fontWeight: '600',
-    color: '#000000',
+    color: '#F2F2F7',
     marginRight: 8,
   },
   demoModuleCategoryBadge: {
@@ -3335,7 +3335,7 @@ const styles = StyleSheet.create({
   },
   demoModuleDescription: {
     fontSize: 17,
-    color: '#8e8e93',
+    color: '#A0A0B0',
     lineHeight: 22,
   },
   arrowPointer: {
@@ -3345,7 +3345,7 @@ const styles = StyleSheet.create({
   },
   arrowPointerText: {
     fontSize: 32,
-    color: '#007AFF',
+    color: '#0A84FF',
     fontWeight: '300',
   },
   demoChangeButtonContainer: {
@@ -3407,7 +3407,7 @@ const styles = StyleSheet.create({
   },
   arrow: {
     fontSize: 20,
-    color: '#8e8e93',
+    color: '#A0A0B0',
   },
   loginPage: {
     width: SCREEN_WIDTH,
@@ -3419,7 +3419,7 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 50,
     paddingHorizontal: 20,
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#0A0A0F',
   },
   loginBackgroundTextContainer: {
     position: 'absolute',
@@ -3432,7 +3432,7 @@ const styles = StyleSheet.create({
   loginBackgroundTextLarge: {
     fontSize: 46,
     fontWeight: '700',
-    color: '#000000',
+    color: '#F2F2F7',
     textAlign: 'left',
     lineHeight: 56,
     marginBottom: 16,
@@ -3442,7 +3442,7 @@ const styles = StyleSheet.create({
   loginBackgroundTextSmall: {
     fontSize: 30,
     fontWeight: '700',
-    color: '#000000',
+    color: '#F2F2F7',
     textAlign: 'left',
     lineHeight: 48,
     paddingLeft: 8,
@@ -3450,7 +3450,7 @@ const styles = StyleSheet.create({
   typingCursor: {
     fontSize: 30,
     fontWeight: '700',
-    color: '#000000',
+    color: '#F2F2F7',
     opacity: 1,
   },
   loginTitleContainer: {
@@ -3461,14 +3461,14 @@ const styles = StyleSheet.create({
   loginTitle: {
     fontSize: 34,
     fontWeight: '700',
-    color: '#000000',
+    color: '#F2F2F7',
     textAlign: 'center',
     lineHeight: 40,
   },
   loginSubtitle: {
     fontSize: 20,
     fontWeight: '400',
-    color: '#666666',
+    color: '#A0A0B0',
     textAlign: 'center',
     marginTop: 4,
     lineHeight: 28,
@@ -3483,7 +3483,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   loginButtonsBox: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     borderRadius: 24,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
@@ -3499,14 +3499,14 @@ const styles = StyleSheet.create({
     elevation: 8,
     borderWidth: 0,
     borderTopWidth: 1,
-    borderColor: '#e5e5ea',
+    borderColor: 'rgba(255,255,255,0.06)',
     width: '100%',
     minHeight: '50%',
   },
   loginBoxSubtitle: {
     fontSize: 16,
     fontWeight: '400',
-    color: '#666666',
+    color: '#A0A0B0',
     textAlign: 'center',
     marginBottom: 20,
     lineHeight: 22,
@@ -3527,14 +3527,14 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: '#8e8e93',
-    backgroundColor: '#ffffff',
+    borderColor: '#A0A0B0',
+    backgroundColor: '#1C1C1E',
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkboxChecked: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: '#0A84FF',
+    borderColor: '#0A84FF',
   },
   checkmark: {
     fontSize: 14,
@@ -3550,29 +3550,29 @@ const styles = StyleSheet.create({
   termsText: {
     fontSize: 13,
     fontWeight: '400',
-    color: '#666666',
+    color: '#A0A0B0',
     lineHeight: 18,
   },
   termsLink: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#0A84FF',
     lineHeight: 18,
     textDecorationLine: 'underline',
   },
   socialButton: {
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 24,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e5e5ea',
+    borderColor: 'rgba(255,255,255,0.06)',
     minHeight: 56,
   },
   socialButtonDisabled: {
     opacity: 0.5,
-    backgroundColor: '#e5e5ea',
+    backgroundColor: '#2C2C2E',
   },
   socialButtonContent: {
     flexDirection: 'row',
@@ -3605,7 +3605,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   loadingContent: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     borderRadius: 20,
     padding: 40,
     alignItems: 'center',
@@ -3624,26 +3624,26 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
     borderWidth: 4,
-    borderColor: '#007AFF',
+    borderColor: '#0A84FF',
     borderTopColor: 'transparent',
   },
   loadingText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000000',
+    color: '#F2F2F7',
     marginBottom: 8,
     textAlign: 'center',
   },
   loadingSubtext: {
     fontSize: 14,
     fontWeight: '400',
-    color: '#8E8E93',
+    color: '#A0A0B0',
     textAlign: 'center',
   },
   socialButtonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#000000',
+    color: '#F2F2F7',
     letterSpacing: -0.2,
   },
   appleButton: {
@@ -3662,11 +3662,11 @@ const styles = StyleSheet.create({
   },
   signInLinkText: {
     fontSize: 15,
-    color: '#666666',
+    color: '#A0A0B0',
   },
   signInLink: {
     fontSize: 15,
-    color: '#000000',
+    color: '#F2F2F7',
     fontWeight: '600',
     textDecorationLine: 'underline',
   },
@@ -3685,10 +3685,10 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#c7c7cc',
+    backgroundColor: '#3A3A3C',
   },
   indicatorActive: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     width: 24,
   },
   buttonContainer: {
@@ -3699,7 +3699,7 @@ const styles = StyleSheet.create({
     ...theme.health.button,
   },
   buttonDisabled: {
-    backgroundColor: '#c7c7cc',
+    backgroundColor: '#2C2C2E',
   },
   buttonText: {
     ...theme.health.buttonText,
@@ -3749,7 +3749,7 @@ const styles = StyleSheet.create({
   congratulationsMessage: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     borderRadius: 20,
     paddingHorizontal: 32,
     paddingVertical: 24,
@@ -3762,12 +3762,12 @@ const styles = StyleSheet.create({
   congratulationsTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#000000',
+    color: '#F2F2F7',
     marginBottom: 8,
   },
   congratulationsSubtitle: {
     fontSize: 17,
-    color: '#8e8e93',
+    color: '#A0A0B0',
     textAlign: 'center',
   },
   instructionTextContainer: {
@@ -3778,7 +3778,7 @@ const styles = StyleSheet.create({
   },
   instructionText: {
     fontSize: 15,
-    color: '#8e8e93',
+    color: '#A0A0B0',
     textAlign: 'center',
     lineHeight: 22,
     fontWeight: '400',
@@ -3824,7 +3824,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   demoCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -3843,7 +3843,7 @@ const styles = StyleSheet.create({
   demoCardTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#000000',
+    color: '#F2F2F7',
   },
   demoModuleBadge: {
     paddingHorizontal: 10,
@@ -3857,7 +3857,7 @@ const styles = StyleSheet.create({
   },
   demoFocusSubtitle: {
     fontSize: 15,
-    color: '#8e8e93',
+    color: '#A0A0B0',
     fontWeight: '400',
     marginBottom: 16,
   },
@@ -3866,7 +3866,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   demoRecommendedSession: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
@@ -3882,12 +3882,12 @@ const styles = StyleSheet.create({
   demoSessionTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#000000',
+    color: '#F2F2F7',
     marginBottom: 4,
   },
   demoSessionSubtitle: {
     fontSize: 15,
-    color: '#8e8e93',
+    color: '#A0A0B0',
     fontWeight: '400',
     marginBottom: 8,
     fontStyle: 'italic',
@@ -3899,7 +3899,7 @@ const styles = StyleSheet.create({
   },
   demoSessionMeta: {
     fontSize: 13,
-    color: '#8e8e93',
+    color: '#A0A0B0',
     fontWeight: '400',
   },
   demoSessionPlayButton: {
@@ -3916,7 +3916,7 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
   demoRecommendedBadge: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -3940,9 +3940,9 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 12,
     borderRadius: 12,
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#2C2C2E',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: 'rgba(255,255,255,0.06)',
     position: 'relative',
     overflow: 'visible',
   },
@@ -3953,25 +3953,25 @@ const styles = StyleSheet.create({
   demoAlternativeTitle: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#000000',
+    color: '#F2F2F7',
     marginBottom: 2,
   },
   demoAlternativeMeta: {
     fontSize: 13,
-    color: '#8e8e93',
+    color: '#A0A0B0',
     fontWeight: '400',
   },
   demoAlternativePlayButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#3A3A3C',
     justifyContent: 'center',
     alignItems: 'center',
   },
   demoAlternativePlayText: {
     fontSize: 12,
-    color: '#000000',
+    color: '#F2F2F7',
     fontWeight: 'bold',
     marginLeft: 1,
   },
@@ -3992,7 +3992,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -4005,18 +4005,18 @@ const styles = StyleSheet.create({
   stepTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000000',
+    color: '#F2F2F7',
     flex: 1,
   },
   stepDescription: {
     fontSize: 15,
-    color: '#8e8e93',
+    color: '#A0A0B0',
     lineHeight: 22,
     marginLeft: 44,
   },
   stepHighlight: {
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#0A84FF',
   },
   stickerBadge: {
     position: 'absolute',
@@ -4025,12 +4025,12 @@ const styles = StyleSheet.create({
     marginBottom: -15,
   },
   stickerBadgeInner: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderWidth: 2,
-    borderColor: '#007AFF',
+    borderColor: '#0A84FF',
     shadowColor: '#000',
     shadowOffset: { width: 2, height: 3 },
     shadowOpacity: 0.15,
@@ -4042,7 +4042,7 @@ const styles = StyleSheet.create({
   stickerBadgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#007AFF',
+    color: '#0A84FF',
     lineHeight: 13,
     letterSpacing: 0.3,
     textTransform: 'uppercase',
@@ -4057,12 +4057,12 @@ const styles = StyleSheet.create({
     transform: [{ skewX: '-20deg' }],
   },
   feedbackCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     borderRadius: 20,
     paddingVertical: 24,
     paddingHorizontal: 20,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: 'rgba(255,255,255,0.06)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -4072,19 +4072,19 @@ const styles = StyleSheet.create({
   feedbackCardTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#000000',
+    color: '#F2F2F7',
     textAlign: 'center',
     marginBottom: 8,
   },
   feedbackCardSubtitle: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#8e8e93',
+    color: '#A0A0B0',
     textAlign: 'center',
     marginBottom: 24,
   },
   feedbackSliderWrapper: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     borderRadius: 16,
     paddingVertical: 20,
     paddingHorizontal: 16,
@@ -4132,7 +4132,7 @@ const styles = StyleSheet.create({
   },
   finishOverlayBackground: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#0A0A0F',
   },
   finishContent: {
     alignItems: 'center',
@@ -4142,7 +4142,7 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 30,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 32,
@@ -4159,7 +4159,7 @@ const styles = StyleSheet.create({
   finishText: {
     fontSize: 36,
     fontWeight: '700',
-    color: '#000000',
+    color: '#F2F2F7',
     textAlign: 'center',
     marginBottom: 8,
     letterSpacing: -0.5,
@@ -4167,7 +4167,7 @@ const styles = StyleSheet.create({
   finishSubtext: {
     fontSize: 20,
     fontWeight: '400',
-    color: '#8e8e93',
+    color: '#A0A0B0',
     textAlign: 'center',
   },
 });

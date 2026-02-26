@@ -8,7 +8,7 @@ interface ActivityHistoryIconProps {
 
 export const ActivityHistoryIcon: React.FC<ActivityHistoryIconProps> = ({ 
   size = 24, 
-  color = '#000000'
+  color = '#F2F2F7'
 }) => {
   return (
     <Svg width={size} height={size} viewBox="0 0 512.001 512.001" fill="none">

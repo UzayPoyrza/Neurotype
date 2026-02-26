@@ -621,7 +621,7 @@ export const SettingsScreen: React.FC = () => {
               <Switch
                 value={reminderEnabled}
                 onValueChange={handleToggleReminder}
-                trackColor={{ false: '#e0e0e0', true: '#007AFF' }}
+                trackColor={{ false: '#38383A', true: '#0A84FF' }}
                 thumbColor={reminderEnabled ? '#ffffff' : '#ffffff'}
               />
             </View>
@@ -888,15 +888,15 @@ export const SettingsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#0A0A0F',
   },
   header: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     paddingTop: 60,
     paddingBottom: 20,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: 'rgba(255,255,255,0.06)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -907,7 +907,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   backButton: {
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -916,12 +916,12 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#0A84FF',
   },
   headerTitle: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#000000',
+    color: '#F2F2F7',
     textAlign: 'center',
     flex: 1,
   },
@@ -931,7 +931,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#0A0A0F',
   },
   content: {
     padding: 20,
@@ -943,11 +943,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#000000',
+    color: '#F2F2F7',
     marginBottom: 8,
   },
   settingItem: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 16,
     marginHorizontal: 12,
@@ -968,15 +968,15 @@ const styles = StyleSheet.create({
   settingLabel: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#000000',
+    color: '#F2F2F7',
     marginBottom: 4,
   },
   settingDescription: {
     fontSize: 15,
-    color: '#8e8e93',
+    color: '#A0A0B0',
   },
   reminderCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 20,
     marginHorizontal: 12,
@@ -999,15 +999,15 @@ const styles = StyleSheet.create({
   reminderTitle: {
     fontSize: 19,
     fontWeight: '700',
-    color: '#000000',
+    color: '#F2F2F7',
     marginBottom: 4,
   },
   reminderDescription: {
     fontSize: 15,
-    color: '#8e8e93',
+    color: '#A0A0B0',
   },
   subscriptionCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 20,
     marginHorizontal: 12,
@@ -1026,13 +1026,13 @@ const styles = StyleSheet.create({
   subscriptionTitle: {
     fontSize: 19,
     fontWeight: '700',
-    color: '#000000',
+    color: '#F2F2F7',
   },
   subscriptionStatus: {
     fontSize: 13,
     fontWeight: '600',
     color: '#34c759',
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#2C2C2E',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 8,
@@ -1041,12 +1041,12 @@ const styles = StyleSheet.create({
   },
   subscriptionDescription: {
     fontSize: 15,
-    color: '#8e8e93',
+    color: '#A0A0B0',
     lineHeight: 20,
     marginBottom: 16,
   },
   upgradeButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 20,
@@ -1058,7 +1058,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   manageButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 20,
@@ -1073,50 +1073,50 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: '#fff3cd',
+    backgroundColor: 'rgba(255,179,71,0.15)',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ffc107',
+    borderColor: 'rgba(255,179,71,0.3)',
     marginBottom: 12,
   },
   cancelMessageText: {
     fontSize: 14,
-    color: '#856404',
+    color: '#FFB347',
     lineHeight: 20,
   },
   renewalMessageContainer: {
     marginTop: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: '#d1ecf1',
+    backgroundColor: 'rgba(10,132,255,0.15)',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#0c5460',
+    borderColor: 'rgba(10,132,255,0.3)',
     marginBottom: 12,
   },
   renewalMessageText: {
     fontSize: 14,
-    color: '#0c5460',
+    color: '#0A84FF',
     lineHeight: 20,
   },
   lifetimeMessageContainer: {
     marginTop: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: '#d4edda',
+    backgroundColor: 'rgba(48,209,88,0.15)',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#28a745',
+    borderColor: 'rgba(48,209,88,0.3)',
     marginBottom: 12,
   },
   lifetimeMessageText: {
     fontSize: 14,
-    color: '#155724',
+    color: '#30D158',
     lineHeight: 20,
     fontWeight: '600',
   },
   aboutCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 16,
     marginHorizontal: 12,
@@ -1129,16 +1129,16 @@ const styles = StyleSheet.create({
   aboutTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#000000',
+    color: '#F2F2F7',
     marginBottom: 8,
   },
   aboutDescription: {
     fontSize: 15,
-    color: '#8e8e93',
+    color: '#A0A0B0',
     lineHeight: 20,
   },
   resetCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 20,
     marginHorizontal: 12,
@@ -1156,16 +1156,16 @@ const styles = StyleSheet.create({
   },
   resetDescription: {
     fontSize: 15,
-    color: '#8e8e93',
+    color: '#A0A0B0',
     lineHeight: 20,
     marginBottom: 16,
   },
   resetWarningBox: {
-    backgroundColor: '#ffecec',
+    backgroundColor: 'rgba(255,69,58,0.15)',
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#ff3b30',
+    borderColor: 'rgba(255,69,58,0.3)',
     marginBottom: 20,
   },
   resetWarningTitle: {
@@ -1177,11 +1177,11 @@ const styles = StyleSheet.create({
   },
   resetWarningText: {
     fontSize: 14,
-    color: '#d73a2d',
+    color: '#FF6961',
     lineHeight: 18,
   },
   resetButton: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
@@ -1206,7 +1206,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   logoutButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 20,
@@ -1224,7 +1224,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   howToUseButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     borderRadius: 16,
     padding: 16,
     marginHorizontal: 12,
@@ -1242,14 +1242,14 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   customiseButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 20,
     alignItems: 'center',
   },
   customiseButtonDisabled: {
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#38383A',
     opacity: 0.6,
   },
   customiseButtonText: {
@@ -1258,6 +1258,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   customiseButtonTextDisabled: {
-    color: '#999999',
+    color: '#636366',
   },
 });

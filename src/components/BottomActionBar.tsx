@@ -31,7 +31,7 @@ export const BottomActionBar: React.FC<BottomActionBarProps> = ({
   primaryColor = '#FF6B6B',
   secondaryColor = '#4ECDC4',
   themeColor = '#6B73FF',
-  globalBackgroundColor = '#f2f2f7',
+  globalBackgroundColor = '#0A0A0F',
 }) => {
   const primaryScale = useRef(new Animated.Value(1)).current;
   const secondaryScale = useRef(new Animated.Value(1)).current;
@@ -80,7 +80,7 @@ export const BottomActionBar: React.FC<BottomActionBarProps> = ({
     
     // Fallback for unknown formats
     console.log('Unknown color format, using fallback:', color);
-    return `rgba(242, 242, 247, ${opacity})`;
+    return `rgba(10, 10, 15, ${opacity})`;
   };
 
 
@@ -128,7 +128,7 @@ export const BottomActionBar: React.FC<BottomActionBarProps> = ({
           <TouchableOpacity
             style={[
               styles.secondaryButton,
-              { borderColor: '#007AFF' }
+              { borderColor: '#0A84FF' }
             ]}
             onPress={handleSecondaryPress}
             activeOpacity={0.8}
@@ -187,17 +187,17 @@ const styles = StyleSheet.create({
   },
   actionBar: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    backgroundColor: 'rgba(28, 28, 30, 0.85)',
     borderRadius: 12,
     paddingVertical: 2,
     paddingHorizontal: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -6 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.4,
     shadowRadius: 16,
     elevation: 16,
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.15)',
+    borderColor: 'rgba(255, 255, 255, 0.06)',
     justifyContent: 'space-between',
     alignItems: 'center',
     overflow: 'hidden',
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 8,
     borderWidth: 1.5,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     alignItems: 'center',
     justifyContent: 'center',
     flex: 0.45,

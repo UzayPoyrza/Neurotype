@@ -24,7 +24,7 @@ export const TechniqueEffectivenessChart: React.FC<TechniqueEffectivenessChartPr
   });
 
   const getBarColor = (effectiveness: number | null) => {
-    if (effectiveness === null) return '#e0e0e0';
+    if (effectiveness === null) return '#2C2C2E';
     if (effectiveness >= 80) return '#4CAF50'; // Green for high effectiveness
     if (effectiveness >= 60) return '#8BC34A'; // Light green for good effectiveness
     if (effectiveness >= 40) return '#FFC107'; // Yellow for moderate effectiveness
@@ -100,7 +100,7 @@ export const TechniqueEffectivenessChart: React.FC<TechniqueEffectivenessChartPr
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     marginHorizontal: 20,
     marginBottom: 12,
@@ -120,25 +120,25 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1a1a1a',
+    color: '#F2F2F7',
     flex: 1,
   },
   infoButton: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#2C2C2E',
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,
   },
   infoButtonActive: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
   },
   infoButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666666',
+    color: '#A0A0B0',
   },
   infoButtonTextActive: {
     color: '#ffffff',
@@ -158,18 +158,18 @@ const styles = StyleSheet.create({
   techniqueName: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#1a1a1a',
+    color: '#F2F2F7',
     marginBottom: 2,
   },
   effectivenessText: {
     fontSize: 12,
-    color: '#666666',
+    color: '#A0A0B0',
     fontWeight: '500',
   },
   barContainer: {
     width: 100,
     height: 8,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#2C2C2E',
     borderRadius: 4,
     overflow: 'hidden',
   },

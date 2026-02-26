@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
     maxWidth: 400,
   },
   modalContent: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     borderRadius: 20,
     padding: 20,
     shadowColor: '#000',
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#000000',
+    color: '#F2F2F7',
     flex: 1,
   },
   closeButton: {
@@ -303,16 +303,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 16,
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#2C2C2E',
   },
   closeText: {
     fontSize: 18,
-    color: '#000000',
+    color: '#F2F2F7',
     fontWeight: '600',
   },
   promptText: {
     fontSize: 15,
-    color: '#8e8e93',
+    color: '#A0A0B0',
     lineHeight: 20,
     marginBottom: 24,
     textAlign: 'center',
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
   pickerItemText: {
     fontSize: 24,
     fontWeight: '500',
-    color: '#000000',
+    color: '#F2F2F7',
   },
   pickerOverlay: {
     position: 'absolute',
@@ -354,13 +354,13 @@ const styles = StyleSheet.create({
     height: ITEM_HEIGHT,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#e0e0e0',
-    backgroundColor: 'rgba(242, 242, 247, 0.5)',
+    borderColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(44, 44, 46, 0.5)',
   },
   colon: {
     fontSize: 24,
     fontWeight: '600',
-    color: '#000000',
+    color: '#F2F2F7',
     marginHorizontal: 8,
   },
   buttonContainer: {
@@ -371,7 +371,7 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     flex: 1,
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
@@ -379,11 +379,11 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#000000',
+    color: '#F2F2F7',
   },
   confirmButton: {
     flex: 1,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',

@@ -110,7 +110,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
             {isFavorited ? (
               <HeartIcon size={28} color="#ff6b6b" />
             ) : (
-              <HeartOutlineIcon size={28} color="#8e8e93" />
+              <HeartOutlineIcon size={28} color="#A0A0B0" />
             )}
           </TouchableOpacity>
           <View style={[styles.durationBadge, { backgroundColor: modalityColor }]}>
@@ -124,7 +124,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 12,
     marginHorizontal: 16,
@@ -138,9 +138,9 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: 'rgba(255,255,255,0.06)',
     borderLeftWidth: 4,
-    borderLeftColor: '#007AFF',
+    borderLeftColor: '#0A84FF',
   },
   recommendedCard: {
     borderLeftColor: '#34c759',
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   listCard: {
-    borderLeftColor: '#007AFF',
+    borderLeftColor: '#0A84FF',
   },
   content: {
     flexDirection: 'row',
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#000000',
+    color: '#F2F2F7',
     marginBottom: 2,
   },
   metaInfo: {
@@ -205,19 +205,19 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   modalityBadgeColored: {
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#2C2C2E',
   },
   modalityText: {
     fontSize: 11,
     fontWeight: '600',
     textTransform: 'capitalize',
     letterSpacing: -0.06,
-    color: '#1C1C1E',
+    color: '#F2F2F7',
   },
   goalText: {
     fontSize: 12,
     fontWeight: '400',
-    color: '#8e8e93',
+    color: '#A0A0B0',
     textTransform: 'capitalize',
   },
   rightSection: {

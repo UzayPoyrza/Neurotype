@@ -344,7 +344,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
 
   if (!module && moduleId !== 'liked-meditations') {
     return (
-      <View style={[styles.container, { backgroundColor: '#f2f2f7' }]}>
+      <View style={[styles.container, { backgroundColor: '#0A0A0F' }]}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Text style={styles.backButtonText}>← Back</Text>
@@ -476,15 +476,15 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#0A0A0F',
   },
   header: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     paddingTop: 60, // Account for status bar
     paddingBottom: 24,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: 'rgba(255,255,255,0.06)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     alignSelf: 'flex-start',
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#0A84FF',
   },
   headerContent: {
     alignItems: 'center',
@@ -513,7 +513,7 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     borderWidth: 2,
-    borderColor: '#ffffff',
+    borderColor: '#1C1C1E',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
@@ -534,14 +534,14 @@ const styles = StyleSheet.create({
   moduleTitle: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#000000',
+    color: '#F2F2F7',
     textAlign: 'center',
     marginBottom: 8,
   },
   moduleDescription: {
     fontSize: 17,
     fontWeight: '400',
-    color: '#8e8e93',
+    color: '#A0A0B0',
     textAlign: 'center',
   },
   content: {
@@ -559,7 +559,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 17,
-    color: '#8e8e93',
+    color: '#A0A0B0',
     fontWeight: '400',
   },
   sectionHeader: {
@@ -568,13 +568,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#000000',
+    color: '#F2F2F7',
     marginBottom: 8,
   },
   sectionSubtitle: {
     fontSize: 17,
     fontWeight: '400',
-    color: '#8e8e93',
+    color: '#A0A0B0',
   },
   listContainer: {
     paddingBottom: 100,
@@ -590,11 +590,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 56,
     paddingHorizontal: 40,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     marginHorizontal: 16, // Add side margins for spacing from edges
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: 'rgba(255,255,255,0.06)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -602,13 +602,13 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   emptyText: {
-    color: '#000000',
+    color: '#F2F2F7',
     textAlign: 'center',
     fontSize: 22,
     fontWeight: '600',
   },
   emptySubtext: {
-    color: '#8e8e93',
+    color: '#A0A0B0',
     textAlign: 'center',
     marginTop: 16,
     fontSize: 18,
@@ -622,14 +622,14 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 19,
     fontWeight: '600',
-    color: '#000000',
+    color: '#F2F2F7',
   },
   addedMessage: {
     position: 'absolute',
     bottom: 90,
     left: 20,
     right: 20,
-    backgroundColor: '#000000',
+    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 16,
@@ -643,7 +643,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   addedMessageText: {
-    color: '#ffffff',
+    color: '#F2F2F7',
     fontSize: 15,
     fontWeight: '600',
   },

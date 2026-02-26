@@ -226,7 +226,7 @@ export const ProgressScreen: React.FC = () => {
               <View style={styles.cardHeaderTop}>
                 <View style={styles.cardTitleContainer}>
                   <View style={styles.cardTitleIconWrapper}>
-                    <BarChartIcon size={26} color="#000000" />
+                    <BarChartIcon size={26} color="#F2F2F7" />
                   </View>
                   <View style={styles.cardTitleTextWrapper}>
                     <Text style={styles.cardTitle}>Sessions</Text>
@@ -359,14 +359,14 @@ const styles = StyleSheet.create({
   },
   sessionLabel: {
     fontSize: 15,
-    color: '#8e8e93',
+    color: '#A0A0B0',
     fontWeight: '400',
     marginBottom: 4,
   },
   sessionValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#000000',
+    color: '#F2F2F7',
   },
   bottomSpacing: {
     height: 120,

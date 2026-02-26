@@ -49,12 +49,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   enabledButton: {
-    backgroundColor: '#000000',
-    borderColor: '#000000',
+    backgroundColor: '#0A84FF',
+    borderColor: '#0A84FF',
   },
   disabledButton: {
-    backgroundColor: '#f0f0f0',
-    borderColor: '#cccccc',
+    backgroundColor: '#2C2C2E',
+    borderColor: '#3A3A3C',
   },
   buttonText: {
     fontSize: 16,
@@ -65,6 +65,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   disabledText: {
-    color: '#999999',
+    color: '#6B6B7B',
   },
 }); 

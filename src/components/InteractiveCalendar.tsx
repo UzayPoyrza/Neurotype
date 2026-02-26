@@ -353,7 +353,7 @@ export const InteractiveCalendar: React.FC<InteractiveCalendarProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     marginHorizontal: 20,
     marginBottom: 12,
@@ -385,15 +385,15 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   navButtonDisabled: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#2C2C2E',
   },
   navButtonTextDisabled: {
-    color: '#cccccc',
+    color: '#3A3A3C',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#1a1a1a',
+    color: '#F2F2F7',
     textAlign: 'center',
   },
   contentContainer: {
@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 14,
     fontWeight: '600',
-    color: '#666666',
+    color: '#A0A0B0',
     paddingVertical: 8,
   },
   calendarGrid: {
@@ -436,7 +436,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   todayCell: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     borderRadius: 24,
     borderWidth: 1,
     borderColor: theme.colors.primary,
@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#1a1a1a',
+    color: '#F2F2F7',
   },
   todayText: {
     color: theme.colors.primary,
@@ -477,13 +477,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: 'rgba(255,255,255,0.06)',
     minHeight: 50,
   },
   legendTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1a1a1a',
+    color: '#F2F2F7',
     marginBottom: 8,
   },
   legendItems: {
@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 12,
-    color: '#666666',
+    color: '#A0A0B0',
   },
   noMeditationsContainer: {
     marginBottom: 12,
@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
     paddingTop: 40, // Move content lower
   },
   noMeditationsBox: {
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     padding: 40,
     alignItems: 'center',
@@ -527,13 +527,13 @@ const styles = StyleSheet.create({
   noMeditationsTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1a1a1a',
+    color: '#F2F2F7',
     marginBottom: 8,
     textAlign: 'center',
   },
   noMeditationsText: {
     fontSize: 14,
-    color: '#666666',
+    color: '#A0A0B0',
     textAlign: 'center',
     lineHeight: 20,
   },

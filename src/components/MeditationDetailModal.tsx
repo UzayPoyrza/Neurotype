@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modal: {
-    backgroundColor: '#f2f2f7', // iOS system background
+    backgroundColor: '#1C1C1E',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     shadowColor: '#000',
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
   handle: {
     width: 36,
     height: 5,
-    backgroundColor: '#d1d1d6',
+    backgroundColor: '#3A3A3C',
     borderRadius: 3,
     marginLeft: 'auto',
     marginRight: 'auto',
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#2C2C2E',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
   closeButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#0A84FF',
   },
   scrollView: {
     flex: 1,
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#2C2C2E',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
   sessionTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#000000',
+    color: '#F2F2F7',
     textAlign: 'center',
     marginBottom: 12,
   },
@@ -347,12 +347,12 @@ const styles = StyleSheet.create({
   },
   durationText: {
     fontSize: 15,
-    color: '#8e8e93',
+    color: '#A0A0B0',
     fontWeight: '500',
   },
   modalityText: {
     fontSize: 15,
-    color: '#8e8e93',
+    color: '#A0A0B0',
     fontWeight: '500',
     textTransform: 'capitalize',
   },
@@ -374,14 +374,14 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#000000',
+    color: '#F2F2F7',
     marginBottom: 12,
   },
   descriptionText: {
     fontSize: 17,
     lineHeight: 22,
-    color: '#000000',
-    backgroundColor: '#ffffff',
+    color: '#F2F2F7',
+    backgroundColor: '#2C2C2E',
     padding: 16,
     borderRadius: 12,
     shadowColor: '#000',
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   whyItWorksCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#2C2C2E',
     padding: 16,
     borderRadius: 12,
     shadowColor: '#000',
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
   whyItWorksText: {
     fontSize: 17,
     lineHeight: 22,
-    color: '#000000',
+    color: '#F2F2F7',
     fontStyle: 'italic',
   },
   benefitsList: {
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
   benefitItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#2C2C2E',
     padding: 16,
     borderRadius: 12,
     shadowColor: '#000',
@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
   },
   benefitText: {
     fontSize: 17,
-    color: '#000000',
+    color: '#F2F2F7',
     flex: 1,
   },
   actionButtons: {
@@ -438,19 +438,19 @@ const styles = StyleSheet.create({
   },
   tutorialButton: {
     flex: 1,
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#2C2C2E',
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   tutorialButtonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#0A84FF',
   },
   startButton: {
     flex: 2,

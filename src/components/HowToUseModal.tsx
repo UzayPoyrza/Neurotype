@@ -244,13 +244,13 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   closeButtonText: {
     fontSize: 18,
-    color: '#000',
+    color: '#F2F2F7',
     fontWeight: '600',
   },
   scrollView: {
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     right: 20,
   },
   button: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 32,
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   buttonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: '#2C2C2E',
   },
   buttonText: {
     fontSize: 16,

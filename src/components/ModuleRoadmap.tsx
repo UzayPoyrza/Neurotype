@@ -581,7 +581,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         {completedSessions.length === 0 ? (
           <View style={[styles.tomorrowCard, styles.tomorrowCardLocked]}>
             <View style={styles.tomorrowHeader}>
-              <View style={[styles.tomorrowIcon, styles.tomorrowIconLocked, { backgroundColor: '#D1D1D6' }]}>
+              <View style={[styles.tomorrowIcon, styles.tomorrowIconLocked, { backgroundColor: '#3A3A3C' }]}>
                 <Text style={styles.tomorrowIconText}>🔒</Text>
               </View>
               <View style={styles.tomorrowLockedContent}>
@@ -752,7 +752,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
                 styles.todayCard,
                 { 
                   borderWidth: 0,
-                  backgroundColor: '#FFFFFF'
+                  backgroundColor: '#1C1C1E'
                 },
               ]}
             >
@@ -822,7 +822,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
           </View>
           <View style={[styles.tomorrowCard, styles.tomorrowCardLocked]}>
             <View style={styles.tomorrowHeader}>
-              <View style={[styles.tomorrowIcon, styles.tomorrowIconLocked, { backgroundColor: '#D1D1D6' }]}>
+              <View style={[styles.tomorrowIcon, styles.tomorrowIconLocked, { backgroundColor: '#3A3A3C' }]}>
                 <Text style={styles.tomorrowIconText}>🔒</Text>
               </View>
               <View style={styles.tomorrowLockedContent}>
@@ -865,7 +865,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         </View>
         <View style={[styles.tomorrowCard, styles.tomorrowCardLocked]}>
           <View style={styles.tomorrowHeader}>
-            <View style={[styles.tomorrowIcon, styles.tomorrowIconLocked, { backgroundColor: '#D1D1D6' }]}>
+            <View style={[styles.tomorrowIcon, styles.tomorrowIconLocked, { backgroundColor: '#3A3A3C' }]}>
               <Text style={styles.tomorrowIconText}>🔒</Text>
             </View>
             <View style={styles.tomorrowLockedContent}>
@@ -1019,7 +1019,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
               Track your journey and milestones
             </Text>
           </View>
-          <View style={[styles.summaryCard, { borderColor: module.color, backgroundColor: '#FFFFFF' }]}>
+          <View style={[styles.summaryCard, { borderColor: module.color, backgroundColor: '#1C1C1E' }]}>
             <View style={styles.summaryStatsRow}>
               <View style={styles.summaryStat}>
                 <Text style={styles.summaryStatValue}>{completedSessions.length}</Text>
@@ -1042,7 +1042,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
 
   return (
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
-      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         {/* Sticky Header */}
@@ -1135,7 +1135,7 @@ const styles = StyleSheet.create({
   stickyHeader: {
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
     zIndex: 100,
     paddingTop: 52, // Status bar height
     shadowColor: '#000',
@@ -1160,7 +1160,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   backButtonText: {
-    color: '#007AFF',
+    color: '#0A84FF',
     fontSize: 24,
     fontWeight: '400',
   },
@@ -1197,7 +1197,7 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
   },
   activeTabText: {
-    color: '#007AFF',
+    color: '#0A84FF',
     fontWeight: '600',
   },
   tabIndicator: {
@@ -1205,7 +1205,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     height: 2,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     borderRadius: 1,
   },
   horizontalScrollView: {
@@ -1228,7 +1228,7 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
   },
   summaryCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
@@ -1241,7 +1241,7 @@ const styles = StyleSheet.create({
   summaryTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1D1D1F',
+    color: '#F2F2F7',
     fontFamily: 'System',
   },
   summaryStatsRow: {
@@ -1256,20 +1256,20 @@ const styles = StyleSheet.create({
   summaryStatValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1D1D1F',
+    color: '#F2F2F7',
     fontFamily: 'System',
   },
   summaryStatLabel: {
     marginTop: 2,
     fontSize: 12,
     fontWeight: '500',
-    color: '#8E8E93',
+    color: '#A0A0B0',
     fontFamily: 'System',
   },
   summaryDivider: {
     width: 1,
     height: 28,
-    backgroundColor: '#E5E5EA',
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
   section: {
     width: '100%',
@@ -1284,13 +1284,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1D1D1F',
+    color: '#F2F2F7',
     fontFamily: 'System',
   },
   sectionSubtitle: {
     marginTop: 4,
     fontSize: 14,
-    color: '#8E8E93',
+    color: '#A0A0B0',
     fontFamily: 'System',
   },
   completedScrollContainer: {
@@ -1334,13 +1334,13 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   completedCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1C1C1E',
     borderRadius: 12,
     padding: 8,
     width: 160,
     height: 120,
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: 'rgba(255,255,255,0.06)',
     justifyContent: 'space-between',
     position: 'relative',
   },
@@ -1362,14 +1362,14 @@ const styles = StyleSheet.create({
   completedTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1C1C1E',
+    color: '#F2F2F7',
     lineHeight: 19,
     marginBottom: 2,
     fontFamily: 'System',
   },
   completedMeta: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: '#A0A0B0',
     marginBottom: 2,
     fontFamily: 'System',
   },
@@ -1391,7 +1391,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   todayCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1C1C1E',
     borderRadius: 20,
     padding: 18,
     position: 'relative',
@@ -1442,7 +1442,7 @@ const styles = StyleSheet.create({
   todayCardTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1D1D1F',
+    color: '#F2F2F7',
     fontFamily: 'System',
     marginBottom: 6,
     lineHeight: 26,
@@ -1450,7 +1450,7 @@ const styles = StyleSheet.create({
   },
   todayCardDuration: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: '#A0A0B0',
     fontFamily: 'System',
     marginTop: 0,
     lineHeight: 20,
@@ -1490,14 +1490,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '400',
     fontStyle: 'italic',
-    color: '#8E8E93',
+    color: '#A0A0B0',
     letterSpacing: -0.2,
   },
   todayCardCTA: {
     fontSize: 14,
     fontWeight: '400',
     fontStyle: 'italic',
-    color: '#1D1D1F',
+    color: '#F2F2F7',
     letterSpacing: -0.2,
   },
   todayPlayButton: {
@@ -1540,12 +1540,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   tomorrowCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1C1C1E',
     borderRadius: 18,
     padding: 18,
     paddingVertical: 24,
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: 'rgba(255,255,255,0.06)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -1572,36 +1572,36 @@ const styles = StyleSheet.create({
   },
   tomorrowLabel: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: '#A0A0B0',
     fontFamily: 'System',
   },
   tomorrowTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#1D1D1F',
+    color: '#F2F2F7',
     fontFamily: 'System',
   },
   tomorrowMeta: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: '#A0A0B0',
     marginBottom: 10,
     fontFamily: 'System',
   },
   tomorrowDescription: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#636366',
+    color: '#A0A0B0',
     fontFamily: 'System',
   },
   tomorrowCardLocked: {
     opacity: 0.6,
-    borderColor: '#D1D1D6',
+    borderColor: '#3A3A3C',
     borderStyle: 'dashed',
     justifyContent: 'center',
     minHeight: 100,
   },
   tomorrowIconLocked: {
-    backgroundColor: '#D1D1D6',
+    backgroundColor: '#3A3A3C',
   },
   tomorrowLockedContent: {
     flex: 1,
@@ -1609,14 +1609,14 @@ const styles = StyleSheet.create({
   tomorrowLockedTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: '#A0A0B0',
     fontFamily: 'System',
     marginBottom: 4,
   },
   tomorrowLockedDescription: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#8E8E93',
+    color: '#A0A0B0',
     fontFamily: 'System',
   },
   timelinePageContent: {
@@ -1630,14 +1630,14 @@ const styles = StyleSheet.create({
   timelineTitle: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#1D1D1F',
+    color: '#F2F2F7',
     marginBottom: 8,
     fontFamily: 'System',
   },
   timelineSubtitle: {
     fontSize: 16,
     lineHeight: 22,
-    color: '#8E8E93',
+    color: '#A0A0B0',
     marginBottom: 24,
     fontFamily: 'System',
   },
@@ -1647,7 +1647,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
@@ -1657,24 +1657,24 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: 'rgba(255,255,255,0.06)',
     marginRight: 12,
   },
   statValue: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#1D1D1F',
+    color: '#F2F2F7',
     fontFamily: 'System',
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: '#A0A0B0',
     fontWeight: '500',
     fontFamily: 'System',
   },
   neuroCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
@@ -1684,7 +1684,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   neuroCardHeader: {
     marginBottom: 16,
@@ -1698,7 +1698,7 @@ const styles = StyleSheet.create({
   neuroCardTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1D1D1F',
+    color: '#F2F2F7',
     fontFamily: 'System',
     flex: 1,
   },
@@ -1718,7 +1718,7 @@ const styles = StyleSheet.create({
   },
   neuroCardTimeRange: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: '#A0A0B0',
     fontWeight: '500',
     fontFamily: 'System',
   },
@@ -1730,7 +1730,7 @@ const styles = StyleSheet.create({
   progressBarTrack: {
     flex: 1,
     height: 8,
-    backgroundColor: '#E5E5EA',
+    backgroundColor: '#2C2C2E',
     borderRadius: 4,
     overflow: 'hidden',
     marginRight: 12,
@@ -1749,7 +1749,7 @@ const styles = StyleSheet.create({
   neuroCardDescription: {
     fontSize: 15,
     lineHeight: 22,
-    color: '#636366',
+    color: '#A0A0B0',
     marginBottom: 12,
     fontFamily: 'System',
   },
@@ -1769,12 +1769,12 @@ const styles = StyleSheet.create({
   whatYouFeelText: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#636366',
+    color: '#A0A0B0',
     fontFamily: 'System',
   },
   sessionsRequired: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: '#A0A0B0',
     fontStyle: 'italic',
     fontFamily: 'System',
   },

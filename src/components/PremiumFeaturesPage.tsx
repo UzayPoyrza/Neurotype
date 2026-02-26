@@ -619,7 +619,7 @@ export const PremiumFeaturesPage: React.FC<PremiumFeaturesPageProps> = ({
 const styles = StyleSheet.create({
   page: {
     flex: 1,
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#0A0A0F',
   },
   pageOnboarding: {
     width: SCREEN_WIDTH,
@@ -644,7 +644,7 @@ const styles = StyleSheet.create({
   titleLight: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#000000',
+    color: '#F2F2F7',
     textAlign: 'center',
     marginBottom: 12,
     letterSpacing: -0.5,
@@ -652,7 +652,7 @@ const styles = StyleSheet.create({
   subtitleLight: {
     fontSize: 17,
     fontWeight: '400',
-    color: '#8e8e93',
+    color: '#A0A0B0',
     textAlign: 'center',
   },
   premiumScrollContent: {
@@ -676,14 +676,14 @@ const styles = StyleSheet.create({
   scrollProgressTrack: {
     width: 4,
     height: '100%',
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     borderRadius: 2,
     overflow: 'hidden',
     justifyContent: 'flex-start',
   },
   scrollProgressBar: {
     width: '100%',
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     borderRadius: 2,
     minHeight: 4,
   },
@@ -702,14 +702,14 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   closeButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
+    color: '#F2F2F7',
     textAlign: 'center',
     lineHeight: 18,
   },
@@ -741,12 +741,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   pricingCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     borderRadius: 20,
     padding: 20,
     paddingTop: 32,
     borderWidth: 2,
-    borderColor: '#e5e5ea',
+    borderColor: 'rgba(255,255,255,0.06)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -760,12 +760,12 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   pricingCardSelected: {
-    borderColor: '#007AFF',
+    borderColor: '#0A84FF',
     borderWidth: 3,
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 6,
-    backgroundColor: '#f8f9ff',
+    backgroundColor: '#2C2C2E',
   },
   pricingCardTouchable: {
     width: '100%',
@@ -774,7 +774,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     alignSelf: 'center',
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 20,
@@ -796,7 +796,7 @@ const styles = StyleSheet.create({
   pricingCardName: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#000000',
+    color: '#F2F2F7',
     letterSpacing: -0.5,
   },
   savingsBadge: {
@@ -822,25 +822,25 @@ const styles = StyleSheet.create({
   pricingCardPrice: {
     fontSize: 36,
     fontWeight: '700',
-    color: '#000000',
+    color: '#F2F2F7',
     letterSpacing: -1,
   },
   pricingCardPeriod: {
     fontSize: 18,
     fontWeight: '500',
-    color: '#8e8e93',
+    color: '#A0A0B0',
     marginLeft: 4,
   },
   pricingCardEquivalent: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#8e8e93',
+    color: '#A0A0B0',
     marginTop: 4,
   },
   pricingCardOriginal: {
     fontSize: 14,
     fontWeight: '400',
-    color: '#c7c7cc',
+    color: '#3A3A3C',
     textDecorationLine: 'line-through',
     marginTop: 2,
   },
@@ -865,7 +865,7 @@ const styles = StyleSheet.create({
   pricingFooterText: {
     fontSize: 13,
     fontWeight: '400',
-    color: '#8e8e93',
+    color: '#A0A0B0',
     textAlign: 'center',
     lineHeight: 18,
   },
@@ -873,11 +873,11 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#c7c7cc',
+    backgroundColor: '#3A3A3C',
   },
   pricingIndicatorActive: {
     width: 24,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
   },
   pricingCardFeature: {
     flexDirection: 'row',
@@ -896,27 +896,27 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: '400',
-    color: '#000000',
+    color: '#F2F2F7',
     lineHeight: 20,
   },
   pricingCardButton: {
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 24,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#e5e5ea',
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   pricingCardButtonSelected: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: '#0A84FF',
+    borderColor: '#0A84FF',
   },
   pricingCardButtonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#000000',
+    color: '#F2F2F7',
   },
   pricingCardButtonTextSelected: {
     color: '#ffffff',
@@ -928,7 +928,7 @@ const styles = StyleSheet.create({
   premiumFeaturesListTitle: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#000000',
+    color: '#F2F2F7',
     marginBottom: 8,
     textAlign: 'center',
     letterSpacing: -0.5,
@@ -936,7 +936,7 @@ const styles = StyleSheet.create({
   premiumFeaturesListSubtitle: {
     fontSize: 16,
     fontWeight: '400',
-    color: '#8e8e93',
+    color: '#A0A0B0',
     marginBottom: 24,
     textAlign: 'center',
   },

@@ -8,7 +8,7 @@ interface PathIconProps {
 
 export const PathIcon: React.FC<PathIconProps> = ({ 
   size = 24, 
-  color = '#000000'
+  color = '#F2F2F7'
 }) => {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">

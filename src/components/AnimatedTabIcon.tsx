@@ -81,9 +81,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   focusedLabel: {
-    color: '#000000',
+    color: '#F2F2F7',
   },
   unfocusedLabel: {
-    color: '#666666',
+    color: '#A0A0B0',
   },
 }); 

@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   topShell: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#0A0A0F',
     height: 60, // Fixed height for status bar + padding
     position: 'absolute',
     top: 0,
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary,
   },
   revealBar: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#0A0A0F',
     borderBottomWidth: theme.borders.width.thick,
     borderBottomColor: theme.colors.primary,
     height: 60,

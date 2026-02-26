@@ -85,12 +85,12 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: 'rgba(255,255,255,0.06)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   focusedContainer: {
-    borderColor: '#007AFF',
+    borderColor: '#0A84FF',
     shadowOpacity: 0.15,
   },
   searchIcon: {
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#000000',
+    color: '#F2F2F7',
     fontWeight: '400',
     minHeight: 24,
   },
@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#c7c7cc',
+    backgroundColor: '#3A3A3C',
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,

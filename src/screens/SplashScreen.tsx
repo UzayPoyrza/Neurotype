@@ -67,7 +67,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f6f1',
+    backgroundColor: '#0A0A0F',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   handwritingText: {
     fontSize: 48,
     fontWeight: 'bold',
-    color: '#3f3f3d',
+    color: '#F2F2F7',
     fontFamily: 'System',
     fontStyle: 'normal',
     textAlign: 'center',

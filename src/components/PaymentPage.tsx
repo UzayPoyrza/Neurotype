@@ -394,10 +394,11 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
                   number: '4242 4242 4242 4242',
                 }}
                 cardStyle={{
-                  backgroundColor: '#ffffff',
-                  textColor: '#000000',
+                  backgroundColor: '#1C1C1E',
+                  textColor: '#F2F2F7',
+                  placeholderColor: '#6B6B7B',
                   borderWidth: 1,
-                  borderColor: cardDetails?.complete === false ? '#FF3B30' : 'rgba(0, 0, 0, 0.1)',
+                  borderColor: cardDetails?.complete === false ? '#FF3B30' : 'rgba(255, 255, 255, 0.06)',
                   borderRadius: 12,
                   fontSize: 17,
                 }}
@@ -419,7 +420,7 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
                 placeholder="John Doe"
                 value={cardholderName}
                 onChangeText={handleCardholderNameChange}
-                placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                placeholderTextColor="#6B6B7B"
               />
             </View>
 
@@ -436,7 +437,7 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
                 onChangeText={handleEmailChange}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                placeholderTextColor="#6B6B7B"
               />
             </View>
 
@@ -540,7 +541,7 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
 const styles = StyleSheet.create({
   page: {
     flex: 1,
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#0A0A0F',
   },
   pageOnboarding: {
     width: Dimensions.get('window').width,
@@ -559,7 +560,7 @@ const styles = StyleSheet.create({
   titleLight: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#000000',
+    color: '#F2F2F7',
     textAlign: 'center',
     marginBottom: 12,
     letterSpacing: -0.5,
@@ -567,7 +568,7 @@ const styles = StyleSheet.create({
   subtitleLight: {
     fontSize: 17,
     fontWeight: '400',
-    color: '#8e8e93',
+    color: '#A0A0B0',
     textAlign: 'center',
   },
   paymentScrollContent: {
@@ -595,10 +596,10 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#0A84FF',
   },
   planSummary: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 20,
     marginBottom: 30,
@@ -623,7 +624,7 @@ const styles = StyleSheet.create({
   planSummaryTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#000000',
+    color: '#F2F2F7',
   },
   paymentSavingsBadge: {
     backgroundColor: '#34C759',
@@ -644,25 +645,25 @@ const styles = StyleSheet.create({
   planPrice: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#000000',
+    color: '#F2F2F7',
     marginRight: 8,
   },
   planPeriod: {
     fontSize: 18,
     fontWeight: '400',
-    color: '#8e8e93',
+    color: '#A0A0B0',
   },
   originalPrice: {
     fontSize: 14,
     fontWeight: '400',
-    color: '#8e8e93',
+    color: '#A0A0B0',
     textDecorationLine: 'line-through',
     marginBottom: 8,
   },
   freeTrialText: {
     fontSize: 14,
     fontWeight: '400',
-    color: '#8e8e93',
+    color: '#A0A0B0',
     marginTop: 8,
   },
   paymentForm: {
@@ -671,7 +672,7 @@ const styles = StyleSheet.create({
   formSectionTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#000000',
+    color: '#F2F2F7',
     marginBottom: 20,
   },
   paymentInputContainer: {
@@ -684,18 +685,18 @@ const styles = StyleSheet.create({
   paymentInputLabel: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#000000',
+    color: '#F2F2F7',
     marginBottom: 8,
   },
   paymentInput: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 17,
-    color: '#000000',
+    color: '#F2F2F7',
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
+    borderColor: 'rgba(255, 255, 255, 0.06)',
   },
   paymentInputError: {
     borderColor: '#FF3B30',
@@ -703,7 +704,7 @@ const styles = StyleSheet.create({
   },
   securityNotice: {
     flexDirection: 'row',
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     padding: 16,
     marginTop: 20,
@@ -717,25 +718,25 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: '400',
-    color: '#8e8e93',
+    color: '#A0A0B0',
     lineHeight: 20,
   },
   completePurchaseButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 32,
     alignItems: 'center',
     marginTop: 30,
     marginBottom: 20,
-    shadowColor: '#007AFF',
+    shadowColor: '#0A84FF',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
   completePurchaseButtonDisabled: {
-    backgroundColor: '#C7C7CC',
+    backgroundColor: '#2C2C2E',
     shadowOpacity: 0,
     elevation: 0,
   },
@@ -745,7 +746,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   completePurchaseButtonTextDisabled: {
-    color: '#8E8E93',
+    color: '#A0A0B0',
   },
   processingContainer: {
     flexDirection: 'row',
@@ -773,7 +774,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   processingContent: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     borderRadius: 20,
     padding: 40,
     alignItems: 'center',
@@ -792,20 +793,20 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
     borderWidth: 4,
-    borderColor: '#007AFF',
+    borderColor: '#0A84FF',
     borderTopColor: 'transparent',
   },
   processingText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000000',
+    color: '#F2F2F7',
     marginBottom: 8,
     textAlign: 'center',
   },
   processingSubtext: {
     fontSize: 14,
     fontWeight: '400',
-    color: '#8E8E93',
+    color: '#A0A0B0',
     textAlign: 'center',
   },
   successOverlay: {
@@ -820,7 +821,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   successContent: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     borderRadius: 20,
     padding: 40,
     alignItems: 'center',
@@ -844,14 +845,14 @@ const styles = StyleSheet.create({
   successTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#000000',
+    color: '#F2F2F7',
     marginBottom: 8,
     textAlign: 'center',
   },
   successSubtext: {
     fontSize: 16,
     fontWeight: '400',
-    color: '#8E8E93',
+    color: '#A0A0B0',
     textAlign: 'center',
   },
   cardField: {

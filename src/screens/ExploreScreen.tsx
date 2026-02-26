@@ -335,17 +335,17 @@ export const ExploreScreen: React.FC = () => {
                 <View style={styles.sortingTitleContainer}>
                   {selectedSort === 'recents' ? (
                     <>
-                      <RecentIcon size={20} color="#000000" />
+                      <RecentIcon size={20} color="#F2F2F7" />
                       <Text style={[styles.sortingTitle, { marginLeft: 6 }]}>Recents</Text>
                     </>
                   ) : selectedSort === 'alphabetical' ? (
                     <>
-                      <AlphabeticalIcon size={20} color="#141124" />
+                      <AlphabeticalIcon size={20} color="#F2F2F7" />
                       <Text style={[styles.sortingTitle, { marginLeft: 6 }]}>Alphabetical</Text>
                     </>
                   ) : (
                     <>
-                      <CategoryIcon size={20} color="#141124" />
+                      <CategoryIcon size={20} color="#F2F2F7" />
                       <Text style={[styles.sortingTitle, { marginLeft: 6 }]}>By Category</Text>
                     </>
                   )}
@@ -396,7 +396,7 @@ export const ExploreScreen: React.FC = () => {
                               </Text>
                             </View>
                             <View style={styles.pinBadge}>
-                              <PinIcon size={14} color="#000000" />
+                              <PinIcon size={14} color="#F2F2F7" />
                             </View>
                           </View>
                           
@@ -526,7 +526,7 @@ export const ExploreScreen: React.FC = () => {
                     }}
                   >
                     <View style={styles.sortOptionTextContainer}>
-                      <RecentIcon size={18} color={selectedSort === 'recents' ? '#000000' : '#8e8e93'} />
+                      <RecentIcon size={18} color={selectedSort === 'recents' ? '#F2F2F7' : '#A0A0B0'} />
                       <Text style={[
                         styles.sortOptionText,
                         selectedSort === 'recents' && styles.sortOptionTextActive,
@@ -555,7 +555,7 @@ export const ExploreScreen: React.FC = () => {
                     }}
                   >
                     <View style={styles.sortOptionTextContainer}>
-                      <AlphabeticalIcon size={18} color={selectedSort === 'alphabetical' ? '#141124' : '#8e8e93'} />
+                      <AlphabeticalIcon size={18} color={selectedSort === 'alphabetical' ? '#F2F2F7' : '#A0A0B0'} />
                       <Text style={[
                         styles.sortOptionText,
                         selectedSort === 'alphabetical' && styles.sortOptionTextActive,
@@ -584,7 +584,7 @@ export const ExploreScreen: React.FC = () => {
                     }}
                   >
                     <View style={styles.sortOptionTextContainer}>
-                      <CategoryIcon size={18} color={selectedSort === 'category' ? '#141124' : '#8e8e93'} />
+                      <CategoryIcon size={18} color={selectedSort === 'category' ? '#F2F2F7' : '#A0A0B0'} />
                       <Text style={[
                         styles.sortOptionText,
                         selectedSort === 'category' && styles.sortOptionTextActive,
@@ -649,7 +649,7 @@ const styles = StyleSheet.create({
   sortingTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#000000',
+    color: '#F2F2F7',
   },
   sortOptionTextContainer: {
     flexDirection: 'row',
@@ -658,7 +658,7 @@ const styles = StyleSheet.create({
   sortingArrow: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#8e8e93',
+    color: '#A0A0B0',
   },
   moduleGrid: {
     gap: 12,
@@ -676,29 +676,29 @@ const styles = StyleSheet.create({
   pinnedModuleTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#000000',
+    color: '#F2F2F7',
     marginBottom: 4,
     lineHeight: 20,
   },
   pinnedModuleDescription: {
     fontSize: 13,
-    color: '#333333',
+    color: '#A0A0B0',
     fontWeight: '500',
     lineHeight: 17,
   },
   likedMeditationsDescription: {
     fontSize: 12,
-    color: '#8e8e93',
+    color: '#A0A0B0',
     fontWeight: '400',
     lineHeight: 16,
   },
   pinBadge: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderWidth: 1,
-    borderColor: '#000000',
+    borderColor: 'rgba(255,255,255,0.06)',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.15,
@@ -712,7 +712,7 @@ const styles = StyleSheet.create({
   },
   pinnedSessionCount: {
     fontSize: 13,
-    color: '#555555',
+    color: '#A0A0B0',
     fontWeight: '600',
   },
   moduleRow: {
@@ -729,7 +729,7 @@ const styles = StyleSheet.create({
     width: '48%', // Take up about half the width instead of full width
   },
   moduleCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     padding: 12,
     shadowColor: '#000',
@@ -760,19 +760,19 @@ const styles = StyleSheet.create({
   moduleCategory: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#8e8e93',
+    color: '#A0A0B0',
     letterSpacing: 0.5,
   },
   moduleTitle: {
     fontSize: 16, // Slightly smaller to fit better
     fontWeight: '600',
-    color: '#000000',
+    color: '#F2F2F7',
     marginBottom: 4, // Reduced from 6
     lineHeight: 20, // Add line height for better control
   },
   moduleDescription: {
     fontSize: 12, // Slightly smaller
-    color: '#8e8e93',
+    color: '#A0A0B0',
     fontWeight: '400',
     lineHeight: 16, // Tighter line height
     marginBottom: 8, // Reduced from 12
@@ -786,28 +786,28 @@ const styles = StyleSheet.create({
   },
   sessionCount: {
     fontSize: 13,
-    color: '#8e8e93',
+    color: '#A0A0B0',
     fontWeight: '500',
   },
   moduleArrow: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#2C2C2E',
     justifyContent: 'center',
     alignItems: 'center',
   },
   moduleArrowText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000000',
+    color: '#F2F2F7',
   },
   currentModuleBadge: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
-    shadowColor: '#007AFF',
+    shadowColor: '#0A84FF',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -822,7 +822,7 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     paddingVertical: 60,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     marginTop: 20,
     shadowColor: '#000',
@@ -832,13 +832,13 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   emptyText: {
-    color: '#000000',
+    color: '#F2F2F7',
     textAlign: 'center',
     fontSize: 17,
     fontWeight: '600',
   },
   emptySubtext: {
-    color: '#8e8e93',
+    color: '#A0A0B0',
     textAlign: 'center',
     marginTop: 8,
     fontSize: 15,
@@ -868,7 +868,7 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   sortModal: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1C1C1E',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     shadowColor: '#000',
@@ -885,19 +885,19 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f2f2f7',
+    borderBottomColor: 'rgba(255,255,255,0.06)',
   },
   dragHandle: {
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#c7c7cc',
+    backgroundColor: '#3A3A3C',
     marginBottom: 16,
   },
   sortModalTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#000000',
+    color: '#F2F2F7',
   },
   sortOptions: {
     paddingHorizontal: 20,
@@ -909,10 +909,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f2f2f7',
+    borderBottomColor: 'rgba(255,255,255,0.06)',
   },
   sortOptionActive: {
-    backgroundColor: '#f2f2f7',
+    backgroundColor: '#2C2C2E',
     borderRadius: 12,
     marginHorizontal: -12,
     paddingHorizontal: 12,
@@ -922,16 +922,16 @@ const styles = StyleSheet.create({
   sortOptionText: {
     fontSize: 17,
     fontWeight: '400',
-    color: '#000000',
+    color: '#F2F2F7',
   },
   sortOptionTextActive: {
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#0A84FF',
   },
   checkMark: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#0A84FF',
   },
   cancelButton: {
     backgroundColor: '#ff3b30',

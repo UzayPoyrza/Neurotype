@@ -14,6 +14,7 @@ import Animated, {
   withTiming,
   Easing,
 } from 'react-native-reanimated';
+import { MaterialCommunityIcons, FontAwesome6 } from '@expo/vector-icons';
 import { MentalHealthModule, categoryColors } from '../data/modules';
 import { theme } from '../styles/theme';
 import { useStore } from '../store/useStore';
@@ -53,13 +54,14 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
     onClose();
   };
 
-  const getCategoryIcon = (category: string) => {
+  const getCategoryIcon = (category: string): React.ReactNode => {
+    const iconProps = { size: 28, color: '#ffffff' };
     switch (category) {
-      case 'disorder': return '🧠';
-      case 'wellness': return '🌱';
-      case 'skill': return '⚡';
-      case 'winddown': return '🌙';
-      default: return '🔹';
+      case 'disorder': return <FontAwesome6 name="brain" size={24} color="#ffffff" />;
+      case 'wellness': return <MaterialCommunityIcons name="sprout" {...iconProps} />;
+      case 'skill': return <MaterialCommunityIcons name="lightning-bolt" {...iconProps} />;
+      case 'winddown': return <MaterialCommunityIcons name="moon-waning-crescent" {...iconProps} />;
+      default: return <MaterialCommunityIcons name="diamond-stone" {...iconProps} />;
     }
   };
 
@@ -260,9 +262,7 @@ export const ModuleGridModal: React.FC<ModuleGridModalProps> = ({
                 
                 {/* Module Icon */}
                 <View style={[styles.iconContainer, { backgroundColor: module.color }]}>
-                  <Text style={styles.categoryIcon}>
-                    {getCategoryIcon(module.category)}
-                  </Text>
+                  {getCategoryIcon(module.category)}
                 </View>
 
                 {/* Selected Indicator */}

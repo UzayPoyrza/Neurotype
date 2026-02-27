@@ -566,165 +566,65 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
       return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     };
 
+    if (completedSessions.length === 0) {
+      return null;
+    }
+
     return (
       <View
-        style={[styles.section, styles.sectionFirst]}
+        style={styles.section}
         onLayout={event => {
           completedSectionY.current = event.nativeEvent.layout.y;
         }}
       >
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Recent Sessions</Text>
-          <Text style={[styles.sectionSubtitle, { color: theme.colors.text.secondary }]}>
-            {completedSessions.length > 0
-              ? completedSessions.length > 6
-                ? `Showing 6 most recent of ${completedSessions.length} sessions`
-                : `${completedSessions.length} completed ${completedSessions.length === 1 ? 'session' : 'sessions'}`
-              : 'Your completed meditations will appear here'}
-          </Text>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Recent</Text>
         </View>
-        {completedSessions.length === 0 ? (
-          <View style={[styles.tomorrowCard, styles.tomorrowCardLocked, { backgroundColor: theme.colors.surface, borderColor: theme.colors.surfaceTertiary }]}>
-            <View style={styles.tomorrowHeader}>
-              <View style={[styles.tomorrowIcon, styles.tomorrowIconLocked, { backgroundColor: theme.colors.surfaceTertiary }]}>
-                <Text style={styles.tomorrowIconText}>🔒</Text>
+        <View style={[styles.recentListCard, { backgroundColor: theme.colors.surface, shadowOpacity: theme.isDark ? 0.3 : 0.06 }]}>
+          {displaySessions.map((item, index) => (
+            <TouchableOpacity
+              key={item.id}
+              style={[
+                styles.recentListItem,
+                index < displaySessions.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.border },
+              ]}
+              onPress={() => navigation.navigate('MeditationDetail', { sessionId: item.session.id })}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.recentListIcon, { backgroundColor: theme.colors.success + '18' }]}>
+                <Text style={[styles.recentListIconText, { color: theme.colors.success }]}>✓</Text>
               </View>
-              <View style={styles.tomorrowLockedContent}>
-                <Text style={[styles.tomorrowLockedTitle, { color: theme.colors.text.secondary }]}>Complete a meditation</Text>
-                <Text style={[styles.tomorrowLockedDescription, { color: theme.colors.text.secondary }]}>
-                  Finish a session to see it here
+              <View style={styles.recentListContent}>
+                <Text style={[styles.recentListTitle, { color: theme.colors.text.primary }]} numberOfLines={1}>
+                  {item.session.title}
+                </Text>
+                <Text style={[styles.recentListMeta, { color: theme.colors.text.tertiary }]}>
+                  {item.session.durationMin} min · {item.session.modality}
                 </Text>
               </View>
+              <Text style={[styles.recentListDate, { color: theme.colors.text.tertiary }]}>
+                {formatDate(item.completedDate)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+          {completedSessions.length > 6 && (
+            <View style={[styles.recentListFooter, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.colors.border }]}>
+              <Text style={[styles.recentListFooterText, { color: theme.colors.text.tertiary }]}>
+                {completedSessions.length - 6} more sessions
+              </Text>
             </View>
-          </View>
-        ) : (
-          <View style={styles.completedScrollContainer}>
-            <ScrollView
-              ref={completedScrollRef}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.completedScrollContent}
-              bounces={false}
-              onScroll={(event) => {
-                const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-                const isAtEnd = contentOffset.x + layoutMeasurement.width >= contentSize.width - 10;
-                const hasOverflow = contentSize.width > layoutMeasurement.width;
-
-                if (isAtEnd || !hasOverflow) {
-                  if (showScrollArrow) {
-                    setShowScrollArrow(false);
-                    Animated.timing(scrollArrowOpacity, {
-                      toValue: 0,
-                      duration: 300,
-                      useNativeDriver: true,
-                    }).start();
-                  }
-                } else {
-                  if (!showScrollArrow) {
-                    setShowScrollArrow(true);
-                    Animated.timing(scrollArrowOpacity, {
-                      toValue: 1,
-                      duration: 300,
-                      useNativeDriver: true,
-                    }).start();
-                  }
-                }
-              }}
-              onLayout={(event) => {
-                scrollViewWidth.current = event.nativeEvent.layout.width;
-              }}
-              onContentSizeChange={(contentWidth, contentHeight) => {
-                // Check if there's overflow on content size change
-                const hasOverflow = contentWidth > scrollViewWidth.current;
-                if (!hasOverflow && showScrollArrow) {
-                  setShowScrollArrow(false);
-                  Animated.timing(scrollArrowOpacity, {
-                    toValue: 0,
-                    duration: 300,
-                    useNativeDriver: true,
-                  }).start();
-                } else if (hasOverflow && !showScrollArrow) {
-                  setShowScrollArrow(true);
-                  Animated.timing(scrollArrowOpacity, {
-                    toValue: 1,
-                    duration: 300,
-                    useNativeDriver: true,
-                  }).start();
-                }
-              }}
-              scrollEventThrottle={16}
-            >
-              {displaySessions.map(item => (
-                <View key={item.id} style={[styles.completedCardWrapper, { shadowOpacity: theme.isDark ? 0.3 : 0.06 }]}>
-                  <TouchableOpacity
-                    style={[styles.completedCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
-                    onPress={() => navigation.navigate('MeditationDetail', { sessionId: item.session.id })}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.completedTitle, { color: theme.colors.text.primary }]} numberOfLines={2}>
-                      {item.session.title}
-                    </Text>
-                    <Text style={[styles.completedMeta, { color: theme.colors.text.secondary }]}>
-                      {item.session.durationMin} min • {item.session.modality}
-                    </Text>
-                    <Text style={[styles.completedDate, { color: theme.colors.success }]}>{formatDate(item.completedDate)}</Text>
-                    <View style={[styles.completedBadge, { backgroundColor: module.color }]}>
-                      <Text style={styles.completedBadgeIcon}>✓</Text>
-                    </View>
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </ScrollView>
-            {completedSessions.length > 0 && (
-              <Animated.View
-                style={[
-                  styles.scrollArrow,
-                  {
-                    opacity: scrollArrowOpacity,
-                    transform: [
-                      {
-                        scale: scrollArrowScale.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [1, 1.1],
-                        }),
-                      },
-                    ],
-                  },
-                ]}
-                pointerEvents="none"
-              >
-                <Text style={styles.scrollArrowText}>›</Text>
-              </Animated.View>
-            )}
-          </View>
-        )}
+          )}
+        </View>
       </View>
     );
   };
 
   const renderTodayPlan = () => {
-    // Use the recommended session passed as prop from TodayScreen
     if (!recommendedSession) {
       return null;
     }
 
-    // Check if this session is completed
     const isCompleted = isSessionCompletedToday(module.id, recommendedSession.id) || todayCompleted;
-
-    // Get completion background color
-    const completionBackgroundColor = createCompletionBackground(
-      module.color,
-      globalBackgroundColor
-    );
-
-    const scale = pulseAnim.interpolate({
-      inputRange: [0, 1],
-      outputRange: [1, 1.04],
-    });
-    const shadowOpacity = pulseAnim.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0.12, 0.3],
-    });
 
     return (
       <View
@@ -734,79 +634,47 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         }}
       >
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Today's Plan</Text>
-          <Text style={[styles.sectionSubtitle, { color: theme.colors.text.secondary }]}>
-            {todayCompleted ? 'You finished today\'s check-in 🎉' : 'Your recommended meditation for today'}
+          <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+            Recommended Today
           </Text>
         </View>
-        <View style={styles.todayList}>
-          <Animated.View
-            style={[
-              styles.todayCardWrapper,
-              {
-                transform: [{ scale }],
-                shadowOpacity,
-                shadowColor: module.color,
-              },
-            ]}
-          >
-            <TouchableOpacity
-              onPress={() => navigation.navigate('MeditationDetail', { sessionId: recommendedSession.id })}
-              activeOpacity={0.85}
-              style={[
-                styles.todayCard,
-                {
-                  borderWidth: 0,
-                  backgroundColor: theme.colors.surface,
-                },
-              ]}
-            >
-              {/* Header with badge */}
-              <View style={styles.todayCardHeader}>
-                <View style={[styles.recommendedBadge, { backgroundColor: module.color }]}>
-                  <Text style={styles.recommendedBadgeText}>
-                    Recommended for you today
-                  </Text>
-                </View>
-              </View>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('MeditationDetail', { sessionId: recommendedSession.id })}
+          activeOpacity={0.85}
+          style={[
+            styles.todayCard,
+            {
+              backgroundColor: theme.colors.surface,
+              borderColor: isCompleted ? theme.colors.success + '40' : module.color + '40',
+              shadowOpacity: theme.isDark ? 0.3 : 0.08,
+            },
+          ]}
+        >
+          <View style={styles.todayCardContentWrapper}>
+            <View style={[styles.todayAccentBar, { backgroundColor: isCompleted ? theme.colors.success : module.color }]} />
+            <View style={styles.todayCardTextSection}>
+              <Text
+                style={[styles.todayCardTitle, { color: isCompleted ? theme.colors.text.tertiary : theme.colors.text.primary }]}
+                numberOfLines={2}
+              >
+                {recommendedSession.title}
+              </Text>
+              <Text style={[styles.todayCardDuration, { color: isCompleted ? theme.colors.text.tertiary : theme.colors.text.secondary }]}>
+                {recommendedSession.durationMin} min · {recommendedSession.modality}
+              </Text>
+            </View>
 
-              {/* Content area with text and play button */}
-              <View style={styles.todayCardContentWrapper}>
-                <View style={styles.todayCardTextSection}>
-                  <Text
-                    style={[styles.todayCardTitle, { color: module.color }]}
-                    numberOfLines={2}
-                  >
-                    {recommendedSession.title}
-                  </Text>
-                  <Text style={[styles.todayCardDuration, { color: theme.colors.text.secondary }]}>
-                    {recommendedSession.durationMin} min • {recommendedSession.modality}
-                  </Text>
-                </View>
-
-                {/* Play button or checkmark positioned center-right */}
-                {isCompleted ? (
-                  <View style={[styles.todayCompletedButton, { backgroundColor: theme.colors.success }]}>
-                    <Text style={styles.todayCompletedCheckmark}>✓</Text>
-                  </View>
-                ) : (
-                  <View style={[styles.todayPlayButton, { backgroundColor: module.color }]}>
-                    <Text style={styles.todayPlayIcon}>▶</Text>
-                  </View>
-                )}
+            {isCompleted ? (
+              <View style={[styles.todayCompletedButton, { backgroundColor: theme.colors.success }]}>
+                <Text style={styles.todayCompletedCheckmark}>✓</Text>
               </View>
-
-              {/* Footer with CTA */}
-              <View style={[styles.todayCardFooter, isCompleted && styles.todayCardFooterCompleted]}>
-                {isCompleted ? (
-                  <Text style={[styles.todayCardCompletedText, { color: theme.colors.text.secondary }]}>You already completed this session today.</Text>
-                ) : (
-                  <Text style={[styles.todayCardCTA, { color: theme.colors.text.primary }]}>Tap to begin session</Text>
-                )}
+            ) : (
+              <View style={[styles.todayPlayButton, { backgroundColor: module.color }]}>
+                <Text style={styles.todayPlayIcon}>▶</Text>
               </View>
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
+            )}
+          </View>
+        </TouchableOpacity>
       </View>
     );
   };
@@ -1015,32 +883,20 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
       }}
     >
       <View style={styles.contentWrapper} onLayout={handleContentLayout}>
-        <View
-          style={[styles.section, styles.sectionFirst]}
-        >
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>{module.title} Progress</Text>
-            <Text style={[styles.sectionSubtitle, { color: theme.colors.text.secondary }]}>
-              Track your journey and milestones
-            </Text>
+        {/* Inline stats */}
+        <View style={styles.overviewStatsRow}>
+          <View style={[styles.overviewStatChip, { backgroundColor: module.color + '18' }]}>
+            <Text style={[styles.overviewStatValue, { color: module.color }]}>{completedSessions.length}</Text>
+            <Text style={[styles.overviewStatLabel, { color: theme.colors.text.secondary }]}>completed</Text>
           </View>
-          <View style={[styles.summaryCard, { borderColor: module.color, backgroundColor: theme.colors.surface, shadowOpacity: theme.isDark ? 0.3 : 0.06 }]}>
-            <View style={styles.summaryStatsRow}>
-              <View style={styles.summaryStat}>
-                <Text style={[styles.summaryStatValue, { color: theme.colors.text.primary }]}>{completedSessions.length}</Text>
-                <Text style={[styles.summaryStatLabel, { color: theme.colors.text.secondary }]}>Completed</Text>
-              </View>
-              <View style={[styles.summaryDivider, { backgroundColor: theme.colors.border }]} />
-              <View style={styles.summaryStat}>
-                <Text style={[styles.summaryStatValue, { color: theme.colors.text.primary }]}>{todayCount}</Text>
-                <Text style={[styles.summaryStatLabel, { color: theme.colors.text.secondary }]}>Today</Text>
-              </View>
-            </View>
+          <View style={[styles.overviewStatChip, { backgroundColor: theme.colors.success + '18' }]}>
+            <Text style={[styles.overviewStatValue, { color: theme.colors.success }]}>{todayCount}</Text>
+            <Text style={[styles.overviewStatLabel, { color: theme.colors.text.secondary }]}>today</Text>
           </View>
         </View>
-        {renderCompletedMeditations()}
+
         {renderTodayPlan()}
-        {renderTomorrowPreview()}
+        {renderCompletedMeditations()}
       </View>
     </ScrollView>
   );
@@ -1221,43 +1077,77 @@ const styles = StyleSheet.create({
   contentWrapper: {
     flexDirection: 'column',
   },
-  summaryCard: {
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
-    elevation: 6,
+  overviewStatsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 8,
+    marginBottom: 4,
   },
-  summaryTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    fontFamily: 'System',
-  },
-  summaryStatsRow: {
+  overviewStatChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    gap: 6,
   },
-  summaryStat: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  summaryStatValue: {
-    fontSize: 18,
+  overviewStatValue: {
+    fontSize: 17,
     fontWeight: '700',
-    fontFamily: 'System',
   },
-  summaryStatLabel: {
-    marginTop: 2,
+  overviewStatLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  recentListCard: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  recentListItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  recentListIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  recentListIconText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  recentListContent: {
+    flex: 1,
+    marginRight: 8,
+  },
+  recentListTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  recentListMeta: {
+    fontSize: 12,
+  },
+  recentListDate: {
     fontSize: 12,
     fontWeight: '500',
-    fontFamily: 'System',
   },
-  summaryDivider: {
-    width: 1,
-    height: 28,
+  recentListFooter: {
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  recentListFooterText: {
+    fontSize: 12,
+    fontWeight: '500',
   },
   section: {
     width: '100%',
@@ -1371,14 +1261,20 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   todayCard: {
-    borderRadius: 20,
-    padding: 18,
-    position: 'relative',
+    borderRadius: 14,
+    padding: 0,
+    overflow: 'hidden',
+    borderWidth: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 8,
     elevation: 3,
+  },
+  todayAccentBar: {
+    width: 4,
+    borderRadius: 2,
+    alignSelf: 'stretch',
+    marginRight: 14,
   },
   todayCardCheckmark: {
     position: 'absolute',
@@ -1411,27 +1307,20 @@ const styles = StyleSheet.create({
   todayCardContentWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
-    position: 'relative',
+    padding: 16,
   },
   todayCardTextSection: {
     flex: 1,
-    marginRight: 10,
+    marginRight: 12,
   },
   todayCardTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    fontFamily: 'System',
-    marginBottom: 6,
-    lineHeight: 26,
-    letterSpacing: -0.4,
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+    letterSpacing: -0.2,
   },
   todayCardDuration: {
-    fontSize: 14,
-    fontFamily: 'System',
-    marginTop: 0,
-    lineHeight: 20,
-    letterSpacing: 0.1,
+    fontSize: 13,
   },
   recommendedBadge: {
     borderRadius: 12,
@@ -1476,37 +1365,24 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   todayPlayButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
-    alignSelf: 'center',
   },
   todayPlayIcon: {
-    fontSize: 18,
+    fontSize: 14,
     color: '#FFFFFF',
     fontWeight: '700',
-    fontFamily: 'System',
     marginLeft: 2,
   },
   todayCompletedButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
-    alignSelf: 'center',
   },
   todayCompletedCheckmark: {
     fontSize: 22,

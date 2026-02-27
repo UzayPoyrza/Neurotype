@@ -1290,7 +1290,9 @@ export const TodayScreen: React.FC = () => {
               >
                 <TouchableOpacity
                   style={[styles.recommendedSession, {
-                    backgroundColor: (todayCompleted || isRecommendedCompleted) ? theme.colors.background : theme.colors.surface,
+                    backgroundColor: (todayCompleted || isRecommendedCompleted)
+                      ? (theme.isDark ? theme.colors.surfaceElevated : theme.colors.background)
+                      : theme.colors.surface,
                     borderColor: theme.colors.border,
                   }]}
                   onPress={() => handleSessionSelect(recommendedSession)}
@@ -1299,13 +1301,13 @@ export const TodayScreen: React.FC = () => {
                   activeOpacity={1}
                 >
                   <View style={styles.sessionContent}>
-                    <Text style={[styles.sessionTitle, { color: theme.colors.text.primary }]} numberOfLines={1}>{recommendedSession.title}</Text>
-                    <Text style={[styles.sessionSubtitle, { color: theme.colors.text.secondary }]} numberOfLines={1}>
+                    <Text style={[styles.sessionTitle, { color: (todayCompleted || isRecommendedCompleted) ? theme.colors.text.tertiary : theme.colors.text.primary }]} numberOfLines={1}>{recommendedSession.title}</Text>
+                    <Text style={[styles.sessionSubtitle, { color: (todayCompleted || isRecommendedCompleted) ? theme.colors.text.tertiary : theme.colors.text.secondary }]} numberOfLines={1}>
                       {recommendedSession.adaptiveReason || 'Recommended for you'}
                     </Text>
 
                     <View style={styles.sessionMeta}>
-                      <Text style={[styles.sessionMetaText, { color: theme.colors.text.secondary }]} numberOfLines={1}>
+                      <Text style={[styles.sessionMetaText, { color: (todayCompleted || isRecommendedCompleted) ? theme.colors.text.tertiary : theme.colors.text.secondary }]} numberOfLines={1}>
                         {recommendedSession.durationMin} min • {recommendedSession.modality}
                       </Text>
                       <View style={[styles.recommendedBadge, { backgroundColor: theme.colors.accent }]}>
@@ -1365,7 +1367,9 @@ export const TodayScreen: React.FC = () => {
                     style={[
                       styles.alternativeSession,
                       {
-                        backgroundColor: isCompleted ? theme.colors.background : theme.colors.surface,
+                        backgroundColor: isCompleted
+                          ? (theme.isDark ? theme.colors.surfaceElevated : theme.colors.background)
+                          : theme.colors.surface,
                         borderColor: theme.colors.borderLight,
                       },
                       isCompleted && styles.alternativeSessionCompleted,

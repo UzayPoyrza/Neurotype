@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Animated, TouchableOpacity, Dimensi
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { Session } from '../types';
 import { MentalHealthModule } from '../data/modules';
 import { mockSessions } from '../data/mockData';
@@ -174,17 +175,21 @@ const NeuroadaptationCard: React.FC<NeuroadaptationCardProps> = ({
                   </Text>
                 </View>
               )}
-              <Animated.Text
+              <Animated.View
                 style={[
-                  styles.timelineChevron,
+                  styles.timelineChevronBtn,
                   {
-                    color: theme.colors.text.tertiary,
+                    backgroundColor: theme.isDark ? '#0A84FF' : '#007AFF',
                     transform: [{ rotate: chevronRotation }],
                   },
                 ]}
               >
-                ▾
-              </Animated.Text>
+                <Ionicons
+                  name="chevron-down"
+                  size={14}
+                  color="#FFFFFF"
+                />
+              </Animated.View>
             </View>
           </View>
 
@@ -1630,9 +1635,12 @@ const styles = StyleSheet.create({
     gap: 6,
     marginTop: 1,
   },
-  timelineChevron: {
-    fontSize: 16,
-    fontWeight: '600',
+  timelineChevronBtn: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   timelineExpandedContent: {
     marginTop: 10,

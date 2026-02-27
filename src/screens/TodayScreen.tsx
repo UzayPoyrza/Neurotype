@@ -1585,11 +1585,11 @@ export const TodayScreen: React.FC = () => {
                 </Text>
               </View>
 
-              <View style={styles.progressPreviewFooter}>
+              <View style={[styles.progressPreviewFooter, { backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
                 <Text style={[styles.progressPreviewFooterText, { color: theme.colors.accent }]}>
-                  Tap to open your full progress path
+                  Open your full progress path
                 </Text>
-                <Text style={[styles.progressPreviewFooterArrow, { color: selectedModule.color }]}>›</Text>
+                <Text style={[styles.progressPreviewFooterArrow, { color: theme.colors.accent }]}>›</Text>
               </View>
             </TouchableOpacity>
           </Animated.View>
@@ -1956,6 +1956,11 @@ const createStyles = (theme: ReturnType<typeof useTheme>) => StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 22,
     borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
   },
   progressPreviewHeader: {
     flexDirection: 'row',
@@ -2059,14 +2064,17 @@ const createStyles = (theme: ReturnType<typeof useTheme>) => StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 10,
   },
   progressPreviewFooterText: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: 14,
+    fontWeight: '600',
   },
   progressPreviewFooterArrow: {
     fontSize: 22,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   progressPreviewTimelineSection: {
     marginTop: 16,

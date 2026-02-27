@@ -261,6 +261,7 @@ export default function App() {
   const hasCompletedOnboarding = useStore(state => state.hasCompletedOnboarding);
   const darkThemeEnabled = useStore(state => state.darkThemeEnabled);
   const [isInitialDataLoaded, setIsInitialDataLoaded] = useState(false);
+  const [isThemeReady, setIsThemeReady] = useState(false);
 
   // Set up notification handlers
   useEffect(() => {
@@ -848,12 +849,13 @@ export default function App() {
               useStore.getState().setSubscriptionIsLifetime(false);
             }
             
-            useStore.setState({ 
-              userId, 
+            setIsThemeReady(true);
+            useStore.setState({
+              userId,
               isLoggedIn: true,
               hasCompletedOnboarding: true
             });
-            
+
             // Load user data when session is restored (don't await - let it run in background)
             loadUserData(userId).catch((loadError) => {
               console.error('❌ [App] Failed to load user data after session restore:', loadError);
@@ -1055,14 +1057,28 @@ export default function App() {
     setShowSplash(false);
   };
 
-  const handleOnboardingFinish = (skipped?: boolean) => {
-    useStore.setState({ 
-      hasCompletedOnboarding: true,
-      isLoggedIn: true 
-    });
-    
+  const handleOnboardingFinish = async (skipped?: boolean) => {
     const userId = useStore.getState().userId;
-    
+
+    // Load theme preference BEFORE showing main app to avoid flash
+    if (userId && !skipped) {
+      try {
+        const prefs = await getUserPreferences(userId);
+        if (prefs && prefs.dark_theme_enabled != null) {
+          useStore.getState().setDarkThemeEnabled(prefs.dark_theme_enabled);
+          console.log('🎨 [App] Applied theme preference before showing main app:', prefs.dark_theme_enabled ? 'dark' : 'light');
+        }
+      } catch (themeError) {
+        console.warn('⚠️ [App] Could not load theme preference, using system default');
+      }
+    }
+
+    setIsThemeReady(true);
+    useStore.setState({
+      hasCompletedOnboarding: true,
+      isLoggedIn: true
+    });
+
     // If user signed in (has userId), load their data
     if (userId && !skipped) {
       console.log('📱 [App] User finished onboarding after sign-in, loading user data...');
@@ -1184,6 +1200,15 @@ export default function App() {
     return (
       <ThemeProvider>
         <OnboardingScreen onFinish={handleOnboardingFinish} />
+      </ThemeProvider>
+    );
+  }
+
+  // Wait for theme preference to load before showing main app to avoid theme flash
+  if (!isThemeReady) {
+    return (
+      <ThemeProvider>
+        <SplashScreen onFinish={() => {}} />
       </ThemeProvider>
     );
   }

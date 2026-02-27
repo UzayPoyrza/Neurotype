@@ -1705,12 +1705,11 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   timelineSummary: {
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 12,
     marginBottom: 20,
-    marginLeft: 48,
   },
   timelineSummaryText: {
     fontSize: 14,

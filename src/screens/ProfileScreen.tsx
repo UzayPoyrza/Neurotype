@@ -1235,7 +1235,7 @@ export const ProfileScreen: React.FC = () => {
                             <View
                               style={[
                                 styles.activityIcon,
-                                { backgroundColor: feedbackBackground, borderWidth: 0 }
+                                { backgroundColor: feedbackBackground, borderWidth: 0, borderRadius: 20 }
                               ]}
                             />
                             <View style={styles.activityInfo}>
@@ -1689,7 +1689,7 @@ const createStyles = (theme: ReturnType<typeof useTheme>) => StyleSheet.create({
   activityItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surfaceElevated,
+    backgroundColor: theme.isDark ? theme.colors.surfaceElevated : 'rgba(0,0,0,0.05)',
     borderRadius: 10,
     padding: 12,
     overflow: 'hidden',

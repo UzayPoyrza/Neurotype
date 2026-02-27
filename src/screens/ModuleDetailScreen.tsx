@@ -470,8 +470,8 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
           style={[
             styles.addedMessage,
             {
-              backgroundColor: theme.colors.surfaceElevated,
-              shadowOpacity: theme.isDark ? 0.3 : 0.06,
+              backgroundColor: theme.isDark ? theme.colors.surfaceElevated : '#1C1C1E',
+              shadowOpacity: theme.isDark ? 0.3 : 0.15,
               opacity: fadeAnim,
               transform: [{
                 translateY: fadeAnim.interpolate({
@@ -482,7 +482,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
             },
           ]}
         >
-          <Text style={[styles.addedMessageText, { color: theme.colors.text.primary }]}>
+          <Text style={[styles.addedMessageText, { color: theme.isDark ? theme.colors.text.primary : '#ffffff' }]}>
             {isLikedAction ? 'Added to Liked meditations' : 'Removed from Liked meditations'}
           </Text>
         </Animated.View>

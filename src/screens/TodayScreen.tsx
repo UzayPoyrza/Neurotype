@@ -1671,9 +1671,9 @@ export const TodayScreen: React.FC = () => {
           style={[
             styles.toastContainer,
             {
-              backgroundColor: theme.colors.surfaceElevated,
-              borderColor: theme.colors.borderMedium,
-              shadowOpacity: theme.isDark ? 0.4 : 0.06,
+              backgroundColor: theme.isDark ? theme.colors.surfaceElevated : '#1C1C1E',
+              borderColor: theme.isDark ? theme.colors.borderMedium : 'transparent',
+              shadowOpacity: theme.isDark ? 0.4 : 0.15,
               opacity: toastAnim,
               transform: [{
                 translateY: toastAnim.interpolate({
@@ -1684,8 +1684,8 @@ export const TodayScreen: React.FC = () => {
             },
           ]}
         >
-          <Text style={[styles.toastText, { color: theme.colors.text.primary }]}>
-            Switched to <Text style={[styles.toastModuleName, { color: theme.colors.text.primary }]}>{toastModuleName}</Text> module
+          <Text style={[styles.toastText, { color: theme.isDark ? theme.colors.text.primary : '#ffffff' }]}>
+            Switched to <Text style={[styles.toastModuleName, { color: theme.isDark ? theme.colors.text.primary : '#ffffff' }]}>{toastModuleName}</Text> module
           </Text>
         </Animated.View>
       )}

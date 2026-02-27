@@ -897,6 +897,7 @@ export const ProfileScreen: React.FC = () => {
               <SubscriptionBadge
                 subscriptionType={subscriptionType}
                 size="medium"
+                moduleColor={moduleBorderColor}
               />
             </View>
             {subscriptionType === 'premium' && subscriptionCancelAt && (

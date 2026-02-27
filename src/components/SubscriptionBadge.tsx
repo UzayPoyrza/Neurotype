@@ -75,7 +75,7 @@ export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({
           paddingVertical: config.paddingV,
           backgroundColor: theme.isDark ? moduleColor + '18' : moduleColor + '12',
           borderWidth: 1.5,
-          borderColor: theme.isDark ? moduleColor + '60' : moduleColor + '40',
+          borderColor: moduleColor,
         },
       ]}
     >

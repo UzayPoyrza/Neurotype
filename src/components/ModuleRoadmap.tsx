@@ -1047,7 +1047,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
 
   return (
     <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <StatusBar barStyle={theme.isDark ? "light-content" : "dark-content"} backgroundColor="transparent" translucent />
 
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         {/* Sticky Header */}

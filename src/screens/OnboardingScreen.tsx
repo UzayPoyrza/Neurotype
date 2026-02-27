@@ -138,13 +138,11 @@ const WelcomePage: React.FC = () => {
             },
           ]}
         >
-          <View style={styles.iconContainer}>
-            <Image
-              source={require('../../assets/icon_no_background.png')}
-              style={styles.icon}
-              resizeMode="contain"
-            />
-          </View>
+          <Image
+            source={require('../../assets/icon.png')}
+            style={styles.icon}
+            resizeMode="contain"
+          />
         </Animated.View>
 
         <Animated.View
@@ -3022,13 +3020,11 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
               },
             ]}
           >
-            <View style={styles.finishIconContainer}>
-              <Image
-                source={require('../../assets/icon_no_background.png')}
-                style={styles.finishIcon}
-                resizeMode="contain"
-              />
-            </View>
+            <Image
+              source={require('../../assets/icon.png')}
+              style={styles.finishIcon}
+              resizeMode="contain"
+            />
             <Text style={styles.finishText}>Welcome to Neurotype!</Text>
             <Text style={styles.finishSubtext}>Let's begin your journey</Text>
           </Animated.View>
@@ -3095,22 +3091,13 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     marginBottom: 30,
   },
   iconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  icon: {
     width: 120,
     height: 120,
     borderRadius: 26,
-    backgroundColor: theme.colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  icon: {
-    width: 100,
-    height: 100,
   },
   titleContainer: {
     alignItems: 'center',
@@ -4164,23 +4151,11 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  finishIconContainer: {
+  finishIcon: {
     width: 140,
     height: 140,
     borderRadius: 30,
-    backgroundColor: theme.colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginBottom: 32,
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  finishIcon: {
-    width: 120,
-    height: 120,
   },
   finishText: {
     fontSize: 36,

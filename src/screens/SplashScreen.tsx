@@ -47,7 +47,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
           {/* App Icon */}
           <View style={styles.iconContainer}>
             <Image
-              source={require('../../assets/icon_no_background.png')}
+              source={require('../../assets/icon.png')}
               style={styles.icon}
               resizeMode="contain"
             />
@@ -77,13 +77,13 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     marginBottom: 20,
-    marginLeft: -15,
     alignItems: 'center',
     justifyContent: 'center',
   },
   icon: {
-    width: 220,
-    height: 220,
+    width: 160,
+    height: 160,
+    borderRadius: 36,
   },
   textContainer: {
     alignItems: 'center',

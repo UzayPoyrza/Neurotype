@@ -3,7 +3,8 @@ import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
 import { Easing } from 'react-native-reanimated';
-import { Modal, StatusBar, Linking as RNLinking, Alert } from 'react-native';
+import { Modal, StatusBar, Platform, Linking as RNLinking, Alert } from 'react-native';
+import * as NavigationBar from 'expo-navigation-bar';
 import * as Linking from 'expo-linking';
 import { linking } from './src/config/linking';
 import { TodayIcon, ProgressIcon, ExploreIcon, ProfileIcon } from './src/components/icons';
@@ -262,6 +263,14 @@ export default function App() {
   const darkThemeEnabled = useStore(state => state.darkThemeEnabled);
   const [isInitialDataLoaded, setIsInitialDataLoaded] = useState(false);
   const [isThemeReady, setIsThemeReady] = useState(false);
+
+  // Make Android navigation bar transparent
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      NavigationBar.setBackgroundColorAsync('transparent');
+      NavigationBar.setPositionAsync('absolute');
+    }
+  }, []);
 
   // Set up notification handlers
   useEffect(() => {

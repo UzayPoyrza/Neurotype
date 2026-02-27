@@ -9,7 +9,8 @@
     "web": "expo start --web",
     "migrate:sessions": "ts-node --project scripts/tsconfig.json scripts/migrateSessions.ts",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "postinstall": "npx patch-package"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
@@ -29,6 +30,7 @@
     "expo-font": "~14.0.8",
     "expo-linear-gradient": "~15.0.8",
     "expo-linking": "~8.0.11",
+    "expo-navigation-bar": "~5.0.10",
     "expo-notifications": "^0.32.16",
     "expo-secure-store": "~15.0.8",
     "expo-updates": "^29.0.16",

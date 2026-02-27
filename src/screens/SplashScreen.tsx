@@ -1,6 +1,9 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Image, Animated, StatusBar } from 'react-native';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme, useIsDark } from '../contexts/ThemeContext';
+
+const lightIcon = require('../../assets/icon.png');
+const darkIcon = require('../../assets/android-icon.png');
 
 interface SplashScreenProps {
   onFinish: () => void;
@@ -8,6 +11,7 @@ interface SplashScreenProps {
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   const theme = useTheme();
+  const isDark = useIsDark();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -47,7 +51,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
           {/* App Icon */}
           <View style={styles.iconContainer}>
             <Image
-              source={require('../../assets/icon.png')}
+              source={isDark ? darkIcon : lightIcon}
               style={styles.icon}
               resizeMode="contain"
             />

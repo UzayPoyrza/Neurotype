@@ -3,8 +3,11 @@ import { View, Text, StyleSheet, Image, Animated, StatusBar, TouchableOpacity, S
 import { LinearGradient } from 'expo-linear-gradient';
 import * as WebBrowser from 'expo-web-browser';
 import Svg, { Path } from 'react-native-svg';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme, useIsDark } from '../contexts/ThemeContext';
 import type { Theme } from '../styles/theme';
+
+const lightIcon = require('../../assets/icon.png');
+const darkIcon = require('../../assets/android-icon.png');
 import { mentalHealthModules, MentalHealthModule } from '../data/modules';
 import { useStore } from '../store/useStore';
 import { AnimatedFloatingButton } from '../components/AnimatedFloatingButton';
@@ -87,6 +90,7 @@ const FeaturePoint: React.FC<{
 // Welcome Page Component
 const WelcomePage: React.FC = () => {
   const theme = useTheme();
+  const isDark = useIsDark();
   const styles = createStyles(theme);
   const iconOpacity = useRef(new Animated.Value(0)).current;
   const iconScale = useRef(new Animated.Value(0.8)).current;
@@ -139,7 +143,7 @@ const WelcomePage: React.FC = () => {
           ]}
         >
           <Image
-            source={require('../../assets/icon.png')}
+            source={isDark ? darkIcon : lightIcon}
             style={styles.icon}
             resizeMode="contain"
           />
@@ -2532,6 +2536,7 @@ const LoginPage: React.FC<{
 
 export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) => {
   const theme = useTheme();
+  const isDark = useIsDark();
   const styles = createStyles(theme);
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
@@ -3021,7 +3026,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
             ]}
           >
             <Image
-              source={require('../../assets/icon.png')}
+              source={isDark ? darkIcon : lightIcon}
               style={styles.finishIcon}
               resizeMode="contain"
             />

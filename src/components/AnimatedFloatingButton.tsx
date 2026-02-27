@@ -300,7 +300,6 @@ const AnimatedFloatingButtonComponent: React.FC<AnimatedFloatingButtonProps> = (
         style={[
           styles.floatingButton,
           {
-            shadowOpacity: theme.isDark ? 0.3 : 0.06,
             transform: [{ translateX: buttonTranslateX }],
           }
         ]}
@@ -311,6 +310,7 @@ const AnimatedFloatingButtonComponent: React.FC<AnimatedFloatingButtonProps> = (
             {
               backgroundColor: backgroundColor,
               width: buttonWidth,
+              shadowOpacity: theme.isDark ? 0.3 : 0.06,
             }
           ]}
         >
@@ -378,22 +378,20 @@ const styles = StyleSheet.create({
   },
   floatingButton: {
     height: 56,
-    borderWidth: 0,
-    borderColor: 'transparent',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 6,
     justifyContent: 'center',
     alignItems: 'center',
     pointerEvents: 'auto',
   },
   buttonBackground: {
     height: 56,
-    borderRadius: 28, // This will create a pill shape when width > height
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 6,
   },
   buttonContent: {
     width: '100%',

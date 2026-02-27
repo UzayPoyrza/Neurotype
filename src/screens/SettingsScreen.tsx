@@ -39,6 +39,7 @@ export const SettingsScreen: React.FC = () => {
     resetAppData,
   } = useStore();
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
+  const globalBackgroundColorLight = useStore(state => state.globalBackgroundColorLight);
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
   const [backButtonWidth, setBackButtonWidth] = React.useState(0);
   const [showHowToUseModal, setShowHowToUseModal] = useState(false);
@@ -591,7 +592,7 @@ export const SettingsScreen: React.FC = () => {
   }, [reminderEnabled, userId]);
 
   return (
-    <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
+    <View style={[styles.container, { backgroundColor: theme.isDark ? globalBackgroundColor : globalBackgroundColorLight }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border }]}>
         <TouchableOpacity
@@ -608,7 +609,7 @@ export const SettingsScreen: React.FC = () => {
         <View style={[styles.headerSpacer, { width: backButtonWidth }]} />
       </View>
 
-      <ScrollView style={[styles.scrollView, { backgroundColor: globalBackgroundColor }]} contentContainerStyle={styles.content}>
+      <ScrollView style={[styles.scrollView, { backgroundColor: theme.isDark ? globalBackgroundColor : globalBackgroundColorLight }]} contentContainerStyle={styles.content}>
         {/* Notifications */}
         <View style={styles.settingSection}>
           <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Notifications</Text>
@@ -790,7 +791,7 @@ export const SettingsScreen: React.FC = () => {
             </View>
 
             <TouchableOpacity
-              style={[styles.resetButton, { backgroundColor: theme.colors.surfaceElevated }]}
+              style={[styles.resetButton, { backgroundColor: theme.isDark ? theme.colors.surfaceElevated : '#ffffff' }]}
               onPress={handleResetAccount}
             >
               <Text style={styles.resetButtonText}>Reset Account</Text>

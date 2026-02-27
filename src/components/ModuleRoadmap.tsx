@@ -179,14 +179,14 @@ const NeuroadaptationCard: React.FC<NeuroadaptationCardProps> = ({
                 style={[
                   styles.timelineChevronBtn,
                   {
-                    backgroundColor: theme.isDark ? '#0A84FF' : '#007AFF',
+                    backgroundColor: theme.isDark ? '#0A84FF' : '#000000',
                     transform: [{ rotate: chevronRotation }],
                   },
                 ]}
               >
                 <Ionicons
                   name="chevron-down"
-                  size={14}
+                  size={12}
                   color="#FFFFFF"
                 />
               </Animated.View>
@@ -966,12 +966,12 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: globalBackgroundColor }]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <StatusBar barStyle={theme.isDark ? "light-content" : "dark-content"} backgroundColor="transparent" translucent />
 
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         {/* Sticky Header */}
-        <View style={[styles.stickyHeader, { backgroundColor: theme.colors.glass.background, borderBottomColor: theme.colors.border, shadowOpacity: theme.isDark ? 0.3 : 0.06 }]}>
+        <View style={[styles.stickyHeader, { backgroundColor: globalBackgroundColor, borderBottomColor: theme.colors.border, shadowOpacity: theme.isDark ? 0.3 : 0.06 }]}>
           <View style={styles.headerContent}>
             <TouchableOpacity
               style={styles.backButton}
@@ -1636,9 +1636,9 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   timelineChevronBtn: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     justifyContent: 'center',
     alignItems: 'center',
   },

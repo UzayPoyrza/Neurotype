@@ -57,6 +57,8 @@ interface NeuroadaptationCardProps {
   totalSessions: number;
   index: number;
   accentColor: string;
+  isActive: boolean;
+  isLast: boolean;
 }
 
 const NeuroadaptationCard: React.FC<NeuroadaptationCardProps> = ({
@@ -67,38 +69,41 @@ const NeuroadaptationCard: React.FC<NeuroadaptationCardProps> = ({
   totalSessions,
   index,
   accentColor,
+  isActive,
+  isLast,
 }) => {
   const theme = useTheme();
   const progressAnim = useRef(new Animated.Value(0)).current;
   const cardOpacity = useRef(new Animated.Value(0)).current;
-  const cardScale = useRef(new Animated.Value(0.95)).current;
+  const [expanded, setExpanded] = useState(isActive);
+  const dropdownAnim = useRef(new Animated.Value(isActive ? 1 : 0)).current;
 
   useEffect(() => {
-    // Stagger card animations
-    Animated.parallel([
-      Animated.timing(cardOpacity, {
-        toValue: 1,
-        duration: 400,
-        delay: index * 100,
-        useNativeDriver: true,
-      }),
-      Animated.spring(cardScale, {
-        toValue: 1,
-        tension: 50,
-        friction: 7,
-        delay: index * 100,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    Animated.timing(cardOpacity, {
+      toValue: 1,
+      duration: 350,
+      delay: index * 80,
+      useNativeDriver: true,
+    }).start();
 
-    // Animate progress bar
     Animated.timing(progressAnim, {
       toValue: progress / 100,
-      duration: 1200,
-      delay: 300 + index * 100,
+      duration: 1000,
+      delay: 200 + index * 80,
       useNativeDriver: false,
     }).start();
-  }, [progress, index, cardOpacity, cardScale, progressAnim]);
+  }, [progress, index, cardOpacity, progressAnim]);
+
+  const toggleExpanded = () => {
+    const next = !expanded;
+    setExpanded(next);
+    Animated.spring(dropdownAnim, {
+      toValue: next ? 1 : 0,
+      tension: 120,
+      friction: 14,
+      useNativeDriver: true,
+    }).start();
+  };
 
   const progressWidth = progressAnim.interpolate({
     inputRange: [0, 1],
@@ -106,91 +111,130 @@ const NeuroadaptationCard: React.FC<NeuroadaptationCardProps> = ({
     extrapolate: 'clamp',
   });
 
-  const progressOpacity = progressAnim.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [0.3, 0.7, 1],
-    extrapolate: 'clamp',
+  const chevronRotation = dropdownAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '180deg'],
   });
 
-  // Convert hex to RGB for rgba colors
-  const hexToRgb = (hex: string) => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result
-      ? {
-          r: parseInt(result[1], 16),
-          g: parseInt(result[2], 16),
-          b: parseInt(result[3], 16),
-        }
-      : { r: 255, g: 107, b: 107 }; // Default to red
-  };
-
-  const rgb = hexToRgb(accentColor);
-  const lightColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.1)`;
-  const borderColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.4)`;
+  // Node colors based on state
+  const lineColor = isUnlocked ? accentColor + '40' : (theme.isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)');
+  const textOpacity = isUnlocked || isPartiallyComplete ? 1 : 0.45;
+  const sessionsLeft = milestone.sessionsRequired - totalSessions;
 
   return (
-    <Animated.View
-      style={[
-        styles.neuroCard,
-        {
-          backgroundColor: theme.colors.surface,
-          borderColor: theme.colors.border,
-          opacity: cardOpacity,
-          transform: [{ scale: cardScale }],
-          borderLeftWidth: 3,
-          borderLeftColor: borderColor,
-          shadowOpacity: theme.isDark ? 0.3 : 0.06,
-        },
-      ]}
-    >
-      <View style={styles.neuroCardHeader}>
-        <View style={styles.neuroCardTitleRow}>
-          <Text style={[styles.neuroCardTitle, { color: theme.colors.text.primary }]}>{milestone.title}</Text>
-          {isUnlocked && (
-            <View style={[styles.checkmarkBadge, { backgroundColor: accentColor }]}>
-              <Text style={styles.checkmarkText}>✓</Text>
+    <Animated.View style={[styles.timelineRow, { opacity: cardOpacity }]}>
+      {/* Left: Node + Connecting Line */}
+      <View style={styles.timelineLeftColumn}>
+        {isUnlocked ? (
+          <View style={[styles.timelineNodeComplete, { backgroundColor: accentColor }]}>
+            <Text style={styles.timelineNodeCheck}>✓</Text>
+          </View>
+        ) : isPartiallyComplete ? (
+          <View style={[styles.timelineNodeActive, { borderColor: accentColor }]}>
+            <View style={[styles.timelineNodeActiveDot, { backgroundColor: accentColor }]} />
+          </View>
+        ) : (
+          <View style={[styles.timelineNodeLocked, { borderColor: theme.isDark ? '#3A3A3C' : '#d1d1d6' }]} />
+        )}
+        {!isLast && (
+          <View style={[styles.timelineConnector, { backgroundColor: lineColor }]} />
+        )}
+      </View>
+
+      {/* Right: Content */}
+      <View style={[styles.timelineContent, { opacity: textOpacity }]}>
+        {/* Tappable header */}
+        <TouchableOpacity activeOpacity={0.7} onPress={toggleExpanded}>
+          <View style={styles.timelineMilestoneHeader}>
+            <Text
+              style={[
+                styles.timelineMilestoneTitle,
+                { color: theme.colors.text.primary },
+                isUnlocked && { color: accentColor },
+              ]}
+              numberOfLines={2}
+            >
+              {milestone.title}
+            </Text>
+            <View style={styles.timelineHeaderRight}>
+              {(isUnlocked || isPartiallyComplete) && (
+                <View style={[
+                  styles.timelineProgressChip,
+                  {
+                    backgroundColor: isUnlocked
+                      ? accentColor + '18'
+                      : (theme.isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'),
+                  },
+                ]}>
+                  <Text style={[
+                    styles.timelineProgressChipText,
+                    { color: isUnlocked ? accentColor : theme.colors.text.secondary },
+                  ]}>
+                    {Math.round(progress)}%
+                  </Text>
+                </View>
+              )}
+              <Animated.Text
+                style={[
+                  styles.timelineChevron,
+                  {
+                    color: theme.colors.text.tertiary,
+                    transform: [{ rotate: chevronRotation }],
+                  },
+                ]}
+              >
+                ▾
+              </Animated.Text>
             </View>
-          )}
-        </View>
-        <Text style={[styles.neuroCardTimeRange, { color: theme.colors.text.secondary }]}>{milestone.timeRange}</Text>
-      </View>
+          </View>
 
-      <View style={styles.progressBarContainer}>
-        <View style={[styles.progressBarTrack, { backgroundColor: theme.colors.surfaceElevated }]}>
-          <Animated.View
-            style={[
-              styles.progressBarFill,
+          {/* Time range */}
+          <Text style={[styles.timelineMilestoneTime, { color: theme.colors.text.tertiary }]}>
+            {milestone.timeRange}
+          </Text>
+        </TouchableOpacity>
+
+        {/* Progress bar — only for in-progress milestones */}
+        {isPartiallyComplete && !isUnlocked && (
+          <View style={styles.timelineProgressBarWrap}>
+            <View style={[styles.timelineProgressTrack, { backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }]}>
+              <Animated.View
+                style={[
+                  styles.timelineProgressFill,
+                  { width: progressWidth, backgroundColor: accentColor },
+                ]}
+              />
+            </View>
+          </View>
+        )}
+
+        {/* Expandable details */}
+        {expanded && (
+          <View style={styles.timelineExpandedContent}>
+            <Text style={[styles.timelineMilestoneDesc, { color: theme.colors.text.secondary }]}>
+              {milestone.description}
+            </Text>
+
+            <View style={[
+              styles.timelineFeelBox,
               {
-                width: progressWidth,
-                opacity: progressOpacity,
-                backgroundColor: accentColor,
+                backgroundColor: accentColor + (theme.isDark ? '10' : '08'),
+                borderColor: accentColor + '30',
               },
-            ]}
-          />
-        </View>
-        <Text style={[styles.progressPercentage, { color: accentColor }]}>
-          {Math.round(progress)}%
-        </Text>
+            ]}>
+              <Text style={[styles.timelineFeelLabel, { color: accentColor }]}>What you'll feel</Text>
+              <Text style={[styles.timelineFeelText, { color: theme.colors.text.secondary }]}>{milestone.whatYouFeel}</Text>
+            </View>
+          </View>
+        )}
+
+        {/* Sessions remaining — only for locked milestones */}
+        {!expanded && !isUnlocked && !isPartiallyComplete && (
+          <Text style={[styles.timelineSessionsLeft, { color: theme.colors.text.tertiary }]}>
+            {sessionsLeft} session{sessionsLeft !== 1 ? 's' : ''} away
+          </Text>
+        )}
       </View>
-
-      <Text style={[styles.neuroCardDescription, { color: theme.colors.text.secondary }]}>{milestone.description}</Text>
-
-      {isPartiallyComplete || isUnlocked ? (
-        <View style={[
-          styles.whatYouFeelContainer,
-          {
-            borderLeftColor: accentColor,
-            backgroundColor: lightColor,
-          }
-        ]}>
-          <Text style={[styles.whatYouFeelLabel, { color: accentColor }]}>What you feel:</Text>
-          <Text style={[styles.whatYouFeelText, { color: theme.colors.text.secondary }]}>{milestone.whatYouFeel}</Text>
-        </View>
-      ) : (
-        <Text style={[styles.sessionsRequired, { color: theme.colors.text.secondary }]}>
-          {milestone.sessionsRequired - totalSessions} more sessions to unlock
-        </Text>
-      )}
     </Animated.View>
   );
 };
@@ -828,6 +872,11 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
       },
     ];
 
+    // Find the first milestone that isn't unlocked yet — that's the "active" one
+    const activeIndex = milestones.findIndex(
+      (m) => totalSessions < m.sessionsRequired
+    );
+
     return (
       <ScrollView
         style={[styles.page, { width: screenWidth }]}
@@ -835,8 +884,16 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.timelineContainer}>
+          {/* Summary chip */}
+          {!isLoadingSessions && (
+            <View style={[styles.timelineSummary, { backgroundColor: theme.isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)' }]}>
+              <Text style={[styles.timelineSummaryText, { color: theme.colors.text.secondary }]}>
+                <Text style={{ color: module.color, fontWeight: '700' }}>{totalSessions}</Text> daily session{totalSessions !== 1 ? 's' : ''} completed
+              </Text>
+            </View>
+          )}
+
           {isLoadingSessions ? (
-            // Show shimmer loading for all 6 milestones
             <>
               <ShimmerNeuroadaptationCard />
               <ShimmerNeuroadaptationCard />
@@ -861,6 +918,8 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
                   totalSessions={totalSessions}
                   index={index}
                   accentColor={module.color}
+                  isActive={index === activeIndex}
+                  isLast={index === milestones.length - 1}
                 />
               );
             })
@@ -1508,101 +1567,146 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontFamily: 'System',
   },
-  neuroCard: {
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 8,
-    elevation: 2,
-    borderWidth: 1,
-  },
-  neuroCardHeader: {
-    marginBottom: 16,
-  },
-  neuroCardTitleRow: {
+  // ── Timeline row (node + content side by side) ──
+  timelineRow: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  timelineLeftColumn: {
+    width: 32,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 6,
+    marginRight: 16,
   },
-  neuroCardTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    fontFamily: 'System',
-    flex: 1,
-  },
-  checkmarkBadge: {
+  timelineNodeComplete: {
     width: 24,
     height: 24,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 8,
   },
-  checkmarkText: {
-    fontSize: 14,
+  timelineNodeCheck: {
+    fontSize: 13,
     color: '#FFFFFF',
     fontWeight: '700',
-    fontFamily: 'System',
   },
-  neuroCardTimeRange: {
-    fontSize: 14,
-    fontWeight: '500',
-    fontFamily: 'System',
-  },
-  progressBarContainer: {
-    flexDirection: 'row',
+  timelineNodeActive: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2.5,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
   },
-  progressBarTrack: {
-    flex: 1,
+  timelineNodeActiveDot: {
+    width: 8,
     height: 8,
     borderRadius: 4,
-    overflow: 'hidden',
-    marginRight: 12,
   },
-  progressBarFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  progressPercentage: {
-    fontSize: 16,
-    fontWeight: '700',
-    fontFamily: 'System',
-    minWidth: 50,
-    textAlign: 'right',
-  },
-  neuroCardDescription: {
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 12,
-    fontFamily: 'System',
-  },
-  whatYouFeelContainer: {
+  timelineNodeLocked: {
+    width: 24,
+    height: 24,
     borderRadius: 12,
-    padding: 12,
-    borderLeftWidth: 3,
+    borderWidth: 2,
   },
-  whatYouFeelLabel: {
-    fontSize: 13,
+  timelineConnector: {
+    width: 2,
+    flex: 1,
+    minHeight: 20,
+    marginVertical: 4,
+  },
+  timelineContent: {
+    flex: 1,
+    paddingBottom: 28,
+  },
+  timelineMilestoneHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  timelineHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 1,
+  },
+  timelineChevron: {
+    fontSize: 16,
     fontWeight: '600',
-    marginBottom: 6,
-    fontFamily: 'System',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
-  whatYouFeelText: {
+  timelineExpandedContent: {
+    marginTop: 10,
+  },
+  timelineMilestoneTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+    flex: 1,
+  },
+  timelineProgressChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    marginTop: 1,
+  },
+  timelineProgressChipText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  timelineMilestoneTime: {
+    fontSize: 13,
+    fontWeight: '500',
+    marginTop: 3,
+  },
+  timelineProgressBarWrap: {
+    marginTop: 10,
+    marginBottom: 2,
+  },
+  timelineProgressTrack: {
+    height: 4,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  timelineProgressFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  timelineMilestoneDesc: {
     fontSize: 14,
     lineHeight: 20,
-    fontFamily: 'System',
+    marginTop: 8,
   },
-  sessionsRequired: {
+  timelineFeelBox: {
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 10,
+    borderWidth: 1,
+  },
+  timelineFeelLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 4,
+    letterSpacing: 0.2,
+  },
+  timelineFeelText: {
     fontSize: 13,
-    fontStyle: 'italic',
-    fontFamily: 'System',
+    lineHeight: 19,
+  },
+  timelineSessionsLeft: {
+    fontSize: 13,
+    marginTop: 4,
+  },
+  timelineSummary: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+    marginBottom: 20,
+    marginLeft: 48,
+  },
+  timelineSummaryText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
   placeholderCard: {
     borderRadius: 16,

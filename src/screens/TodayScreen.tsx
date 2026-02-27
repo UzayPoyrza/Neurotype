@@ -1490,7 +1490,7 @@ export const TodayScreen: React.FC = () => {
                 </View>
               </View>
 
-              <View style={[styles.progressPreviewTimeline, { backgroundColor: theme.colors.surfaceElevated }]}>
+              <View style={[styles.progressPreviewTimeline, { backgroundColor: theme.isDark ? theme.colors.surfaceElevated : 'rgba(0,0,0,0.03)' }]}>
                 <View style={styles.progressPreviewColumn}>
                   <Text style={[styles.progressPreviewSectionLabel, { color: theme.colors.text.secondary }]}>Completed</Text>
                   {completedPreviewSessions.map((session, index) => {

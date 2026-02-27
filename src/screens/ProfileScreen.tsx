@@ -900,13 +900,6 @@ export const ProfileScreen: React.FC = () => {
                 moduleColor={moduleBorderColor}
               />
             </View>
-            {subscriptionType === 'premium' && subscriptionCancelAt && (
-              <View style={styles.cancelMessageContainer}>
-                <Text style={styles.cancelMessageText}>
-                  Your subscription ends at {new Date(subscriptionCancelAt).toLocaleDateString()}. Go to settings to manage your subscription.
-                </Text>
-              </View>
-            )}
             {subscriptionType === 'basic' && (
               <TouchableOpacity
                 style={styles.upgradeButton}
@@ -919,6 +912,13 @@ export const ProfileScreen: React.FC = () => {
               </TouchableOpacity>
             )}
           </View>
+          {subscriptionType === 'premium' && subscriptionCancelAt && (
+            <View style={styles.cancelMessageContainer}>
+              <Text style={styles.cancelMessageText}>
+                Your subscription ends at <Text style={{ fontWeight: '700' }}>{new Date(subscriptionCancelAt).toLocaleDateString()}</Text>. Go to <Text style={{ fontWeight: '700' }}>settings</Text> to manage your subscription.
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Share & Stats Merged Card */}
@@ -1446,16 +1446,14 @@ const createStyles = (theme: ReturnType<typeof useTheme>) => StyleSheet.create({
     color: '#ffffff',
   },
   cancelMessageContainer: {
-    width: '100%',
-    marginTop: 4,
+    marginTop: -4,
     paddingHorizontal: 16,
-    paddingBottom: 4,
+    paddingBottom: 14,
   },
   cancelMessageText: {
-    fontSize: 13,
+    fontSize: 12,
     color: theme.colors.text.tertiary,
-    lineHeight: 18,
-    fontStyle: 'italic',
+    lineHeight: 16,
   },
   profileSubtitle: {
     fontSize: 15,

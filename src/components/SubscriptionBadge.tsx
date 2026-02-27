@@ -48,7 +48,7 @@ export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({
         <Ionicons
           name="diamond"
           size={config.iconSize}
-          color="#DAA520"
+          color="#F0A830"
         />
         <Text
           style={[
@@ -56,11 +56,11 @@ export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({
             {
               fontSize: config.fontSize,
               marginLeft: config.gap,
-              color: theme.isDark ? '#F2F2F7' : '#1a1a2e',
+              color: '#F0A830',
             },
           ]}
         >
-          Neurotype <Text style={styles.proText}>Pro</Text>
+          Neurotype Premium
         </Text>
       </LinearGradient>
     );

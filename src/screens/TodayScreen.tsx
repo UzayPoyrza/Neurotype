@@ -1820,6 +1820,11 @@ const createStyles = (theme: ReturnType<typeof useTheme>) => StyleSheet.create({
     borderWidth: 1,
     position: 'relative',
     minHeight: 104,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
   },
   sessionContent: {
     flex: 1,
@@ -1904,6 +1909,11 @@ const createStyles = (theme: ReturnType<typeof useTheme>) => StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     minHeight: 64,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
   },
   alternativeSessionCompleted: {},
   alternativeSessionContent: {

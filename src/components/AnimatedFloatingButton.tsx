@@ -8,6 +8,7 @@ import {
   PanResponder,
   Dimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
 import Svg, { Path } from 'react-native-svg';
 
@@ -39,18 +40,37 @@ const AnimatedFloatingButtonComponent: React.FC<AnimatedFloatingButtonProps> = (
   onDragStart,
 }) => {
   const theme = useTheme();
-  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+  const insets = useSafeAreaInsets();
+  const { width: screenWidth } = Dimensions.get('window');
   const buttonSize = 56;
   const pillWidth = 120;
   const margin = 16;
+  // Tab bar is position:absolute, so content extends behind it
+  // Tab bar height = 55 + Math.max(insets.bottom, 10) (matches AnimatedTabBar)
+  const tabBarHeight = 55 + Math.max(insets.bottom, 10);
 
-  // Corner positions - top positions account for navigation height (120px) + margin
-  const corners = {
-    'top-left': { x: margin, y: 140 },
-    'top-right': { x: screenWidth - buttonSize - margin, y: 140 },
-    'bottom-left': { x: margin, y: screenHeight - buttonSize - margin - 80 },
-    'bottom-right': { x: screenWidth - buttonSize - margin, y: screenHeight - buttonSize - margin - 80 },
+  // Container height measured via onLayout (parent is position:absolute filling the screen area)
+  const [containerHeight, setContainerHeight] = useState(0);
+  const containerHeightRef = useRef(0);
+  const tabBarHeightRef = useRef(tabBarHeight);
+  tabBarHeightRef.current = tabBarHeight;
+
+  const handleLayout = (event: any) => {
+    const height = event.nativeEvent.layout.height;
+    if (height > 0) {
+      setContainerHeight(height);
+      containerHeightRef.current = height;
+    }
   };
+
+  const getCorners = (height: number, tabBar: number) => ({
+    'top-left': { x: margin, y: 130 },
+    'top-right': { x: screenWidth - buttonSize - margin, y: 130 },
+    'bottom-left': { x: margin, y: height - tabBar - buttonSize - 6 },
+    'bottom-right': { x: screenWidth - buttonSize - margin, y: height - tabBar - buttonSize - 6 },
+  });
+
+  const corners = getCorners(containerHeight || 600, tabBarHeight);
 
   const [currentCorner, setCurrentCorner] = useState<Corner>('bottom-right');
   const [position, setPosition] = useState(corners[currentCorner]);
@@ -66,15 +86,17 @@ const AnimatedFloatingButtonComponent: React.FC<AnimatedFloatingButtonProps> = (
   const iconScale = useRef(new Animated.Value(1)).current;
   const buttonTranslateX = useRef(new Animated.Value(0)).current;
 
-  // Initialize position only on first mount
+  // Initialize position once container height is measured
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    if (!isInitialized) {
-      pan.setValue(corners[currentCorner]);
+    if (containerHeight > 0 && !isInitialized) {
+      const targetPos = getCorners(containerHeight, tabBarHeight)[currentCorner];
+      pan.setValue(targetPos);
+      setPosition(targetPos);
       setIsInitialized(true);
     }
-  }, [isInitialized]);
+  }, [containerHeight, isInitialized]);
 
   // Animate to pill mode
   useEffect(() => {
@@ -218,11 +240,39 @@ const AnimatedFloatingButtonComponent: React.FC<AnimatedFloatingButtonProps> = (
         const finalX = (pan.x as any)._value;
         const finalY = (pan.y as any)._value;
 
+        // Use refs for dynamic values to avoid stale closure in PanResponder
+        const height = containerHeightRef.current || 600;
+        const tabBar = tabBarHeightRef.current;
         const boundedX = Math.max(margin, Math.min(screenWidth - buttonSize - margin, finalX));
-        const boundedY = Math.max(140, Math.min(screenHeight - buttonSize - 100, finalY));
+        const boundedY = Math.max(130, Math.min(height - tabBar - buttonSize - 6, finalY));
 
-        const nearestCorner = findNearestCorner(boundedX, boundedY);
-        snapToCorner(nearestCorner);
+        // Compute corners using current container height and tab bar height
+        const currentCorners = getCorners(height, tabBar);
+        const distances = Object.entries(currentCorners).map(([corner, pos]) => ({
+          corner: corner as Corner,
+          distance: Math.sqrt(Math.pow(boundedX - pos.x, 2) + Math.pow(boundedY - pos.y, 2)),
+        }));
+        const nearestCorner = distances.reduce((nearest, current) =>
+          current.distance < nearest.distance ? current : nearest
+        ).corner;
+
+        const targetPos = currentCorners[nearestCorner];
+        Animated.parallel([
+          Animated.spring(pan, {
+            toValue: targetPos,
+            useNativeDriver: false,
+            tension: 100,
+            friction: 8,
+          }),
+          Animated.spring(scale, {
+            toValue: 1,
+            useNativeDriver: false,
+            tension: 100,
+            friction: 8,
+          }),
+        ]).start();
+        setCurrentCorner(nearestCorner);
+        setPosition(targetPos);
       },
       onPanResponderTerminate: () => {
         setIsDragging(false);
@@ -231,19 +281,21 @@ const AnimatedFloatingButtonComponent: React.FC<AnimatedFloatingButtonProps> = (
   ).current;
 
   return (
-    <Animated.View
-      style={[
-        styles.container,
-        {
-          transform: [
-            { translateX: pan.x },
-            { translateY: pan.y },
-            { scale },
-          ],
-        },
-      ]}
-      {...panResponder.panHandlers}
-    >
+    <View style={styles.layoutContainer} onLayout={handleLayout} pointerEvents="box-none">
+      {isInitialized && (
+      <Animated.View
+        style={[
+          styles.container,
+          {
+            transform: [
+              { translateX: pan.x },
+              { translateY: pan.y },
+              { scale },
+            ],
+          },
+        ]}
+        {...panResponder.panHandlers}
+      >
       <Animated.View
         style={[
           styles.floatingButton,
@@ -305,7 +357,9 @@ const AnimatedFloatingButtonComponent: React.FC<AnimatedFloatingButtonProps> = (
         </TouchableOpacity>
         </Animated.View>
       </Animated.View>
-    </Animated.View>
+      </Animated.View>
+      )}
+    </View>
   );
 };
 
@@ -313,6 +367,9 @@ const AnimatedFloatingButtonComponent: React.FC<AnimatedFloatingButtonProps> = (
 export const AnimatedFloatingButton = React.memo(AnimatedFloatingButtonComponent);
 
 const styles = StyleSheet.create({
+  layoutContainer: {
+    ...StyleSheet.absoluteFillObject,
+  },
   container: {
     position: 'absolute',
     height: 56,

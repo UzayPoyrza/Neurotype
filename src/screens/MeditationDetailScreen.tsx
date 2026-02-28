@@ -10,6 +10,9 @@ import {
   TouchableWithoutFeedback,
   Share,
   ActivityIndicator,
+  ScrollView,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 import Reanimated, {
   useSharedValue,
@@ -89,6 +92,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const userId = useUserId();
   const underlineAnim = useRef(new Animated.Value(0)).current;
   const bottomSheetRef = useRef<BottomSheet>(null);
+  const tabPagerRef = useRef<ScrollView>(null);
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [isShareSheetOpen, setShareSheetOpen] = useState(false);
   const shareSheetProgress = useSharedValue(0);
@@ -276,6 +280,21 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
       duration: 250,
       useNativeDriver: false,
     }).start();
+    tabPagerRef.current?.scrollTo({ x: tabIndex * screenWidth, animated: true });
+  };
+
+  const handleTabPagerScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const offsetX = e.nativeEvent.contentOffset.x;
+    const index = Math.round(offsetX / screenWidth);
+    const tabs: TabType[] = ['summary', 'history', 'howto'];
+    if (tabs[index] && tabs[index] !== activeTab) {
+      setActiveTab(tabs[index]);
+      Animated.timing(underlineAnim, {
+        toValue: index,
+        duration: 250,
+        useNativeDriver: false,
+      }).start();
+    }
   };
 
   const handleTutorialPress = () => {
@@ -791,10 +810,21 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
             />
           </View>
 
-          {/* ─── 4. Tab Content ────────────────────────────── */}
-          {activeTab === 'summary' && renderSummaryTab()}
-          {activeTab === 'history' && renderHistoryTab()}
-          {activeTab === 'howto' && renderHowToTab()}
+          {/* ─── 4. Tab Content (horizontal paging) ─────────── */}
+          <ScrollView
+            ref={tabPagerRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={handleTabPagerScroll}
+            scrollEventThrottle={16}
+            nestedScrollEnabled
+            style={{ width: screenWidth }}
+          >
+            <View style={{ width: screenWidth }}>{renderSummaryTab()}</View>
+            <View style={{ width: screenWidth }}>{renderHistoryTab()}</View>
+            <View style={{ width: screenWidth }}>{renderHowToTab()}</View>
+          </ScrollView>
 
         </BottomSheetScrollView>
       </BottomSheet>

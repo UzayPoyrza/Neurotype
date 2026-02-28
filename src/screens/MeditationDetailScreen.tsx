@@ -500,12 +500,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         : a.dateObj.getTime() - b.dateObj.getTime();
     });
 
-    const cardStyle = {
-      backgroundColor: theme.colors.surface,
-      borderRadius: 14,
-      marginHorizontal: 16,
-      ...(theme.isDark ? { borderWidth: 1, borderColor: theme.colors.border } : {}),
-    };
+    const historyCardBg = theme.colors.surface;
 
     return (
       <View style={styles.tabContent}>
@@ -517,67 +512,106 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
                 <Text style={[styles.historyLoadingText, { color: theme.colors.text.secondary }]}>Loading...</Text>
               </View>
             ) : sortedHistory.length > 0 ? (
-              <>
-                {/* Sort dropdown */}
-                <View style={styles.sortContainer}>
-                  <TouchableOpacity
-                    style={styles.sortButton}
-                    onPress={() => setShowSortOptions(!showSortOptions)}
-                  >
-                    <Text style={styles.sortButtonText}>
-                      {historySortOrder === 'latest' ? 'Latest first' : 'Earliest first'} {showSortOptions ? '\u25B4' : '\u25BE'}
+              <View style={[
+                styles.historyCard,
+                { backgroundColor: historyCardBg },
+                theme.isDark && { borderWidth: 1, borderColor: theme.colors.border },
+              ]}>
+                {/* Card header */}
+                <View style={styles.historyCardHeader}>
+                  <View>
+                    <Text style={[styles.historyCardTitle, { color: theme.colors.text.primary }]}>
+                      Your Sessions
                     </Text>
-                  </TouchableOpacity>
+                    <Text style={[styles.historyCardCount, { color: theme.colors.text.secondary }]}>
+                      {sortedHistory.length} completed
+                    </Text>
+                  </View>
 
-                  {showSortOptions && (
-                    <View style={[styles.sortDropdown, { backgroundColor: theme.colors.surface, ...theme.shadows.medium, ...(theme.isDark ? { borderWidth: 1, borderColor: theme.colors.border } : {}) }]}>
-                      <TouchableOpacity
-                        style={styles.sortOption}
-                        onPress={() => { setHistorySortOrder('latest'); setShowSortOptions(false); }}
-                      >
-                        <Text style={[
-                          styles.sortOptionText,
-                          { color: theme.colors.text.primary },
-                          historySortOrder === 'latest' && { color: theme.colors.accent, fontWeight: '600' },
-                        ]}>Latest first</Text>
-                      </TouchableOpacity>
-                      <View style={[styles.sortOptionSeparator, { backgroundColor: theme.colors.border }]} />
-                      <TouchableOpacity
-                        style={styles.sortOption}
-                        onPress={() => { setHistorySortOrder('earliest'); setShowSortOptions(false); }}
-                      >
-                        <Text style={[
-                          styles.sortOptionText,
-                          { color: theme.colors.text.primary },
-                          historySortOrder === 'earliest' && { color: theme.colors.accent, fontWeight: '600' },
-                        ]}>Earliest first</Text>
-                      </TouchableOpacity>
-                    </View>
+                  {/* Sort control */}
+                  <View style={{ position: 'relative', zIndex: 1000 }}>
+                    <TouchableOpacity
+                      style={styles.sortButton}
+                      onPress={() => setShowSortOptions(!showSortOptions)}
+                    >
+                      <Text style={styles.sortButtonText}>
+                        {historySortOrder === 'latest' ? 'Latest' : 'Earliest'} {showSortOptions ? '\u25B4' : '\u25BE'}
+                      </Text>
+                    </TouchableOpacity>
+
+                    {showSortOptions && (
+                      <View style={[styles.sortDropdown, { backgroundColor: theme.colors.surface, ...theme.shadows.medium, ...(theme.isDark ? { borderWidth: 1, borderColor: theme.colors.border } : {}) }]}>
+                        <TouchableOpacity
+                          style={styles.sortOption}
+                          onPress={() => { setHistorySortOrder('latest'); setShowSortOptions(false); }}
+                        >
+                          <Text style={[
+                            styles.sortOptionText,
+                            { color: theme.colors.text.primary },
+                            historySortOrder === 'latest' && { color: '#007AFF', fontWeight: '600' },
+                          ]}>Latest first</Text>
+                        </TouchableOpacity>
+                        <View style={[styles.sortOptionSeparator, { backgroundColor: theme.colors.border }]} />
+                        <TouchableOpacity
+                          style={styles.sortOption}
+                          onPress={() => { setHistorySortOrder('earliest'); setShowSortOptions(false); }}
+                        >
+                          <Text style={[
+                            styles.sortOptionText,
+                            { color: theme.colors.text.primary },
+                            historySortOrder === 'earliest' && { color: '#007AFF', fontWeight: '600' },
+                          ]}>Earliest first</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                </View>
+
+                {/* Divider */}
+                <View style={[styles.historyCardDivider, { backgroundColor: theme.colors.border }]} />
+
+                {/* Scrollable session rows */}
+                <View style={{ maxHeight: 232, overflow: 'hidden' }}>
+                  <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={false}>
+                    {sortedHistory.map((item, index) => (
+                      <View key={item.id} style={styles.historyRow}>
+                        <View style={styles.historyRowIndex}>
+                          <Text style={[styles.historyRowIndexText, { color: theme.colors.text.tertiary }]}>
+                            {String(index + 1).padStart(2, '0')}
+                          </Text>
+                        </View>
+                        <View style={[styles.historyRowDividerVert, { backgroundColor: theme.colors.border }]} />
+                        <View style={styles.historyRowContent}>
+                          <View style={styles.historyRowLeft}>
+                            <Text style={[styles.historyDate, { color: theme.colors.text.primary }]}>{item.date}</Text>
+                            <Text style={[styles.historyTime, { color: theme.colors.text.secondary }]}>{item.time}</Text>
+                          </View>
+                          <View style={styles.historyRowRight}>
+                            <Text style={[styles.historyDuration, { color: theme.colors.text.primary }]}>{item.duration} min</Text>
+                          </View>
+                        </View>
+                      </View>
+                    ))}
+                  </ScrollView>
+                  {/* Bottom fade when scrollable */}
+                  {sortedHistory.length > 4 && (
+                    <LinearGradient
+                      colors={[historyCardBg + '00', historyCardBg]}
+                      style={styles.historyFadeOverlay}
+                      pointerEvents="none"
+                    />
                   )}
                 </View>
 
-                {/* Sessions list */}
-                <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary, paddingHorizontal: 16, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.8, fontSize: 13, fontWeight: '600' }]}>SESSIONS</Text>
-                <View style={[cardStyle, { overflow: 'hidden' as const }]}>
-                  {sortedHistory.map((item, index) => (
-                    <React.Fragment key={item.id}>
-                      <View style={styles.historyRow}>
-                        <View style={styles.historyRowLeft}>
-                          <Text style={[styles.historyDate, { color: theme.colors.text.primary }]}>{item.date}</Text>
-                          <Text style={[styles.historyTime, { color: theme.colors.text.secondary }]}>{item.time}</Text>
-                        </View>
-                        <View style={styles.historyRowRight}>
-                          <Text style={[styles.historyDuration, { color: theme.colors.text.primary }]}>{item.duration} min</Text>
-                          <View style={[styles.historyGreenDot, { backgroundColor: theme.colors.success }]} />
-                        </View>
-                      </View>
-                      {index < sortedHistory.length - 1 && (
-                        <View style={[styles.historyRowSeparator, { backgroundColor: theme.colors.border }]} />
-                      )}
-                    </React.Fragment>
-                  ))}
-                </View>
-              </>
+                {/* Footer hint */}
+                {sortedHistory.length > 4 && (
+                  <View style={styles.historyFooter}>
+                    <Text style={[styles.historyFooterText, { color: theme.colors.text.tertiary }]}>
+                      Scroll to see all {sortedHistory.length} sessions
+                    </Text>
+                  </View>
+                )}
+              </View>
             ) : (
               <View style={styles.historyEmptyState}>
                 <BarChartIcon size={48} color={theme.colors.text.secondary} />
@@ -1233,13 +1267,32 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontWeight: '500',
   },
-  sortContainer: {
-    alignItems: 'flex-end',
+  historyCard: {
+    marginHorizontal: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  historyCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 16,
-    marginTop: 4,
-    marginBottom: 8,
-    position: 'relative',
-    zIndex: 1000,
+    paddingTop: 16,
+    paddingBottom: 12,
+  },
+  historyCardTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  historyCardCount: {
+    fontSize: 13,
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  historyCardDivider: {
+    height: StyleSheet.hairlineWidth,
+    marginHorizontal: 16,
   },
   sortButton: {
     paddingVertical: 6,
@@ -1253,7 +1306,7 @@ const styles = StyleSheet.create({
   sortDropdown: {
     position: 'absolute',
     top: 36,
-    right: 16,
+    right: 0,
     borderRadius: 10,
     minWidth: 160,
     zIndex: 1001,
@@ -1272,8 +1325,29 @@ const styles = StyleSheet.create({
   },
   historyRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  historyRowIndex: {
+    width: 28,
+  },
+  historyRowIndexText: {
+    fontSize: 13,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: 0.5,
+  },
+  historyRowDividerVert: {
+    width: StyleSheet.hairlineWidth,
+    height: 28,
+    marginRight: 14,
+  },
+  historyRowContent: {
+    flex: 1,
+    flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 16,
+    alignItems: 'center',
   },
   historyRowLeft: {
     flex: 1,
@@ -1283,8 +1357,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   historyTime: {
-    fontSize: 13,
-    marginTop: 2,
+    fontSize: 12,
+    marginTop: 1,
+    fontWeight: '400',
   },
   historyRowRight: {
     alignItems: 'flex-end',
@@ -1292,16 +1367,25 @@ const styles = StyleSheet.create({
   historyDuration: {
     fontSize: 15,
     fontWeight: '600',
+    fontVariant: ['tabular-nums'],
   },
-  historyGreenDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginTop: 4,
+  historyFadeOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 40,
   },
-  historyRowSeparator: {
-    height: StyleSheet.hairlineWidth,
-    marginLeft: 16,
+  historyFooter: {
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(0,0,0,0.06)',
+  },
+  historyFooterText: {
+    fontSize: 12,
+    fontWeight: '500',
+    letterSpacing: 0.2,
   },
   historyEmptyState: {
     alignItems: 'center',

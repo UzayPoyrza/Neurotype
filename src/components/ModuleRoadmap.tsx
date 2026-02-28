@@ -637,7 +637,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
                 styles.recentListItem,
                 index < displaySessions.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.border },
               ]}
-              onPress={() => navigation.navigate('MeditationDetail', { sessionId: item.session.id })}
+              onPress={() => navigation.navigate('MeditationDetail', { sessionId: item.session.id, contextModuleId: module.id })}
               activeOpacity={0.7}
             >
               <View style={[styles.recentListIcon, { backgroundColor: theme.colors.success + '18' }]}>
@@ -688,7 +688,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
           </Text>
         </View>
         <TouchableOpacity
-          onPress={() => navigation.navigate('MeditationDetail', { sessionId: recommendedSession.id })}
+          onPress={() => navigation.navigate('MeditationDetail', { sessionId: recommendedSession.id, contextModuleId: module.id })}
           activeOpacity={0.85}
           style={[
             styles.todayCard,

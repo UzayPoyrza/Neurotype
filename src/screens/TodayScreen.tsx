@@ -797,7 +797,7 @@ export const TodayScreen: React.FC = () => {
     const originalSessionId = session.id.replace('-today', '');
     
     // Navigate to the new meditation detail screen
-    navigation.navigate('MeditationDetail', { sessionId: originalSessionId });
+    navigation.navigate('MeditationDetail', { sessionId: originalSessionId, contextModuleId: selectedModuleId });
   };
 
   const handleStartSession = () => {

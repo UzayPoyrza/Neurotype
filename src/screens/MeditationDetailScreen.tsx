@@ -48,6 +48,7 @@ import { supabase } from '../services/supabase';
 type MeditationDetailStackParamList = {
   MeditationDetail: {
     sessionId: string;
+    contextModuleId?: string;
   };
 };
 
@@ -69,7 +70,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<MeditationDetailNavigationProp>();
   const route = useRoute<MeditationDetailRouteProp>();
-  const { sessionId } = route.params;
+  const { sessionId, contextModuleId } = route.params;
   const globalBackgroundColor = useStore(state => state.globalBackgroundColor);
   const setActiveSession = useStore(state => state.setActiveSession);
   const getCachedSession = useStore(state => state.getCachedSession);
@@ -418,7 +419,13 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   }
 
   // ==================== COMPUTED VALUES ====================
-  const goalColor = getGoalColor(session.goal);
+  // Determine accent color from the module context the user navigated from
+  const contextModule = contextModuleId
+    ? mentalHealthModules.find(m => m.id === contextModuleId)
+    : null;
+  const goalColor = contextModule
+    ? getCategoryColor(contextModule.category)
+    : getGoalColor(session.goal);
 
   const uniqueModuleIds = Array.from(new Set(sessionModules));
   const moduleObjects: MentalHealthModule[] = uniqueModuleIds

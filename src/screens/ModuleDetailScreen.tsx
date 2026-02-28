@@ -340,7 +340,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
     console.log('[ModuleDetailScreen] 👆 User clicked session:', session.id, session.title);
     // Navigate to MeditationDetail screen instead of setting active session
     console.log('[ModuleDetailScreen] 🚀 Navigating to MeditationDetail for session:', session.id);
-    navigation.navigate('MeditationDetail', { sessionId: session.id });
+    navigation.navigate('MeditationDetail', { sessionId: session.id, contextModuleId: moduleId });
   };
 
   if (!module && moduleId !== 'liked-meditations') {

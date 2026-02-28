@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, Animated, Dimensions, TouchableOpacity, FlatList, AccessibilityInfo, TouchableWithoutFeedback, Alert } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Session } from '../types';
 import { useStore, prerenderedModuleBackgrounds, prerenderedLightModuleBackgrounds } from '../store/useStore';
@@ -45,6 +46,8 @@ type TodayScreenNavigationProp = StackNavigationProp<TodayStackParamList, 'Today
 
 export const TodayScreen: React.FC = () => {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = 55 + Math.max(insets.bottom, 10);
   const styles = createStyles(theme);
   const navigation = useNavigation<TodayScreenNavigationProp>();
   const userId = useUserId();
@@ -149,7 +152,7 @@ export const TodayScreen: React.FC = () => {
           ]),
           Animated.sequence([
             Animated.timing(floatingButtonOffset, {
-              toValue: -40, // Move button up 40px
+              toValue: -50, // Move button up to clear toast
               duration: 300,
               useNativeDriver: true,
             }),
@@ -1675,6 +1678,7 @@ export const TodayScreen: React.FC = () => {
           style={[
             styles.toastContainer,
             {
+              bottom: tabBarHeight + 4,
               backgroundColor: theme.isDark ? theme.colors.surfaceElevated : '#1C1C1E',
               borderColor: theme.isDark ? theme.colors.borderMedium : 'transparent',
               shadowOpacity: theme.isDark ? 0.4 : 0.15,
@@ -2146,7 +2150,6 @@ const createStyles = (theme: ReturnType<typeof useTheme>) => StyleSheet.create({
   infoButtonTextActive: {},
   toastContainer: {
     position: 'absolute',
-    bottom: 90,
     left: 20,
     right: 20,
     borderRadius: 14,

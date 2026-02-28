@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, NativeSyntheticEvent, NativeScrollEvent, Dimensions, Animated } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import Svg, { Path } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
@@ -146,6 +147,8 @@ const AnimatedFeedbackItem: React.FC<{
 
 export const ProfileScreen: React.FC = () => {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = 55 + Math.max(insets.bottom, 10);
   const styles = createStyles(theme);
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const { 
@@ -1324,6 +1327,7 @@ export const ProfileScreen: React.FC = () => {
           style={[
             styles.toastContainer,
             {
+              bottom: tabBarHeight + 4,
               opacity: toastAnim,
               transform: [{
                 translateY: toastAnim.interpolate({
@@ -1823,7 +1827,6 @@ const createStyles = (theme: ReturnType<typeof useTheme>) => StyleSheet.create({
   },
   toastContainer: {
     position: 'absolute',
-    bottom: 90,
     left: 20,
     right: 20,
     backgroundColor: theme.isDark ? theme.colors.surfaceElevated : '#1C1C1E',

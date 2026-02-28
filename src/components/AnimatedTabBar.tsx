@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { View, TouchableOpacity, StyleSheet, Animated, Text } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { TodayIcon, ProgressIcon, ExploreIcon, ProfileIcon } from './icons';
 import { useTheme } from '../contexts/ThemeContext';
@@ -12,6 +13,8 @@ export const AnimatedTabBar: React.FC<BottomTabBarProps> = ({
 }) => {
   const theme = useTheme();
   const isDark = theme.isDark;
+  const insets = useSafeAreaInsets();
+  const bottomInset = Math.max(insets.bottom, 10);
 
   const scaleAnimations = useRef<Animated.Value[]>(
     state.routes.map(() => new Animated.Value(1))
@@ -76,7 +79,7 @@ export const AnimatedTabBar: React.FC<BottomTabBarProps> = ({
   const inactiveColor = '#8E8E93';
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { height: 55 + bottomInset }]}>
       <BlurView
         tint={isDark ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'}
         intensity={80}
@@ -85,7 +88,7 @@ export const AnimatedTabBar: React.FC<BottomTabBarProps> = ({
           { borderTopColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)' },
         ]}
       >
-        <View style={styles.tabRow}>
+        <View style={[styles.tabRow, { paddingBottom: bottomInset }]}>
           {state.routes.map((route, index) => {
             const { options } = descriptors[route.key];
             const label = options.tabBarLabel !== undefined
@@ -154,7 +157,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 85,
     overflow: 'hidden',
     zIndex: 1000,
   },
@@ -165,7 +167,6 @@ const styles = StyleSheet.create({
   tabRow: {
     flex: 1,
     flexDirection: 'row',
-    paddingBottom: 20,
     paddingTop: 8,
   },
   tab: {

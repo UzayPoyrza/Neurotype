@@ -13,7 +13,9 @@ import {
   ScrollView,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  Platform,
 } from 'react-native';
+import PagerView from 'react-native-pager-view';
 import Reanimated, {
   useSharedValue,
   useAnimatedStyle,
@@ -93,6 +95,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const underlineAnim = useRef(new Animated.Value(0)).current;
   const bottomSheetRef = useRef<BottomSheet>(null);
   const tabPagerRef = useRef<ScrollView>(null);
+  const pagerRef = useRef<PagerView>(null);
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [isShareSheetOpen, setShareSheetOpen] = useState(false);
   const shareSheetProgress = useSharedValue(0);
@@ -280,9 +283,28 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
       duration: 250,
       useNativeDriver: false,
     }).start();
-    tabPagerRef.current?.scrollTo({ x: tabIndex * screenWidth, animated: true });
+    if (Platform.OS === 'android') {
+      pagerRef.current?.setPage(tabIndex);
+    } else {
+      tabPagerRef.current?.scrollTo({ x: tabIndex * screenWidth, animated: true });
+    }
   };
 
+  // PagerView handlers (Android)
+  const handlePageSelected = (event: any) => {
+    const page = event.nativeEvent.position;
+    const tabs: TabType[] = ['summary', 'history', 'howto'];
+    if (tabs[page] && tabs[page] !== activeTab) {
+      setActiveTab(tabs[page]);
+      Animated.timing(underlineAnim, {
+        toValue: page,
+        duration: 250,
+        useNativeDriver: false,
+      }).start();
+    }
+  };
+
+  // ScrollView handler (iOS)
   const handleTabPagerScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offsetX = e.nativeEvent.contentOffset.x;
     const index = Math.round(offsetX / screenWidth);
@@ -884,20 +906,33 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           </View>
 
           {/* ─── 4. Tab Content (horizontal paging) ─────────── */}
-          <ScrollView
-            ref={tabPagerRef}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={handleTabPagerScroll}
-            scrollEventThrottle={16}
-            nestedScrollEnabled
-            style={{ width: screenWidth }}
-          >
-            <View style={{ width: screenWidth }}>{renderSummaryTab()}</View>
-            <View style={{ width: screenWidth }}>{renderHistoryTab()}</View>
-            <View style={{ width: screenWidth }}>{renderHowToTab()}</View>
-          </ScrollView>
+          {Platform.OS === 'android' ? (
+            <PagerView
+              ref={pagerRef}
+              style={{ width: screenWidth, height: 500 }}
+              initialPage={0}
+              onPageSelected={handlePageSelected}
+            >
+              <View key="summary">{renderSummaryTab()}</View>
+              <View key="history">{renderHistoryTab()}</View>
+              <View key="howto">{renderHowToTab()}</View>
+            </PagerView>
+          ) : (
+            <ScrollView
+              ref={tabPagerRef}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={handleTabPagerScroll}
+              scrollEventThrottle={16}
+              nestedScrollEnabled
+              style={{ width: screenWidth }}
+            >
+              <View style={{ width: screenWidth }}>{renderSummaryTab()}</View>
+              <View style={{ width: screenWidth }}>{renderHistoryTab()}</View>
+              <View style={{ width: screenWidth }}>{renderHowToTab()}</View>
+            </ScrollView>
+          )}
 
         </BottomSheetScrollView>
       </BottomSheet>

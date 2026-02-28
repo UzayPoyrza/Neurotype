@@ -1,0 +1,10 @@
+diff --git a/node_modules/@stripe/stripe-react-native/src/specs/NativeOnrampSdkModule.ts b/node_modules/@stripe/stripe-react-native/src/specs/NativeOnrampSdkModule.ts
+index a9bb5f8..25683e6 100644
+--- a/node_modules/@stripe/stripe-react-native/src/specs/NativeOnrampSdkModule.ts
++++ b/node_modules/@stripe/stripe-react-native/src/specs/NativeOnrampSdkModule.ts
+@@ -44,4 +44,4 @@ export interface Spec extends TurboModule {
+   logout(): Promise<Onramp.VoidResult>;
+ }
+ 
+-export default TurboModuleRegistry.getEnforcing<Spec>('OnrampSdk');
++export default TurboModuleRegistry.get<Spec>('OnrampSdk');

@@ -1,6 +1,7 @@
 import React, { useMemo, useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Animated, ActivityIndicator, Easing } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { SessionCard } from '../components/SessionCard';
 import { Session } from '../types';
@@ -73,6 +74,8 @@ const AnimatedSessionCard: React.FC<{
 
 export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = 55 + Math.max(insets.bottom, 10);
   const route = useRoute<ModuleDetailRouteProp>();
   const navigation = useNavigation<ModuleDetailNavigationProp>();
   const setCurrentScreen = useStore(state => state.setCurrentScreen);
@@ -439,6 +442,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.listContainer}
               ItemSeparatorComponent={() => <View style={{ height: theme.spacing.md }} />}
+              nestedScrollEnabled={true}
             />
 
             {moduleSessions.length === 0 && (
@@ -470,6 +474,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
           style={[
             styles.addedMessage,
             {
+              bottom: tabBarHeight + 4,
               backgroundColor: theme.isDark ? theme.colors.surfaceElevated : '#1C1C1E',
               shadowOpacity: theme.isDark ? 0.3 : 0.15,
               opacity: fadeAnim,
@@ -626,7 +631,6 @@ const styles = StyleSheet.create({
   },
   addedMessage: {
     position: 'absolute',
-    bottom: 90,
     left: 20,
     right: 20,
     borderRadius: 12,

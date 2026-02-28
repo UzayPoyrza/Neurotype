@@ -401,7 +401,7 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
                   textColor: theme.colors.text.primary,
                   placeholderColor: theme.colors.text.tertiary,
                   borderWidth: 1,
-                  borderColor: cardDetails?.complete === false ? '#FF3B30' : theme.colors.border,
+                  borderColor: cardDetails?.complete === false ? '#FF3B30' : (theme.dark ? '#2C2C2E' : '#E5E5EA'),
                   borderRadius: 12,
                   fontSize: 17,
                 }}

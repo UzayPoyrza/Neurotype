@@ -638,32 +638,71 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
     'Take a moment to notice how you feel',
   ];
 
-  const renderHowToTab = () => (
-    <View style={styles.tabContent}>
-      <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary, paddingHorizontal: 16, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.8, fontSize: 13, fontWeight: '600' }]}>PREPARATION</Text>
-      <View style={[{
-        backgroundColor: theme.colors.surface,
-        borderRadius: 14,
-        marginHorizontal: 16,
-        overflow: 'hidden' as const,
-        ...(theme.isDark ? { borderWidth: 1, borderColor: theme.colors.border } : {}),
-      }]}>
-        {instructions.map((instruction, index) => (
-          <React.Fragment key={index}>
-            <View style={styles.instructionRow}>
-              <Text style={[styles.instructionNumber, { color: goalColor }]}>
-                {String(index + 1).padStart(2, '0')}
+  const renderHowToTab = () => {
+    const howToCardBg = theme.colors.surface;
+
+    return (
+      <View style={styles.tabContent}>
+        <View style={[
+          styles.howToCard,
+          { backgroundColor: howToCardBg },
+          theme.isDark && { borderWidth: 1, borderColor: theme.colors.border },
+        ]}>
+          {/* Header */}
+          <View style={styles.howToHeader}>
+            <View>
+              <Text style={[styles.howToTitle, { color: theme.colors.text.primary }]}>
+                Step-by-Step Guide
               </Text>
-              <Text style={[styles.instructionText, { color: theme.colors.text.primary }]}>{instruction}</Text>
+              <Text style={[styles.howToSubtitle, { color: theme.colors.text.secondary }]}>
+                {instructions.length} steps to follow
+              </Text>
             </View>
-            {index < instructions.length - 1 && (
-              <View style={[styles.instructionSeparator, { backgroundColor: theme.colors.border }]} />
+          </View>
+
+          <View style={[styles.howToDivider, { backgroundColor: theme.colors.border }]} />
+
+          {/* Scrollable steps */}
+          <View style={{ maxHeight: 290, overflow: 'hidden' }}>
+            <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={false}>
+              {instructions.map((instruction, index) => (
+                <View key={index} style={styles.howToStep}>
+                  <View style={[styles.howToStepBadge, { backgroundColor: goalColor + '14' }]}>
+                    <Text style={[styles.howToStepNumber, { color: goalColor }]}>
+                      {index + 1}
+                    </Text>
+                  </View>
+                  <View style={styles.howToStepContent}>
+                    <Text style={[styles.howToStepText, { color: theme.colors.text.primary }]}>
+                      {instruction}
+                    </Text>
+                  </View>
+                  {index < instructions.length - 1 && (
+                    <View style={[styles.howToStepConnector, { backgroundColor: goalColor + '20' }]} />
+                  )}
+                </View>
+              ))}
+            </ScrollView>
+            {instructions.length > 5 && (
+              <LinearGradient
+                colors={[howToCardBg + '00', howToCardBg]}
+                style={styles.historyFadeOverlay}
+                pointerEvents="none"
+              />
             )}
-          </React.Fragment>
-        ))}
+          </View>
+
+          {instructions.length > 5 && (
+            <View style={styles.historyFooter}>
+              <Text style={[styles.historyFooterText, { color: theme.colors.text.tertiary }]}>
+                Scroll to see all {instructions.length} steps
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   // ==================== MAIN RENDER ====================
   return (
@@ -1405,27 +1444,65 @@ const styles = StyleSheet.create({
   },
 
   // ── How To Tab ─────────────────────────────────────────
-  instructionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
+  howToCard: {
+    marginHorizontal: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  howToHeader: {
     paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
   },
-  instructionNumber: {
-    fontSize: 20,
+  howToTitle: {
+    fontSize: 17,
     fontWeight: '700',
-    width: 36,
-    fontVariant: ['tabular-nums'],
+    letterSpacing: -0.2,
   },
-  instructionText: {
-    marginLeft: 8,
-    fontSize: 15,
-    lineHeight: 22,
-    flex: 1,
+  howToSubtitle: {
+    fontSize: 13,
+    fontWeight: '500',
+    marginTop: 2,
   },
-  instructionSeparator: {
+  howToDivider: {
     height: StyleSheet.hairlineWidth,
-    marginLeft: 60,
+    marginHorizontal: 16,
+  },
+  howToStep: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    position: 'relative',
+  },
+  howToStepBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  howToStepNumber: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  howToStepContent: {
+    flex: 1,
+    marginLeft: 12,
+    paddingTop: 4,
+  },
+  howToStepText: {
+    fontSize: 15,
+    lineHeight: 21,
+    fontWeight: '400',
+  },
+  howToStepConnector: {
+    position: 'absolute',
+    left: 29,
+    top: 40,
+    width: 2,
+    height: 16,
+    borderRadius: 1,
   },
 
   // ── Share Sheet ────────────────────────────────────────

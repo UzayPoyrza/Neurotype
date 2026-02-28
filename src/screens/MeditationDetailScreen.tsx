@@ -10,9 +10,6 @@ import {
   TouchableWithoutFeedback,
   Share,
   ActivityIndicator,
-  ScrollView,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
 } from 'react-native';
 import Reanimated, {
   useSharedValue,
@@ -27,7 +24,7 @@ import Reanimated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import BottomSheet from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Session } from '../types';
@@ -92,11 +89,6 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const userId = useUserId();
   const underlineAnim = useRef(new Animated.Value(0)).current;
   const bottomSheetRef = useRef<BottomSheet>(null);
-  const contentScrollRef = useRef<ScrollView>(null);
-  const [sheetExpanded, setSheetExpanded] = useState(false);
-  const isCollapsingRef = useRef(false);
-  const hasScrolledContentRef = useRef(false);
-  const expandTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isShareSheetOpen, setShareSheetOpen] = useState(false);
   const shareSheetProgress = useSharedValue(0);
 
@@ -671,49 +663,16 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         index={0}
         enablePanDownToClose={false}
         enableDynamicSizing={false}
-        enableContentPanningGesture={!sheetExpanded}
         enableHandlePanningGesture={true}
-        onAnimate={(_fromIndex, toIndex) => {
-          if (toIndex === 1) {
-            expandTimeoutRef.current = setTimeout(() => {
-              setSheetExpanded(true);
-              hasScrolledContentRef.current = false;
-            }, 400);
-          }
-        }}
-        onChange={(index) => {
-          if (index === 0) {
-            if (expandTimeoutRef.current) {
-              clearTimeout(expandTimeoutRef.current);
-              expandTimeoutRef.current = null;
-            }
-            setSheetExpanded(false);
-            contentScrollRef.current?.scrollTo({ y: 0, animated: false });
-          }
-          isCollapsingRef.current = false;
-        }}
+        enableContentPanningGesture={true}
+        activeOffsetY={[-10, 999]}
         handleIndicatorStyle={{ backgroundColor: theme.colors.surfaceTertiary, width: 36 }}
         backgroundStyle={[styles.contentCard, { backgroundColor: theme.colors.background }]}
         style={styles.bottomSheetShadow}
       >
-        <ScrollView
-          ref={contentScrollRef}
+        <BottomSheetScrollView
           showsVerticalScrollIndicator={false}
-          scrollEnabled={sheetExpanded}
-          bounces={true}
-          scrollEventThrottle={16}
-          onScroll={(e: NativeSyntheticEvent<NativeScrollEvent>) => {
-            const y = e.nativeEvent.contentOffset.y;
-            if (y > 10) {
-              hasScrolledContentRef.current = true;
-            }
-            if (sheetExpanded && hasScrolledContentRef.current && !isCollapsingRef.current && y < -250) {
-              isCollapsingRef.current = true;
-              bottomSheetRef.current?.snapToIndex(0);
-            }
-          }}
           contentContainerStyle={{ paddingBottom: 160 }}
-          style={{ flex: 1 }}
         >
           {/* Title row with like button */}
           <View style={styles.titleRow}>
@@ -817,7 +776,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           {activeTab === 'history' && renderHistoryTab()}
           {activeTab === 'howto' && renderHowToTab()}
 
-        </ScrollView>
+        </BottomSheetScrollView>
       </BottomSheet>
 
       {/* ─── 5. Fixed Begin Session CTA (above tab bar) ──── */}

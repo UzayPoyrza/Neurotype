@@ -682,9 +682,9 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
               activeOpacity={0.7}
             >
               {isLiked ? (
-                <HeartIcon size={24} color="#ff6b6b" />
+                <HeartIcon size={28} color="#ff6b6b" />
               ) : (
-                <HeartOutlineIcon size={24} color={theme.colors.text.tertiary} />
+                <HeartOutlineIcon size={28} color={theme.colors.text.tertiary} />
               )}
             </TouchableOpacity>
           </View>
@@ -953,7 +953,7 @@ const styles = StyleSheet.create({
   },
   titleRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
   },
@@ -965,8 +965,7 @@ const styles = StyleSheet.create({
   },
   likeButton: {
     padding: 4,
-    marginLeft: 12,
-    marginTop: 2,
+    marginLeft: 4,
   },
   // ── Metadata Grid ───────────────────────────────────────
   metadataGrid: {

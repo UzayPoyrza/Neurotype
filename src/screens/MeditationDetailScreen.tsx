@@ -32,7 +32,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useStore, prerenderedModuleBackgrounds } from '../store/useStore';
 import { BarChartIcon } from '../components/icons/BarChartIcon';
 import { ClockIcon } from '../components/icons/ClockIcon';
-import { HeartIcon, HeartOutlineIcon } from '../components/icons/PlayerIcons';
+import { HeartIcon, HeartOutlineIcon, BackIcon } from '../components/icons/PlayerIcons';
 import Svg, { Path } from 'react-native-svg';
 import { meditationAudioData } from '../data/meditationMockData';
 import { getSessionById, getSessionModules } from '../services/sessionService';
@@ -386,7 +386,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
               style={[styles.floatingBtnInner, { backgroundColor: 'rgba(0,0,0,0.3)' }]}
               onPress={() => navigation.goBack()}
             >
-              <Text style={styles.floatingBtnIcon}>{'\u2039'}</Text>
+              <BackIcon size={20} color="#ffffff" />
             </TouchableOpacity>
           </View>
         </View>
@@ -623,7 +623,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           style={[styles.floatingBtnInner, { backgroundColor: 'rgba(0,0,0,0.3)' }]}
           onPress={() => navigation.goBack()}
         >
-          <Text style={styles.floatingBtnIcon}>{'\u2039'}</Text>
+          <BackIcon size={20} color="#ffffff" />
         </TouchableOpacity>
       </View>
 

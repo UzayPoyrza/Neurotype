@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Animated, TouchableOpacity, Dimensions, LayoutChangeEvent, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Animated, TouchableOpacity, Dimensions, LayoutChangeEvent, StatusBar, Platform } from 'react-native';
+import PagerView from 'react-native-pager-view';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -266,6 +267,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   const screenWidth = Dimensions.get('window').width;
   const scrollX = useRef(new Animated.Value(0)).current; // Initialize to timeline tab position
   const horizontalScrollRef = useRef<ScrollView>(null);
+  const pagerRef = useRef<PagerView>(null);
   const completedScrollRef = useRef<ScrollView>(null);
   const [showScrollArrow, setShowScrollArrow] = useState(true);
   const scrollArrowOpacity = useRef(new Animated.Value(1)).current;
@@ -467,15 +469,32 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
   const handleTabChange = (tab: TabType) => {
     const tabIndex = tab === 'timeline' ? 0 : 1;
 
-    // Scroll to the appropriate page
-    horizontalScrollRef.current?.scrollTo({
-      x: tabIndex * screenWidth,
-      animated: true,
-    });
+    if (Platform.OS === 'android') {
+      pagerRef.current?.setPage(tabIndex);
+    } else {
+      horizontalScrollRef.current?.scrollTo({
+        x: tabIndex * screenWidth,
+        animated: true,
+      });
+    }
 
     setActiveTab(tab);
   };
 
+  // PagerView handlers (Android)
+  const handlePageScroll = (event: any) => {
+    const { position, offset } = event.nativeEvent;
+    const offsetX = (position + offset) * screenWidth;
+    scrollX.setValue(offsetX);
+  };
+
+  const handlePageSelected = (event: any) => {
+    const page = event.nativeEvent.position;
+    const newTab = page === 0 ? 'timeline' : 'overview';
+    setActiveTab(newTab);
+  };
+
+  // ScrollView handlers (iOS)
   const handleScroll = (event: any) => {
     const offsetX = event.nativeEvent.contentOffset.x;
 
@@ -887,6 +906,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
         style={[styles.page, { width: screenWidth }]}
         contentContainerStyle={styles.timelinePageContent}
         showsVerticalScrollIndicator={false}
+        nestedScrollEnabled={true}
       >
         <View style={styles.timelineContainer}>
           {/* Summary chip */}
@@ -941,6 +961,7 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
       contentContainerStyle={styles.bodyContent}
       showsVerticalScrollIndicator={false}
       bounces={false}
+      nestedScrollEnabled={true}
       onLayout={handleScrollViewLayout}
       onContentSizeChange={(width, height) => {
         setContentHeight(height);
@@ -1026,25 +1047,42 @@ export const ModuleRoadmap: React.FC<ModuleRoadmapProps> = ({
           </View>
         </View>
 
-        {/* Horizontal ScrollView for pages */}
-        <ScrollView
-          ref={horizontalScrollRef}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onScroll={handleScroll}
-          onScrollEndDrag={handleScrollEnd}
-          onMomentumScrollEnd={handleMomentumScrollEnd}
-          scrollEventThrottle={16}
-          style={styles.horizontalScrollView}
-          bounces={false}
-        >
-          {/* Timeline Page */}
-          {renderTimelinePage()}
+        {/* Horizontal paging for pages */}
+        {Platform.OS === 'android' ? (
+          <PagerView
+            ref={pagerRef}
+            style={styles.horizontalScrollView}
+            initialPage={0}
+            onPageScroll={handlePageScroll}
+            onPageSelected={handlePageSelected}
+          >
+            <View key="timeline" style={{ flex: 1 }}>
+              {renderTimelinePage()}
+            </View>
+            <View key="overview" style={{ flex: 1 }}>
+              {renderOverviewPage()}
+            </View>
+          </PagerView>
+        ) : (
+          <ScrollView
+            ref={horizontalScrollRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={handleScroll}
+            onScrollEndDrag={handleScrollEnd}
+            onMomentumScrollEnd={handleMomentumScrollEnd}
+            scrollEventThrottle={16}
+            style={styles.horizontalScrollView}
+            bounces={false}
+          >
+            {/* Timeline Page */}
+            {renderTimelinePage()}
 
-          {/* Overview Page */}
-          {renderOverviewPage()}
-        </ScrollView>
+            {/* Overview Page */}
+            {renderOverviewPage()}
+          </ScrollView>
+        )}
       </SafeAreaView>
     </View>
   );

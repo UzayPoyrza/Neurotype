@@ -11,7 +11,9 @@ import {
   TouchableWithoutFeedback,
   Share,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
+import PagerView from 'react-native-pager-view';
 import Reanimated, {
   useSharedValue,
   useAnimatedStyle,
@@ -74,6 +76,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const userId = useUserId();
   const scrollX = useRef(new Animated.Value(0)).current;
   const horizontalScrollRef = useRef<ScrollView>(null);
+  const pagerRef = useRef<PagerView>(null);
   const draggableActionBarRef = useRef<any>(null);
   const horizontalScrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isShareSheetOpen, setShareSheetOpen] = useState(false);
@@ -272,15 +275,37 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const handleTabChange = (tab: TabType) => {
     const tabIndex = tab === 'summary' ? 0 : tab === 'history' ? 1 : 2;
 
-    // Scroll to the appropriate page
-    horizontalScrollRef.current?.scrollTo({
-      x: tabIndex * screenWidth,
-      animated: true,
-    });
+    if (Platform.OS === 'android') {
+      pagerRef.current?.setPage(tabIndex);
+    } else {
+      horizontalScrollRef.current?.scrollTo({
+        x: tabIndex * screenWidth,
+        animated: true,
+      });
+    }
 
     setActiveTab(tab);
   };
 
+  // PagerView handlers (Android)
+  const handlePageScroll = (event: any) => {
+    const { position, offset } = event.nativeEvent;
+    const offsetX = (position + offset) * screenWidth;
+    scrollX.setValue(offsetX);
+
+    // Trigger button animation to circle mode during horizontal scrolling
+    if (draggableActionBarRef.current) {
+      draggableActionBarRef.current.handleScroll(Math.abs(offsetX));
+    }
+  };
+
+  const handlePageSelected = (event: any) => {
+    const page = event.nativeEvent.position;
+    const newTab = page === 0 ? 'summary' : page === 1 ? 'history' : 'howto';
+    setActiveTab(newTab);
+  };
+
+  // ScrollView handlers (iOS)
   const handleScroll = (event: any) => {
     const offsetX = event.nativeEvent.contentOffset.x;
 
@@ -946,54 +971,105 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           </View>
         </View>
 
-        {/* Horizontal ScrollView for pages */}
-        <ScrollView
-          ref={horizontalScrollRef}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onScroll={handleScroll}
-          onScrollEndDrag={handleScrollEnd}
-          onMomentumScrollEnd={handleMomentumScrollEnd}
-          scrollEventThrottle={16}
-          style={styles.horizontalScrollView}
-          bounces={false}
-        >
-          {/* Summary Page */}
-          <ScrollView
-            style={[styles.page, { width: screenWidth }]}
-            contentContainerStyle={styles.pageContent}
-            onScroll={handleVerticalScroll}
-            scrollEventThrottle={16}
+        {/* Horizontal paging for pages */}
+        {Platform.OS === 'android' ? (
+          <PagerView
+            ref={pagerRef}
+            style={styles.horizontalScrollView}
+            initialPage={0}
+            onPageScroll={handlePageScroll}
+            onPageSelected={handlePageSelected}
           >
-            {renderVisualSection()}
-            {renderMeditationInfo(true)}
-            {renderDescription()}
-            {renderSummaryPage()}
-          </ScrollView>
+            <View key="summary" style={{ flex: 1 }}>
+              <ScrollView
+                style={styles.page}
+                contentContainerStyle={styles.pageContent}
+                onScroll={handleVerticalScroll}
+                scrollEventThrottle={16}
+                nestedScrollEnabled={true}
+              >
+                {renderVisualSection()}
+                {renderMeditationInfo(true)}
+                {renderDescription()}
+                {renderSummaryPage()}
+              </ScrollView>
+            </View>
 
-          {/* History Page */}
-          <ScrollView
-            style={[styles.page, { width: screenWidth }]}
-            contentContainerStyle={styles.historyPageContent}
-            onScroll={handleVerticalScroll}
-            scrollEventThrottle={16}
-          >
-            {renderHistoryPage()}
-          </ScrollView>
+            <View key="history" style={{ flex: 1 }}>
+              <ScrollView
+                style={styles.page}
+                contentContainerStyle={styles.historyPageContent}
+                onScroll={handleVerticalScroll}
+                scrollEventThrottle={16}
+                nestedScrollEnabled={true}
+              >
+                {renderHistoryPage()}
+              </ScrollView>
+            </View>
 
-          {/* How To Page */}
+            <View key="howto" style={{ flex: 1 }}>
+              <ScrollView
+                style={styles.page}
+                contentContainerStyle={styles.howToPageContent}
+                onScroll={handleVerticalScroll}
+                scrollEventThrottle={16}
+                nestedScrollEnabled={true}
+              >
+                {renderVisualSection()}
+                {renderMeditationInfo(false)}
+                {renderHowToPage()}
+              </ScrollView>
+            </View>
+          </PagerView>
+        ) : (
           <ScrollView
-            style={[styles.page, { width: screenWidth }]}
-            contentContainerStyle={styles.howToPageContent}
-            onScroll={handleVerticalScroll}
+            ref={horizontalScrollRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={handleScroll}
+            onScrollEndDrag={handleScrollEnd}
+            onMomentumScrollEnd={handleMomentumScrollEnd}
             scrollEventThrottle={16}
+            style={styles.horizontalScrollView}
+            bounces={false}
           >
-            {renderVisualSection()}
-            {renderMeditationInfo(false)}
-            {renderHowToPage()}
+            {/* Summary Page */}
+            <ScrollView
+              style={[styles.page, { width: screenWidth }]}
+              contentContainerStyle={styles.pageContent}
+              onScroll={handleVerticalScroll}
+              scrollEventThrottle={16}
+            >
+              {renderVisualSection()}
+              {renderMeditationInfo(true)}
+              {renderDescription()}
+              {renderSummaryPage()}
+            </ScrollView>
+
+            {/* History Page */}
+            <ScrollView
+              style={[styles.page, { width: screenWidth }]}
+              contentContainerStyle={styles.historyPageContent}
+              onScroll={handleVerticalScroll}
+              scrollEventThrottle={16}
+            >
+              {renderHistoryPage()}
+            </ScrollView>
+
+            {/* How To Page */}
+            <ScrollView
+              style={[styles.page, { width: screenWidth }]}
+              contentContainerStyle={styles.howToPageContent}
+              onScroll={handleVerticalScroll}
+              scrollEventThrottle={16}
+            >
+              {renderVisualSection()}
+              {renderMeditationInfo(false)}
+              {renderHowToPage()}
+            </ScrollView>
           </ScrollView>
-        </ScrollView>
+        )}
       </SafeAreaView>
 
       {/* Draggable Action Bar */}

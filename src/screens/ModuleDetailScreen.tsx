@@ -442,6 +442,7 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.listContainer}
               ItemSeparatorComponent={() => <View style={{ height: theme.spacing.md }} />}
+              nestedScrollEnabled={true}
             />
 
             {moduleSessions.length === 0 && (

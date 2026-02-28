@@ -65,9 +65,9 @@ const AnimatedFloatingButtonComponent: React.FC<AnimatedFloatingButtonProps> = (
 
   const getCorners = (height: number, tabBar: number) => ({
     'top-left': { x: margin, y: 130 },
-    'top-right': { x: screenWidth - buttonSize - margin, y: 130 },
+    'top-right': { x: screenWidth - pillWidth - margin, y: 130 },
     'bottom-left': { x: margin, y: height - tabBar - buttonSize - 6 },
-    'bottom-right': { x: screenWidth - buttonSize - margin, y: height - tabBar - buttonSize - 6 },
+    'bottom-right': { x: screenWidth - pillWidth - margin, y: height - tabBar - buttonSize - 6 },
   });
 
   const corners = getCorners(containerHeight || 600, tabBarHeight);
@@ -83,8 +83,7 @@ const AnimatedFloatingButtonComponent: React.FC<AnimatedFloatingButtonProps> = (
   const scale = useRef(new Animated.Value(1)).current;
   const buttonWidth = useRef(new Animated.Value(buttonSize)).current;
   const textOpacity = useRef(new Animated.Value(0)).current;
-  const iconScale = useRef(new Animated.Value(1)).current;
-  const buttonTranslateX = useRef(new Animated.Value(0)).current;
+
 
   // Initialize position once container height is measured
   const [isInitialized, setIsInitialized] = useState(false);
@@ -98,69 +97,38 @@ const AnimatedFloatingButtonComponent: React.FC<AnimatedFloatingButtonProps> = (
     }
   }, [containerHeight, isInitialized]);
 
-  // Animate to pill mode
+  // Animate to pill mode — only buttonWidth animates,
+  // buttonBackground uses absolute positioning (right/left) to grow from the correct edge
   useEffect(() => {
-    // Stop any running animations first to prevent jittering
-    buttonWidth.stopAnimation();
-    buttonTranslateX.stopAnimation();
-    textOpacity.stopAnimation();
-    iconScale.stopAnimation();
-
     if (isPillMode) {
-      // Calculate how much to translate left for right-side buttons
-      const translateAmount = isLeftSide ? 0 : -(pillWidth - buttonSize);
-
       Animated.parallel([
         Animated.timing(buttonWidth, {
           toValue: pillWidth,
           duration: 300,
-          useNativeDriver: false, // Width animation requires layout driver
-        }),
-        Animated.timing(buttonTranslateX, {
-          toValue: translateAmount,
-          duration: 300,
-          useNativeDriver: false, // Match the width animation driver for perfect sync
+          useNativeDriver: false,
         }),
         Animated.timing(textOpacity, {
           toValue: 1,
           duration: 200,
           delay: 150,
-          useNativeDriver: true,
-        }),
-        Animated.timing(iconScale, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
       ]).start();
     } else {
-      // Hide text first, then collapse button width
       Animated.sequence([
         Animated.timing(textOpacity, {
           toValue: 0,
           duration: 100,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
-        Animated.parallel([
-          Animated.timing(buttonWidth, {
-            toValue: buttonSize,
-            duration: 300,
-            useNativeDriver: false, // Width animation requires layout driver
-          }),
-          Animated.timing(buttonTranslateX, {
-            toValue: 0,
-            duration: 300,
-            useNativeDriver: false, // Match the width animation driver for perfect sync
-          }),
-          Animated.timing(iconScale, {
-            toValue: 1,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-        ]),
+        Animated.timing(buttonWidth, {
+          toValue: buttonSize,
+          duration: 300,
+          useNativeDriver: false,
+        }),
       ]).start();
     }
-  }, [isPillMode, isLeftSide]);
+  }, [isPillMode]);
 
   const findNearestCorner = (x: number, y: number): Corner => {
     const distances = Object.entries(corners).map(([corner, pos]) => ({
@@ -243,7 +211,7 @@ const AnimatedFloatingButtonComponent: React.FC<AnimatedFloatingButtonProps> = (
         // Use refs for dynamic values to avoid stale closure in PanResponder
         const height = containerHeightRef.current || 600;
         const tabBar = tabBarHeightRef.current;
-        const boundedX = Math.max(margin, Math.min(screenWidth - buttonSize - margin, finalX));
+        const boundedX = Math.max(margin, Math.min(screenWidth - pillWidth - margin, finalX));
         const boundedY = Math.max(130, Math.min(height - tabBar - buttonSize - 6, finalY));
 
         // Compute corners using current container height and tab bar height
@@ -296,14 +264,7 @@ const AnimatedFloatingButtonComponent: React.FC<AnimatedFloatingButtonProps> = (
         ]}
         {...panResponder.panHandlers}
       >
-      <Animated.View
-        style={[
-          styles.floatingButton,
-          {
-            transform: [{ translateX: buttonTranslateX }],
-          }
-        ]}
-      >
+      <View style={styles.floatingButton}>
         <Animated.View
           style={[
             styles.buttonBackground,
@@ -311,6 +272,8 @@ const AnimatedFloatingButtonComponent: React.FC<AnimatedFloatingButtonProps> = (
               backgroundColor: backgroundColor,
               width: buttonWidth,
               shadowOpacity: theme.isDark ? 0.3 : 0.06,
+              right: isLeftSide ? undefined : 0,
+              left: isLeftSide ? 0 : undefined,
             }
           ]}
         >
@@ -324,18 +287,17 @@ const AnimatedFloatingButtonComponent: React.FC<AnimatedFloatingButtonProps> = (
           delayLongPress={500}
         >
         <View style={styles.content}>
-          <Animated.View
+          <View
             style={[
               styles.iconContainer,
               {
-                transform: [{ scale: iconScale }],
                 left: isLeftSide ? 12 : undefined,
                 right: isLeftSide ? undefined : 12,
               }
             ]}
           >
             <ChangeIcon size={20} color="#ffffff" />
-          </Animated.View>
+          </View>
 
           <Animated.View
             style={[
@@ -356,7 +318,7 @@ const AnimatedFloatingButtonComponent: React.FC<AnimatedFloatingButtonProps> = (
         </View>
         </TouchableOpacity>
         </Animated.View>
-      </Animated.View>
+      </View>
       </Animated.View>
       )}
     </View>
@@ -372,17 +334,18 @@ const styles = StyleSheet.create({
   },
   container: {
     position: 'absolute',
+    width: 120,
     height: 56,
     zIndex: 1000,
     pointerEvents: 'box-none',
   },
   floatingButton: {
+    width: 120,
     height: 56,
-    justifyContent: 'center',
-    alignItems: 'center',
     pointerEvents: 'auto',
   },
   buttonBackground: {
+    position: 'absolute',
     height: 56,
     borderRadius: 28,
     justifyContent: 'center',

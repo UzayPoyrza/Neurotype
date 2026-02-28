@@ -1,10 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
   Animated,
   Dimensions,
   StatusBar,
@@ -23,6 +22,7 @@ import Reanimated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Session } from '../types';
@@ -54,7 +54,7 @@ type TabType = 'summary' | 'history' | 'howto';
 
 const screenWidth = Dimensions.get('window').width;
 const HERO_HEIGHT = 280;
-const CARD_OVERLAP = 30;
+const CARD_OVERLAP = 80;
 const TAB_UNDERLINE_WIDTH_FRACTION = 0.6; // underline is 60% of tab width
 
 export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () => {
@@ -80,8 +80,12 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const userId = useUserId();
   const underlineAnim = useRef(new Animated.Value(0)).current;
+  const bottomSheetRef = useRef<BottomSheet>(null);
   const [isShareSheetOpen, setShareSheetOpen] = useState(false);
   const shareSheetProgress = useSharedValue(0);
+
+  // Bottom sheet snap points: 55% collapsed, 80% expanded
+  const snapPoints = useMemo(() => ['55%', '80%'], []);
 
   // Underline tab indicator position
   const tabWidth = screenWidth / 3;
@@ -334,7 +338,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
         {/* Shimmer hero */}
         <View style={[styles.heroGradient, { backgroundColor: theme.colors.surfaceElevated }]}>
-          <View style={[styles.floatingBackBtn, { top: insets.top + 8 }]}>
+          <View style={[styles.fixedBackBtn, { top: insets.top + 8 }]}>
             <TouchableOpacity
               style={[styles.floatingBtnInner, { backgroundColor: 'rgba(0,0,0,0.3)' }]}
               onPress={() => navigation.goBack()}
@@ -564,53 +568,62 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 160 }}
-      >
-        {/* ─── 1. Hero Gradient ─────────────────────────────── */}
-        <LinearGradient
-          colors={[goalColor, darkenColor(goalColor, 0.3)]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.heroGradient]}
+      {/* Fixed back button */}
+      <View style={[styles.fixedBackBtn, { top: insets.top + 8 }]}>
+        <TouchableOpacity
+          style={[styles.floatingBtnInner, { backgroundColor: 'rgba(0,0,0,0.3)' }]}
+          onPress={() => navigation.goBack()}
         >
-          {/* Floating back button */}
-          <View style={[styles.floatingBackBtn, { top: insets.top + 8 }]}>
-            <TouchableOpacity
-              style={[styles.floatingBtnInner, { backgroundColor: 'rgba(0,0,0,0.3)' }]}
-              onPress={() => navigation.goBack()}
-            >
-              <Text style={styles.floatingBtnIcon}>{'\u2039'}</Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.floatingBtnIcon}>{'\u2039'}</Text>
+        </TouchableOpacity>
+      </View>
 
-          {/* Floating share button */}
-          <View style={[styles.floatingShareBtn, { top: insets.top + 8 }]}>
-            <TouchableOpacity
-              style={[styles.floatingBtnInner, { backgroundColor: 'rgba(0,0,0,0.3)' }]}
-              onPress={handleSharePress}
-            >
-              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-                <Path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                <Path d="m16 6-4-4-4 4" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                <Path d="M12 2v13" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </Svg>
-            </TouchableOpacity>
-          </View>
+      {/* Fixed share button */}
+      <View style={[styles.fixedShareBtn, { top: insets.top + 8 }]}>
+        <TouchableOpacity
+          style={[styles.floatingBtnInner, { backgroundColor: 'rgba(0,0,0,0.3)' }]}
+          onPress={handleSharePress}
+        >
+          <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+            <Path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <Path d="m16 6-4-4-4 4" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <Path d="M12 2v13" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </Svg>
+        </TouchableOpacity>
+      </View>
 
-          {/* Duration badge */}
-          <View style={styles.heroDurationBadge}>
-            <Text style={styles.heroDurationText}>{session.durationMin} min</Text>
-          </View>
+      {/* ─── 1. Hero Gradient (fixed behind bottom sheet) ── */}
+      <LinearGradient
+        colors={[goalColor, darkenColor(goalColor, 0.3)]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.heroGradient]}
+      >
+        {/* Duration badge */}
+        <View style={styles.heroDurationBadge}>
+          <Text style={styles.heroDurationText}>{session.durationMin} min</Text>
+        </View>
 
-          {/* Large centered modality emoji + label */}
-          <Text style={styles.heroEmoji}>{getModalityIcon(session.modality)}</Text>
-          <Text style={styles.heroModalityLabel}>{capitalize(session.modality)}</Text>
-        </LinearGradient>
+        {/* Large centered modality emoji + label */}
+        <Text style={styles.heroEmoji}>{getModalityIcon(session.modality)}</Text>
+        <Text style={styles.heroModalityLabel}>{capitalize(session.modality)}</Text>
+      </LinearGradient>
 
-        {/* ─── 2. Content Card (overlaps hero) ─────────────── */}
-        <View style={[styles.contentCard, { backgroundColor: theme.colors.background }]}>
+      {/* ─── 2. Bottom Sheet Card ────────────────────────── */}
+      <BottomSheet
+        ref={bottomSheetRef}
+        snapPoints={snapPoints}
+        index={0}
+        enablePanDownToClose={false}
+        enableDynamicSizing={false}
+        handleIndicatorStyle={{ backgroundColor: theme.colors.surfaceTertiary, width: 36 }}
+        backgroundStyle={[styles.contentCard, { backgroundColor: theme.colors.background }]}
+        style={styles.bottomSheetShadow}
+      >
+        <BottomSheetScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 160 }}
+        >
           {/* Title */}
           <Text style={[styles.contentTitle, { color: theme.colors.text.primary }]}>{session.title}</Text>
 
@@ -696,16 +709,17 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
               ]}
             />
           </View>
-        </View>
 
-        {/* ─── 4. Tab Content ────────────────────────────── */}
-        {activeTab === 'summary' && renderSummaryTab()}
-        {activeTab === 'history' && renderHistoryTab()}
-        {activeTab === 'howto' && renderHowToTab()}
-      </ScrollView>
+          {/* ─── 4. Tab Content ────────────────────────────── */}
+          {activeTab === 'summary' && renderSummaryTab()}
+          {activeTab === 'history' && renderHistoryTab()}
+          {activeTab === 'howto' && renderHowToTab()}
 
-      {/* ─── 5. Pinned Bottom CTA ──────────────────────────── */}
-      <View style={[styles.bottomCTA, { backgroundColor: theme.colors.background, paddingBottom: Math.max(insets.bottom, 16) }]}>
+        </BottomSheetScrollView>
+      </BottomSheet>
+
+      {/* ─── 5. Fixed Begin Session CTA (above tab bar) ──── */}
+      <View style={[styles.ctaSection, { backgroundColor: theme.colors.background, bottom: 85 }]}>
         <TouchableOpacity
           style={[styles.ctaButton, { backgroundColor: goalColor }]}
           onPress={handleStartPress}
@@ -715,15 +729,6 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           <View style={styles.ctaPlayIcon} />
           <Text style={styles.ctaButtonText}>Begin Session</Text>
         </TouchableOpacity>
-        {hasTutorial && (
-          <TouchableOpacity
-            style={styles.tutorialLink}
-            onPress={handleTutorialPress}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.tutorialLinkText, { color: goalColor }]}>Watch Tutorial</Text>
-          </TouchableOpacity>
-        )}
       </View>
 
       {/* Share Preview Bottom Sheet */}
@@ -824,17 +829,23 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
   },
-  floatingBackBtn: {
+  bottomSheetShadow: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  fixedBackBtn: {
     position: 'absolute',
     left: 16,
-    zIndex: 10,
+    zIndex: 100,
   },
-  floatingShareBtn: {
+  fixedShareBtn: {
     position: 'absolute',
     right: 16,
-    zIndex: 10,
+    zIndex: 100,
   },
   floatingBtnInner: {
     width: 40,
@@ -851,7 +862,7 @@ const styles = StyleSheet.create({
   },
   heroDurationBadge: {
     position: 'absolute',
-    bottom: CARD_OVERLAP + 14,
+    bottom: 14,
     right: 16,
     backgroundColor: 'rgba(0,0,0,0.35)',
     paddingHorizontal: 12,
@@ -876,11 +887,9 @@ const styles = StyleSheet.create({
 
   // ── Content Card ───────────────────────────────────────
   contentCard: {
-    marginTop: -CARD_OVERLAP,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 24,
-    zIndex: 1,
   },
   contentTitle: {
     fontSize: 26,
@@ -1036,14 +1045,14 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
 
-  // ── Pinned Bottom CTA ─────────────────────────────────
-  bottomCTA: {
+  // ── Fixed CTA ───────────────────────────────────────────
+  ctaSection: {
     position: 'absolute',
-    bottom: 85,
     left: 0,
     right: 0,
-    paddingTop: 12,
     paddingHorizontal: 16,
+    paddingVertical: 10,
+    zIndex: 50,
   },
   ctaButton: {
     height: 54,
@@ -1067,15 +1076,6 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     color: '#ffffff',
-  },
-  tutorialLink: {
-    marginTop: 10,
-    alignSelf: 'center',
-    paddingBottom: 4,
-  },
-  tutorialLinkText: {
-    fontSize: 15,
-    fontWeight: '500',
   },
 
   // ── History Tab ────────────────────────────────────────

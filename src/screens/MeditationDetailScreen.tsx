@@ -448,7 +448,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary }]}>Also helps with</Text>
           <View style={styles.moduleTagsRow}>
             {moduleObjects.map(mod => (
-              <View key={mod.id} style={[styles.moduleTag, { backgroundColor: getCategoryColor(mod.category) + '12', borderColor: getCategoryColor(mod.category) + '30' }]}>
+              <View key={mod.id} style={[styles.moduleTag, { backgroundColor: theme.colors.surface, borderColor: theme.isDark ? theme.colors.border : 'rgba(0,0,0,0.2)' }]}>
                 <View style={[styles.moduleTagDot, { backgroundColor: getCategoryColor(mod.category) }]} />
                 <Text style={[styles.moduleTagText, { color: theme.colors.text.primary }]}>{mod.title}</Text>
               </View>
@@ -505,7 +505,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
                     style={styles.sortButton}
                     onPress={() => setShowSortOptions(!showSortOptions)}
                   >
-                    <Text style={[styles.sortButtonText, { color: theme.colors.text.secondary }]}>
+                    <Text style={styles.sortButtonText}>
                       {historySortOrder === 'latest' ? 'Latest first' : 'Earliest first'} {showSortOptions ? '\u25B4' : '\u25BE'}
                     </Text>
                   </TouchableOpacity>
@@ -714,23 +714,23 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           <View style={styles.metadataGrid}>
             <View style={styles.metaGridItem}>
               <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
-                <Path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v2h20v-2c0-3.3-6.7-5-10-5z" fill={theme.colors.text.tertiary} />
+                <Path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v2h20v-2c0-3.3-6.7-5-10-5z" fill={theme.isDark ? 'rgba(200,200,210,1)' : 'rgba(60,60,67,0.75)'} />
               </Svg>
               <Text style={[styles.metaGridText, { color: theme.isDark ? 'rgba(200,200,210,1)' : 'rgba(60,60,67,0.75)' }]}>{capitalize(session.modality)}</Text>
             </View>
             <View style={styles.metaGridItem}>
-              <ClockIcon size={14} color={theme.colors.text.tertiary} />
+              <ClockIcon size={14} color={theme.isDark ? 'rgba(200,200,210,1)' : 'rgba(60,60,67,0.75)'} />
               <Text style={[styles.metaGridText, { color: theme.isDark ? 'rgba(200,200,210,1)' : 'rgba(60,60,67,0.75)' }]}>{session.durationMin} min</Text>
             </View>
             <View style={styles.metaGridItem}>
               <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
-                <Path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill={theme.colors.text.tertiary} />
+                <Path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill={theme.isDark ? 'rgba(200,200,210,1)' : 'rgba(60,60,67,0.75)'} />
               </Svg>
               <Text style={[styles.metaGridText, { color: theme.isDark ? 'rgba(200,200,210,1)' : 'rgba(60,60,67,0.75)' }]}>{formattedGoal}</Text>
             </View>
             <View style={styles.metaGridItem}>
               <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
-                <Path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z" fill={theme.colors.text.tertiary} />
+                <Path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z" fill={theme.isDark ? 'rgba(200,200,210,1)' : 'rgba(60,60,67,0.75)'} />
               </Svg>
               <Text style={[styles.metaGridText, { color: theme.isDark ? 'rgba(200,200,210,1)' : 'rgba(60,60,67,0.75)' }]}>{moduleObjects.length > 0 ? `${moduleObjects.length + 1} modules` : '1 module'}</Text>
             </View>
@@ -1122,20 +1122,20 @@ const styles = StyleSheet.create({
   moduleTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 20,
-    borderWidth: 1,
+    borderWidth: 1.5,
   },
   moduleTagDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    marginRight: 7,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 8,
   },
   moduleTagText: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: 14,
+    fontWeight: '600',
   },
 
   // ── Science Callout ────────────────────────────────────
@@ -1215,8 +1215,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   sortButtonText: {
-    fontSize: 15,
-    fontWeight: '400',
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#007AFF',
   },
   sortDropdown: {
     position: 'absolute',

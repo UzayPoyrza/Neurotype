@@ -56,6 +56,7 @@ interface MeditationDetailScreenProps {}
 type TabType = 'summary' | 'history' | 'howto';
 
 const screenWidth = Dimensions.get('window').width;
+const screenHeight = Dimensions.get('window').height;
 const HERO_HEIGHT = 280;
 const CARD_OVERLAP = 80;
 const TAB_UNDERLINE_WIDTH_FRACTION = 0.6; // underline is 60% of tab width
@@ -93,7 +94,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const shareSheetProgress = useSharedValue(0);
 
   // Bottom sheet snap points: 55% collapsed, 80% expanded
-  const snapPoints = useMemo(() => ['55%', '80%'], []);
+  const snapPoints = useMemo(() => [screenHeight - HERO_HEIGHT + 8, '82%'], []);
 
   // Underline tab indicator position
   const tabWidth = screenWidth / 3;

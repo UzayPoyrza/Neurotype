@@ -33,6 +33,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useStore, prerenderedModuleBackgrounds } from '../store/useStore';
 import { BarChartIcon } from '../components/icons/BarChartIcon';
 import { ClockIcon } from '../components/icons/ClockIcon';
+import { HeartIcon, HeartOutlineIcon } from '../components/icons/PlayerIcons';
 import Svg, { Path } from 'react-native-svg';
 import { meditationAudioData } from '../data/meditationMockData';
 import { getSessionById, getSessionModules } from '../services/sessionService';
@@ -71,8 +72,11 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const setActiveSession = useStore(state => state.setActiveSession);
   const getCachedSession = useStore(state => state.getCachedSession);
   const cacheSessions = useStore(state => state.cacheSessions);
+  const likedSessionIds = useStore(state => state.likedSessionIds);
+  const toggleLikedSession = useStore(state => state.toggleLikedSession);
 
   const [session, setSession] = useState<Session | null>(null);
+  const isLiked = session ? likedSessionIds.includes(session.id) : false;
   const [isLoading, setIsLoading] = useState(true);
   const [sessionModules, setSessionModules] = useState<string[]>([]);
   const [sessionHistory, setSessionHistory] = useState<Array<{ id: string; duration: number; date: string; time: string; dateObj: Date }>>([]);
@@ -669,8 +673,21 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           contentContainerStyle={{ paddingBottom: 160 }}
           style={{ flex: 1 }}
         >
-          {/* Title */}
-          <Text style={[styles.contentTitle, { color: theme.colors.text.primary }]}>{session.title}</Text>
+          {/* Title row with like button */}
+          <View style={styles.titleRow}>
+            <Text style={[styles.contentTitle, { color: theme.colors.text.primary }]}>{session.title}</Text>
+            <TouchableOpacity
+              onPress={() => toggleLikedSession(session.id)}
+              style={styles.likeButton}
+              activeOpacity={0.7}
+            >
+              {isLiked ? (
+                <HeartIcon size={24} color="#ff6b6b" />
+              ) : (
+                <HeartOutlineIcon size={24} color={theme.colors.text.tertiary} />
+              )}
+            </TouchableOpacity>
+          </View>
 
           {/* Metadata grid */}
           <View style={styles.metadataGrid}>
@@ -934,11 +951,22 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingTop: 24,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+  },
   contentTitle: {
     fontSize: 26,
     fontWeight: '700',
     letterSpacing: -0.4,
-    paddingHorizontal: 20,
+    flex: 1,
+  },
+  likeButton: {
+    padding: 4,
+    marginLeft: 12,
+    marginTop: 2,
   },
   // ── Metadata Grid ───────────────────────────────────────
   metadataGrid: {

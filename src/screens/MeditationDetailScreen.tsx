@@ -94,7 +94,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const shareSheetProgress = useSharedValue(0);
 
   // Bottom sheet snap points: 55% collapsed, 80% expanded
-  const snapPoints = useMemo(() => [screenHeight - HERO_HEIGHT + 8, '82%'], []);
+  const snapPoints = useMemo(() => [screenHeight - HERO_HEIGHT + 8, '81%'], []);
 
   // Underline tab indicator position
   const tabWidth = screenWidth / 3;

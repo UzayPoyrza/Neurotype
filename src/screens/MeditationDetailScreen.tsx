@@ -672,39 +672,37 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           {/* Title */}
           <Text style={[styles.contentTitle, { color: theme.colors.text.primary }]}>{session.title}</Text>
 
-          {/* Modality badge */}
-          <View style={[styles.modalityBadge, { backgroundColor: goalColor + '15' }]}>
-            <Text style={styles.modalityBadgeEmoji}>{getModalityIcon(session.modality)}</Text>
-            <Text style={[styles.modalityBadgeText, { color: goalColor }]}>{capitalize(session.modality)}</Text>
-          </View>
-
-          {/* Metadata row */}
-          <View style={styles.metadataRow}>
-            <View style={styles.metaItem}>
-              <ClockIcon size={15} color={theme.colors.text.secondary} />
-              <Text style={[styles.metaItemText, { color: theme.colors.text.secondary }]}>{session.durationMin} min</Text>
+          {/* Metadata grid */}
+          <View style={styles.metadataGrid}>
+            <View style={styles.metaGridItem}>
+              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                <Path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v2h20v-2c0-3.3-6.7-5-10-5z" fill={theme.colors.text.tertiary} />
+              </Svg>
+              <Text style={[styles.metaGridText, { color: theme.isDark ? 'rgba(200,200,210,1)' : 'rgba(60,60,67,0.75)' }]}>{capitalize(session.modality)}</Text>
             </View>
-            <View style={[styles.metaDivider, { backgroundColor: theme.colors.border }]} />
-            <View style={styles.metaItem}>
-              <Text style={[styles.metaItemIcon, { color: theme.colors.text.secondary }]}>{'\u{1F3AF}'}</Text>
-              <Text style={[styles.metaItemText, { color: theme.colors.text.secondary }]}>{formattedGoal}</Text>
+            <View style={styles.metaGridItem}>
+              <ClockIcon size={14} color={theme.colors.text.tertiary} />
+              <Text style={[styles.metaGridText, { color: theme.isDark ? 'rgba(200,200,210,1)' : 'rgba(60,60,67,0.75)' }]}>{session.durationMin} min</Text>
             </View>
-            {moduleObjects.length > 0 && (
-              <>
-                <View style={[styles.metaDivider, { backgroundColor: theme.colors.border }]} />
-                <View style={styles.metaItem}>
-                  <Text style={[styles.metaItemIcon, { color: theme.colors.text.secondary }]}>{'\u{1F9E0}'}</Text>
-                  <Text style={[styles.metaItemText, { color: theme.colors.text.secondary }]}>{moduleObjects.length + 1} modules</Text>
-                </View>
-              </>
-            )}
+            <View style={styles.metaGridItem}>
+              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                <Path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill={theme.colors.text.tertiary} />
+              </Svg>
+              <Text style={[styles.metaGridText, { color: theme.isDark ? 'rgba(200,200,210,1)' : 'rgba(60,60,67,0.75)' }]}>{formattedGoal}</Text>
+            </View>
+            <View style={styles.metaGridItem}>
+              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                <Path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z" fill={theme.colors.text.tertiary} />
+              </Svg>
+              <Text style={[styles.metaGridText, { color: theme.isDark ? 'rgba(200,200,210,1)' : 'rgba(60,60,67,0.75)' }]}>{moduleObjects.length > 0 ? `${moduleObjects.length + 1} modules` : '1 module'}</Text>
+            </View>
           </View>
 
           {/* Description */}
           {session.description ? (
             <View style={styles.descriptionSection}>
               <Text style={[styles.descriptionHeader, { color: theme.colors.text.primary }]}>Description</Text>
-              <Text style={[styles.descriptionText, { color: theme.colors.text.primary }]}>
+              <Text style={[styles.descriptionText, { color: theme.isDark ? 'rgba(200,200,210,1)' : 'rgba(60,60,67,0.75)' }]}>
                 {session.description.length > 150 && !isDescriptionExpanded
                   ? session.description.substring(0, 150) + '...'
                   : session.description}
@@ -942,48 +940,23 @@ const styles = StyleSheet.create({
     letterSpacing: -0.4,
     paddingHorizontal: 20,
   },
-  modalityBadge: {
+  // ── Metadata Grid ───────────────────────────────────────
+  metadataGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    marginLeft: 20,
-    marginTop: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 16,
-    gap: 5,
-  },
-  modalityBadgeEmoji: {
-    fontSize: 13,
-  },
-  modalityBadgeText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-
-  // ── Metadata Row ───────────────────────────────────────
-  metadataRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexWrap: 'wrap',
     paddingHorizontal: 20,
-    marginTop: 16,
+    marginTop: 14,
+    rowGap: 12,
   },
-  metaItem: {
+  metaGridItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    width: '50%',
+    gap: 6,
   },
-  metaItemIcon: {
-    fontSize: 14,
-  },
-  metaItemText: {
+  metaGridText: {
     fontSize: 13,
     fontWeight: '500',
-  },
-  metaDivider: {
-    width: 1,
-    height: 16,
-    marginHorizontal: 12,
   },
 
   // ── Description ────────────────────────────────────────

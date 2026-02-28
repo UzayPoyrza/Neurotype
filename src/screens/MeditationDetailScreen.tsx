@@ -467,7 +467,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary }]}>Also helps with</Text>
           <View style={styles.moduleTagsRow}>
             {moduleObjects.map(mod => (
-              <View key={mod.id} style={[styles.moduleTag, { backgroundColor: theme.colors.surface, borderColor: theme.isDark ? theme.colors.border : 'rgba(0,0,0,0.2)' }]}>
+              <View key={mod.id} style={[styles.moduleTag, { backgroundColor: theme.colors.surface, borderColor: theme.isDark ? theme.colors.border : '#000000' }]}>
                 <View style={[styles.moduleTagDot, { backgroundColor: getCategoryColor(mod.category) }]} />
                 <Text style={[styles.moduleTagText, { color: theme.colors.text.primary }]}>{mod.title}</Text>
               </View>
@@ -1228,7 +1228,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    borderWidth: 1.5,
+    borderWidth: 1,
   },
   moduleTagDot: {
     width: 8,

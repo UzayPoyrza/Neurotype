@@ -24,7 +24,7 @@ import Reanimated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Session } from '../types';
@@ -89,6 +89,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const userId = useUserId();
   const underlineAnim = useRef(new Animated.Value(0)).current;
   const bottomSheetRef = useRef<BottomSheet>(null);
+  const [sheetExpanded, setSheetExpanded] = useState(false);
   const [isShareSheetOpen, setShareSheetOpen] = useState(false);
   const shareSheetProgress = useSharedValue(0);
 
@@ -126,7 +127,8 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   }, [session, likedSessionIds, triggerHeartPopup, toggleLikedSession]);
 
   // Bottom sheet snap points: 55% collapsed, 80% expanded
-  const snapPoints = useMemo(() => [screenHeight - HERO_HEIGHT + 8, '81%'], []);
+  const expandedSnapHeight = screenHeight - (insets.top + 56);
+  const snapPoints = useMemo(() => [screenHeight - HERO_HEIGHT + 8, expandedSnapHeight], [expandedSnapHeight]);
 
   // Underline tab indicator position
   const tabWidth = screenWidth / 3;
@@ -663,10 +665,28 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         index={0}
         enablePanDownToClose={false}
         enableDynamicSizing={false}
-        enableHandlePanningGesture={true}
+        enableHandlePanningGesture={false}
         enableContentPanningGesture={true}
-        activeOffsetY={[-10, 999]}
-        handleIndicatorStyle={{ backgroundColor: theme.colors.surfaceTertiary, width: 36 }}
+        activeOffsetY={[-10, 280]}
+        onChange={(index) => setSheetExpanded(index === 1)}
+        handleComponent={() => (
+          <TouchableOpacity
+            onPress={() => bottomSheetRef.current?.snapToIndex(sheetExpanded ? 0 : 1)}
+            activeOpacity={0.8}
+            style={styles.customHandle}
+          >
+            <View style={[styles.customHandleIndicator, { backgroundColor: theme.colors.surfaceTertiary }]} />
+          </TouchableOpacity>
+        )}
+        backdropComponent={(props) => (
+          <BottomSheetBackdrop
+            {...props}
+            disappearsOnIndex={0}
+            appearsOnIndex={1}
+            pressBehavior="collapse"
+            opacity={0}
+          />
+        )}
         backgroundStyle={[styles.contentCard, { backgroundColor: theme.colors.background }]}
         style={styles.bottomSheetShadow}
       >
@@ -936,6 +956,15 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
+  customHandle: {
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  customHandleIndicator: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+  },
   fixedBackBtn: {
     position: 'absolute',
     left: 16,
@@ -975,6 +1004,7 @@ const styles = StyleSheet.create({
   },
   heroEmoji: {
     fontSize: 64,
+    marginTop: 60,
   },
   heroModalityLabel: {
     marginTop: 8,

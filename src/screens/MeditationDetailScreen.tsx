@@ -19,6 +19,8 @@ import Reanimated, {
   useAnimatedStyle,
   withSpring,
   withTiming,
+  withSequence,
+  withDelay,
   Easing,
   interpolate,
   Extrapolation,
@@ -96,6 +98,39 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const expandTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isShareSheetOpen, setShareSheetOpen] = useState(false);
   const shareSheetProgress = useSharedValue(0);
+
+  // Heart popup animation
+  const heartPopupScale = useSharedValue(0);
+  const heartPopupOpacity = useSharedValue(0);
+
+  const triggerHeartPopup = useCallback(() => {
+    heartPopupScale.value = 0;
+    heartPopupOpacity.value = 0;
+
+    heartPopupScale.value = withSequence(
+      withSpring(1.05, { damping: 14, stiffness: 180, mass: 0.7 }),
+      withDelay(600, withTiming(0, { duration: 300, easing: Easing.out(Easing.ease) }))
+    );
+    heartPopupOpacity.value = withSequence(
+      withTiming(1, { duration: 150, easing: Easing.out(Easing.ease) }),
+      withDelay(650, withTiming(0, { duration: 350, easing: Easing.in(Easing.ease) }))
+    );
+  }, []);
+
+  const heartPopupStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: heartPopupScale.value }],
+    opacity: heartPopupOpacity.value,
+  }));
+
+  const [heartPopupText, setHeartPopupText] = useState('');
+
+  const handleLikePress = useCallback(() => {
+    if (!session) return;
+    const willLike = !likedSessionIds.includes(session.id);
+    setHeartPopupText(willLike ? 'Added to Liked Meditations' : 'Removed from Liked Meditations');
+    triggerHeartPopup();
+    toggleLikedSession(session.id);
+  }, [session, likedSessionIds, triggerHeartPopup, toggleLikedSession]);
 
   // Bottom sheet snap points: 55% collapsed, 80% expanded
   const snapPoints = useMemo(() => [screenHeight - HERO_HEIGHT + 8, '81%'], []);
@@ -677,7 +712,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
           <View style={styles.titleRow}>
             <Text style={[styles.contentTitle, { color: theme.colors.text.primary }]}>{session.title}</Text>
             <TouchableOpacity
-              onPress={() => toggleLikedSession(session.id)}
+              onPress={handleLikePress}
               style={styles.likeButton}
               activeOpacity={0.7}
             >
@@ -791,6 +826,17 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         </TouchableOpacity>
       </View>
 
+      {/* Heart popup overlay */}
+      <Reanimated.View
+        style={[styles.heartPopupContainer, heartPopupStyle]}
+        pointerEvents="none"
+      >
+        <View style={[styles.heartPopupPill, { backgroundColor: '#000000' }]}>
+          <HeartIcon size={28} color="#ff6b6b" />
+          <Text style={[styles.heartPopupText, { color: '#ffffff' }]}>{heartPopupText}</Text>
+        </View>
+      </Reanimated.View>
+
       {/* Share Preview Bottom Sheet */}
       {session && isShareSheetOpen && (
         <View style={styles.shareOverlay} pointerEvents="box-none">
@@ -871,6 +917,33 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
 };
 
 const styles = StyleSheet.create({
+  heartPopupContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 200,
+  },
+  heartPopupPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 16,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  heartPopupText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
   container: {
     flex: 1,
   },

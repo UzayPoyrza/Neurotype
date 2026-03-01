@@ -3,8 +3,11 @@ import { View, Text, StyleSheet, Image, Animated, StatusBar, TouchableOpacity, S
 import { LinearGradient } from 'expo-linear-gradient';
 import * as WebBrowser from 'expo-web-browser';
 import Svg, { Path } from 'react-native-svg';
+import LottieView from 'lottie-react-native';
 import { useTheme, useIsDark } from '../contexts/ThemeContext';
 import type { Theme } from '../styles/theme';
+
+const meditationFigure = require('../../assets/animations/meditation-figure.json');
 
 const lightIcon = require('../../assets/icon.png');
 const darkIcon = require('../../assets/android-icon.png');
@@ -180,6 +183,14 @@ const WelcomePage: React.FC = () => {
           <Animated.View style={[styles.sparkleDot, styles.sparkleDot1, { opacity: sparkle1Opacity }]} />
           <Animated.View style={[styles.sparkleDot, styles.sparkleDot2, { opacity: sparkle2Opacity }]} />
           <Animated.View style={[styles.sparkleDot, styles.sparkleDot3, { opacity: sparkle3Opacity }]} />
+          {/* Lottie meditating figure on top */}
+          <LottieView
+            source={meditationFigure}
+            autoPlay
+            loop
+            speed={0.8}
+            style={styles.welcomeMeditationFigure}
+          />
         </Animated.View>
 
         {/* Left-aligned text section */}
@@ -3178,6 +3189,11 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     height: 8,
     top: 80,
     left: 30,
+  },
+  welcomeMeditationFigure: {
+    width: 220,
+    height: 220,
+    position: 'absolute',
   },
   welcomeTextSection: {
     paddingHorizontal: 28,

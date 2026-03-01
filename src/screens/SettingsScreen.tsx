@@ -625,6 +625,7 @@ export const SettingsScreen: React.FC = () => {
                 onValueChange={handleToggleReminder}
                 trackColor={{ false: theme.colors.surfaceTertiary, true: theme.colors.accent }}
                 thumbColor={'#ffffff'}
+                ios_backgroundColor={theme.colors.surfaceTertiary}
               />
             </View>
 
@@ -674,6 +675,7 @@ export const SettingsScreen: React.FC = () => {
                 }}
                 trackColor={{ false: theme.colors.surfaceTertiary, true: theme.colors.accent }}
                 thumbColor={'#ffffff'}
+                ios_backgroundColor={theme.colors.surfaceTertiary}
               />
             </View>
           </View>

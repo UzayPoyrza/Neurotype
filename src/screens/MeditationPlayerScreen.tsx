@@ -1709,6 +1709,7 @@ export const MeditationPlayerScreen: React.FC = () => {
                   onValueChange={setDownloadEnabled}
                   trackColor={{ false: '#e0e0e0', true: '#007AFF' }}
                   thumbColor="#ffffff"
+                  ios_backgroundColor="#e0e0e0"
                 />
               </View>
 
@@ -1729,6 +1730,7 @@ export const MeditationPlayerScreen: React.FC = () => {
                   }}
                   trackColor={{ false: '#e0e0e0', true: '#007AFF' }}
                   thumbColor="#ffffff"
+                  ios_backgroundColor="#e0e0e0"
                 />
               </View>
             </View>

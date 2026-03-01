@@ -681,7 +681,7 @@ export const ProfileScreen: React.FC = () => {
   const moduleBorderColor = activeModule?.color || theme.colors.primary;
   const avatarBackgroundColor = theme.isDark
     ? (prerenderedModuleBackgrounds[moduleId] || theme.colors.surfaceElevated)
-    : (prerenderedLightModuleBackgrounds[moduleId] || theme.colors.surfaceElevated);
+    : '#ffffff';
   const profileInitial = userFirstName?.trim().charAt(0)?.toUpperCase() || 'N';
   const visibleActivityCount = Math.min(recentActivity.length, MAX_VISIBLE_ACTIVITY_ITEMS);
   const activityListMaxHeight = visibleActivityCount * APPROX_ACTIVITY_ROW_HEIGHT;
@@ -901,6 +901,7 @@ export const ProfileScreen: React.FC = () => {
                 subscriptionType={subscriptionType}
                 size="medium"
                 moduleColor={moduleBorderColor}
+                badgeBackgroundColor={avatarBackgroundColor}
               />
             </View>
             {subscriptionType === 'basic' && (

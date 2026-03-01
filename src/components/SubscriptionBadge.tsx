@@ -8,12 +8,14 @@ interface SubscriptionBadgeProps {
   subscriptionType: 'basic' | 'premium';
   size?: 'small' | 'medium' | 'large';
   moduleColor?: string;
+  badgeBackgroundColor?: string;
 }
 
 export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({
   subscriptionType,
   size = 'medium',
   moduleColor = '#007AFF',
+  badgeBackgroundColor,
 }) => {
   const theme = useTheme();
   const isPremium = subscriptionType === 'premium';
@@ -73,7 +75,7 @@ export const SubscriptionBadge: React.FC<SubscriptionBadgeProps> = ({
         {
           paddingHorizontal: config.paddingH,
           paddingVertical: config.paddingV,
-          backgroundColor: theme.isDark ? moduleColor + '18' : moduleColor + '12',
+          backgroundColor: badgeBackgroundColor || (theme.isDark ? '#1C1C1E' : '#ffffff'),
           borderWidth: 1.5,
           borderColor: moduleColor,
         },

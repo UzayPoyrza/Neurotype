@@ -98,18 +98,9 @@ export const SessionCard: React.FC<SessionCardProps> = ({
           </View>
           <View style={styles.sessionInfo}>
             <Text style={[styles.title, { color: theme.colors.text.primary }]}>{session.title}</Text>
-            <View style={styles.metaInfo}>
-              <View
-                style={[
-                  styles.modalityBadge,
-                  { backgroundColor: modalityColor + '12' },
-                ]}
-              >
-                <Text style={[styles.modalityText, { color: modalityColor }]}>
-                  {getModalityIcon(session.modality)} {session.modality}
-                </Text>
-              </View>
-            </View>
+            <Text style={[styles.modalityText, { color: theme.colors.text.secondary }]}>
+              {getModalityIcon(session.modality)} {session.modality}
+            </Text>
           </View>
         </View>
 

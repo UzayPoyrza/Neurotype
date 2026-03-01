@@ -504,6 +504,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         <View style={[
           styles.scienceCard,
           { backgroundColor: theme.colors.surface, borderLeftColor: scienceAccentColor },
+          !theme.isDark && { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 4 },
           theme.isDark && { borderWidth: 1, borderColor: theme.colors.border, borderLeftWidth: 3, borderLeftColor: scienceAccentColor },
         ]}>
           <Text style={[styles.scienceLabel, { color: theme.colors.text.secondary }]}>Why it works</Text>
@@ -538,6 +539,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
               <View style={[
                 styles.historyCard,
                 { backgroundColor: historyCardBg },
+                !theme.isDark && { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 4 },
                 theme.isDark && { borderWidth: 1, borderColor: theme.colors.border },
               ]}>
                 {/* Card header */}
@@ -669,6 +671,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
         <View style={[
           styles.howToCard,
           { backgroundColor: howToCardBg },
+          !theme.isDark && { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 4 },
           theme.isDark && { borderWidth: 1, borderColor: theme.colors.border },
         ]}>
           {/* Header */}
@@ -802,7 +805,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
             opacity={0}
           />
         )}
-        backgroundStyle={[styles.contentCard, { backgroundColor: theme.colors.background }]}
+        backgroundStyle={[styles.contentCard, { backgroundColor: theme.isDark ? theme.colors.background : theme.colors.surface }]}
         style={styles.bottomSheetShadow}
       >
         <BottomSheetScrollView
@@ -1241,6 +1244,7 @@ const styles = StyleSheet.create({
   // ── Tab Content ────────────────────────────────────────
   tabContent: {
     paddingTop: 16,
+    paddingBottom: 24,
   },
 
   // ── Summary Tab ────────────────────────────────────────
@@ -1345,7 +1349,6 @@ const styles = StyleSheet.create({
   historyCard: {
     marginHorizontal: 16,
     borderRadius: 16,
-    overflow: 'hidden',
   },
   historyCardHeader: {
     flexDirection: 'row',
@@ -1483,7 +1486,6 @@ const styles = StyleSheet.create({
   howToCard: {
     marginHorizontal: 16,
     borderRadius: 16,
-    overflow: 'hidden',
   },
   howToHeader: {
     paddingHorizontal: 16,

@@ -311,12 +311,15 @@ export const ModuleDetailScreen: React.FC<ModuleDetailScreenProps> = () => {
 
   // Filter sessions based on module type (for liked meditations with removing animation)
   const moduleSessions = useMemo(() => {
+    let result;
     if (moduleId === 'liked-meditations') {
-      return sessions.filter(session =>
+      result = sessions.filter(session =>
         likedSessionIds.includes(session.id) || removingSessionIds.has(session.id)
       );
+    } else {
+      result = sessions;
     }
-    return sessions;
+    return [...result].sort((a, b) => a.modality.localeCompare(b.modality));
   }, [sessions, moduleId, likedSessionIds, removingSessionIds]);
 
   // Animate in sessions list when loading completes

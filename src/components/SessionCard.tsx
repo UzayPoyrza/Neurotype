@@ -93,8 +93,8 @@ export const SessionCard: React.FC<SessionCardProps> = ({
     >
       <View style={styles.content}>
         <View style={styles.leftSection}>
-          <View style={[styles.playIcon, { backgroundColor: modalityColor + '15' }]}>
-            <Text style={[styles.playIconText, { color: modalityColor }]}>▶</Text>
+          <View style={[styles.playIcon, { backgroundColor: '#007aff15' }]}>
+            <Text style={[styles.playIconText, { color: '#007aff' }]}>▶</Text>
           </View>
           <View style={styles.sessionInfo}>
             <Text style={[styles.title, { color: theme.colors.text.primary }]}>{session.title}</Text>
@@ -102,14 +102,10 @@ export const SessionCard: React.FC<SessionCardProps> = ({
               <View
                 style={[
                   styles.modalityBadge,
-                  styles.modalityBadgeColored,
-                  {
-                    backgroundColor: theme.colors.surfaceElevated,
-                    borderColor: getLightBorderColor(getModalityColor(session.modality)),
-                  },
+                  { backgroundColor: modalityColor + '12' },
                 ]}
               >
-                <Text style={[styles.modalityText, { color: theme.colors.text.primary }]}>
+                <Text style={[styles.modalityText, { color: modalityColor }]}>
                   {getModalityIcon(session.modality)} {session.modality}
                 </Text>
               </View>
@@ -128,7 +124,7 @@ export const SessionCard: React.FC<SessionCardProps> = ({
               <HeartOutlineIcon size={28} color={theme.colors.text.secondary} />
             )}
           </TouchableOpacity>
-          <View style={[styles.durationBadge, { backgroundColor: modalityColor }]}>
+          <View style={[styles.durationBadge, { backgroundColor: '#007aff' }]}>
             <Text style={styles.durationText}>{session.durationMin}m</Text>
           </View>
         </View>
@@ -202,17 +198,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 3,
-    marginRight: 6,
+    paddingVertical: 3,
+    borderRadius: 10,
   },
-  modalityBadgeColored: {},
   modalityText: {
     fontSize: 11,
     fontWeight: '600',

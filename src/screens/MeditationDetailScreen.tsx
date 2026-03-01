@@ -464,17 +464,8 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
     .filter((module): module is MentalHealthModule => module !== undefined)
     .filter(module => module.id !== session.goal);
 
-  // Accent color for science section
-  let scienceAccentColor = getGoalColor(session.goal);
-  const matchingModuleId = Object.entries(prerenderedModuleBackgrounds).find(
-    ([_, bgColor]) => bgColor === globalBackgroundColor
-  )?.[0];
-  if (matchingModuleId) {
-    const matchingModule = mentalHealthModules.find(m => m.id === matchingModuleId);
-    if (matchingModule) {
-      scienceAccentColor = getCategoryColor(matchingModule.category);
-    }
-  }
+  // Accent color for science section — use the same module context color
+  const scienceAccentColor = goalColor;
 
   // ==================== SUMMARY TAB ====================
   const renderSummaryTab = () => (

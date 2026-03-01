@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as WebBrowser from 'expo-web-browser';
 import Svg, { Path } from 'react-native-svg';
 import LottieView from 'lottie-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, useIsDark } from '../contexts/ThemeContext';
 import type { Theme } from '../styles/theme';
 
@@ -2576,7 +2577,8 @@ const LoginPage: React.FC<{
 export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) => {
   const theme = useTheme();
   const isDark = useIsDark();
-  const styles = createStyles(theme);
+  const insets = useSafeAreaInsets();
+  const styles = createStyles(theme, insets);
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
@@ -2843,6 +2845,12 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
     handleFinish(true); // Pass true to indicate skip was pressed
   };
 
+  const handleBack = () => {
+    if (currentPage > 0) {
+      scrollViewRef.current?.scrollTo({ x: SCREEN_WIDTH * (currentPage - 1), animated: true });
+    }
+  };
+
   const handleSelectModule = (moduleId: string) => {
     setSelectedModule(moduleId);
   };
@@ -2889,6 +2897,12 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
         {!showFinishAnimation && currentPage === 0 && (
           <TouchableOpacity style={styles.skipButton} onPress={handleSkip} activeOpacity={0.7}>
             <Text style={styles.skipButtonText}>Skip</Text>
+          </TouchableOpacity>
+        )}
+
+        {!showFinishAnimation && currentPage >= 1 && currentPage <= 3 && (
+          <TouchableOpacity style={styles.backButton} onPress={handleBack} activeOpacity={0.7}>
+            <Text style={styles.backButtonText}>‹</Text>
           </TouchableOpacity>
         )}
 
@@ -3078,7 +3092,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   );
 };
 
-const createStyles = (theme: Theme) => StyleSheet.create({
+const createStyles = (theme: Theme, insets?: { top: number; bottom: number; left: number; right: number }) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.health.container.backgroundColor,
@@ -3093,7 +3107,7 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   pageBackground: {
     flex: 1,
     width: '100%',
-    paddingTop: 60,
+    paddingTop: (insets?.top ?? 50) + 10,
     paddingBottom: 50,
     paddingHorizontal: 20,
     backgroundColor: theme.health.container.backgroundColor,
@@ -3102,7 +3116,7 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   howToUsePageBackground: {
     flex: 1,
     width: '100%',
-    paddingTop: 60,
+    paddingTop: (insets?.top ?? 50) + 10,
     paddingBottom: 50,
     paddingHorizontal: 20,
     backgroundColor: theme.health.container.backgroundColor,
@@ -3118,7 +3132,7 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   },
   skipButton: {
     position: 'absolute',
-    top: 60,
+    top: (insets?.top ?? 50) + 10,
     right: 20,
     zIndex: 10,
     paddingVertical: 8,
@@ -3129,12 +3143,25 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     fontWeight: '400',
     color: theme.colors.text.secondary,
   },
+  backButton: {
+    position: 'absolute',
+    top: (insets?.top ?? 50) + 10,
+    left: 20,
+    zIndex: 10,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+  },
+  backButtonText: {
+    fontSize: 32,
+    fontWeight: '300',
+    color: theme.colors.text.secondary,
+  },
   // Welcome page — StressWatch-inspired hero layout
   welcomeBackground: {
     flex: 1,
     width: '100%',
     backgroundColor: theme.health.container.backgroundColor,
-    paddingTop: 70,
+    paddingTop: (insets?.top ?? 50) + 20,
   },
   welcomeHeroSection: {
     alignItems: 'center',
@@ -3758,13 +3785,16 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   },
   buttonContainer: {
     paddingHorizontal: 20,
-    paddingBottom: 40,
+    paddingBottom: Math.max((insets?.bottom ?? 0) + 16, 24),
   },
   button: {
     ...theme.health.button,
+    backgroundColor: theme.colors.accentSecondary,
+    borderRadius: 28,
+    paddingVertical: 16,
   },
   buttonDisabled: {
-    backgroundColor: theme.colors.surfaceElevated,
+    backgroundColor: theme.isDark ? 'rgba(78, 205, 196, 0.15)' : 'rgba(78, 205, 196, 0.25)',
   },
   buttonText: {
     ...theme.health.buttonText,

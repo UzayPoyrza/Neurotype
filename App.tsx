@@ -37,6 +37,7 @@ import { scheduleDailyNotification, requestNotificationPermissions } from './src
 import * as Notifications from 'expo-notifications';
 import type { EmotionalFeedbackEntry } from './src/types';
 import { ThemeProvider } from './src/contexts/ThemeContext';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 const Tab = createBottomTabNavigator();
 const TodayStack = createStackNavigator();
@@ -1207,9 +1208,11 @@ export default function App() {
 
   if (!hasCompletedOnboarding) {
     return (
-      <ThemeProvider>
-        <OnboardingScreen onFinish={handleOnboardingFinish} />
-      </ThemeProvider>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <OnboardingScreen onFinish={handleOnboardingFinish} />
+        </ThemeProvider>
+      </SafeAreaProvider>
     );
   }
 

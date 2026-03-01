@@ -41,7 +41,7 @@ import { HeartIcon, HeartOutlineIcon, BackIcon } from '../components/icons/Playe
 import Svg, { Path } from 'react-native-svg';
 import { meditationAudioData } from '../data/meditationMockData';
 import { getSessionById, getSessionModules } from '../services/sessionService';
-import { ShimmerMeditationDetailMedia, ShimmerMeditationDetailContent, ShimmerSkeleton } from '../components/ShimmerSkeleton';
+import { ShimmerMeditationDetailHero, ShimmerMeditationDetailContent } from '../components/ShimmerSkeleton';
 import { mentalHealthModules, getCategoryColor, MentalHealthModule } from '../data/modules';
 import { darkenColor } from '../utils/gradientBackgrounds';
 import { useUserId } from '../hooks/useUserId';
@@ -420,25 +420,20 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
     return (
       <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-        {/* Shimmer hero */}
-        <View style={[styles.heroGradient, { backgroundColor: theme.colors.surfaceElevated }]}>
-          <View style={[styles.fixedBackBtn, { top: insets.top + 8 }]}>
-            <TouchableOpacity
-              style={[styles.floatingBtnInner, { backgroundColor: 'rgba(0,0,0,0.3)' }]}
-              onPress={() => navigation.goBack()}
-            >
-              <BackIcon size={20} color="#ffffff" />
-            </TouchableOpacity>
-          </View>
+        {/* Back button */}
+        <View style={[styles.fixedBackBtn, { top: insets.top + 8 }]}>
+          <TouchableOpacity
+            style={[styles.floatingBtnInner, { backgroundColor: 'rgba(0,0,0,0.3)' }]}
+            onPress={() => navigation.goBack()}
+          >
+            <BackIcon size={20} color="#ffffff" />
+          </TouchableOpacity>
         </View>
-        <View style={[styles.contentCard, { backgroundColor: theme.colors.background }]}>
-          <View style={{ padding: 20 }}>
-            <ShimmerSkeleton width="80%" height={26} borderRadius={6} />
-            <View style={{ height: 16 }} />
-            <ShimmerSkeleton width="50%" height={16} borderRadius={6} />
-            <View style={{ height: 24 }} />
-            <ShimmerMeditationDetailContent />
-          </View>
+        {/* Shimmer hero with emoji/label/badge placeholders */}
+        <ShimmerMeditationDetailHero />
+        {/* Shimmer content card matching bottom sheet */}
+        <View style={[styles.contentCard, { backgroundColor: theme.isDark ? theme.colors.background : theme.colors.surface }]}>
+          <ShimmerMeditationDetailContent />
         </View>
       </View>
     );

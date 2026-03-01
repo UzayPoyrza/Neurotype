@@ -302,18 +302,24 @@ export const ShimmerEmotionalFeedbackHistory: React.FC<ShimmerCardProps> = ({ st
   );
 };
 
-export const ShimmerMeditationDetailMedia: React.FC<ShimmerCardProps> = ({ style }) => {
+export const ShimmerMeditationDetailHero: React.FC<ShimmerCardProps> = ({ style }) => {
   const theme = useTheme();
   return (
     <View
       style={[
-        styles.meditationDetailMediaContainer,
+        styles.meditationDetailHeroContainer,
         { backgroundColor: theme.colors.surfaceElevated },
         style,
       ]}
     >
-      <ShimmerSkeleton width={60} height={60} borderRadius={30} style={styles.meditationDetailMediaIcon} />
-      <ShimmerSkeleton width={32} height={32} borderRadius={16} style={styles.meditationDetailMediaPlayButton} />
+      {/* Large centered emoji placeholder */}
+      <ShimmerSkeleton width={64} height={64} borderRadius={32} style={styles.meditationDetailHeroEmoji} />
+      {/* Modality label placeholder */}
+      <ShimmerSkeleton width={80} height={15} borderRadius={6} style={styles.meditationDetailHeroLabel} />
+      {/* Duration badge - bottom right */}
+      <View style={styles.meditationDetailHeroDurationBadge}>
+        <ShimmerSkeleton width={60} height={28} borderRadius={14} />
+      </View>
     </View>
   );
 };
@@ -322,47 +328,73 @@ export const ShimmerMeditationDetailContent: React.FC<ShimmerCardProps> = ({ sty
   const theme = useTheme();
   return (
     <View style={[styles.meditationDetailContentContainer, style]}>
-      {/* Title */}
-      <ShimmerSkeleton width="80%" height={21} borderRadius={6} style={styles.meditationDetailTitleSkeleton} />
-
-      {/* Tags */}
-      <View style={styles.meditationDetailTagsContainer}>
-        <ShimmerSkeleton width={80} height={28} borderRadius={12} style={styles.meditationDetailTagSkeleton} />
-        <ShimmerSkeleton width={100} height={28} borderRadius={12} style={styles.meditationDetailTagSkeleton} />
-        <ShimmerSkeleton width={70} height={28} borderRadius={12} style={styles.meditationDetailTagSkeleton} />
+      {/* Handle indicator */}
+      <View style={styles.meditationDetailHandle}>
+        <ShimmerSkeleton width={36} height={4} borderRadius={2} />
       </View>
 
-      {/* Description Section */}
-      <View style={{ paddingHorizontal: 0, paddingTop: 0, paddingBottom: 20 }}>
-        <ShimmerSkeleton width="40%" height={20} borderRadius={6} style={styles.meditationDetailDescriptionTitleSkeleton} />
-        <ShimmerSkeleton width="100%" height={16} borderRadius={6} style={styles.meditationDetailDescriptionTextSkeleton} />
-        <ShimmerSkeleton width="95%" height={16} borderRadius={6} style={styles.meditationDetailDescriptionTextSkeleton} />
-        <ShimmerSkeleton width="90%" height={16} borderRadius={6} style={styles.meditationDetailDescriptionTextSkeleton} />
-        <ShimmerSkeleton width="85%" height={16} borderRadius={6} style={styles.meditationDetailDescriptionTextSkeleton} />
+      {/* Title row with like button */}
+      <View style={styles.meditationDetailTitleRow}>
+        <ShimmerSkeleton width="65%" height={26} borderRadius={6} />
+        <ShimmerSkeleton width={28} height={28} borderRadius={14} />
       </View>
 
-      {/* Benefits Section */}
-      <View style={{ paddingHorizontal: 0, paddingTop: 0, paddingBottom: 24 }}>
-        <ShimmerSkeleton width="50%" height={20} borderRadius={6} style={styles.meditationDetailBenefitsTitleSkeleton} />
-        <ShimmerSkeleton width="100%" height={15} borderRadius={6} style={styles.meditationDetailBenefitsTextSkeleton} />
-        <ShimmerSkeleton width="98%" height={15} borderRadius={6} style={styles.meditationDetailBenefitsTextSkeleton} />
-        <ShimmerSkeleton width="95%" height={15} borderRadius={6} style={styles.meditationDetailBenefitsTextSkeleton} />
-        <ShimmerSkeleton width="92%" height={15} borderRadius={6} style={styles.meditationDetailBenefitsTextSkeleton} />
-
-        {/* Unique Benefits */}
-        <ShimmerSkeleton width="45%" height={17} borderRadius={6} style={styles.meditationDetailUniqueBenefitsTitleSkeleton} />
-        {[...Array(3)].map((_, i) => (
-          <View
-            key={i}
-            style={[
-              styles.meditationDetailBenefitItemSkeleton,
-              { backgroundColor: theme.colors.surface },
-            ]}
-          >
-            <ShimmerSkeleton width={18} height={18} borderRadius={9} style={styles.meditationDetailBenefitIconSkeleton} />
-            <ShimmerSkeleton width="100%" height={15} borderRadius={6} style={styles.meditationDetailBenefitTextSkeleton} />
+      {/* Metadata grid - 2x2 */}
+      <View style={styles.meditationDetailMetadataGrid}>
+        {[...Array(4)].map((_, i) => (
+          <View key={i} style={styles.meditationDetailMetaItem}>
+            <ShimmerSkeleton width={14} height={14} borderRadius={7} />
+            <ShimmerSkeleton width={60} height={13} borderRadius={6} style={{ marginLeft: 6 }} />
           </View>
         ))}
+      </View>
+
+      {/* Description section */}
+      <View style={styles.meditationDetailDescriptionSection}>
+        <ShimmerSkeleton width="35%" height={17} borderRadius={6} style={{ marginBottom: 8 }} />
+        <ShimmerSkeleton width="100%" height={15} borderRadius={6} style={{ marginBottom: 6 }} />
+        <ShimmerSkeleton width="95%" height={15} borderRadius={6} style={{ marginBottom: 6 }} />
+        <ShimmerSkeleton width="80%" height={15} borderRadius={6} />
+      </View>
+
+      {/* Tab bar */}
+      <View style={[styles.meditationDetailTabBar, { borderBottomColor: theme.colors.border }]}>
+        {[...Array(3)].map((_, i) => (
+          <View key={i} style={styles.meditationDetailTabItem}>
+            <ShimmerSkeleton width="55%" height={15} borderRadius={6} />
+          </View>
+        ))}
+      </View>
+
+      {/* Tab content - summary placeholder */}
+      <View style={styles.meditationDetailTabContent}>
+        {/* Also helps with section */}
+        <View style={styles.meditationDetailAlsoHelpsSection}>
+          <ShimmerSkeleton width="35%" height={15} borderRadius={6} style={{ marginBottom: 10 }} />
+          <View style={styles.meditationDetailModuleTags}>
+            <ShimmerSkeleton width={90} height={34} borderRadius={20} />
+            <ShimmerSkeleton width={110} height={34} borderRadius={20} />
+            <ShimmerSkeleton width={80} height={34} borderRadius={20} />
+          </View>
+        </View>
+
+        {/* Why it works card */}
+        <View
+          style={[
+            styles.meditationDetailScienceCard,
+            {
+              backgroundColor: theme.colors.surface,
+              borderLeftColor: theme.colors.border,
+            },
+            !theme.isDark && { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 4 },
+            theme.isDark && { borderWidth: 1, borderColor: theme.colors.border, borderLeftWidth: 3 },
+          ]}
+        >
+          <ShimmerSkeleton width="30%" height={12} borderRadius={6} style={{ marginBottom: 8 }} />
+          <ShimmerSkeleton width="100%" height={15} borderRadius={6} style={{ marginBottom: 6 }} />
+          <ShimmerSkeleton width="95%" height={15} borderRadius={6} style={{ marginBottom: 6 }} />
+          <ShimmerSkeleton width="90%" height={15} borderRadius={6} />
+        </View>
       </View>
     </View>
   );
@@ -371,47 +403,53 @@ export const ShimmerMeditationDetailContent: React.FC<ShimmerCardProps> = ({ sty
 export const ShimmerNeuroadaptationCard: React.FC<ShimmerCardProps> = ({ style }) => {
   const theme = useTheme();
   return (
-    <View
-      style={[
-        styles.neuroadaptationCardContainer,
-        {
-          backgroundColor: theme.colors.surface,
-          borderLeftColor: theme.isDark ? '#2A2A36' : '#d1d1d6',
-        },
-        style,
-      ]}
-    >
-      {/* Header */}
-      <View style={styles.neuroadaptationCardHeader}>
-        <View style={styles.neuroadaptationCardTitleRow}>
-          <ShimmerSkeleton width="100%" height={18} borderRadius={6} style={styles.neuroadaptationCardTitleSkeleton} />
+    <View style={[styles.neuroadaptationRow, style]}>
+      {/* Left: Node + Connector */}
+      <View style={styles.neuroadaptationLeftColumn}>
+        <ShimmerSkeleton width={24} height={24} borderRadius={12} />
+        <View style={[styles.neuroadaptationConnector, { backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }]} />
+      </View>
+
+      {/* Right: Content */}
+      <View style={styles.neuroadaptationContent}>
+        {/* Header row: title + chevron */}
+        <View style={styles.neuroadaptationHeader}>
+          <ShimmerSkeleton width="65%" height={16} borderRadius={6} />
+          <View style={styles.neuroadaptationHeaderRight}>
+            <ShimmerSkeleton width={40} height={22} borderRadius={10} />
+            <ShimmerSkeleton width={22} height={22} borderRadius={11} />
+          </View>
         </View>
-        <ShimmerSkeleton width="50%" height={14} borderRadius={6} style={styles.neuroadaptationCardTimeRangeSkeleton} />
-      </View>
 
-      {/* Progress Bar */}
-      <View style={styles.neuroadaptationProgressBarContainer}>
-        <ShimmerSkeleton width="100%" height={8} borderRadius={4} style={styles.neuroadaptationProgressBarTrack} />
-        <ShimmerSkeleton width={40} height={14} borderRadius={6} style={styles.neuroadaptationProgressPercentageSkeleton} />
-      </View>
+        {/* Time range */}
+        <ShimmerSkeleton width="40%" height={13} borderRadius={6} style={{ marginTop: 3 }} />
 
-      {/* Description */}
-      <View style={{ marginBottom: 12 }}>
-        <ShimmerSkeleton width="100%" height={15} borderRadius={6} style={styles.neuroadaptationCardDescriptionSkeleton} />
-        <ShimmerSkeleton width="95%" height={15} borderRadius={6} style={styles.neuroadaptationCardDescriptionSkeleton} />
-        <ShimmerSkeleton width="90%" height={15} borderRadius={6} style={styles.neuroadaptationCardDescriptionSkeleton} />
-      </View>
+        {/* Progress bar */}
+        <View style={styles.neuroadaptationProgressWrap}>
+          <ShimmerSkeleton width="100%" height={4} borderRadius={2} />
+        </View>
 
-      {/* What You Feel or Sessions Required */}
-      <View
-        style={[
-          styles.neuroadaptationWhatYouFeelContainer,
-          { backgroundColor: theme.colors.surfaceElevated },
-        ]}
-      >
-        <ShimmerSkeleton width="40%" height={13} borderRadius={6} style={styles.neuroadaptationWhatYouFeelLabelSkeleton} />
-        <ShimmerSkeleton width="100%" height={14} borderRadius={6} style={styles.neuroadaptationWhatYouFeelTextSkeleton} />
-        <ShimmerSkeleton width="95%" height={14} borderRadius={6} style={styles.neuroadaptationWhatYouFeelTextSkeleton} />
+        {/* Description */}
+        <View style={{ marginTop: 10 }}>
+          <ShimmerSkeleton width="100%" height={14} borderRadius={6} style={{ marginBottom: 4 }} />
+          <ShimmerSkeleton width="95%" height={14} borderRadius={6} style={{ marginBottom: 4 }} />
+          <ShimmerSkeleton width="85%" height={14} borderRadius={6} />
+        </View>
+
+        {/* Feel box */}
+        <View
+          style={[
+            styles.neuroadaptationFeelBox,
+            {
+              backgroundColor: theme.isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+              borderColor: theme.isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+            },
+          ]}
+        >
+          <ShimmerSkeleton width="35%" height={12} borderRadius={6} style={{ marginBottom: 4 }} />
+          <ShimmerSkeleton width="100%" height={13} borderRadius={6} style={{ marginBottom: 4 }} />
+          <ShimmerSkeleton width="90%" height={13} borderRadius={6} />
+        </View>
       </View>
     </View>
   );
@@ -432,8 +470,8 @@ export const ShimmerProgressPathCard: React.FC<ShimmerCardProps> = ({ style }) =
     >
       {/* Header */}
       <View style={styles.progressPathHeader}>
-        {/* Badge skeleton */}
-        <ShimmerSkeleton width={40} height={40} borderRadius={20} style={styles.progressPathBadgeSkeleton} />
+        {/* Badge skeleton - rounded square like actual */}
+        <ShimmerSkeleton width={40} height={40} borderRadius={12} style={styles.progressPathBadgeSkeleton} />
 
         {/* Title and subtitle */}
         <View style={styles.progressPathHeaderText}>
@@ -442,20 +480,19 @@ export const ShimmerProgressPathCard: React.FC<ShimmerCardProps> = ({ style }) =
         </View>
       </View>
 
-      {/* Timeline section */}
+      {/* Timeline section - no border, just background */}
       <View
         style={[
           styles.progressPathTimeline,
           {
-            backgroundColor: theme.colors.surfaceElevated,
-            borderColor: theme.colors.border,
+            backgroundColor: theme.isDark ? theme.colors.surfaceElevated : 'rgba(0,0,0,0.03)',
           },
         ]}
       >
         {/* Left column - Completed */}
         <View style={styles.progressPathColumn}>
-          <ShimmerSkeleton width="50%" height={13} borderRadius={6} style={styles.progressPathSectionLabelSkeleton} />
-          {/* 3 completed items with icon and text */}
+          <ShimmerSkeleton width="50%" height={11} borderRadius={4} style={styles.progressPathSectionLabelSkeleton} />
+          {/* Completed items */}
           <View style={styles.progressPathItemRow}>
             <ShimmerSkeleton width={28} height={28} borderRadius={14} />
             <View style={styles.progressPathItemText}>
@@ -470,30 +507,24 @@ export const ShimmerProgressPathCard: React.FC<ShimmerCardProps> = ({ style }) =
               <ShimmerSkeleton width="45%" height={12} borderRadius={6} style={styles.progressPathItemMeta} />
             </View>
           </View>
-          <View style={styles.progressPathItemRow}>
-            <ShimmerSkeleton width={28} height={28} borderRadius={14} />
-            <View style={styles.progressPathItemText}>
-              <ShimmerSkeleton width="70%" height={13} borderRadius={6} style={styles.progressPathItemTitle} />
-              <ShimmerSkeleton width="40%" height={12} borderRadius={6} style={styles.progressPathItemMeta} />
-            </View>
-          </View>
         </View>
 
         {/* Divider */}
         <View
           style={[
             styles.progressPathDivider,
-            { backgroundColor: theme.colors.disabled },
+            { backgroundColor: theme.colors.borderMedium || theme.colors.disabled },
           ]}
         />
 
         {/* Right column - Coming Up */}
         <View style={styles.progressPathColumn}>
-          <ShimmerSkeleton width="50%" height={13} borderRadius={6} style={styles.progressPathSectionLabelSkeleton} />
-          <View style={styles.progressPathItemRow}>
+          <ShimmerSkeleton width="50%" height={11} borderRadius={4} style={styles.progressPathSectionLabelSkeleton} />
+          <View style={styles.progressPathLockedRow}>
             <ShimmerSkeleton width={36} height={36} borderRadius={18} />
             <View style={styles.progressPathItemText}>
-              <ShimmerSkeleton width="65%" height={12} borderRadius={6} style={styles.progressPathItemTitle} />
+              <ShimmerSkeleton width="70%" height={12} borderRadius={6} style={styles.progressPathItemTitle} />
+              <ShimmerSkeleton width="55%" height={12} borderRadius={6} style={{ marginTop: 4 }} />
             </View>
           </View>
         </View>
@@ -503,7 +534,7 @@ export const ShimmerProgressPathCard: React.FC<ShimmerCardProps> = ({ style }) =
       <View
         style={[
           styles.progressPathTimelineSection,
-          { borderTopColor: theme.colors.border },
+          { borderTopColor: theme.colors.borderMedium || theme.colors.border },
         ]}
       >
         {/* Header */}
@@ -513,16 +544,21 @@ export const ShimmerProgressPathCard: React.FC<ShimmerCardProps> = ({ style }) =
         </View>
 
         {/* Progress bar */}
-        <ShimmerSkeleton width="100%" height={6} borderRadius={3} style={styles.progressPathBarSkeleton} />
+        <ShimmerSkeleton width="100%" height={4} borderRadius={2} style={styles.progressPathBarSkeleton} />
 
         {/* Progress text */}
         <ShimmerSkeleton width="70%" height={12} borderRadius={6} style={styles.progressPathTextSkeleton} />
       </View>
 
-      {/* Footer */}
-      <View style={styles.progressPathFooter}>
-        <ShimmerSkeleton width="60%" height={13} borderRadius={6} />
-        <ShimmerSkeleton width={20} height={20} borderRadius={10} />
+      {/* Footer - background bar style */}
+      <View
+        style={[
+          styles.progressPathFooter,
+          { backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' },
+        ]}
+      >
+        <ShimmerSkeleton width="60%" height={14} borderRadius={6} />
+        <ShimmerSkeleton width={15} height={22} borderRadius={4} />
       </View>
     </View>
   );
@@ -599,15 +635,15 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   progressPathCardContainer: {
-    borderRadius: 16,
+    borderRadius: 14,
     paddingHorizontal: 18,
     paddingVertical: 22,
     borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
   },
   progressPathHeader: {
     flexDirection: 'row',
@@ -628,8 +664,8 @@ const styles = StyleSheet.create({
   },
   progressPathTimeline: {
     flexDirection: 'row',
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 10,
+    borderWidth: 0,
     paddingHorizontal: 14,
     paddingVertical: 18,
     marginBottom: 16,
@@ -656,7 +692,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   progressPathDivider: {
-    width: 1,
+    width: 0.5,
     marginHorizontal: 12,
     borderRadius: 0.5,
   },
@@ -664,7 +700,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 20,
     paddingTop: 16,
-    borderTopWidth: 1,
+    borderTopWidth: 0.5,
   },
   progressPathTimelineHeader: {
     flexDirection: 'row',
@@ -678,10 +714,18 @@ const styles = StyleSheet.create({
   progressPathTextSkeleton: {
     marginTop: 6,
   },
+  progressPathLockedRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
   progressPathFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 10,
   },
   calendarCardContainer: {
     borderRadius: 16,
@@ -897,177 +941,121 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginLeft: 8,
   },
-  meditationDetailMediaContainer: {
-    height: 200,
+  meditationDetailHeroContainer: {
+    height: 280,
     width: '100%',
-    borderRadius: 0,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
   },
-  meditationDetailMediaIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+  meditationDetailHeroEmoji: {
+    marginTop: 60,
   },
-  meditationDetailMediaPlayButton: {
+  meditationDetailHeroLabel: {
+    marginTop: 8,
+  },
+  meditationDetailHeroDurationBadge: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    bottom: 14,
+    right: 16,
   },
   meditationDetailContentContainer: {
+    paddingTop: 0,
+  },
+  meditationDetailHandle: {
+    alignItems: 'center',
+    paddingVertical: 14,
+  },
+  meditationDetailTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 20,
   },
-  meditationDetailTitleSkeleton: {
-    width: '80%',
-    height: 21,
-    borderRadius: 6,
-    marginBottom: 12,
+  meditationDetailMetadataGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 20,
+    marginTop: 14,
+    rowGap: 12,
   },
-  meditationDetailTagsContainer: {
+  meditationDetailMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '50%',
+  },
+  meditationDetailDescriptionSection: {
+    paddingHorizontal: 20,
+    marginTop: 20,
+  },
+  meditationDetailTabBar: {
+    flexDirection: 'row',
+    marginTop: 24,
+    borderBottomWidth: 1,
+  },
+  meditationDetailTabItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  meditationDetailTabContent: {
+    paddingTop: 16,
+  },
+  meditationDetailAlsoHelpsSection: {
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  meditationDetailModuleTags: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  meditationDetailTagSkeleton: {
-    width: 80,
-    height: 28,
-    borderRadius: 12,
+  meditationDetailScienceCard: {
+    marginHorizontal: 16,
+    marginTop: 4,
+    borderRadius: 14,
+    borderLeftWidth: 3,
+    padding: 16,
   },
-  meditationDetailDescriptionTitleSkeleton: {
-    width: '40%',
-    height: 20,
-    borderRadius: 6,
-    marginBottom: 8,
-    marginTop: 0,
+  neuroadaptationRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
   },
-  meditationDetailDescriptionTextSkeleton: {
-    width: '100%',
-    height: 16,
-    borderRadius: 6,
-    marginBottom: 6,
+  neuroadaptationLeftColumn: {
+    width: 32,
+    alignItems: 'center',
+    marginRight: 16,
   },
-  meditationDetailBenefitsTitleSkeleton: {
-    width: '50%',
-    height: 20,
-    borderRadius: 6,
-    marginBottom: 8,
-    marginTop: 0,
+  neuroadaptationConnector: {
+    width: 2,
+    flex: 1,
+    minHeight: 20,
+    marginVertical: 4,
   },
-  meditationDetailBenefitsTextSkeleton: {
-    width: '100%',
-    height: 15,
-    borderRadius: 6,
-    marginBottom: 6,
+  neuroadaptationContent: {
+    flex: 1,
+    paddingBottom: 28,
   },
-  meditationDetailUniqueBenefitsTitleSkeleton: {
-    width: '45%',
-    height: 17,
-    borderRadius: 6,
-    marginBottom: 12,
-    marginTop: 20,
+  neuroadaptationHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 8,
   },
-  meditationDetailBenefitItemSkeleton: {
+  neuroadaptationHeaderRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    gap: 6,
+    marginTop: 1,
+  },
+  neuroadaptationProgressWrap: {
+    marginTop: 10,
+    marginBottom: 2,
+  },
+  neuroadaptationFeelBox: {
     borderRadius: 10,
-    marginBottom: 8,
-  },
-  meditationDetailBenefitIconSkeleton: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    marginRight: 10,
-  },
-  meditationDetailBenefitTextSkeleton: {
-    flex: 1,
-    height: 15,
-    borderRadius: 6,
-  },
-  neuroadaptationCardContainer: {
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 2,
-    borderLeftWidth: 3,
-  },
-  neuroadaptationCardHeader: {
-    marginBottom: 12,
-  },
-  neuroadaptationCardTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  neuroadaptationCardTitleSkeleton: {
-    flex: 1,
-    height: 18,
-    borderRadius: 6,
-    marginRight: 8,
-  },
-  neuroadaptationCardCheckmarkSkeleton: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-  },
-  neuroadaptationCardTimeRangeSkeleton: {
-    width: '50%',
-    height: 14,
-    borderRadius: 6,
-  },
-  neuroadaptationProgressBarContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  neuroadaptationProgressBarTrack: {
-    flex: 1,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 12,
-  },
-  neuroadaptationProgressPercentageSkeleton: {
-    width: 40,
-    height: 14,
-    borderRadius: 6,
-  },
-  neuroadaptationCardDescriptionSkeleton: {
-    width: '100%',
-    height: 15,
-    borderRadius: 6,
-    marginBottom: 4,
-  },
-  neuroadaptationWhatYouFeelContainer: {
-    borderRadius: 12,
     padding: 12,
-    borderLeftWidth: 3,
-    marginTop: 12,
-  },
-  neuroadaptationWhatYouFeelLabelSkeleton: {
-    width: '40%',
-    height: 13,
-    borderRadius: 6,
-    marginBottom: 6,
-  },
-  neuroadaptationWhatYouFeelTextSkeleton: {
-    width: '100%',
-    height: 14,
-    borderRadius: 6,
-    marginBottom: 4,
-  },
-  neuroadaptationSessionsRequiredSkeleton: {
-    width: '60%',
-    height: 14,
-    borderRadius: 6,
-    marginTop: 12,
+    marginTop: 10,
+    borderWidth: 1,
   },
 });

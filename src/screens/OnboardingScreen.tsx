@@ -26,105 +26,88 @@ interface OnboardingScreenProps {
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Feature Icon Component with Apple style
-const FeatureIcon: React.FC<{ icon: string }> = ({ icon }) => {
-  const theme = useTheme();
-  const styles = createStyles(theme);
-  return (
-    <View style={styles.featureIconContainer}>
-      <Text style={styles.iconText}>{icon}</Text>
-    </View>
-  );
-};
-
-const FeaturePoint: React.FC<{
-  icon: string;
-  title: string;
-  description: string;
-  delay: number;
-  isActive?: boolean;
-}> = ({ icon, title, description, delay, isActive = true }) => {
-  const theme = useTheme();
-  const styles = createStyles(theme);
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(20)).current;
-
-  useEffect(() => {
-    if (isActive) {
-      Animated.parallel([
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 600,
-          delay: delay,
-          useNativeDriver: true,
-        }),
-        Animated.timing(translateY, {
-          toValue: 0,
-          duration: 600,
-          delay: delay,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [isActive]);
-
-  return (
-    <Animated.View
-      style={[
-        styles.featurePoint,
-        {
-          opacity,
-          transform: [{ translateY }],
-        },
-      ]}
-    >
-      <FeatureIcon icon={icon} />
-      <View style={styles.featureTextContainer}>
-        <Text style={styles.featureTitleLight}>{title}</Text>
-        <Text style={styles.featureDescriptionLight}>{description}</Text>
-      </View>
-    </Animated.View>
-  );
-};
-
-// Welcome Page Component
+// Welcome Page Component — StressWatch-inspired layout
 const WelcomePage: React.FC = () => {
   const theme = useTheme();
   const isDark = useIsDark();
   const styles = createStyles(theme);
+
+  // Hero circle + icon
+  const circleScale = useRef(new Animated.Value(0.65)).current;
+  const circleOpacity = useRef(new Animated.Value(0)).current;
   const iconOpacity = useRef(new Animated.Value(0)).current;
   const iconScale = useRef(new Animated.Value(0.8)).current;
-  const titleOpacity = useRef(new Animated.Value(0)).current;
-  const titleTranslateY = useRef(new Animated.Value(20)).current;
+  // Text
+  const headingOpacity = useRef(new Animated.Value(0)).current;
+  const headingTranslateY = useRef(new Animated.Value(24)).current;
+  const descOpacity = useRef(new Animated.Value(0)).current;
+  const descTranslateY = useRef(new Animated.Value(18)).current;
 
   useEffect(() => {
+    // Phase 1: Circle expands in
+    Animated.parallel([
+      Animated.timing(circleOpacity, {
+        toValue: 1,
+        duration: 700,
+        delay: 200,
+        useNativeDriver: true,
+      }),
+      Animated.spring(circleScale, {
+        toValue: 1,
+        tension: 25,
+        friction: 9,
+        delay: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Phase 2: Icon pops in on top of circle
     Animated.parallel([
       Animated.timing(iconOpacity, {
         toValue: 1,
-        duration: 800,
-        delay: 300,
+        duration: 500,
+        delay: 500,
         useNativeDriver: true,
       }),
       Animated.spring(iconScale, {
         toValue: 1,
         tension: 50,
         friction: 7,
-        delay: 300,
+        delay: 500,
         useNativeDriver: true,
       }),
     ]).start();
 
+    // Phase 3: Heading slides up
     Animated.parallel([
-      Animated.timing(titleOpacity, {
+      Animated.timing(headingOpacity, {
         toValue: 1,
-        duration: 600,
-        delay: 600,
+        duration: 550,
+        delay: 800,
         useNativeDriver: true,
       }),
-      Animated.timing(titleTranslateY, {
+      Animated.timing(headingTranslateY, {
         toValue: 0,
-        duration: 600,
-        delay: 600,
+        duration: 550,
+        delay: 800,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Phase 4: Description fades in
+    Animated.parallel([
+      Animated.timing(descOpacity, {
+        toValue: 1,
+        duration: 500,
+        delay: 1100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(descTranslateY, {
+        toValue: 0,
+        duration: 500,
+        delay: 1100,
+        easing: Easing.out(Easing.ease),
         useNativeDriver: true,
       }),
     ]).start();
@@ -132,54 +115,61 @@ const WelcomePage: React.FC = () => {
 
   return (
     <View style={styles.page}>
-      <View style={styles.pageBackground}>
-        <Animated.View
-          style={[
-            styles.iconWrapper,
-            {
-              opacity: iconOpacity,
-              transform: [{ scale: iconScale }],
-            },
-          ]}
-        >
-          <Image
-            source={isDark ? darkIcon : lightIcon}
-            style={styles.icon}
-            resizeMode="contain"
+      <View style={styles.welcomeBackground}>
+        {/* Visual hero: large circle + icon */}
+        <View style={styles.welcomeHeroSection}>
+          <Animated.View
+            style={[
+              styles.welcomeHeroCircle,
+              {
+                opacity: circleOpacity,
+                transform: [{ scale: circleScale }],
+              },
+            ]}
           />
-        </Animated.View>
+          <Animated.View
+            style={[
+              styles.welcomeIconWrapper,
+              {
+                opacity: iconOpacity,
+                transform: [{ scale: iconScale }],
+              },
+            ]}
+          >
+            <Image
+              source={isDark ? darkIcon : lightIcon}
+              style={styles.welcomeIcon}
+              resizeMode="contain"
+            />
+          </Animated.View>
+        </View>
 
-        <Animated.View
-          style={[
-            styles.titleContainer,
-            {
-              opacity: titleOpacity,
-              transform: [{ translateY: titleTranslateY }],
-            },
-          ]}
-        >
-          <Text style={styles.titleLight}>Welcome to Neurotype</Text>
-        </Animated.View>
+        {/* Left-aligned text section */}
+        <View style={styles.welcomeTextSection}>
+          <Animated.View
+            style={{
+              opacity: headingOpacity,
+              transform: [{ translateY: headingTranslateY }],
+            }}
+          >
+            <Text style={styles.welcomeHeading}>
+              {'Meditation\ndesigned for\n'}
+              <Text style={styles.welcomeHeadingAccent}>your mind</Text>
+              {'.'}
+            </Text>
+          </Animated.View>
 
-        <View style={styles.featuresContainer}>
-          <FeaturePoint
-            icon="🧠"
-            title="Personalized for Your Brain"
-            description="Discover meditation methods proven to work for your unique neurotype."
-            delay={900}
-          />
-          <FeaturePoint
-            icon="📊"
-            title="Track Your Progress"
-            description="See how meditation affects your anxiety, focus, and well-being over time."
-            delay={1100}
-          />
-          <FeaturePoint
-            icon="📚"
-            title="All Your Sessions in One Place"
-            description="Access guided meditations, modules, and techniques tailored to your goals."
-            delay={1300}
-          />
+          <Animated.Text
+            style={[
+              styles.welcomeDescription,
+              {
+                opacity: descOpacity,
+                transform: [{ translateY: descTranslateY }],
+              },
+            ]}
+          >
+            Science-backed calm, tailored to your unique brain.
+          </Animated.Text>
         </View>
       </View>
     </View>
@@ -3090,27 +3080,61 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     fontWeight: '400',
     color: theme.colors.text.secondary,
   },
-  iconWrapper: {
-    alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 30,
+  // Welcome page — StressWatch-inspired hero layout
+  welcomeBackground: {
+    flex: 1,
+    width: '100%',
+    backgroundColor: theme.health.container.backgroundColor,
+    paddingTop: 70,
   },
-  iconContainer: {
+  welcomeHeroSection: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 280,
+    marginBottom: 36,
+  },
+  welcomeHeroCircle: {
+    position: 'absolute',
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: theme.isDark
+      ? 'rgba(78, 205, 196, 0.08)'
+      : 'rgba(78, 205, 196, 0.12)',
+  },
+  welcomeIconWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  icon: {
-    width: 120,
-    height: 120,
-    borderRadius: 26,
+  welcomeIcon: {
+    width: 110,
+    height: 110,
+    borderRadius: 24,
   },
+  welcomeTextSection: {
+    paddingHorizontal: 28,
+  },
+  welcomeHeading: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: theme.colors.text.primary,
+    lineHeight: 44,
+    letterSpacing: -0.5,
+  },
+  welcomeHeadingAccent: {
+    color: theme.colors.accentSecondary,
+  },
+  welcomeDescription: {
+    fontSize: 17,
+    fontWeight: '400',
+    color: theme.colors.text.secondary,
+    lineHeight: 24,
+    marginTop: 14,
+  },
+  // Shared onboarding styles
   titleContainer: {
     alignItems: 'center',
     marginBottom: 40,
-  },
-  title: {
-    ...theme.health.title,
-    textAlign: 'center',
   },
   titleLight: {
     fontSize: 34,
@@ -3119,11 +3143,6 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     textAlign: 'center',
     lineHeight: 40,
   },
-  subtitle: {
-    ...theme.health.subtitle,
-    textAlign: 'center',
-    marginTop: 4,
-  },
   subtitleLight: {
     fontSize: 20,
     fontWeight: '400',
@@ -3131,62 +3150,6 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     textAlign: 'center',
     marginTop: 4,
     lineHeight: 28,
-  },
-  featuresContainer: {
-    flex: 1,
-    paddingHorizontal: 0,
-  },
-  featurePoint: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 24,
-    backgroundColor: theme.colors.surface,
-    borderRadius: 16,
-    padding: 16,
-    marginHorizontal: 0,
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  featureIconContainer: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  iconText: {
-    fontSize: 32,
-  },
-  featureTextContainer: {
-    flex: 1,
-    paddingTop: 2,
-  },
-  featureTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: theme.colors.text.primary,
-    marginBottom: 4,
-  },
-  featureTitleLight: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: theme.colors.text.primary,
-    marginBottom: 4,
-  },
-  featureDescription: {
-    fontSize: 15,
-    color: theme.colors.text.secondary,
-    lineHeight: 20,
-  },
-  featureDescriptionLight: {
-    fontSize: 15,
-    color: theme.colors.text.secondary,
-    lineHeight: 20,
   },
   disclaimerText: {
     fontSize: 13,

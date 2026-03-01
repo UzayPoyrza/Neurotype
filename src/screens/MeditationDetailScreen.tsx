@@ -939,7 +939,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
       </BottomSheet>
 
       {/* ─── 5. Fixed Begin Session CTA (above tab bar) ──── */}
-      <View style={[styles.ctaSection, { backgroundColor: theme.colors.background, bottom: 80 }]}>
+      <View style={[styles.ctaSection, { backgroundColor: theme.colors.background, bottom: 80, paddingTop: 0 }]}>
         <TouchableOpacity
           style={[styles.ctaButton, { backgroundColor: goalColor }]}
           onPress={handleStartPress}

@@ -26,123 +26,161 @@ interface OnboardingScreenProps {
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Welcome Page Component — StressWatch-inspired layout
+// Welcome Page Component — StressWatch-inspired layout with animated breathing hero
 const WelcomePage: React.FC = () => {
   const theme = useTheme();
-  const isDark = useIsDark();
   const styles = createStyles(theme);
 
-  // Hero circle + icon
-  const circleScale = useRef(new Animated.Value(0.65)).current;
-  const circleOpacity = useRef(new Animated.Value(0)).current;
-  const iconOpacity = useRef(new Animated.Value(0)).current;
-  const iconScale = useRef(new Animated.Value(0.8)).current;
+  // Breathing circles — three concentric rings pulsing out of phase
+  const outerScale = useRef(new Animated.Value(0.88)).current;
+  const middleScale = useRef(new Animated.Value(1.08)).current;
+  const innerScale = useRef(new Animated.Value(0.96)).current;
+  // Sparkle dots
+  const sparkle1Opacity = useRef(new Animated.Value(0)).current;
+  const sparkle2Opacity = useRef(new Animated.Value(0)).current;
+  const sparkle3Opacity = useRef(new Animated.Value(0)).current;
+  // Entrance
+  const heroOpacity = useRef(new Animated.Value(0)).current;
+  const heroScale = useRef(new Animated.Value(0.7)).current;
   // Text
   const headingOpacity = useRef(new Animated.Value(0)).current;
-  const headingTranslateY = useRef(new Animated.Value(24)).current;
+  const headingTranslateY = useRef(new Animated.Value(28)).current;
   const descOpacity = useRef(new Animated.Value(0)).current;
   const descTranslateY = useRef(new Animated.Value(18)).current;
 
   useEffect(() => {
-    // Phase 1: Circle expands in
+    // --- Entrance sequence ---
+    // Phase 1: Hero fades in
     Animated.parallel([
-      Animated.timing(circleOpacity, {
+      Animated.timing(heroOpacity, {
         toValue: 1,
-        duration: 700,
-        delay: 200,
+        duration: 800,
+        delay: 150,
         useNativeDriver: true,
       }),
-      Animated.spring(circleScale, {
+      Animated.spring(heroScale, {
         toValue: 1,
-        tension: 25,
-        friction: 9,
-        delay: 200,
+        tension: 20,
+        friction: 8,
+        delay: 150,
         useNativeDriver: true,
       }),
     ]).start();
 
-    // Phase 2: Icon pops in on top of circle
-    Animated.parallel([
-      Animated.timing(iconOpacity, {
-        toValue: 1,
-        duration: 500,
-        delay: 500,
-        useNativeDriver: true,
-      }),
-      Animated.spring(iconScale, {
-        toValue: 1,
-        tension: 50,
-        friction: 7,
-        delay: 500,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Phase 3: Heading slides up
+    // Phase 2: Heading slides up
     Animated.parallel([
       Animated.timing(headingOpacity, {
         toValue: 1,
         duration: 550,
-        delay: 800,
+        delay: 700,
         useNativeDriver: true,
       }),
       Animated.timing(headingTranslateY, {
         toValue: 0,
         duration: 550,
-        delay: 800,
+        delay: 700,
         easing: Easing.out(Easing.ease),
         useNativeDriver: true,
       }),
     ]).start();
 
-    // Phase 4: Description fades in
+    // Phase 3: Description fades in
     Animated.parallel([
       Animated.timing(descOpacity, {
         toValue: 1,
         duration: 500,
-        delay: 1100,
+        delay: 1000,
         useNativeDriver: true,
       }),
       Animated.timing(descTranslateY, {
         toValue: 0,
         duration: 500,
-        delay: 1100,
+        delay: 1000,
         easing: Easing.out(Easing.ease),
         useNativeDriver: true,
       }),
     ]).start();
+
+    // --- Looping breathing animations ---
+    const breathe = (anim: Animated.Value, from: number, to: number, duration: number) => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(anim, {
+            toValue: to,
+            duration,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(anim, {
+            toValue: from,
+            duration,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    };
+
+    // Stagger breathing start for organic feel
+    setTimeout(() => breathe(outerScale, 0.88, 1.12, 3200), 300);
+    setTimeout(() => breathe(middleScale, 1.08, 0.92, 2800), 700);
+    setTimeout(() => breathe(innerScale, 0.96, 1.04, 2400), 500);
+
+    // Sparkle twinkle loops
+    const twinkle = (anim: Animated.Value, peak: number, duration: number, pause: number) => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(anim, { toValue: peak, duration, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+          Animated.timing(anim, { toValue: 0, duration, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+          Animated.delay(pause),
+        ])
+      ).start();
+    };
+
+    setTimeout(() => twinkle(sparkle1Opacity, 0.55, 1200, 2000), 800);
+    setTimeout(() => twinkle(sparkle2Opacity, 0.4, 1000, 2500), 1800);
+    setTimeout(() => twinkle(sparkle3Opacity, 0.5, 1100, 1800), 2600);
   }, []);
 
   return (
     <View style={styles.page}>
       <View style={styles.welcomeBackground}>
-        {/* Visual hero: large circle + icon */}
-        <View style={styles.welcomeHeroSection}>
+        {/* Animated breathing hero — concentric teal circles */}
+        <Animated.View
+          style={[
+            styles.welcomeHeroSection,
+            { opacity: heroOpacity, transform: [{ scale: heroScale }] },
+          ]}
+        >
+          {/* Outer ring */}
           <Animated.View
             style={[
-              styles.welcomeHeroCircle,
-              {
-                opacity: circleOpacity,
-                transform: [{ scale: circleScale }],
-              },
+              styles.breatheCircle,
+              styles.breatheCircleOuter,
+              { transform: [{ scale: outerScale }] },
             ]}
           />
+          {/* Middle ring */}
           <Animated.View
             style={[
-              styles.welcomeIconWrapper,
-              {
-                opacity: iconOpacity,
-                transform: [{ scale: iconScale }],
-              },
+              styles.breatheCircle,
+              styles.breatheCircleMiddle,
+              { transform: [{ scale: middleScale }] },
             ]}
-          >
-            <Image
-              source={isDark ? darkIcon : lightIcon}
-              style={styles.welcomeIcon}
-              resizeMode="contain"
-            />
-          </Animated.View>
-        </View>
+          />
+          {/* Inner glow */}
+          <Animated.View
+            style={[
+              styles.breatheCircle,
+              styles.breatheCircleInner,
+              { transform: [{ scale: innerScale }] },
+            ]}
+          />
+          {/* Sparkle dots */}
+          <Animated.View style={[styles.sparkleDot, styles.sparkleDot1, { opacity: sparkle1Opacity }]} />
+          <Animated.View style={[styles.sparkleDot, styles.sparkleDot2, { opacity: sparkle2Opacity }]} />
+          <Animated.View style={[styles.sparkleDot, styles.sparkleDot3, { opacity: sparkle3Opacity }]} />
+        </Animated.View>
 
         {/* Left-aligned text section */}
         <View style={styles.welcomeTextSection}>
@@ -3090,26 +3128,56 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   welcomeHeroSection: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: 280,
-    marginBottom: 36,
+    height: 300,
+    marginBottom: 44,
   },
-  welcomeHeroCircle: {
+  breatheCircle: {
     position: 'absolute',
-    width: 260,
-    height: 260,
-    borderRadius: 130,
+    borderRadius: 9999,
     backgroundColor: theme.isDark
       ? 'rgba(78, 205, 196, 0.08)'
       : 'rgba(78, 205, 196, 0.12)',
   },
-  welcomeIconWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
+  breatheCircleOuter: {
+    width: 300,
+    height: 300,
+    opacity: 0.5,
   },
-  welcomeIcon: {
-    width: 110,
-    height: 110,
-    borderRadius: 24,
+  breatheCircleMiddle: {
+    width: 220,
+    height: 220,
+    opacity: 0.7,
+  },
+  breatheCircleInner: {
+    width: 140,
+    height: 140,
+    opacity: 0.9,
+    backgroundColor: theme.isDark
+      ? 'rgba(78, 205, 196, 0.12)'
+      : 'rgba(78, 205, 196, 0.18)',
+  },
+  sparkleDot: {
+    position: 'absolute',
+    borderRadius: 9999,
+    backgroundColor: theme.colors.accentSecondary,
+  },
+  sparkleDot1: {
+    width: 10,
+    height: 10,
+    top: 30,
+    right: 45,
+  },
+  sparkleDot2: {
+    width: 7,
+    height: 7,
+    bottom: 40,
+    left: 40,
+  },
+  sparkleDot3: {
+    width: 8,
+    height: 8,
+    top: 80,
+    left: 30,
   },
   welcomeTextSection: {
     paddingHorizontal: 28,

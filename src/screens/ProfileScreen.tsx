@@ -924,7 +924,8 @@ export const ProfileScreen: React.FC = () => {
           )}
         </View>
 
-        {/* Share & Stats Merged Card */}
+        {/* TODO: Re-enable Share & Earn when ready */}
+        {/* SHARE_AND_EARN_START
         <MergedCard>
           <MergedCard.Section style={[styles.mergedSectionTop, styles.mergedSectionReducedBottomPadding]}>
             <View style={styles.cardHeader}>
@@ -942,7 +943,7 @@ export const ProfileScreen: React.FC = () => {
                 Give your friends 30 days of premium
               </Text>
             </View>
-            
+
             <View style={styles.shareContent}>
 
               <View style={styles.stepsList}>
@@ -952,14 +953,14 @@ export const ProfileScreen: React.FC = () => {
                   </View>
                   <Text style={styles.stepText}>Share your unique referral link</Text>
                 </View>
-                
+
                 <View style={styles.step}>
                   <View style={styles.stepNumber}>
                     <Text style={styles.stepNumberText}>2</Text>
                   </View>
                   <Text style={styles.stepText}>Friend downloads and signs up</Text>
                 </View>
-                
+
                 <View style={styles.step}>
                   <View style={styles.stepNumber}>
                     <Text style={styles.stepNumberText}>3</Text>
@@ -982,7 +983,7 @@ export const ProfileScreen: React.FC = () => {
                 <TouchableOpacity style={styles.shareButton}>
                   <Text style={styles.shareButtonText}>Share Link</Text>
                 </TouchableOpacity>
-                
+
                 <TouchableOpacity style={styles.inviteButton}>
                   <Text style={styles.inviteButtonText}>Send Invite</Text>
                 </TouchableOpacity>
@@ -1004,6 +1005,7 @@ export const ProfileScreen: React.FC = () => {
             </View>
           </MergedCard.Section>
         </MergedCard>
+        SHARE_AND_EARN_END */}
 
         {/* Activity History Card */}
         <View style={styles.card}>

@@ -461,6 +461,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
   const goalColor = contextModule
     ? getCategoryColor(contextModule.category)
     : getGoalColor(session.goal);
+  const goalColorDark = theme.isDark ? darkenColor(goalColor, 0.35) : goalColor;
 
   const uniqueModuleIds = Array.from(new Set(sessionModules));
   const moduleObjects: MentalHealthModule[] = uniqueModuleIds
@@ -757,7 +758,7 @@ export const MeditationDetailScreen: React.FC<MeditationDetailScreenProps> = () 
 
       {/* ─── 1. Hero Gradient (fixed behind bottom sheet) ── */}
       <LinearGradient
-        colors={[goalColor, darkenColor(goalColor, 0.3)]}
+        colors={[goalColorDark, darkenColor(goalColorDark, 0.3)]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[styles.heroGradient]}

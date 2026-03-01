@@ -181,8 +181,9 @@ export const MeditationPlayerScreen: React.FC = () => {
       // Check if this is a transition from tutorial (no isTutorial flag means it came from tutorial)
       const isFromTutorial = !activeSession.isTutorial && isTransitioning;
       
-      // Update gradient colors based on session goal
-      const newGradientColors = createMeditationPlayerBackground(activeSession.goal, 0);
+      // Update gradient colors based on the module context from the detail screen
+      const moduleContext = activeModuleId || todayModuleId || activeSession.goal;
+      const newGradientColors = createMeditationPlayerBackground(moduleContext, 0);
       setGradientColors(newGradientColors);
       
       const audioData = meditationAudioData[activeSession.id as keyof typeof meditationAudioData];
@@ -284,10 +285,11 @@ export const MeditationPlayerScreen: React.FC = () => {
   useEffect(() => {
     if (activeSession && totalDuration > 0) {
       const progress = currentTime / totalDuration;
-      const newGradientColors = createMeditationPlayerBackground(activeSession.goal, progress);
+      const moduleContext = activeModuleId || todayModuleId || activeSession.goal;
+      const newGradientColors = createMeditationPlayerBackground(moduleContext, progress);
       setGradientColors(newGradientColors);
     }
-  }, [currentTime, totalDuration, activeSession]);
+  }, [currentTime, totalDuration, activeSession, activeModuleId, todayModuleId]);
 
   // Initialize emotional position once width is measured
   useEffect(() => {

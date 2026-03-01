@@ -252,22 +252,30 @@ export const ShimmerSessionsCard: React.FC<ShimmerCardProps> = ({ style }) => {
 export const ShimmerActivityHistory: React.FC<ShimmerCardProps> = ({ style }) => {
   const theme = useTheme();
   return (
-    <View style={[{ gap: 12 }, style]}>
+    <View style={[{ gap: 8 }, style]}>
       {[...Array(4)].map((_, i) => (
         <View
           key={i}
           style={[
             styles.activityItemContainer,
-            { backgroundColor: theme.colors.surfaceElevated },
+            {
+              backgroundColor: theme.colors.surface,
+            },
+            !theme.isDark && { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
+            theme.isDark && { borderWidth: 1, borderColor: theme.colors.border },
           ]}
         >
-          <ShimmerSkeleton width={40} height={40} borderRadius={20} style={styles.activityIconSkeleton} />
+          {/* Accent bar */}
+          <ShimmerSkeleton width={3} height={48} borderRadius={0} style={styles.activityAccentBarSkeleton} />
           <View style={styles.activityInfoSkeleton}>
             <ShimmerSkeleton width="70%" height={15} borderRadius={6} style={styles.activityTitleSkeleton} />
-            <ShimmerSkeleton width="50%" height={13} borderRadius={6} style={styles.activityDateSkeleton} />
-            <ShimmerSkeleton width="40%" height={13} borderRadius={6} style={styles.activityMetaSkeleton} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+              <ShimmerSkeleton width={6} height={6} borderRadius={3} />
+              <ShimmerSkeleton width="30%" height={13} borderRadius={6} style={{ marginLeft: 5 }} />
+              <ShimmerSkeleton width="25%" height={13} borderRadius={6} style={{ marginLeft: 10 }} />
+            </View>
           </View>
-          <ShimmerSkeleton width={50} height={28} borderRadius={8} style={styles.activityDurationBadgeSkeleton} />
+          <ShimmerSkeleton width={50} height={26} borderRadius={8} style={styles.activityDurationBadgeSkeleton} />
         </View>
       ))}
     </View>
@@ -277,25 +285,33 @@ export const ShimmerActivityHistory: React.FC<ShimmerCardProps> = ({ style }) =>
 export const ShimmerEmotionalFeedbackHistory: React.FC<ShimmerCardProps> = ({ style }) => {
   const theme = useTheme();
   return (
-    <View style={[{ gap: 12 }, style]}>
+    <View style={[{ gap: 8 }, style]}>
       {[...Array(4)].map((_, i) => (
         <View
           key={i}
           style={[
             styles.feedbackItemContainer,
-            { backgroundColor: theme.colors.surfaceElevated },
+            {
+              backgroundColor: theme.colors.surface,
+            },
+            !theme.isDark && { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
+            theme.isDark && { borderWidth: 1, borderColor: theme.colors.border },
           ]}
         >
-          <ShimmerSkeleton width={40} height={40} borderRadius={20} style={styles.feedbackIconSkeleton} />
+          {/* Accent bar */}
+          <ShimmerSkeleton width={3} height={56} borderRadius={0} style={styles.activityAccentBarSkeleton} />
           <View style={styles.feedbackInfoSkeleton}>
             <ShimmerSkeleton width="65%" height={15} borderRadius={6} style={styles.feedbackTitleSkeleton} />
-            <ShimmerSkeleton width="45%" height={13} borderRadius={6} style={styles.feedbackDateSkeleton} />
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <ShimmerSkeleton width={60} height={20} borderRadius={8} style={styles.feedbackTagSkeleton} />
-              <ShimmerSkeleton width="35%" height={13} borderRadius={6} style={styles.feedbackTimestampSkeleton} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+              <ShimmerSkeleton width="30%" height={13} borderRadius={6} />
+              <ShimmerSkeleton width="25%" height={13} borderRadius={6} style={{ marginLeft: 10 }} />
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5 }}>
+              <ShimmerSkeleton width={7} height={7} borderRadius={3.5} />
+              <ShimmerSkeleton width={40} height={13} borderRadius={6} style={{ marginLeft: 5 }} />
             </View>
           </View>
-          <ShimmerSkeleton width={24} height={24} borderRadius={12} style={styles.feedbackDeleteButtonSkeleton} />
+          <ShimmerSkeleton width={28} height={28} borderRadius={14} style={styles.feedbackDeleteButtonSkeleton} />
         </View>
       ))}
     </View>
@@ -859,87 +875,44 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 12,
-    padding: 12,
     overflow: 'hidden',
   },
-  activityIconSkeleton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
+  activityAccentBarSkeleton: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
   },
   activityInfoSkeleton: {
     flex: 1,
+    paddingVertical: 12,
+    paddingLeft: 14,
     paddingRight: 8,
   },
   activityTitleSkeleton: {
-    width: '70%',
-    height: 15,
-    borderRadius: 6,
-    marginBottom: 6,
-  },
-  activityDateSkeleton: {
-    width: '50%',
-    height: 13,
-    borderRadius: 6,
-    marginBottom: 4,
-  },
-  activityMetaSkeleton: {
-    width: '40%',
-    height: 13,
-    borderRadius: 6,
+    marginBottom: 0,
   },
   activityDurationBadgeSkeleton: {
-    width: 50,
-    height: 28,
-    borderRadius: 8,
-    marginLeft: 12,
+    marginRight: 12,
   },
   feedbackItemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 12,
-    padding: 12,
     overflow: 'hidden',
-  },
-  feedbackIconSkeleton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
   },
   feedbackInfoSkeleton: {
     flex: 1,
+    paddingVertical: 12,
+    paddingLeft: 14,
     paddingRight: 8,
   },
   feedbackTitleSkeleton: {
-    width: '65%',
-    height: 15,
-    borderRadius: 6,
-    marginBottom: 6,
-  },
-  feedbackDateSkeleton: {
-    width: '45%',
-    height: 13,
-    borderRadius: 6,
-    marginBottom: 4,
-  },
-  feedbackTagSkeleton: {
-    width: 60,
-    height: 20,
-    borderRadius: 8,
-    marginRight: 8,
-  },
-  feedbackTimestampSkeleton: {
-    width: '35%',
-    height: 13,
-    borderRadius: 6,
+    marginBottom: 0,
   },
   feedbackDeleteButtonSkeleton: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    marginLeft: 8,
+    marginRight: 12,
   },
   meditationDetailHeroContainer: {
     height: 280,

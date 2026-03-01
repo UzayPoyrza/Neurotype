@@ -1080,19 +1080,19 @@ export const ProfileScreen: React.FC = () => {
                       const completionLabel = formattedDate ? `Completed ${formattedDate}` : 'Completion date unavailable';
 
                       return (
-                        <View key={`${activityItem.id || activityItem.sessionId}-${activityItem.createdAt || activityItem.date}-${index}`} style={styles.activityItem}>
-                          <View
-                            style={[
-                              styles.activityIcon,
-                              { backgroundColor: iconBackground }
-                            ]}
-                          >
-                            <Text style={[styles.activityIconText, { color: moduleColor }]}>
-                              {moduleInitial}
-                            </Text>
-                          </View>
-                          <View style={styles.activityInfo}>
-                            <View style={styles.activityHeader}>
+                        <View
+                          key={`${activityItem.id || activityItem.sessionId}-${activityItem.createdAt || activityItem.date}-${index}`}
+                          style={[
+                            styles.activityItem,
+                            { backgroundColor: theme.colors.surface },
+                            !theme.isDark && { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
+                            theme.isDark && { borderWidth: 1, borderColor: theme.colors.border },
+                          ]}
+                        >
+                          {/* Color accent bar */}
+                          <View style={[styles.activityAccentBar, { backgroundColor: moduleColor }]} />
+                          <View style={styles.activityItemInner}>
+                            <View style={styles.activityInfo}>
                               <Text
                                 style={styles.activityTitle}
                                 numberOfLines={1}
@@ -1100,25 +1100,29 @@ export const ProfileScreen: React.FC = () => {
                               >
                                 {truncatedTitle}
                               </Text>
-                              <Text style={styles.activityDate}>
-                                {completionLabel}
+                              <View style={styles.activityMetaRow}>
+                                {moduleTitle ? (
+                                  <>
+                                    <View style={[styles.activityModuleDot, { backgroundColor: moduleColor }]} />
+                                    <Text style={styles.activityMeta}>{moduleTitle}</Text>
+                                    <Text style={styles.activityMetaSeparator}>·</Text>
+                                  </>
+                                ) : null}
+                                <Text style={styles.activityDate}>
+                                  {formattedDate || 'Date unavailable'}
+                                </Text>
+                              </View>
+                            </View>
+                            <View
+                              style={[
+                                styles.durationBadge,
+                                { backgroundColor: iconBackground }
+                              ]}
+                            >
+                              <Text style={[styles.durationBadgeText, { color: moduleColor }]}>
+                                {durationLabel}
                               </Text>
                             </View>
-                            <View style={styles.activityDetails}>
-                              {moduleTitle ? (
-                                <Text style={styles.activityMeta}>{moduleTitle}</Text>
-                              ) : null}
-                            </View>
-                          </View>
-                          <View
-                            style={[
-                              styles.durationBadge,
-                              { backgroundColor: iconBackground }
-                            ]}
-                          >
-                            <Text style={[styles.durationBadgeText, { color: moduleColor }]}>
-                              {durationLabel}
-                            </Text>
                           </View>
                         </View>
                       );
@@ -1235,15 +1239,18 @@ export const ProfileScreen: React.FC = () => {
                           isRemoving={isRemoving}
                           onAnimationComplete={() => handleRemoveAnimationComplete(entry.id)}
                         >
-                          <View style={styles.activityItem}>
-                            <View
-                              style={[
-                                styles.activityIcon,
-                                { backgroundColor: feedbackBackground, borderWidth: 0, borderRadius: 20 }
-                              ]}
-                            />
-                            <View style={styles.activityInfo}>
-                              <View style={styles.activityHeader}>
+                          <View
+                            style={[
+                              styles.activityItem,
+                              { backgroundColor: theme.colors.surface },
+                              !theme.isDark && { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
+                              theme.isDark && { borderWidth: 1, borderColor: theme.colors.border },
+                            ]}
+                          >
+                            {/* Color accent bar */}
+                            <View style={[styles.activityAccentBar, { backgroundColor: feedbackColor }]} />
+                            <View style={styles.activityItemInner}>
+                              <View style={styles.activityInfo}>
                                 <Text
                                   style={styles.activityTitle}
                                   numberOfLines={1}
@@ -1251,30 +1258,31 @@ export const ProfileScreen: React.FC = () => {
                                 >
                                   {truncatedTitle}
                                 </Text>
-                                <Text style={styles.activityDate}>{formattedDate}</Text>
+                                <View style={styles.activityMetaRow}>
+                                  <Text style={styles.activityDate}>{formattedDate}</Text>
+                                  <Text style={styles.activityMetaSeparator}>·</Text>
+                                  <Text style={styles.activityMeta}>at {formattedTimestamp}</Text>
+                                </View>
+                                <View style={styles.feedbackDetailsRow}>
+                                  <View style={[styles.feedbackLabelDot, { backgroundColor: feedbackColor }]} />
+                                  <Text
+                                    style={[
+                                      styles.feedbackLabelTag,
+                                      { color: feedbackColor },
+                                    ]}
+                                  >
+                                    {feedbackLabel}
+                                  </Text>
+                                </View>
                               </View>
-                              <View style={styles.feedbackDetailsRow}>
-                                <Text
-                                  style={[
-                                    styles.feedbackLabelTag,
-                                    {
-                                      color: '#ffffff',
-                                      backgroundColor: feedbackColor
-                                    }
-                                  ]}
-                                >
-                                  {feedbackLabel}
-                                </Text>
-                                <Text style={styles.activityMeta}>at {formattedTimestamp}</Text>
-                              </View>
+                              <TouchableOpacity
+                                style={[styles.deleteFeedbackButton, { backgroundColor: theme.isDark ? theme.colors.surfaceElevated : 'rgba(0,0,0,0.04)' }]}
+                                onPress={() => handleRemoveEmotionalFeedback(entry.id)}
+                                hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+                              >
+                                <Ionicons name="close" size={14} color={theme.colors.text.tertiary} />
+                              </TouchableOpacity>
                             </View>
-                            <TouchableOpacity
-                              style={styles.deleteFeedbackButton}
-                              onPress={() => handleRemoveEmotionalFeedback(entry.id)}
-                              hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
-                            >
-                              <Text style={styles.deleteFeedbackButtonText}>×</Text>
-                            </TouchableOpacity>
                           </View>
                         </AnimatedFeedbackItem>
                       );
@@ -1690,50 +1698,56 @@ const createStyles = (theme: ReturnType<typeof useTheme>) => StyleSheet.create({
     position: 'relative',
   },
   activityItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.isDark ? theme.colors.surfaceElevated : 'rgba(0,0,0,0.05)',
-    borderRadius: 10,
-    padding: 12,
+    borderRadius: 12,
     overflow: 'hidden',
   },
-  activityIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-    borderWidth: 0,
+  activityAccentBar: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
   },
-  activityIconText: {
-    fontSize: 16,
-    fontWeight: '700',
+  activityItemInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingLeft: 14,
+    paddingRight: 12,
   },
   activityInfo: {
     flex: 1,
     paddingRight: 8,
   },
-  activityHeader: {
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    marginBottom: 4,
-  },
   activityTitle: {
     fontSize: 15,
     fontWeight: '600',
     color: theme.colors.text.primary,
+    marginBottom: 3,
+  },
+  activityMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  activityModuleDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 5,
   },
   activityDate: {
     fontSize: 13,
     color: theme.colors.text.tertiary,
     fontWeight: '400',
-    marginTop: 2,
   },
-  activityDetails: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
+  activityMetaSeparator: {
+    fontSize: 13,
+    color: theme.colors.text.tertiary,
+    marginHorizontal: 5,
+    fontWeight: '400',
   },
   activityMeta: {
     fontSize: 13,
@@ -1742,37 +1756,37 @@ const createStyles = (theme: ReturnType<typeof useTheme>) => StyleSheet.create({
   },
   durationBadge: {
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: 8,
-    marginLeft: 12,
-    alignSelf: 'flex-start',
+    marginLeft: 8,
   },
   durationBadgeText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   feedbackDetailsRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 4,
+  },
+  feedbackLabelDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    marginRight: 5,
   },
   feedbackLabelTag: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    marginRight: 8,
-    color: '#ffffff',
   },
   deleteFeedbackButton: {
     marginLeft: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  deleteFeedbackButtonText: {
-    fontSize: 18,
-    color: theme.colors.text.tertiary,
-    fontWeight: '600',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scrollFadeTop: {
     position: 'absolute',

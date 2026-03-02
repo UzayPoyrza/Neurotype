@@ -226,6 +226,207 @@ const WelcomePage: React.FC = () => {
   );
 };
 
+// Why Neurotype Page Component
+const WhyNeurotypePage: React.FC<{ isActive: boolean }> = ({ isActive }) => {
+  const theme = useTheme();
+  const styles = createStyles(theme);
+  const hasAnimated = useRef(false);
+
+  // Title + subtitle entrance
+  const titleAnim = useRef(new Animated.Value(0)).current;
+  const subtitleAnim = useRef(new Animated.Value(0)).current;
+
+  // Background circle
+  const circleAnim = useRef(new Animated.Value(0)).current;
+
+  // Individual card animations — one value per module, interpolated for opacity/translate/scale
+  const cardAnims = useRef(mentalHealthModules.map(() => new Animated.Value(0))).current;
+
+  // Bottom tagline
+  const taglineAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (isActive && !hasAnimated.current) {
+      hasAnimated.current = true;
+
+      // Phase 1: Title slides up
+      Animated.timing(titleAnim, {
+        toValue: 1,
+        duration: 600,
+        delay: 150,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }).start();
+
+      // Phase 2: Subtitle follows
+      Animated.timing(subtitleAnim, {
+        toValue: 1,
+        duration: 500,
+        delay: 450,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }).start();
+
+      // Phase 3: Background circle blooms
+      Animated.spring(circleAnim, {
+        toValue: 1,
+        tension: 12,
+        friction: 8,
+        delay: 350,
+        useNativeDriver: true,
+      }).start();
+
+      // Phase 4: Module cards cascade in with staggered springs (after delay)
+      setTimeout(() => {
+        Animated.stagger(70,
+          cardAnims.map(anim =>
+            Animated.spring(anim, {
+              toValue: 1,
+              tension: 50,
+              friction: 8,
+              useNativeDriver: true,
+            })
+          )
+        ).start();
+      }, 550);
+
+      // Phase 5: Bottom tagline
+      Animated.timing(taglineAnim, {
+        toValue: 1,
+        duration: 500,
+        delay: 1400,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }).start();
+
+    } else if (!isActive) {
+      hasAnimated.current = false;
+    }
+  }, [isActive]);
+
+  // Category labels for visual richness
+  const getCategoryLabel = (category: string) => {
+    switch (category) {
+      case 'disorder': return 'Condition';
+      case 'wellness': return 'Wellness';
+      case 'skill': return 'Skill';
+      case 'winddown': return 'Wind Down';
+      default: return '';
+    }
+  };
+
+  return (
+    <View style={styles.page}>
+      <View style={styles.pageBackground}>
+        {/* Title */}
+        <Animated.View style={{
+          opacity: titleAnim,
+          transform: [{
+            translateY: titleAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [28, 0],
+            }),
+          }],
+        }}>
+          <Text style={styles.whyNeurotypeTitle}>
+            Not another{'\n'}meditation app.
+          </Text>
+        </Animated.View>
+
+        {/* Subtitle */}
+        <Animated.View style={{
+          opacity: subtitleAnim,
+          transform: [{
+            translateY: subtitleAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [18, 0],
+            }),
+          }],
+          marginTop: 12,
+        }}>
+          <Text style={styles.whyNeurotypeSubtitle}>
+            Condition-specific programs, each backed{'\n'}by neuroscience research.
+          </Text>
+        </Animated.View>
+
+        {/* Visual showcase area */}
+        <View style={styles.whyNeurotypeShowcase}>
+          {/* Large background circle — visual anchor */}
+          <Animated.View style={[
+            styles.whyNeurotypeCircle,
+            {
+              opacity: circleAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, 1],
+              }),
+              transform: [{
+                scale: circleAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.3, 1],
+                }),
+              }],
+            },
+          ]} />
+
+          {/* Floating module cards */}
+          <View style={styles.whyNeurotypeCardsGrid}>
+            {mentalHealthModules.map((module, index) => {
+              const anim = cardAnims[index];
+              return (
+                <Animated.View
+                  key={module.id}
+                  style={[
+                    styles.whyNeurotypeModuleCard,
+                    {
+                      backgroundColor: module.color + '18',
+                      borderColor: module.color + '35',
+                      opacity: anim,
+                      transform: [
+                        {
+                          translateY: anim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [30, 0],
+                          }),
+                        },
+                        {
+                          scale: anim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0.75, 1],
+                          }),
+                        },
+                      ],
+                    },
+                  ]}
+                >
+                  <View style={[styles.whyNeurotypeModuleDot, { backgroundColor: module.color }]} />
+                  <Text style={[styles.whyNeurotypeModuleName, { color: theme.colors.text.primary }]}>
+                    {module.title}
+                  </Text>
+                </Animated.View>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Bottom tagline */}
+        <Animated.View style={{
+          opacity: taglineAnim,
+          transform: [{
+            translateY: taglineAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [10, 0],
+            }),
+          }],
+        }}>
+          <Text style={styles.whyNeurotypeTagline}>
+            11 modules  ·  218+ sessions  ·  4 categories
+          </Text>
+        </Animated.View>
+      </View>
+    </View>
+  );
+};
+
 // Select Module Page Component
 const SelectModulePage: React.FC<{
   selectedModule: string | null;
@@ -2604,7 +2805,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   const finishContentScale = useRef(new Animated.Value(0.8)).current;
   const hasCheckedSubscription = useRef(false);
 
-  const TOTAL_PAGES = 7;
+  const TOTAL_PAGES = 8;
 
   // Check subscription type when user signs in
   useEffect(() => {
@@ -2663,17 +2864,17 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
       ]).start();
     }
     
-    // Reset change button click state when leaving page 2
-    if (currentPage !== 2) {
+    // Reset change button click state when leaving page 3
+    if (currentPage !== 3) {
       setHasClickedChangeButton(false);
     }
-    // Reset scroll state when leaving page 3
-    if (currentPage !== 3) {
+    // Reset scroll state when leaving page 4
+    if (currentPage !== 4) {
       setHasScrolledOnHowToUse(false);
     }
-    
+
     // Auto-skip premium and payment pages if user already has premium (check from database)
-    if (currentPage === 5 && userId) {
+    if (currentPage === 6 && userId) {
       let skipTimer: NodeJS.Timeout | null = null;
       let cancelled = false;
       
@@ -2736,8 +2937,8 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
   };
 
   const handleNext = async () => {
-    // If on premium page (page 5)
-    if (currentPage === 5) {
+    // If on premium page (page 6)
+    if (currentPage === 6) {
       // Check premium status directly from database, not from store
       if (userId) {
         try {
@@ -2759,10 +2960,10 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
           // On error, continue with normal flow
         }
       }
-      
+
       // If plan is selected, go to payment page
       if (selectedPlan) {
-        scrollViewRef.current?.scrollTo({ x: SCREEN_WIDTH * 6, animated: true });
+        scrollViewRef.current?.scrollTo({ x: SCREEN_WIDTH * 7, animated: true });
       } else {
         // If on premium page with no plan selected, skip to finish
         handleFinish();
@@ -2873,20 +3074,21 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
 
   const getButtonText = () => {
     if (currentPage === 0) return 'Continue';
-    if (currentPage === 1) return selectedModule ? 'Continue' : 'Select a module';
-    if (currentPage === 2) return hasClickedChangeButton ? 'Continue' : 'Click the change button';
-    if (currentPage === 3) return hasScrolledOnHowToUse ? 'Continue' : 'Scroll down';
-    if (currentPage === 5) {
+    if (currentPage === 1) return 'Continue';
+    if (currentPage === 2) return selectedModule ? 'Continue' : 'Select a module';
+    if (currentPage === 3) return hasClickedChangeButton ? 'Continue' : 'Click the change button';
+    if (currentPage === 4) return hasScrolledOnHowToUse ? 'Continue' : 'Scroll down';
+    if (currentPage === 6) {
       return selectedPlan ? 'Continue to payment' : "No thanks! I'll continue with Free Plan.";
     }
-    if (currentPage === 6) return 'Complete Purchase';
+    if (currentPage === 7) return 'Complete Purchase';
     return 'Continue';
   };
 
   const canProceed = () => {
-    if (currentPage === 1 && !selectedModule) return false;
-    if (currentPage === 2 && !hasClickedChangeButton) return false;
-    if (currentPage === 3 && !hasScrolledOnHowToUse) return false;
+    if (currentPage === 2 && !selectedModule) return false;
+    if (currentPage === 3 && !hasClickedChangeButton) return false;
+    if (currentPage === 4 && !hasScrolledOnHowToUse) return false;
     return true;
   };
 
@@ -2900,7 +3102,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
           </TouchableOpacity>
         )}
 
-        {!showFinishAnimation && currentPage >= 1 && currentPage <= 3 && (
+        {!showFinishAnimation && currentPage >= 1 && currentPage <= 4 && (
           <TouchableOpacity style={styles.backButton} onPress={handleBack} activeOpacity={0.7}>
             <Text style={styles.backButtonText}>‹</Text>
           </TouchableOpacity>
@@ -2918,14 +3120,15 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
             scrollEnabled={false}
           >
           <WelcomePage />
-          <SelectModulePage 
+          <WhyNeurotypePage isActive={currentPage === 1} />
+          <SelectModulePage
             selectedModule={selectedModule}
             onSelectModule={handleSelectModule}
-            isActive={currentPage === 1}
-          />
-          <ChangeButtonDemoPage 
-            selectedModule={demoModuleId || selectedModule || 'anxiety'}
             isActive={currentPage === 2}
+          />
+          <ChangeButtonDemoPage
+            selectedModule={demoModuleId || selectedModule || 'anxiety'}
+            isActive={currentPage === 3}
             onModuleChange={handleDemoModuleChange}
             onShowModal={() => {
               setShowModuleModal(true);
@@ -2948,16 +3151,16 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
               onCongratulationsCompleteRef.current = handler;
             }}
           />
-          <HowToUsePage 
-            isActive={currentPage === 3}
+          <HowToUsePage
+            isActive={currentPage === 4}
             onScrollStateChange={(hasScrolled) => {
-              if (currentPage === 3) {
+              if (currentPage === 4) {
                 setHasScrolledOnHowToUse(hasScrolled);
               }
             }}
           />
-          <LoginPage 
-            isActive={currentPage === 4}
+          <LoginPage
+            isActive={currentPage === 5}
             onLogin={handleLogin}
             onNavigateToPremium={async () => {
               // Validate premium status directly from database, not from store
@@ -2980,12 +3183,12 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
                   // On error, don't skip - let user go through premium flow
                 }
               }
-              // Navigate to premium features page (page 5)
-              scrollViewRef.current?.scrollTo({ x: SCREEN_WIDTH * 5, animated: true });
+              // Navigate to premium features page (page 6)
+              scrollViewRef.current?.scrollTo({ x: SCREEN_WIDTH * 6, animated: true });
             }}
           />
-          <PremiumFeaturesPage 
-            isActive={currentPage === 5}
+          <PremiumFeaturesPage
+            isActive={currentPage === 6}
             selectedPlan={selectedPlan}
             onSelectPlan={setSelectedPlan}
             onClose={() => {
@@ -2996,10 +3199,10 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
             isOnboarding={true}
           />
           <PaymentPage
-            isActive={currentPage === 6}
+            isActive={currentPage === 7}
             selectedPlan={selectedPlan}
             onBack={() => {
-              scrollViewRef.current?.scrollTo({ x: SCREEN_WIDTH * 5, animated: true });
+              scrollViewRef.current?.scrollTo({ x: SCREEN_WIDTH * 6, animated: true });
             }}
             onComplete={handleFinish}
             isOnboarding={true}
@@ -3007,7 +3210,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
           </ScrollView>
         )}
 
-        {!showFinishAnimation && currentPage !== 4 && currentPage !== 6 && (
+        {!showFinishAnimation && currentPage !== 5 && currentPage !== 7 && (
           <Animated.View
             style={[
               styles.buttonContainer,
@@ -3047,7 +3250,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onFinish }) 
       )}
 
       {/* Module Grid Modal */}
-      {currentPage === 2 && (
+      {currentPage === 3 && (
         <ModuleGridModal
           modules={mentalHealthModules}
           selectedModuleId={demoModuleId || selectedModule || 'anxiety'}
@@ -4252,5 +4455,71 @@ const createStyles = (theme: Theme, insets?: { top: number; bottom: number; left
     fontWeight: '400',
     color: theme.colors.text.secondary,
     textAlign: 'center',
+  },
+  whyNeurotypeTitle: {
+    fontSize: 34,
+    fontWeight: '700',
+    color: theme.colors.text.primary,
+    lineHeight: 42,
+    letterSpacing: -0.5,
+  },
+  whyNeurotypeSubtitle: {
+    fontSize: 17,
+    fontWeight: '400',
+    color: theme.colors.text.secondary,
+    lineHeight: 24,
+  },
+  whyNeurotypeShowcase: {
+    flex: 1,
+    marginTop: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  whyNeurotypeCircle: {
+    position: 'absolute',
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: theme.isDark ? 'rgba(78, 205, 196, 0.05)' : 'rgba(78, 205, 196, 0.08)',
+  },
+  whyNeurotypeCardsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 9,
+    paddingHorizontal: 8,
+  },
+  whyNeurotypeModuleCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 22,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: theme.isDark ? 0.25 : 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  whyNeurotypeModuleDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  whyNeurotypeModuleName: {
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: -0.1,
+  },
+  whyNeurotypeTagline: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: theme.colors.text.tertiary,
+    textAlign: 'center',
+    letterSpacing: 0.3,
+    marginBottom: 20,
   },
 });
